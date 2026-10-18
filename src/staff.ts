@@ -6,7 +6,7 @@ import { barAt, type Note } from './song'
 const S = 10
 const VB_H = 158
 const BASE = { treble: 64, bass: 134 } // y of each clef's bottom line
-const MID_STEP = { treble: 34, bass: 15 } // B4, D3
+const MID_STEP = { treble: 34, bass: 22 } // B4, D3: the middle line of each clef
 const NS = 'http://www.w3.org/2000/svg'
 
 const G = {

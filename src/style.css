@@ -891,7 +891,7 @@ kbd {
 }
 .hist text {
   fill: var(--ink-3);
-  font: 700 12px var(--ui);
+  font: 700 14px var(--ui);
 }
 .card .line {
   margin: 0;
