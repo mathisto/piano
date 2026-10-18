@@ -5,6 +5,7 @@ export interface MidiMsg {
   p: number
   v: number // 0..1
   ts: number // performance.now() clock
+  virtual?: boolean // from the computer keyboard or the on-screen keys, not a piano
 }
 
 export interface Input {
@@ -95,11 +96,11 @@ export function typingKeyboard() {
     const p = KEYMAP[e.key]
     if (p === undefined || down.has(e.key)) return
     down.add(e.key)
-    handler({ on: true, p: p + shift, v: 0.75, ts: e.timeStamp })
+    handler({ on: true, p: p + shift, v: 0.75, ts: performance.now(), virtual: true })
   })
   addEventListener('keyup', (e) => {
     const p = KEYMAP[e.key]
     if (p === undefined || !down.delete(e.key)) return
-    handler({ on: false, p: p + shift, v: 0, ts: e.timeStamp })
+    handler({ on: false, p: p + shift, v: 0, ts: performance.now(), virtual: true })
   })
 }

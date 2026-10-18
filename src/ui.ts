@@ -24,6 +24,11 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>
     </div>
+    <div class="seg" id="viewSeg" hidden role="radiogroup" aria-label="View">
+      <label><input type="radio" name="view" value="sheet"><span>Staff</span></label>
+      <label><input type="radio" name="view" value="both"><span>Both</span></label>
+      <label><input type="radio" name="view" value="falling"><span>Falling</span></label>
+    </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
       <div data-m="perform"><small>Score</small><b id="hScore">0</b></div>
@@ -186,7 +191,7 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
     <p id="sStatus">${esc(status)}</p>
     <p id="sMon" role="status" style="color:var(--ink)"></p>
     ${inputs.length ? '' : `<p>No keyboard is listed. Check that it is switched on (many keyboards power off after a while), the USB cable carries data (some only charge), and that it is not paired over Bluetooth only. Then unplug and replug it, or reload this page.</p>`}
-    <p>No keyboard? Play with your computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> for white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> for black, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave.</p>
+    <p>No keyboard? Play with your computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> for white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> for black, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave. You can also click or touch the on-screen keys. Both make sound through the browser.</p>
   </fieldset>
   <fieldset><legend>Timing</legend>
     <label class="field"><span>Input delay (ms)</span><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}"></label>
@@ -199,7 +204,6 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
     <label class="field"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names on keys and notes</label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>Show all 88 keys</label>
-    <label class="switch"><input id="sStaff" type="checkbox"${settings.staff ? ' checked' : ''}><i></i>Show the staff</label>
   </fieldset>
   <fieldset><legend>Sound</legend>
     <label class="switch"><input id="sSound" type="checkbox"${settings.sound ? ' checked' : ''}><i></i>Play through the browser</label>
@@ -211,7 +215,7 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
       <select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === split ? ' selected' : ''}>${noteName(p)}${p === 60 ? ' (middle C)' : ''} and up is the right hand</option>`).join('')}</select></label>
   </fieldset>
   <fieldset><legend>Shortcuts</legend>
-    <div class="sc"><kbd>Space</kbd><span>Play / pause</span><kbd>Esc</kbd><span>Close, or back to songs</span><kbd>[</kbd><span>Slower (Learn)</span><kbd>]</kbd><span>Faster (Learn)</span></div>
+    <div class="sc"><kbd>Space</kbd><span>Play / pause</span><kbd>V</kbd><span>Cycle the view: staff, both, falling</span><kbd>Esc</kbd><span>Close, or back to songs</span><kbd>[</kbd><span>Slower (Learn)</span><kbd>]</kbd><span>Faster (Learn)</span></div>
   </fieldset>
   <fieldset><legend>Your data</legend>
     <p>Songs and progress live only in this browser.</p>

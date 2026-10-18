@@ -5,7 +5,7 @@ export interface Settings {
   volume: number
   names: boolean // note names on keys and notes
   full: boolean // show all 88 keys instead of fitting the song
-  staff: boolean
+  view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
   offset: number // ms, from calibration
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
@@ -20,7 +20,7 @@ const DEFAULTS: Settings = {
   volume: 0.7,
   names: true,
   full: false,
-  staff: true,
+  view: 'both',
   offset: 0,
   split: 60,
   device: '',
@@ -30,7 +30,10 @@ const KEY = 'piano.settings'
 
 function load(): Settings {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') }
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
+    if (saved.staff === false && !saved.view) saved.view = 'falling' // from the old "Show the staff" switch
+    delete saved.staff
+    return { ...DEFAULTS, ...saved }
   } catch {
     return { ...DEFAULTS }
   }

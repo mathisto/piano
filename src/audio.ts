@@ -33,8 +33,8 @@ export function click(accent: boolean) {
 }
 
 // ponytail: two-partial synth, not samples. Salamander sample packs go here when sound packs land.
-export function noteOn(p: number, vel: number) {
-  if (!settings.sound) return
+export function noteOn(p: number, vel: number, force = false) {
+  if (!settings.sound && !force) return
   const c = ready()
   noteOff(p, true)
   const f = 440 * 2 ** ((p - 69) / 12)

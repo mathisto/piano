@@ -134,7 +134,8 @@ export class Highway {
       const left = this.keys.get(p - 1)
       if (left) this.keys.set(p, { p, x: left.x + ww - bw / 2, w: bw, black: true })
     }
-    this.kbH = Math.min(Math.max(ww * 4.2, 92), fullH * 0.24)
+    // sheet view gives the stage to the keyboard alone; otherwise the highway needs most of it
+    this.kbH = this.game.view === 'sheet' ? Math.max(fullH - 8, 60) : Math.min(Math.max(ww * 4.2, 92), fullH * 0.24)
     this.H = fullH - this.kbH
 
     this.lanes.clear()
@@ -163,11 +164,24 @@ export class Highway {
     if (!k) return
     const color = grade === 'ok' ? C[hand] : gradeColor[grade]
     this.keyHue.set(p, C[hand])
-    const fx = settings.fx
+    const fx = this.game.view === 'sheet' ? 0 : settings.fx // sheet view stays calm: the staff carries the feedback
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
     this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
     if (fx >= 2) this.burst(k.x + k.w / 2, this.H, color, fx === 3 ? 18 : 9)
+  }
+
+  /** The key under a point on the canvas (black keys sit on top), if it is over the keyboard. */
+  keyAt(x: number, y: number): { p: number; vel: number } | undefined {
+    const top = this.H + 4
+    if (y < top || y > this.app.screen.height) return undefined
+    const blackH = this.kbH * 0.6
+    let hit: K | undefined
+    if (y < top + blackH) hit = [...this.keys.values()].find((k) => k.black && x >= k.x && x < k.x + k.w)
+    hit ??= this.whites.find((k) => x >= k.x && x < k.x + k.w)
+    if (!hit) return undefined
+    const kh = hit.black ? blackH : this.kbH - 4
+    return { p: hit.p, vel: 0.4 + 0.5 * Math.min(1, Math.max(0, (y - top) / kh)) } // lower on the key plays louder
   }
 
   wrong(p: number) {
@@ -231,7 +245,7 @@ export class Highway {
     const look = settings.fall
     const pps = H / look
     const fx = settings.fx
-    const hide = g.mode === 'read' && !g.showNotes // reading drills: the staff is the only clue
+    const hide = (g.mode === 'read' && !g.showNotes) || g.view === 'sheet' // reading drills and sheet view: no falling notes
     const names = g.mode === 'read' ? g.showNames : settings.names
 
     // ----- bar and beat lines

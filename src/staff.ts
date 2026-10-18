@@ -6,8 +6,9 @@ import { barAt, type Note } from './song'
 const S = 10
 type Clef = 'treble' | 'bass'
 // Geometry (viewBox units): both staves, or one staff with room for ledger lines when a drill uses only one clef.
-const GRAND = { h: 158, base: { treble: 64, bass: 134 } }
+const GRAND = { h: 166, base: { treble: 64, bass: 134 } } // 166 leaves room for stems below the bass staff
 const SOLO = { h: 104, base: { treble: 72, bass: 72 } }
+const GAP = 26 // between systems in sheet view
 const MID_STEP = { treble: 34, bass: 22 } // B4, D3: the middle line of each clef
 const NS = 'http://www.w3.org/2000/svg'
 
@@ -43,6 +44,7 @@ interface Chord {
   items: Placed[]
   clef: 'treble' | 'bass'
   x: number
+  dy: number // vertical offset of the system this chord sits in
   t: number
   bar: number
   beats: number
@@ -56,6 +58,7 @@ interface Placed {
   sp: Spelled
   clef: 'treble' | 'bass'
   x: number
+  dy: number
   head?: SVGElement
 }
 
@@ -64,7 +67,8 @@ export class Staff {
   private cursor!: SVGLineElement
   private placed: Placed[] = []
   private bar0 = -1
-  private count = 0
+  private count = 4 // bars per system
+  private sys = 1 // systems on the page: 2 in sheet view (current + next), else 1
   private w = 0
   private x0 = 0
   private x1 = 0
@@ -95,11 +99,26 @@ export class Staff {
     this.frame()
   }
 
-  private windowFor(bar: number) {
-    const onsets = new Set<number>()
-    for (const n of this.game.song.notes) if (n.bar === bar || n.bar === bar + 1) onsets.add(Math.round(n.t * 40))
+  /** Sets the bars per system and systems per page; returns the first bar shown. */
+  private windowFor(bar: number): number {
+    const { notes, bars } = this.game.song
+    if (this.game.view === 'sheet') {
+      // a page of two systems: the one you are in, and the next. It turns a system at a time.
+      this.sys = 2
+      const onsets = (from: number, n: number) => {
+        const on = new Set<number>()
+        for (const x of notes) if (x.bar >= from && x.bar < from + n) on.add(Math.round(x.t * 40))
+        return on.size
+      }
+      this.count = onsets(Math.floor(bar / 4) * 4, 4) > 40 ? 2 : 4
+      return Math.floor(bar / this.count) * this.count
+    }
+    this.sys = 1
+    const on = new Set<number>()
+    for (const n of notes) if (n.bar === bar || n.bar === bar + 1) on.add(Math.round(n.t * 40))
     // two bars of reading ahead, one when the music is dense
-    this.count = bar + 1 < this.game.song.bars.length && onsets.size <= 22 ? 2 : 1
+    this.count = bar + 1 < bars.length && on.size <= 22 ? 2 : 1
+    return bar
   }
 
   frame() {
@@ -107,9 +126,9 @@ export class Staff {
     const bar = Math.max(0, barAt(song.bars, Math.max(0, t)))
     const back = t < this.lastT - 0.05 // a seek or loop wrap: rebuild so played-note dimming resets
     this.lastT = t
-    if (bar !== this.bar0 || back) {
-      this.bar0 = bar
-      this.windowFor(bar)
+    const start = this.game.view === 'sheet' ? Math.floor(bar / this.count) * this.count : bar
+    if (start !== this.bar0 || back) {
+      this.bar0 = this.windowFor(bar)
       this.build()
     }
     this.moveCursor()
@@ -120,8 +139,8 @@ export class Staff {
     }
   }
 
-  private y(step: number, clef: Clef) {
-    return yOf(step, clef, this.base)
+  private y(step: number, clef: Clef, dy = 0) {
+    return yOf(step, clef, this.base) + dy
   }
 
   /** In wait mode, light the noteheads the song is waiting for. */
@@ -139,18 +158,31 @@ export class Staff {
     this.awaiting = need
   }
 
-  private xAt(t: number): number {
-    const b = this.game.song.bars[Math.min(Math.max(0, barAt(this.game.song.bars, t)), this.game.song.bars.length - 1)]
-    const i = b.i - this.bar0
+  /** Where a moment in time sits on the page: x, and the offset of its system. */
+  private posAt(t: number): { x: number; dy: number } {
+    const bars = this.game.song.bars
+    const b = bars[Math.min(Math.max(0, barAt(bars, t)), bars.length - 1)]
+    const i = Math.min(Math.max(0, b.i - this.bar0), this.count * this.sys - 1)
     const frac = Math.min(1, Math.max(0, (t - b.t0) / (b.t1 - b.t0)))
-    return this.x0 + i * this.bw + this.pad + frac * (this.bw - this.pad * 2)
+    const col = i % this.count
+    return {
+      x: this.x0 + col * this.bw + this.pad + frac * (this.bw - this.pad * 2),
+      dy: Math.floor(i / this.count) * (this.vbH + GAP),
+    }
   }
 
   private moveCursor() {
-    const t = Math.min(Math.max(this.game.t, this.game.song.bars[this.bar0].t0), this.game.song.bars[Math.min(this.bar0 + this.count, this.game.song.bars.length) - 1].t1)
-    const x = this.xAt(t) - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
-    this.cursor.setAttribute('x1', String(x))
-    this.cursor.setAttribute('x2', String(x))
+    const { bars } = this.game.song
+    const last = Math.min(this.bar0 + this.count * this.sys, bars.length) - 1
+    const t = Math.min(Math.max(this.game.t, bars[this.bar0].t0), bars[last].t1)
+    const { x, dy } = this.posAt(t)
+    const cx = x - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
+    this.cursor.setAttribute('x1', String(cx))
+    this.cursor.setAttribute('x2', String(cx))
+    const top = this.base[this.clefs[0]] - 4 * S
+    const bottom = this.base[this.clefs[this.clefs.length - 1]]
+    this.cursor.setAttribute('y1', String(dy + top - 12))
+    this.cursor.setAttribute('y2', String(dy + bottom + 12))
   }
 
   /** Reading drills that stay in one clef get one big staff; everything else gets the grand staff. */
@@ -170,10 +202,11 @@ export class Staff {
     const { clefs, base } = this
     const top = base[clefs[0]] - 4 * S // y of the first staff's top line
     const bottom = base[clefs[clefs.length - 1]] // y of the last staff's bottom line
-    this.w = Math.round(this.vbH * (r.width / r.height))
+    const total = this.vbH * this.sys + GAP * (this.sys - 1)
+    this.w = Math.round(total * (r.width / r.height))
     const svg = this.svg
     svg.replaceChildren()
-    svg.setAttribute('viewBox', `0 0 ${this.w} ${this.vbH}`)
+    svg.setAttribute('viewBox', `0 0 ${this.w} ${total}`)
     this.placed = []
     this.byId.clear()
     this.awaiting.clear()
@@ -185,40 +218,45 @@ export class Staff {
     this.x1 = this.w - 10
     this.bw = (this.x1 - this.x0) / this.count
 
-    const lines = el('g', { class: 'lines' }, svg)
-    for (const clef of clefs) {
-      for (let i = 0; i < 5; i++) {
-        const y = base[clef] - i * S
-        el('line', { x1: 8, x2: this.x1, y1: y, y2: y }, lines)
-      }
-    }
-    el('line', { x1: 8, x2: 8, y1: top, y2: bottom }, lines)
-
-    // clefs, key and time signature
-    const sym = el('g', { class: 'sym' }, svg)
-    for (const clef of clefs) {
-      el('text', { x: 14, y: clef === 'treble' ? base.treble - S : base.bass - 3 * S, class: 'smufl' }, sym, clef === 'treble' ? G.gClef : G.fClef)
-      keySigSteps(fifths, clef).forEach((step, i) =>
-        el('text', { x: 14 + 38 + i * 9, y: this.y(step, clef), class: 'smufl' }, sym, fifths > 0 ? G.sharp : G.flat),
-      )
-    }
-    if (first) {
-      const b = song.bars[0]
-      const x = 14 + 40 + Math.abs(fifths) * 9
+    for (let sy = 0; sy < this.sys; sy++) {
+      const from = this.bar0 + sy * this.count
+      if (from >= song.bars.length) break
+      const dy = sy * (this.vbH + GAP)
+      const lines = el('g', { class: 'lines' }, svg)
       for (const clef of clefs) {
-        el('text', { x, y: base[clef] - 2 * S, class: 'smufl' }, sym, String(b.n).split('').map((c) => G.digit(Number(c))).join(''))
-        el('text', { x, y: base[clef], class: 'smufl' }, sym, String(b.den).split('').map((c) => G.digit(Number(c))).join(''))
+        for (let i = 0; i < 5; i++) {
+          const y = dy + base[clef] - i * S
+          el('line', { x1: 8, x2: this.x1, y1: y, y2: y }, lines)
+        }
       }
-    }
+      el('line', { x1: 8, x2: 8, y1: dy + top, y2: dy + bottom }, lines)
 
-    // bar lines and bar numbers
-    const bl = el('g', { class: 'bars' }, svg)
-    for (let i = 0; i <= this.count; i++) {
-      const bar = this.bar0 + i
-      if (bar > song.bars.length) break
-      const x = this.x0 + i * this.bw
-      for (const clef of clefs) el('line', { x1: x, x2: x, y1: base[clef] - 4 * S, y2: base[clef] }, bl)
-      if (i < this.count && bar < song.bars.length) el('text', { x: x + 4, y: top - 16, class: 'barno' }, bl, String(bar + 1))
+      // clefs, key and time signature
+      const sym = el('g', { class: 'sym' }, svg)
+      for (const clef of clefs) {
+        el('text', { x: 14, y: dy + (clef === 'treble' ? base.treble - S : base.bass - 3 * S), class: 'smufl' }, sym, clef === 'treble' ? G.gClef : G.fClef)
+        keySigSteps(fifths, clef).forEach((step, i) =>
+          el('text', { x: 14 + 38 + i * 9, y: this.y(step, clef, dy), class: 'smufl' }, sym, fifths > 0 ? G.sharp : G.flat),
+        )
+      }
+      if (first && sy === 0) {
+        const b = song.bars[0]
+        const x = 14 + 40 + Math.abs(fifths) * 9
+        for (const clef of clefs) {
+          el('text', { x, y: dy + base[clef] - 2 * S, class: 'smufl' }, sym, String(b.n).split('').map((c) => G.digit(Number(c))).join(''))
+          el('text', { x, y: dy + base[clef], class: 'smufl' }, sym, String(b.den).split('').map((c) => G.digit(Number(c))).join(''))
+        }
+      }
+
+      // bar lines and bar numbers
+      const bl = el('g', { class: 'bars' }, svg)
+      for (let i = 0; i <= this.count; i++) {
+        const bar = from + i
+        if (bar > song.bars.length) break
+        const x = this.x0 + i * this.bw
+        for (const clef of clefs) el('line', { x1: x, x2: x, y1: dy + base[clef] - 4 * S, y2: dy + base[clef] }, bl)
+        if (i < this.count && bar < song.bars.length) el('text', { x: x + 4, y: dy + top - 16, class: 'barno' }, bl, String(bar + 1))
+      }
     }
 
     // the cursor sits behind the noteheads so it never covers what you are about to play
@@ -229,7 +267,7 @@ export class Staff {
   private notes() {
     const { song } = this.game
     const hidden = (n: Note) => this.game.hands[n.h] === 'hide'
-    const end = Math.min(this.bar0 + this.count, song.bars.length)
+    const end = Math.min(this.bar0 + this.count * this.sys, song.bars.length)
     const inWin = song.notes.filter((n) => n.bar >= this.bar0 && n.bar < end && !hidden(n))
     const acc = new Map<string, number>() // `${bar}:${clef}:${step}` -> accidental in force
     const ka = keyAcc(song.fifths)
@@ -239,7 +277,8 @@ export class Staff {
     for (const n of inWin) {
       const clef = clefFor(n.p, n.h)
       const key = `${Math.round(n.t * 100)}:${clef}`
-      const p: Placed = { note: n, sp: spell(n.p, song.fifths), clef, x: this.xAt(n.t) }
+      const pos = this.posAt(n.t)
+      const p: Placed = { note: n, sp: spell(n.p, song.fifths), clef, x: pos.x, dy: pos.dy }
       if (!groups.has(key)) groups.set(key, [])
       groups.get(key)!.push(p)
     }
@@ -251,6 +290,7 @@ export class Staff {
         items,
         clef,
         x: items[0].x,
+        dy: items[0].dy,
         t: items[0].note.t,
         bar: items[0].note.bar,
         beats: quant(Math.min(...items.map((p) => p.note.beats))),
@@ -297,22 +337,22 @@ export class Staff {
       const head = beats >= 4 ? G.whole : beats >= 2 ? G.half : G.black
       const bottom = BOTTOM_STEP[clef]
       for (let s = bottom - 2; s >= c.lo; s -= 2) {
-        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: this.y(s, clef), y2: this.y(s, clef) }, g)
+        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: this.y(s, clef, c.dy), y2: this.y(s, clef, c.dy) }, g)
       }
       for (let s = bottom + 10; s <= c.hi; s += 2) {
-        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: this.y(s, clef), y2: this.y(s, clef) }, g)
+        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: this.y(s, clef, c.dy), y2: this.y(s, clef, c.dy) }, g)
       }
 
       // stem: to its own length, or to the shared beam line
       if (beats < 4) {
         const sx = up ? x + 5.4 : x - 5.4
-        const yLo = this.y(c.lo, clef)
-        const yHi = this.y(c.hi, clef)
+        const yLo = this.y(c.lo, clef, c.dy)
+        const yHi = this.y(c.hi, clef, c.dy)
         const run = beamed.get(c)
         const reach = run
           ? up
-            ? Math.min(...run.map((r) => this.y(r.hi, clef))) - 3.5 * S
-            : Math.max(...run.map((r) => this.y(r.lo, clef))) + 3.5 * S
+            ? Math.min(...run.map((r) => this.y(r.hi, clef, r.dy))) - 3.5 * S
+            : Math.max(...run.map((r) => this.y(r.lo, clef, r.dy))) + 3.5 * S
           : up
             ? yHi - 3.5 * S
             : yLo + 3.5 * S
@@ -329,7 +369,7 @@ export class Staff {
       for (const p of order) {
         const second = prev && Math.abs(p.sp.step - prev.sp.step) === 1 && prev.head?.getAttribute('data-dx') === '0'
         const dx = second ? (up ? 11.4 : -11.4) : 0
-        const y = this.y(p.sp.step, clef)
+        const y = this.y(p.sp.step, clef, c.dy)
         const h = el('text', { class: 'smufl head', x: x + dx, y, 'text-anchor': 'middle', 'data-dx': dx ? 1 : 0, 'data-id': p.note.id }, g, head)
         p.head = h
         prev = p

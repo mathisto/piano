@@ -78,6 +78,7 @@ function view(name: 'library' | 'read' | 'play') {
   for (const v of ['library', 'read', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'
   $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
+  $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#hud').hidden = name !== 'play'
   if (name !== 'play') $('#title').textContent = ''
 }
@@ -106,10 +107,46 @@ async function ensureStage() {
   highway = new Highway($('#stage'), game)
   await highway.init()
   highway.onFrame = frame
+  screenKeys(highway.app.canvas)
   staff = new Staff($('#staff'), game)
   dock = new Dock($('#dock'), game)
   dock.onNote = flash
   dock.onHands = () => staff.render()
+}
+
+/** Click or touch the on-screen keys to play them; drag across keys to glide. */
+function screenKeys(canvas: HTMLCanvasElement) {
+  const down = new Map<number, number>() // pointer id -> pitch held
+  const at = (e: PointerEvent) => {
+    const r = canvas.getBoundingClientRect()
+    return highway.keyAt(e.clientX - r.left, e.clientY - r.top)
+  }
+  const lift = (id: number) => {
+    const p = down.get(id)
+    if (p === undefined) return
+    down.delete(id)
+    if (![...down.values()].includes(p)) game.release(p, true)
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    const k = at(e)
+    if (!k) return
+    canvas.setPointerCapture(e.pointerId)
+    audio.unlock()
+    down.set(e.pointerId, k.p)
+    game.press(k.p, k.vel, performance.now(), true)
+    played = true
+    updateBanner()
+  })
+  canvas.addEventListener('pointermove', (e) => {
+    const was = down.get(e.pointerId)
+    if (was === undefined) return
+    const k = at(e)
+    if (!k || k.p === was) return
+    lift(e.pointerId)
+    down.set(e.pointerId, k.p)
+    game.press(k.p, k.vel, performance.now(), true)
+  })
+  for (const ev of ['pointerup', 'pointercancel'] as const) canvas.addEventListener(ev, (e) => lift(e.pointerId))
 }
 
 async function openSong(song: Song, mode: Mode) {
@@ -155,10 +192,22 @@ function leave() {
   void showSection(wasDrill ? 'read' : 'songs')
 }
 
+/** Show the panes the view asks for: staff only, both, or falling notes only. */
 function applyLayout() {
-  const staffOn = settings.staff || game.mode === 'read' // a reading drill without the staff is pointless
-  $('#staff').hidden = !staffOn
-  $('#play').style.gridTemplateRows = staffOn ? '' : 'minmax(0,1fr) auto'
+  const v = game.view
+  $('#staff').hidden = v === 'falling'
+  $('#play').classList.toggle('v-sheet', v === 'sheet')
+  $('#play').classList.toggle('v-falling', v === 'falling')
+  $('#viewSeg').hidden = !current || game.mode === 'read'
+  ;($(`input[name=view][value=${settings.view}]`) as HTMLInputElement).checked = true
+}
+
+function setView(v: 'both' | 'sheet' | 'falling') {
+  settings.view = v
+  save()
+  applyLayout()
+  staff.render()
+  highway.layout() // the stage changed size: the resize observer follows, this makes it immediate
 }
 
 function syncMode() {
@@ -207,6 +256,7 @@ function frame() {
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
 
 function popup(grade: Grade, off: number, p: number) {
+  if (game.view === 'sheet') return // the staff carries the feedback there
   const el = $('#judge')
   el.dataset.g = grade
   el.innerHTML = `${WORDS[grade]}<small>${grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'}</small>`
@@ -229,7 +279,7 @@ function popup(grade: Grade, off: number, p: number) {
 let lastSlam = 0
 function slam(combo: number) {
   const now = performance.now()
-  if (settings.fx < 2 || reduced || now - lastSlam < 1000) return // one big flash per second at most
+  if (settings.fx < 2 || reduced || game.view === 'sheet' || now - lastSlam < 1000) return // one big flash per second at most
   lastSlam = now
   const el = $('#slam')
   el.innerHTML = `${combo}<small>combo</small>`
@@ -565,8 +615,8 @@ onMidi((m) => {
       played = true
       updateBanner()
     }
-    game.press(m.p, m.v, m.ts)
-  } else game.release(m.p)
+    game.press(m.p, m.v, m.ts, m.virtual)
+  } else game.release(m.p, m.virtual)
 })
 typingKeyboard()
 
@@ -613,12 +663,6 @@ function openDrawer() {
     settings.full = el.checked
     save()
     if (highway) highway.layout()
-  }, 'change')
-  on('#sStaff', (el) => {
-    settings.staff = el.checked
-    save()
-    applyLayout()
-    if (staff) staff.render()
   }, 'change')
   on('#sSound', (el) => {
     settings.sound = el.checked
@@ -678,6 +722,8 @@ for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]'))
   }
 }
 
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=view]')) r.onchange = () => setView(r.value as 'both' | 'sheet' | 'falling')
+
 addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement
   const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
@@ -687,6 +733,9 @@ addEventListener('keydown', (e) => {
   } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
     e.preventDefault()
     game.toggle()
+  } else if (e.key === 'v' && current && game.mode !== 'read') {
+    const order = ['sheet', 'both', 'falling'] as const
+    setView(order[(order.indexOf(settings.view) + 1) % 3])
   } else if ((e.key === '[' || e.key === ']') && current && game.mode === 'learn') {
     game.setRate(game.rate + (e.key === ']' ? 0.05 : -0.05))
     dock.sync()
@@ -770,5 +819,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
+  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
 }

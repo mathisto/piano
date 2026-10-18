@@ -67,6 +67,11 @@ export class Game {
   private lastPerf = 0
   private wrongMark = 0
 
+  /** Which panes to show. Reading drills always need the staff. */
+  get view(): 'both' | 'sheet' | 'falling' {
+    return this.mode === 'read' ? 'both' : settings.view
+  }
+
   on(fn: (e: GameEvent) => void) {
     this.listeners.push(fn)
   }
@@ -308,9 +313,9 @@ export class Game {
   }
 
   /** A note-on from the keyboard. `ts` is the MIDI event's performance.now() timestamp. */
-  press(p: number, vel: number, ts: number) {
+  press(p: number, vel: number, ts: number, virtual = false) {
     this.held.set(p, vel)
-    if (settings.sound) audio.noteOn(p, vel)
+    if (settings.sound || virtual) audio.noteOn(p, vel, true) // the screen and computer keys have no speaker of their own
     if (!this.running() && this.phase !== 'waiting') return
     const t = this.tAt(ts) - ((settings.offset / 1000) * this.rate)
     this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t))
@@ -323,8 +328,8 @@ export class Game {
     }
   }
 
-  release(p: number) {
+  release(p: number, virtual = false) {
     this.held.delete(p)
-    if (settings.sound) audio.noteOff(p)
+    if (settings.sound || virtual) audio.noteOff(p)
   }
 }

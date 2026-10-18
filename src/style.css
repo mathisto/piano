@@ -575,6 +575,17 @@ table.stages td {
   inset: 56px 0 0;
 }
 
+/* ---------- view modes ---------- */
+#play.v-sheet {
+  grid-template-rows: minmax(0, 1fr) clamp(96px, 15vh, 150px) auto;
+}
+#play.v-falling {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+#stage canvas {
+  touch-action: none;
+}
+
 /* ---------- play ---------- */
 #play {
   grid-template-rows: minmax(160px, 31vh) minmax(0, 1fr) auto;

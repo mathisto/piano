@@ -8,6 +8,8 @@ Done:
 - [x] Sight-reading drills ("Read music"): 13 stages from treble landmarks through bass, both clefs, intervals and triads. Falling notes and key names hidden by default; the song waits; per-card first-try accuracy and response time feed a weighted deck and a mastery meter per stage.
 - [x] MusicXML import (.musicxml and compressed .mxl): exact pitch spelling via the file's key, real rhythm, ties merged, hands from the two staves, tempo changes, pickup measures. Plain partwise scores only (see gaps).
 
+- [x] View modes: Staff (two systems of bars, turns a system at a time), Both, Falling. Switch in the top bar or press V. Click or touch the on-screen keys to play them, with sound.
+
 Still to do:
 - [ ] Accidentals and key signatures in the drills (sharps, flats, naturals), then rhythm reading (a card stream you play in time, not waiting).
 - [ ] A reading-ahead mode: the next bar stays hidden until the current one ends, to train eye-hand span.
