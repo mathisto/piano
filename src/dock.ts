@@ -5,7 +5,7 @@ import type { Song } from './song'
 const HANDS: HandMode[] = ['play', 'listen', 'hide']
 
 const handSeg = (h: 'R' | 'L') => `
-  <div class="hand ${h}"><i class="sw"></i><span class="cap" style="font-weight:700">${h === 'R' ? 'Right' : 'Left'}</span>
+  <div class="hand ${h}"><i class="sw"></i><span class="cap hlbl" style="font-weight:700">${h === 'R' ? 'Right' : 'Left'}</span>
     <div class="seg" role="radiogroup" aria-label="${h === 'R' ? 'Right' : 'Left'} hand">
       ${HANDS.map((m, i) => `<label><input type="radio" name="hand${h}" value="${m}"${i === 0 ? ' checked' : ''}><span>${m[0].toUpperCase() + m.slice(1)}</span></label>`).join('')}
     </div>

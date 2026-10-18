@@ -31,15 +31,15 @@ export function skeleton(app: HTMLElement) {
     </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
-      <div data-m="perform"><small>Score</small><b id="hScore">0</b></div>
-      <div data-m="perform" class="combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
-      <div data-m="perform"><small>Accuracy</small><b id="hAcc">100%</b></div>
-      <div data-m="learn"><small>Notes</small><b id="hClr">0/0</b></div>
-      <div data-m="learn"><small>Wrong</small><b id="hSlip">0</b></div>
-      <div data-m="read"><small>Cards</small><b id="hCards">0/0</b></div>
-      <div data-m="read"><small>Streak</small><b id="hStreak">0</b></div>
-      <div data-m="read"><small>First try</small><b id="hClean">—</b></div>
-      <div data-m="read"><small>Median</small><b id="hMed">—</b></div>
+      <div data-m="perform" role="group" aria-label="Score" title="Score"><small>Score</small><b id="hScore">0</b></div>
+      <div data-m="perform" class="combo" role="group" aria-label="Combo" title="Combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
+      <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hAcc">100%</b></div>
+      <div data-m="learn" role="group" aria-label="Notes" title="Notes"><small>Notes</small><b id="hClr">0/0</b></div>
+      <div data-m="learn" role="group" aria-label="Wrong" title="Wrong"><small>Wrong</small><b id="hSlip">0</b></div>
+      <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
+      <div data-m="read" role="group" aria-label="Streak" title="Streak"><small>Streak</small><b id="hStreak">0</b></div>
+      <div data-m="read" role="group" aria-label="First try" title="First try"><small>First try</small><b id="hClean">—</b></div>
+      <div data-m="read" role="group" aria-label="Median" title="Median"><small>Median</small><b id="hMed">—</b></div>
     </div>
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
@@ -107,6 +107,7 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
 }
 
 function table(caption: string, rows: Row[], empty: string) {
+  const best = rows.some((r) => r.prog?.best) // no column of dashes before the first score
   const body = rows.length
     ? rows
         .map(
@@ -115,7 +116,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="name">${esc(r.title)}${r.cont ? ` <span class="tag">${r.prog?.last ? 'Continue' : 'Start here'}</span>` : ''}<small>${esc(r.sub)}</small></td>
         <td class="num">${r.bars || '—'}</td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
-        <td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>
+        ${best ? `<td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ''}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}Learn</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
@@ -123,10 +124,10 @@ function table(caption: string, rows: Row[], empty: string) {
         </div></td></tr>`,
         )
         .join('')
-    : `<tr><td colspan="6" class="empty">${empty}</td></tr>`
+    : `<tr><td colspan="7" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col style="width:128px"><col><col style="width:80px"><col style="width:100px"><col style="width:130px"><col style="width:270px"></colgroup>
-    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Bars</th><th scope="col" class="num">Length</th><th scope="col" class="num">Best</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+    <colgroup><col style="width:156px"><col><col style="width:80px"><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:270px"></colgroup>
+    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Bars</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
     <tbody>${body}</tbody></table>`
 }
 
@@ -179,7 +180,7 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
     <div class="row">
       ${worst ? `<button class="btn primary big" id="drill">${icon('loop')}Loop bars ${worst.a + 1}–${worst.b + 1}</button>` : ''}
       <button class="btn ${worst ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
-      <button class="btn ghost" id="toLib">Songs</button>
+      <button class="btn" id="toLib">Songs</button>
     </div>
   </div></div>`
 }
@@ -327,7 +328,7 @@ export function drillResults(d: DrillSummary) {
     }
     <div class="row">
       <button class="btn primary big" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
-      <button class="btn ghost" id="toStages">All stages</button>
+      <button class="btn" id="toStages">All stages</button>
     </div>
   </div></div>`
 }

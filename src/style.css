@@ -552,18 +552,18 @@ table.songs td.thumb {
   line-height: 0;
 }
 .thumb svg {
-  width: 112px;
-  height: 44px;
+  width: 140px;
+  height: 52px;
   display: block;
   border-radius: var(--r-1);
   background: var(--panel);
 }
 .thumb .ln {
-  stroke: var(--line-2);
-  stroke-width: 0.7;
+  stroke: var(--edge);
+  stroke-width: 0.8;
 }
 .thumb .nt {
-  fill: var(--ink-2);
+  fill: var(--ink);
 }
 .grade {
   font: 800 italic 28px/1 var(--display);
@@ -752,6 +752,15 @@ body.reading .hud small {
     filter: none;
   }
 }
+#staff .gshape {
+  opacity: 0.8;
+}
+#staff .gshape.great {
+  fill: var(--great);
+}
+#staff .gshape.good {
+  fill: var(--good);
+}
 /* the grade, as a word on the staff, for staff-only view */
 #staff .gr {
   font: 800 italic 17px var(--display);
@@ -937,7 +946,7 @@ kbd {
 }
 .legend .sw.L {
   border: 2px solid var(--L-edge);
-  background: rgba(255, 79, 163, 0.42);
+  background: rgba(255, 79, 163, 0.6);
 }
 .legend .sw.lamp {
   background: var(--lamp);
@@ -1050,7 +1059,7 @@ kbd {
 }
 .hand.L .sw {
   border: 2px solid var(--L-edge);
-  background: rgba(255, 79, 163, 0.42);
+  background: rgba(255, 79, 163, 0.6);
 }
 .dock-end {
   display: flex;
@@ -1078,7 +1087,7 @@ kbd {
   padding: 28px 32px;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 10px 36px;
+  gap: 12px 28px;
   align-items: center;
 }
 .card .big-grade svg.i {
@@ -1088,8 +1097,8 @@ kbd {
 }
 .card .big-grade {
   font: 800 italic 190px/0.8 var(--display);
-  grid-row: span 3;
-  padding-right: 8px;
+  grid-row: span 4;
+  padding-right: 0;
 }
 .card h2 {
   margin: 0;
@@ -1112,6 +1121,7 @@ kbd {
 .hist {
   width: 100%;
   height: 92px;
+  margin: 12px 0 6px;
 }
 .hist rect {
   fill: var(--ink-3);
@@ -1265,10 +1275,21 @@ kbd {
   .hud b {
     font-size: 28px;
   }
-  .hud small,
+  .hud > [data-m='perform'] small {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
   .seg.icons em,
-  .btn.sm[data-t] {
+  .btn.sm[data-t],
+  .hand .hlbl {
     display: none;
+  }
+  .hud > [data-m='learn'] small,
+  .hud > [data-m='read'] small {
+    font-size: 12px;
   }
   .bar {
     gap: 8px;
@@ -1276,6 +1297,22 @@ kbd {
   }
   .chip {
     padding: 0 10px;
+  }
+}
+
+@media (max-height: 820px) {
+  .ready {
+    padding: 12px 24px 14px;
+  }
+  .ready b {
+    font-size: 38px;
+  }
+  .ready span {
+    font-size: 15px;
+  }
+  .ready .legend {
+    margin-top: 8px;
+    font-size: 13px;
   }
 }
 

@@ -403,8 +403,12 @@ export class Staff {
     // marks that survive a rebuild: notes already missed this pass
     for (const p of this.placed) {
       const i = p.note.id
+      const gr = this.game.judge.grade[i]
       if (this.game.judge.st[i] === 2) this.flag(p, 'miss')
-      else if (p.note.t < this.game.t - 0.02) p.head?.classList.add('past')
+      else if (p.note.t < this.game.t - 0.02) {
+        p.head?.classList.add('past')
+        if (gr === 'great' || gr === 'good') this.shape(p, gr)
+      }
     }
   }
 
@@ -442,12 +446,25 @@ export class Staff {
   grade(noteId: number, grade: string, off: number) {
     const p = this.byId.get(noteId)
     if (!p?.head) return
-    const top = this.base[this.clefs[0]] - 4 * S
+    const staffTop = p.dy + this.base[this.clefs[0]] - 4 * S - 12
+    // clear of the highest ink on the page (beams, stems, ledger lines), but inside the view
+    const ink = (this.svg.querySelector('.notes') as SVGGraphicsElement | null)?.getBBox().y ?? staffTop
+    const y = Math.max(16, Math.min(staffTop, ink - 10))
     const word = grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : 'Good'
     const arrow = grade === 'perfect' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
-    const t = el('text', { class: 'gr', 'data-g': grade, x: Number(p.head.getAttribute('x')), y: p.dy + top - 12 }, this.svg, word + arrow)
+    const t = el('text', { class: 'gr', 'data-g': grade, x: Number(p.head.getAttribute('x')), y }, this.svg, word + arrow)
     t.setAttribute('aria-hidden', 'true')
     t.addEventListener('animationend', () => t.remove())
+  }
+
+  /** A small shape under a note that was Great or Good, so the grade outlives its colour. */
+  private shape(p: Placed, grade: string) {
+    if (!p.head || p.head.parentElement?.querySelector(`.gshape[data-id="${p.note.id}"]`)) return
+    const x = Number(p.head.getAttribute('x'))
+    const y = Number(p.head.getAttribute('y')) + 13
+    const d = grade === 'good' ? `M${x},${y - 3} L${x + 3},${y} L${x},${y + 3} L${x - 3},${y} Z` : `M${x - 2.6},${y} a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0`
+    const m = el('path', { class: `gshape ${grade}`, 'data-id': p.note.id, d }, p.head.parentElement!)
+    m.setAttribute('aria-hidden', 'true')
   }
 
   /** Ignite a note on the staff: it flares in its grade colour, then settles back to ink. */
@@ -460,5 +477,6 @@ export class Staff {
     h.classList.remove('hit-perfect', 'hit-great', 'hit-good', 'hit-ok')
     void h.getBoundingClientRect()
     h.classList.add(cls)
+    if (cls === 'hit-great' || cls === 'hit-good') this.shape(p, cls.slice(4))
   }
 }

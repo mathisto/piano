@@ -337,7 +337,7 @@ export class Highway {
       const w = k.w - inset * 2
       const body = hit ? C.ink : col
       if (left) {
-        ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: col, alpha: 0.42 * a })
+        ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: col, alpha: 0.6 * a })
         ng.roundRect(x + 1, yt + 1, w - 2, y2 - yt - 2, 4).stroke({ width: 2, color: hit ? C.ink : C.LEdge, alpha: a })
       } else {
         ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: body, alpha: 0.92 * a })
