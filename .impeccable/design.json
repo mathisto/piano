@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-18T04:45:47.603Z",
+  "generatedAt": "2026-10-18T05:08:20.000Z",
   "title": "Design System: piano",
   "extensions": {
     "colorMeta": {
@@ -269,6 +269,10 @@
       "notation": {
         "displayName": "Notation",
         "purpose": "Bravura SMuFL staff glyphs."
+      },
+      "group-heading": {
+        "displayName": "Group heading",
+        "purpose": "Clef/chord group rows in the stage table."
       }
     },
     "shadows": [
@@ -370,11 +374,42 @@
       "description": "Floating hint over the stage.",
       "html": "<div class=\"ds-banner\"><b>Learn mode</b> The song waits for you.</div>",
       "css": ".ds-banner{display:flex;gap:14px;padding:12px 16px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--ink-2)}.ds-banner b{color:var(--ink)}"
+    },
+    {
+      "name": "Section Switch",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Top-bar Songs | Read music; neutral selected cell, lamp underline.",
+      "html": "<div class=\"ds-seg\"><span class=\"on\">Songs</span><span>Read music</span></div>",
+      "css": ".ds-seg{display:inline-flex;background:var(--ground);border:1px solid var(--line-2);border-radius:8px;padding:2px;gap:2px}.ds-seg span{display:grid;place-items:center;height:30px;padding:0 10px;border-radius:6px;color:var(--ink-2);font:650 14px var(--ui)}.ds-seg .on{background:var(--line-2);color:var(--ink);box-shadow:inset 0 -3px 0 var(--lamp)}.ds-seg span:not(.on):hover{color:var(--ink);background:var(--panel-2)}"
+    },
+    {
+      "name": "Mastery Meter",
+      "kind": "custom",
+      "refersTo": "meter",
+      "description": "Neutral progress bar with percentage; Ink when solid.",
+      "html": "<div class=\"ds-mrow\"><div class=\"ds-meter\" role=\"meter\" aria-label=\"Mastery\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"60\"><i style=\"width:60%\"></i></div><b>60%</b></div>",
+      "css": ".ds-mrow{display:flex;align-items:center;gap:10px;width:240px}.ds-meter{flex:1;height:10px;border-radius:5px;background:var(--line-2);overflow:hidden}.ds-meter i{display:block;height:100%;background:var(--ink-2);border-radius:5px}.ds-mrow b{min-width:3.2ch;text-align:right;color:var(--ink)}"
+    },
+    {
+      "name": "Next-up Strip",
+      "kind": "card",
+      "refersTo": "next-strip",
+      "description": "Recommended stage with Start action on the Read page.",
+      "html": "<div class=\"ds-next\"><span>Next up: <b>Treble C to G</b>. Five lines.</span><button class=\"ds-btn\">Start</button></div>",
+      "css": ".ds-next{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border:1px solid var(--line-2);border-radius:10px;color:var(--ink-2)}.ds-next b{color:var(--ink)}.ds-btn{height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--lamp);background:var(--lamp);color:var(--lamp-ink);font:800 15px var(--ui)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}"
+    },
+    {
+      "name": "Stage Group Heading",
+      "kind": "custom",
+      "description": "Group row with the lamp Next tag on a stage name.",
+      "html": "<div class=\"ds-grp\">Treble clef</div><div class=\"ds-name\">Stage one <span class=\"ds-tag\">Next</span></div>",
+      "css": ".ds-grp{font:800 italic 20px/1 var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);padding:14px 12px 6px;border-bottom:1px solid var(--line-2)}.ds-name{padding:10px 12px;font-weight:650;font-size:17px}.ds-tag{margin-left:8px;font:700 12px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--lamp)}"
     }
   ],
   "narrative": {
     "northStar": "The DDR Cabinet at Night",
-    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, a table).\n\nThe player sits 1-2 m from the screen with busy hands, so state is carried by word, shape, and hue together, never hue alone. Hands differ by hue, by lightness, and by fill style. Density is moderate and fixed: a 56px top bar, a stage, a docked transport.",
+    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, a table). Reading drills reuse the same room with the arcade turned down: the staff takes the screen and the highway shrinks to a strip.\n\nThe player sits 1-2 m from the screen with busy hands, so state is carried by word, shape, and hue together, never hue alone. Hands differ by hue, by lightness, and by fill style. Density is moderate and fixed: a 56px top bar, a stage, a docked transport. The top bar also carries the section switch (Songs | Read music) while no piece is open.",
     "keyCharacteristics": [
       "Cool navy ground with one warm voice (the lamp amber) for focus, selection, primary action, cursor and combo.",
       "Heavy italic condensed display type for everything that is announced; a quiet grotesk for everything that is read.",
@@ -382,6 +417,11 @@
       "Desktop only, minimum 1024px; below that a full-screen notice replaces the app."
     ],
     "rules": [
+      {
+        "name": "The Neutral Progress Rule",
+        "body": "Mastery is measured in Ink, not in a judgement hue: the meter fill is Ink Soft, and Ink once the stage is solid. The state is always also stated in words (\"Solid\", \"7 of 12 notes seen\", \"Not started\") and as a percentage.",
+        "section": "colors"
+      },
       {
         "name": "The Calm Staff Rule",
         "body": "Notation is Ink on Panel. Colour appears on a staff glyph only as state: lamp for awaited, grade colour for a hit, miss red for a miss; it then decays to Ink Faint as \"played\".",
@@ -415,6 +455,8 @@
       "**Do** use Lamp (#ffc83d) for focus, selection and the primary action, and the 2px/2px Lamp focus ring everywhere.",
       "**Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.",
       "**Do** mirror any new colour in `src/palette.ts` if Pixi draws it.",
+      "**Do** show mastery as an Ink meter plus a percentage and a word, never as a grade colour.",
+      "**Do** keep the Lamp underline as the only mark of the selected segment.",
       "**Do** respect `prefers-reduced-motion` (animations collapse to ~0ms)."
     ],
     "donts": [
