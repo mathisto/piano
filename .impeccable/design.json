@@ -1,0 +1,428 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T04:45:47.603Z",
+  "title": "Design System: piano",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Midnight Ground",
+        "canonical": "#090b17",
+        "tonalRamp": [
+          "hsl(231 44% 15%)",
+          "hsl(231 44% 25%)",
+          "hsl(231 44% 35%)",
+          "hsl(231 44% 45%)",
+          "hsl(231 44% 55%)",
+          "hsl(231 44% 67%)",
+          "hsl(231 44% 80%)",
+          "hsl(231 44% 94%)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Cabinet Panel",
+        "canonical": "#10132a",
+        "tonalRamp": [
+          "hsl(233 45% 15%)",
+          "hsl(233 45% 25%)",
+          "hsl(233 45% 35%)",
+          "hsl(233 45% 45%)",
+          "hsl(233 45% 55%)",
+          "hsl(233 45% 67%)",
+          "hsl(233 45% 80%)",
+          "hsl(233 45% 94%)"
+        ]
+      },
+      "panel-2": {
+        "role": "neutral",
+        "displayName": "Raised Panel",
+        "canonical": "#181c3b",
+        "tonalRamp": [
+          "hsl(233 42% 15%)",
+          "hsl(233 42% 25%)",
+          "hsl(233 42% 35%)",
+          "hsl(233 42% 45%)",
+          "hsl(233 42% 55%)",
+          "hsl(233 42% 67%)",
+          "hsl(233 42% 80%)",
+          "hsl(233 42% 94%)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#262b55",
+        "tonalRamp": [
+          "hsl(234 38% 15%)",
+          "hsl(234 38% 25%)",
+          "hsl(234 38% 35%)",
+          "hsl(234 38% 45%)",
+          "hsl(234 38% 55%)",
+          "hsl(234 38% 67%)",
+          "hsl(234 38% 80%)",
+          "hsl(234 38% 94%)"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Strong Line",
+        "canonical": "#3a4180",
+        "tonalRamp": [
+          "hsl(234 38% 15%)",
+          "hsl(234 38% 25%)",
+          "hsl(234 38% 35%)",
+          "hsl(234 38% 45%)",
+          "hsl(234 38% 55%)",
+          "hsl(234 38% 67%)",
+          "hsl(234 38% 80%)",
+          "hsl(234 38% 94%)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Cabinet Ink",
+        "canonical": "#ecebf5",
+        "tonalRamp": [
+          "hsl(246 33% 15%)",
+          "hsl(246 33% 25%)",
+          "hsl(246 33% 35%)",
+          "hsl(246 33% 45%)",
+          "hsl(246 33% 55%)",
+          "hsl(246 33% 67%)",
+          "hsl(246 33% 80%)",
+          "hsl(246 33% 94%)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#a9acd0",
+        "tonalRamp": [
+          "hsl(235 29% 15%)",
+          "hsl(235 29% 25%)",
+          "hsl(235 29% 35%)",
+          "hsl(235 29% 45%)",
+          "hsl(235 29% 55%)",
+          "hsl(235 29% 67%)",
+          "hsl(235 29% 80%)",
+          "hsl(235 29% 94%)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#8a8fbd",
+        "tonalRamp": [
+          "hsl(234 28% 15%)",
+          "hsl(234 28% 25%)",
+          "hsl(234 28% 35%)",
+          "hsl(234 28% 45%)",
+          "hsl(234 28% 55%)",
+          "hsl(234 28% 67%)",
+          "hsl(234 28% 80%)",
+          "hsl(234 28% 94%)"
+        ]
+      },
+      "lamp": {
+        "role": "primary",
+        "displayName": "Marquee Lamp",
+        "canonical": "#ffc83d",
+        "tonalRamp": [
+          "hsl(43 100% 15%)",
+          "hsl(43 100% 25%)",
+          "hsl(43 100% 35%)",
+          "hsl(43 100% 45%)",
+          "hsl(43 100% 55%)",
+          "hsl(43 100% 67%)",
+          "hsl(43 100% 80%)",
+          "hsl(43 100% 94%)"
+        ]
+      },
+      "lamp-ink": {
+        "role": "neutral",
+        "displayName": "Lamp Ink",
+        "canonical": "#1a1300",
+        "tonalRamp": [
+          "hsl(44 100% 15%)",
+          "hsl(44 100% 25%)",
+          "hsl(44 100% 35%)",
+          "hsl(44 100% 45%)",
+          "hsl(44 100% 55%)",
+          "hsl(44 100% 67%)",
+          "hsl(44 100% 80%)",
+          "hsl(44 100% 94%)"
+        ]
+      },
+      "right-hand": {
+        "role": "secondary",
+        "displayName": "Right-Hand Cyan",
+        "canonical": "#3fe0ff",
+        "tonalRamp": [
+          "hsl(190 100% 15%)",
+          "hsl(190 100% 25%)",
+          "hsl(190 100% 35%)",
+          "hsl(190 100% 45%)",
+          "hsl(190 100% 55%)",
+          "hsl(190 100% 67%)",
+          "hsl(190 100% 80%)",
+          "hsl(190 100% 94%)"
+        ]
+      },
+      "left-hand": {
+        "role": "secondary",
+        "displayName": "Left-Hand Magenta",
+        "canonical": "#ff4fa3",
+        "tonalRamp": [
+          "hsl(331 100% 15%)",
+          "hsl(331 100% 25%)",
+          "hsl(331 100% 35%)",
+          "hsl(331 100% 45%)",
+          "hsl(331 100% 55%)",
+          "hsl(331 100% 67%)",
+          "hsl(331 100% 80%)",
+          "hsl(331 100% 94%)"
+        ]
+      },
+      "perfect": {
+        "role": "tertiary",
+        "displayName": "Perfect Lime",
+        "canonical": "#d7ff3d",
+        "tonalRamp": [
+          "hsl(72 100% 15%)",
+          "hsl(72 100% 25%)",
+          "hsl(72 100% 35%)",
+          "hsl(72 100% 45%)",
+          "hsl(72 100% 55%)",
+          "hsl(72 100% 67%)",
+          "hsl(72 100% 80%)",
+          "hsl(72 100% 94%)"
+        ]
+      },
+      "great": {
+        "role": "tertiary",
+        "displayName": "Great Mint",
+        "canonical": "#3dff9e",
+        "tonalRamp": [
+          "hsl(150 100% 15%)",
+          "hsl(150 100% 25%)",
+          "hsl(150 100% 35%)",
+          "hsl(150 100% 45%)",
+          "hsl(150 100% 55%)",
+          "hsl(150 100% 67%)",
+          "hsl(150 100% 80%)",
+          "hsl(150 100% 94%)"
+        ]
+      },
+      "good": {
+        "role": "tertiary",
+        "displayName": "Good Amber",
+        "canonical": "#ffb21f",
+        "tonalRamp": [
+          "hsl(39 100% 15%)",
+          "hsl(39 100% 25%)",
+          "hsl(39 100% 35%)",
+          "hsl(39 100% 45%)",
+          "hsl(39 100% 55%)",
+          "hsl(39 100% 67%)",
+          "hsl(39 100% 80%)",
+          "hsl(39 100% 94%)"
+        ]
+      },
+      "miss": {
+        "role": "tertiary",
+        "displayName": "Miss Red",
+        "canonical": "#ff4a3d",
+        "tonalRamp": [
+          "hsl(4 100% 15%)",
+          "hsl(4 100% 25%)",
+          "hsl(4 100% 35%)",
+          "hsl(4 100% 45%)",
+          "hsl(4 100% 55%)",
+          "hsl(4 100% 67%)",
+          "hsl(4 100% 80%)",
+          "hsl(4 100% 94%)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Library heading, grade letter, count-in."
+      },
+      "hud-numeral": {
+        "displayName": "HUD numeral",
+        "purpose": "Score, combo, accuracy, tempo, stats."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Drawer/results headings, captions, big buttons."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Controls and reading text; tabular numerals."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase captions and table heads."
+      },
+      "notation": {
+        "displayName": "Notation",
+        "purpose": "Bravura SMuFL staff glyphs."
+      }
+    },
+    "shadows": [
+      {
+        "name": "banner",
+        "value": "0 10px 30px rgba(0,0,0,0.5)",
+        "purpose": "Banner floating over the stage."
+      },
+      {
+        "name": "drawer",
+        "value": "-18px 0 40px rgba(0,0,0,0.45)",
+        "purpose": "Settings drawer edge."
+      },
+      {
+        "name": "state-glow",
+        "value": "drop-shadow(0 0 4px <state colour>)",
+        "purpose": "Staff cursor, scrubber head, ignited noteheads; always own colour."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Button press, switch thumb, drawer slide (0.15-0.22s)."
+      },
+      {
+        "name": "ignite",
+        "value": "0.8s ease-out",
+        "purpose": "Staff notehead hit colour decaying to played grey."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "min-width",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "custom",
+      "refersTo": "button",
+      "description": "Default raised control.",
+      "html": "<button class=\"ds-btn\">Songs</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:#20254b}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "The one next action, lamp fill.",
+      "html": "<button class=\"ds-btn ds-primary\">Learn</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:#20254b}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:#ffd766}"
+    },
+    {
+      "name": "Big Button",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "Display-italic call to action on results.",
+      "html": "<button class=\"ds-btn ds-primary ds-big\">Again</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:#20254b}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink)}.ds-big{height:48px;min-width:112px;font:800 italic 24px/1 var(--display);letter-spacing:.04em;text-transform:uppercase}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "MIDI state pill with dot.",
+      "html": "<span class=\"ds-chip\"><i class=\"ds-dot\"></i>FP-10</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-2);font-weight:600}.ds-dot{width:9px;height:9px;border-radius:50%;background:var(--great)}"
+    },
+    {
+      "name": "Segmented Switch",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Perform|Learn, hand and effects choice.",
+      "html": "<div class=\"ds-seg\"><span>Perform</span><span class=\"on\">Learn</span></div>",
+      "css": ".ds-seg{display:inline-flex;background:var(--ground);border:1px solid var(--line-2);border-radius:8px;padding:2px;gap:2px}.ds-seg span{display:grid;place-items:center;height:30px;padding:0 10px;border-radius:6px;color:var(--ink-2);font:650 14px var(--ui)}.ds-seg .on{background:var(--line-2);color:var(--ink);box-shadow:inset 0 -3px 0 var(--lamp)}"
+    },
+    {
+      "name": "HUD Numeral",
+      "kind": "custom",
+      "refersTo": "hud-numeral",
+      "description": "Score cluster: faint caption, italic numeral.",
+      "html": "<div class=\"ds-hud\"><small>Combo</small><b>128</b><span>x2</span></div>",
+      "css": ".ds-hud{display:flex;align-items:baseline;gap:8px}.ds-hud small{font:700 12px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-hud b{font:800 italic 34px/1 var(--display);color:var(--lamp)}.ds-hud span{font:800 italic 20px/1 var(--display);color:var(--lamp-ink);background:var(--lamp);border-radius:4px;padding:2px 6px 1px}"
+    },
+    {
+      "name": "Judgement Callout",
+      "kind": "custom",
+      "description": "Word plus colour, never colour alone.",
+      "html": "<div class=\"ds-j\">PERFECT<small>EARLY</small></div>",
+      "css": ".ds-j{font:800 italic 40px/1 var(--display);letter-spacing:.04em;color:var(--perfect);text-align:center}.ds-j small{display:block;font-size:15px;letter-spacing:.14em;color:var(--ink);opacity:.85}"
+    },
+    {
+      "name": "Banner",
+      "kind": "card",
+      "refersTo": "banner",
+      "description": "Floating hint over the stage.",
+      "html": "<div class=\"ds-banner\"><b>Learn mode</b> The song waits for you.</div>",
+      "css": ".ds-banner{display:flex;gap:14px;padding:12px 16px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--ink-2)}.ds-banner b{color:var(--ink)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The DDR Cabinet at Night",
+    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, a table).\n\nThe player sits 1-2 m from the screen with busy hands, so state is carried by word, shape, and hue together, never hue alone. Hands differ by hue, by lightness, and by fill style. Density is moderate and fixed: a 56px top bar, a stage, a docked transport.",
+    "keyCharacteristics": [
+      "Cool navy ground with one warm voice (the lamp amber) for focus, selection, primary action, cursor and combo.",
+      "Heavy italic condensed display type for everything that is announced; a quiet grotesk for everything that is read.",
+      "Glow is a state signal on the staff and stage only, not decoration on chrome.",
+      "Desktop only, minimum 1024px; below that a full-screen notice replaces the app."
+    ],
+    "rules": [
+      {
+        "name": "The Calm Staff Rule",
+        "body": "Notation is Ink on Panel. Colour appears on a staff glyph only as state: lamp for awaited, grade colour for a hit, miss red for a miss; it then decays to Ink Faint as \"played\".",
+        "section": "colors"
+      },
+      {
+        "name": "The One Lamp Rule",
+        "body": "Amber means \"here, now, yours\": focus, selection, the next action. It is never used for a judgement grade other than the Good step.",
+        "section": "colors"
+      },
+      {
+        "name": "The Word And Shape Rule",
+        "body": "A judgement colour never stands alone; it ships with its word (or letter grade) and, on the staff, a position or mark.",
+        "section": "colors"
+      },
+      {
+        "name": "The Announce Versus Read Rule",
+        "body": "Display italic is for what is announced (score, grade, judgement, headings, primary big actions). Anything the player must read in running sentences is Hanken.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glow Means State Rule",
+        "body": "A glow is allowed only on an element reporting live state in its own colour. Chrome (buttons, panels, headings) does not glow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep notation Ink on Panel and let it ignite only for state.",
+      "**Do** pair every judgement colour with a word, letter or position.",
+      "**Do** differentiate hands by hue, fill style (solid vs. outlined tint) and lane edge.",
+      "**Do** use Lamp (#ffc83d) for focus, selection and the primary action, and the 2px/2px Lamp focus ring everywhere.",
+      "**Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.",
+      "**Do** mirror any new colour in `src/palette.ts` if Pixi draws it.",
+      "**Do** respect `prefers-reduced-motion` (animations collapse to ~0ms)."
+    ],
+    "donts": [
+      "**Don't** add synthwave sun, perspective grid, or glow on chrome.",
+      "**Don't** colour notation permanently; colour is a transient state.",
+      "**Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 11px.",
+      "**Don't** design below 1024px; the narrow notice is the whole responsive story.",
+      "**Don't** introduce a second warm accent beside the lamp."
+    ]
+  }
+}

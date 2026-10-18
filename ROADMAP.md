@@ -23,3 +23,11 @@ v1 (Perform, Learn, MIDI import, staff strip) is built. This file tracks what is
 ## Content
 
 - Starter pieces are public-domain compositions with arrangements written for this project. Copyrighted pieces (game music, pop) are never committed. Users import their own MIDI; it stays in their browser.
+
+## Design debt (from the finish review and DESIGN.md)
+
+- [ ] Primary button uses a hard offset shadow (`0 2px 0`), and the combo slam and count-in use hard `text-shadow` offsets. Replace with soft depth or drop.
+- [ ] Learn-mode results show a `✓` text glyph as the grade; draw it as an icon.
+- [ ] Staff-hit marks are colour-only on the staff itself (only the miss has a shape); the results legend carries word and shape.
+- [ ] Radius scale has four near-duplicates (4/6/8/10px); collapse to two.
+- [ ] No third review pass after the last two fixes (bass stem direction, histogram labels); they were checked in captures by the builder only.
