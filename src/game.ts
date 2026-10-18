@@ -233,7 +233,7 @@ export class Game {
     while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
       const n = this.song.notes[this.autoI++]
       if (this.hands[n.h] !== 'listen') continue
-      audio.noteOn(n.p, n.v)
+      audio.noteOn(n.p, n.v, true) // Listen always sounds: the app is the one playing this hand
       const ms = (n.d / this.rate) * 1000
       this.autoUntil.set(n.p, perf + ms)
       setTimeout(() => audio.noteOff(n.p), ms)
