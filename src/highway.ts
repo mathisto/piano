@@ -231,12 +231,14 @@ export class Highway {
     const look = settings.fall
     const pps = H / look
     const fx = settings.fx
+    const hide = g.mode === 'read' && !g.showNotes // reading drills: the staff is the only clue
+    const names = g.mode === 'read' ? g.showNames : settings.names
 
     // ----- bar and beat lines
     const gr = this.grid
     gr.clear()
     const bars = g.song.bars
-    for (let b = Math.max(0, bars.findIndex((x) => x.t1 > T - 0.1)); b < bars.length && bars[b].t0 < T + look; b++) {
+    for (let b = hide ? bars.length : Math.max(0, bars.findIndex((x) => x.t1 > T - 0.1)); b < bars.length && bars[b].t0 < T + look; b++) {
       const bar = bars[b]
       const beats = (bar.n * 4) / bar.den
       for (let k = 0; k < beats; k++) {
@@ -288,7 +290,7 @@ export class Highway {
     const waiting = g.phase === 'waiting'
     const need = new Set<number>()
     const pulse = 0.55 + 0.45 * Math.sin(this.clock * 7)
-    for (let i = i0; i < notes.length; i++) {
+    for (let i = hide ? notes.length : i0; i < notes.length; i++) {
       const n = notes[i]
       if (n.t > T + look) break
       const mode = g.hands[n.h]
@@ -326,7 +328,7 @@ export class Highway {
         ng.roundRect(x - 3, yt - 3, w + 6, y2 - yt + 6, 7).stroke({ width: 2.5, color: C.lamp, alpha: pulse })
         need.add(n.p)
       }
-      if (settings.names && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
+      if (names && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
         const s = this.label(noteName(n.p, g.song.fifths).replace(/\d/, ''), left ? col : C.ground, Math.min(18, w * 0.62))
         s.position.set(x + w / 2, y2 - 16)
         s.alpha = a
@@ -376,7 +378,7 @@ export class Highway {
     }
     for (const k of this.whites) draw(k)
     for (const k of this.keys.values()) if (k.black) draw(k)
-    if (settings.names) {
+    if (names) {
       for (const k of this.whites) {
         const c = k.p % 12 === 0
         const s = this.label(c ? `C${Math.floor(k.p / 12) - 1}` : noteName(k.p, 0).replace(/\d/, ''), c ? C.ground : 0x5b5f8a, Math.min(16, k.w * 0.5))

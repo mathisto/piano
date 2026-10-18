@@ -32,26 +32,28 @@ export class Dock {
     private game: Game,
   ) {
     host.innerHTML = `
-      <div class="dock-top">
+      <div class="dock-top" data-modes="perform learn">
         <div class="scrub" id="scrub" tabindex="0" role="slider" aria-label="Song position" aria-valuemin="1">
           <svg viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="loop" hidden></div>
           <div class="head"></div>
           <div class="lbl tip" hidden></div>
         </div>
-        <div class="grp learn-only">${handSeg('R')}${handSeg('L')}</div>
+        <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>
       <div class="controls">
         <button class="btn primary big" id="go"></button>
         <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
-        <label class="switch learn-only"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
-        <div class="grp learn-only">
+        <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
+        <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
+        <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
+        <div class="grp" data-modes="learn read">
           <span class="cap">Tempo</span>
           <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
           <span class="tempo-val" id="tempoVal">100%</span>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}">${t}</button>`).join('')}
         </div>
-        <div class="dock-end learn-only">
+        <div class="dock-end" data-modes="learn">
           <button class="btn" id="loopWorst">${icon('loop')}Loop worst bars</button>
           <button class="btn" id="loopClear" disabled>Clear loop</button>
         </div>
@@ -78,6 +80,8 @@ export class Dock {
       this.sync()
     }))
     this.wait.onchange = () => game.setWait(this.wait.checked)
+    q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
+    q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
     for (const h of ['R', 'L'] as const) {
       host.querySelectorAll<HTMLInputElement>(`input[name=hand${h}]`).forEach((r) => (r.onchange = () => {
         game.setHand(h, r.value as HandMode)
@@ -96,7 +100,7 @@ export class Dock {
   sync() {
     const g = this.game
     const learn = g.mode === 'learn'
-    this.host.querySelectorAll<HTMLElement>('.learn-only').forEach((e) => (e.hidden = !learn))
+    this.host.querySelectorAll<HTMLElement>('[data-modes]').forEach((e) => (e.hidden = !e.dataset.modes!.split(' ').includes(g.mode)))
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait

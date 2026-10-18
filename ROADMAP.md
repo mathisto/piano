@@ -4,10 +4,16 @@ v1 (Perform, Learn, MIDI import, staff strip) is built. This file tracks what is
 
 ## v2
 
-- [ ] Sight-reading drills: landmark notes first (middle C, treble G, bass F), then steps, skips, intervals, chords, grand staff. Weighted toward the notes you miss. Reading-ahead mode (next bar hidden until the current one ends).
-- [ ] MusicXML import (exact spelling and rhythm) and a full score view. The v1 staff spells pitches by a key-signature heuristic and shows rhythm simply (no rests, beams or ties).
-- [ ] Sound packs: Salamander piano samples, then General MIDI instruments from a soundfont. Check each pack's license first. v1 has a two-partial oscillator only.
-- [ ] Note names that fade as mastery grows (v1: a plain on/off toggle).
+Done:
+- [x] Sight-reading drills ("Read music"): 13 stages from treble landmarks through bass, both clefs, intervals and triads. Falling notes and key names hidden by default; the song waits; per-card first-try accuracy and response time feed a weighted deck and a mastery meter per stage.
+- [x] MusicXML import (.musicxml and compressed .mxl): exact pitch spelling via the file's key, real rhythm, ties merged, hands from the two staves, tempo changes, pickup measures. Plain partwise scores only (see gaps).
+
+Still to do:
+- [ ] Accidentals and key signatures in the drills (sharps, flats, naturals), then rhythm reading (a card stream you play in time, not waiting).
+- [ ] A reading-ahead mode: the next bar stays hidden until the current one ends, to train eye-hand span.
+- [ ] Full score view for imported MusicXML (more bars, rests, beams, ties, repeat signs). The staff strip still shows two bars with rhythm drawn simply.
+- [ ] Sound packs: Salamander piano samples, then General MIDI instruments from a soundfont. Check each pack's license first. Today: a two-partial oscillator.
+- [ ] Note names that fade as mastery grows (today: a plain on/off toggle in Settings and in the drill dock).
 
 ## Known gaps in v1
 
@@ -19,6 +25,12 @@ v1 (Perform, Learn, MIDI import, staff strip) is built. This file tracks what is
 - Bluetooth MIDI adds jitter that calibration cannot remove, only offset.
 - Web MIDI needs Chrome, Edge or Firefox on a computer. Safari and iOS have none.
 - Cloudflare injects a Web Analytics beacon at the edge for the zone. The app itself sends nothing; exclude `piano.mattkelly.io` in the dashboard if that matters.
+
+## Known gaps in MusicXML import
+
+- Repeats, voltas and da capo are ignored: the score plays straight through once.
+- Grace notes and unpitched percussion are skipped. Transposing instruments are not transposed. Dynamics do not set velocity.
+- Time-wise scores are rejected (export partwise). Multi-part scores use the stated staff for the hand; single-staff parts split at middle C.
 
 ## Content
 

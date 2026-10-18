@@ -1,4 +1,6 @@
 import { del, get, keys, set } from 'idb-keyval'
+import type { Stats } from './drill'
+import { fromMusicXml, xmlText } from './musicxml'
 import { fromMidi, type Song } from './song'
 
 export interface Stored {
@@ -6,6 +8,7 @@ export interface Stored {
   title: string
   bytes: ArrayBuffer
   added: number
+  kind?: 'midi' | 'xml' // absent on older saves: MIDI
 }
 
 export interface Progress {
@@ -24,11 +27,12 @@ export async function addFile(file: File): Promise<Stored> {
   const bytes = await file.arrayBuffer()
   const s: Stored = {
     id: await hash(bytes),
-    title: file.name.replace(/\.(mid|midi)$/i, '').replace(/[_-]+/g, ' '),
+    title: file.name.replace(/\.(mid|midi|xml|musicxml|mxl)$/i, '').replace(/[_-]+/g, ' '),
     bytes,
     added: Date.now(),
+    kind: /\.(xml|musicxml|mxl)$/i.test(file.name) ? 'xml' : 'midi',
   }
-  fromMidi(bytes, s.title, s.id) // throws on junk before we keep it
+  await toSong(s, 60) // throws on junk before we keep it
   await set(`song:${s.id}`, s)
   return s
 }
@@ -44,8 +48,8 @@ export async function removeSong(id: string) {
   await del(`prog:${id}`)
 }
 
-export function toSong(s: Stored, split: number): Song {
-  return fromMidi(s.bytes, s.title, s.id, split)
+export async function toSong(s: Stored, split: number): Promise<Song> {
+  return s.kind === 'xml' ? fromMusicXml(await xmlText(s.bytes), s.title, s.id) : fromMidi(s.bytes, s.title, s.id, split)
 }
 
 export async function getProgress(id: string): Promise<Progress> {
@@ -78,5 +82,13 @@ export async function commit(id: string, heat: number[], result?: { score: numbe
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), settings: localStorage.getItem('piano.settings') }, null, 1)
+}
+
+export async function getDrill(): Promise<Stats> {
+  return (await get<Stats>('drill:stats')) ?? {}
+}
+
+export async function saveDrill(s: Stats) {
+  await set('drill:stats', s)
 }

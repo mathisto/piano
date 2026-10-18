@@ -5,6 +5,7 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
+import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
@@ -15,7 +16,7 @@ import { fromSpec, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
-import { $, drawer, library, results, skeleton, starterRows, userRows } from './ui'
+import { $, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -35,6 +36,24 @@ let played = false
 let noteTimer = 0
 let note = ''
 
+// A reading drill in progress: one card per beat, tracked card by card.
+interface Drill {
+  stage: Stage | 'review'
+  title: string
+  goal: number
+  cards: Card[]
+  left: number[] // notes still to play on each card
+  agg: { clean: boolean; rt: number }[]
+  noteCard: number[] // note id -> card index
+  done: number
+  streak: number
+  cleanN: number
+  rts: number[]
+  before: number
+}
+let drill: Drill | undefined
+let drillStats: Stats = {}
+
 // ---------------------------------------------------------------- views
 
 const lens = new Map<string, { bars: number; len: number }>()
@@ -44,7 +63,7 @@ async function showLibrary(err = '') {
   for (const s of stored) {
     if (!lens.has(s.id)) {
       try {
-        const song = store.toSong(s, settings.split)
+        const song = await store.toSong(s, settings.split)
         lens.set(s.id, { bars: song.bars.length, len: song.end })
       } catch {
         lens.set(s.id, { bars: 0, len: 0 })
@@ -54,12 +73,30 @@ async function showLibrary(err = '') {
   library($('#library'), starterRows(STARTERS, starters, prog), userRows(stored, prog, lens), err)
 }
 
-function view(name: 'library' | 'play') {
-  $('#library').classList.toggle('on', name === 'library')
-  $('#play').classList.toggle('on', name === 'play')
-  $('#modeSeg').hidden = name !== 'play'
+function view(name: 'library' | 'read' | 'play') {
+  for (const v of ['library', 'read', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
+  $('#nav').hidden = name === 'play'
+  $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#hud').hidden = name !== 'play'
-  if (name === 'library') $('#title').textContent = ''
+  if (name !== 'play') $('#title').textContent = ''
+}
+
+async function showSection(name: 'songs' | 'read') {
+  ;($(`input[name=nav][value=${name}]`) as HTMLInputElement).checked = true
+  view(name === 'songs' ? 'library' : 'read')
+  if (name === 'songs') await showLibrary()
+  else await showRead()
+}
+
+async function showRead() {
+  drillStats = await store.getDrill()
+  const rec = nextStage(drillStats)
+  const rows: StageRow[] = STAGES.map((stage) => {
+    const m = mastery(stage, drillStats)
+    const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
+    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === rec }
+  })
+  readView($('#read'), rows, reviewPool(drillStats).length >= 3)
 }
 
 async function ensureStage() {
@@ -82,7 +119,11 @@ async function openSong(song: Song, mode: Mode) {
   const prog = await store.getProgress(song.id)
   current = { song, heat: prog.heat }
   $('#title').textContent = song.title
-  ;($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
+  $('#stagesBtn').hidden = mode !== 'read'
+  $('#brand').setAttribute('aria-label', mode === 'read' ? 'piano: back to stages' : 'piano: back to songs')
+  if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
+  $('#modeSeg').hidden = mode === 'read'
+  $('#play').classList.toggle('drill', mode === 'read')
   applyLayout()
   highway.layout()
   staff.render()
@@ -91,10 +132,13 @@ async function openSong(song: Song, mode: Mode) {
   dock.setPhase()
   resOpen(false)
   onPhase()
-  history.replaceState(null, '', '#' + song.id)
+  history.replaceState(null, '', mode === 'read' ? location.pathname : '#' + song.id)
 }
 
 function leave() {
+  const wasDrill = !!drill
+  if (drill) void store.saveDrill(drillStats)
+  drill = undefined
   game.endPass()
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
   if (calibrating) {
@@ -102,14 +146,16 @@ function leave() {
     calibrating = undefined
   }
   current = undefined
-  view('library')
+  $('#stagesBtn').hidden = true
+  $('#play').classList.remove('drill')
   history.replaceState(null, '', location.pathname)
-  void showLibrary()
+  void showSection(wasDrill ? 'read' : 'songs')
 }
 
 function applyLayout() {
-  $('#staff').hidden = !settings.staff
-  $('#play').style.gridTemplateRows = settings.staff ? '' : 'minmax(0,1fr) auto'
+  const staffOn = settings.staff || game.mode === 'read' // a reading drill without the staff is pointless
+  $('#staff').hidden = !staffOn
+  $('#play').style.gridTemplateRows = staffOn ? '' : 'minmax(0,1fr) auto'
 }
 
 function syncMode() {
@@ -137,7 +183,7 @@ function frame() {
     const acc = `${Math.round(j.accuracy * 100)}%`
     if (acc !== last.acc) $('#hAcc').textContent = acc
     last = { ...last, score: j.score, combo: j.combo, acc }
-  } else {
+  } else if (game.mode === 'learn') {
     const clr = `${j.hits}/${j.total}`
     if (clr !== last.clr) $('#hClr').textContent = clr
     if (j.wrong !== last.slip) $('#hSlip').textContent = String(j.wrong)
@@ -206,6 +252,7 @@ game.on((e: GameEvent) => {
     case 'ok':
       highway.hit(e.note.p, 'ok', e.note.h)
       staff.mark(e.note.id, 'hit-ok')
+      if (drill) drillOk(e.note.id, e.rt, e.clean)
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
@@ -221,7 +268,7 @@ game.on((e: GameEvent) => {
       onPhase()
       break
     case 'pass':
-      if (current) void store.commit(current.song.id, e.heat)
+      if (current && game.mode !== 'read') void store.commit(current.song.id, e.heat)
       break
     case 'done':
       void onDone(e.result)
@@ -240,7 +287,9 @@ function onPhase() {
   r.hidden = game.phase !== 'ready'
   if (game.phase === 'ready') {
     resOpen(false)
-    r.innerHTML = calibrating
+    r.innerHTML = drill
+      ? `<b>${esc(drill.title)}</b><span>Read the staff and play what you see. Press <kbd>Space</kbd>. The song waits for you.</span>`
+      : calibrating
       ? `<b>Play middle C on every beat</b><span>Press <kbd>Space</kbd> to start. On the computer keyboard, that is <kbd>A</kbd>.</span>`
       : game.mode === 'perform'
         ? `<b>${esc(current.song.title)}</b><span>Press <kbd>Space</kbd> to start. You get a four-beat count-in.</span>`
@@ -254,6 +303,92 @@ function onPhase() {
 function resOpen(on: boolean) {
   $('#res').hidden = !on
   $('#play').classList.toggle('resopen', on)
+}
+
+// ---------------------------------------------------------------- reading drills
+
+const stageById = (id: string) => STAGES.find((s) => s.id === id)
+
+async function startDrill(which: Stage | 'review') {
+  drillStats = await store.getDrill()
+  const stage = which === 'review' ? undefined : which
+  const pool = stage ? cards(stage) : reviewPool(drillStats)
+  const goal = stage ? stage.goalMs : 3000
+  const d = deck(pool, drillStats, goal, 24)
+  const title = stage ? stage.name : 'Weak notes review'
+  const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d)
+  const q = 60 / BPM
+  const noteCard = song.notes.map((n) => Math.round(n.t / q))
+  drill = {
+    stage: which,
+    title,
+    goal,
+    cards: d,
+    left: d.map((c) => c.pitches.length),
+    agg: d.map(() => ({ clean: true, rt: 0 })),
+    noteCard,
+    done: 0,
+    streak: 0,
+    cleanN: 0,
+    rts: [],
+    before: stage ? mastery(stage, drillStats).pct : 0,
+  }
+  await openSong(song, 'read')
+  drillHud()
+}
+
+function median(xs: number[]) {
+  if (!xs.length) return 0
+  const s = [...xs].sort((a, b) => a - b)
+  return s[s.length >> 1]
+}
+
+function drillHud() {
+  if (!drill) return
+  $('#hCards').textContent = `${drill.done}/${drill.cards.length}`
+  $('#hStreak').textContent = String(drill.streak)
+  $('#hClean').textContent = drill.done ? `${Math.round((drill.cleanN / drill.done) * 100)}%` : '—'
+  $('#hMed').textContent = drill.rts.length ? `${(median(drill.rts) / 1000).toFixed(1)} s` : '—'
+}
+
+function drillOk(noteId: number, rt: number, clean: boolean) {
+  if (!drill) return
+  const i = drill.noteCard[noteId]
+  const a = drill.agg[i]
+  a.clean = a.clean && clean
+  a.rt = Math.max(a.rt, rt)
+  if (--drill.left[i] > 0) return
+  record(drillStats, cardKey(drill.cards[i]), a.clean, a.rt)
+  drill.done++
+  drill.streak = a.clean ? drill.streak + 1 : 0
+  if (a.clean) drill.cleanN++
+  drill.rts.push(a.rt)
+  drillHud()
+}
+
+async function drillDone() {
+  const d = drill!
+  await store.saveDrill(drillStats)
+  const stage = d.stage === 'review' ? undefined : d.stage
+  const m = stage ? mastery(stage, drillStats) : undefined
+  const nxt = nextStage(drillStats)
+  const res = $('#res')
+  res.innerHTML = drillResults({
+    stage: d.title,
+    cards: d.cards.length,
+    clean: d.cleanN / d.cards.length,
+    medianMs: median(d.rts),
+    weakest: weakest(drillStats, 3),
+    before: d.before,
+    after: m ? m.pct : 0,
+    solid: !!m?.solid,
+    nextName: nxt.name,
+  })
+  resOpen(true)
+  $('#nextSet', res).focus()
+  say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
+  $('#nextSet', res).onclick = () => void startDrill(m?.solid && stage ? nxt : (d.stage as Stage | 'review'))
+  $('#toStages', res).onclick = leave
 }
 
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
@@ -274,6 +409,7 @@ function worstBars(heat: number[]): { a: number; b: number } | null {
 
 async function onDone(r: Result) {
   if (!current) return
+  if (drill) return drillDone()
   if (calibrating) return calibrated(r)
   const prog = await store.commit(
     current.song.id,
@@ -290,9 +426,9 @@ async function onDone(r: Result) {
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)
   $('#again', res).onclick = () => game.restart()
   $('#toLib', res).onclick = leave
-  const drill = res.querySelector<HTMLButtonElement>('#drill')
-  if (drill && worst)
-    drill.onclick = () => {
+  const drillBtn = res.querySelector<HTMLButtonElement>('#drill')
+  if (drillBtn && worst)
+    drillBtn.onclick = () => {
       ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
       game.setMode('learn')
       game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
@@ -496,7 +632,17 @@ function closeDrawer() {
 
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
 $('#dev').onclick = () => (inputs().length ? openDrawer() : void connectMidi())
-$('#brand').onclick = leave
+$('#brand').onclick = () => (current ? leave() : void showSection('songs'))
+$('#stagesBtn').onclick = leave
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read')
+$('#read').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest('button')
+  if (!b) return
+  if (b.dataset.stage) {
+    const st = stageById(b.dataset.stage)
+    if (st) void startDrill(st)
+  } else if (b.dataset.review) void startDrill('review')
+})
 
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) {
   r.onchange = () => {
@@ -541,7 +687,7 @@ $('#library').addEventListener('click', async (e) => {
     const row = (await store.listSongs()).find((s) => s.id === id)
     if (row) {
       try {
-        await openSong(store.toSong(row, settings.split), mode)
+        await openSong(await store.toSong(row, settings.split), mode)
       } catch (err) {
         void showLibrary((err as Error).message)
       }
@@ -555,8 +701,8 @@ $('#library').addEventListener('click', async (e) => {
 async function importFiles(files: FileList | File[]) {
   const errs: string[] = []
   for (const f of files) {
-    if (!/\.(mid|midi)$/i.test(f.name)) {
-      errs.push(`${f.name}: only .mid and .midi files for now.`)
+    if (!/\.(mid|midi|xml|musicxml|mxl)$/i.test(f.name)) {
+      errs.push(`${f.name}: only MIDI (.mid) and MusicXML (.musicxml, .mxl) files.`)
       continue
     }
     try {
@@ -600,5 +746,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m) }
+  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), stats: () => drillStats }
 }

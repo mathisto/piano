@@ -6,6 +6,7 @@ import { settings } from './settings'
 import type { Progress, Stored } from './store'
 import type { Song } from './song'
 import type { Starter } from './starters'
+import type { Stage } from './drill'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -13,7 +14,12 @@ export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
     <button class="brand" id="brand" aria-label="piano — back to songs">piano</button>
+    <div class="seg" id="nav" role="radiogroup" aria-label="Section">
+      <label><input type="radio" name="nav" value="songs" checked><span>Songs</span></label>
+      <label><input type="radio" name="nav" value="read"><span>Read music</span></label>
+    </div>
     <div class="song-title" id="title"></div>
+    <button class="btn ghost" id="stagesBtn" hidden>All stages</button>
     <div class="seg" id="modeSeg" hidden role="radiogroup" aria-label="Mode">
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>
@@ -25,12 +31,17 @@ export function skeleton(app: HTMLElement) {
       <div data-m="perform"><small>Accuracy</small><b id="hAcc">100%</b></div>
       <div data-m="learn"><small>Cleared</small><b id="hClr">0/0</b></div>
       <div data-m="learn"><small>Slips</small><b id="hSlip">0</b></div>
+      <div data-m="read"><small>Cards</small><b id="hCards">0/0</b></div>
+      <div data-m="read"><small>Streak</small><b id="hStreak">0</b></div>
+      <div data-m="read"><small>First try</small><b id="hClean">—</b></div>
+      <div data-m="read"><small>Median</small><b id="hMed">—</b></div>
     </div>
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
   <main id="main" style="display:grid;min-height:0">
     <section id="library" class="view on" aria-label="Songs"></section>
+    <section id="read" class="view" aria-label="Read music"></section>
     <section id="play" class="view" aria-label="Play">
       <div id="staff"></div>
       <div id="stage">
@@ -119,15 +130,15 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
   el.innerHTML = `
     <div class="lib-head">
       <h1>Songs</h1>
-      <p>Pick a piece, or drop in any MIDI file. Files stay in this browser. Nothing is uploaded.</p>
+      <p>Pick a piece, or add your own MIDI or MusicXML file. Files stay in this browser. Nothing is uploaded.</p>
     </div>
     <div class="drop" id="drop">
-      <label class="btn" style="cursor:pointer">${icon('plus')}Add MIDI files<input id="file" type="file" accept=".mid,.midi,audio/midi" multiple hidden></label>
-      <span>or drop .mid files anywhere on this page.</span>
+      <label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>
+      <span>MIDI (.mid) or MusicXML (.musicxml, .mxl). Or drop them anywhere on this page.</span>
       <span class="err" role="alert">${esc(err)}</span>
     </div>
     ${table('Starter pieces', starters, '')}
-    ${table('Your files', mine, 'Nothing yet. Public-domain MIDI: Mutopia Project, OpenScore, or export from MuseScore.')}`
+    ${table('Your files', mine, 'Nothing yet. Public-domain scores: Mutopia Project, OpenScore, or export MIDI or MusicXML from MuseScore.')}`
 }
 
 // ---------- results ----------
@@ -206,3 +217,105 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
   </fieldset>`
 }
 
+
+// ---------- reading drills ----------
+
+export interface StageRow {
+  stage: Stage
+  pct: number
+  solid: boolean
+  seen: number
+  total: number
+  rt: number // mean response time of seen cards, ms (0 = none yet)
+  next: boolean
+}
+
+const names = (s: Stage) => {
+  const n = (p: number) => noteName(p)
+  if (s.size === 2) return 'Seconds to fifths'
+  if (s.size === 3) return 'Root-position triads'
+  return s.pool.length <= 3 ? s.pool.map(n).join(' · ') : `${n(Math.min(...s.pool))} to ${n(Math.max(...s.pool))}`
+}
+
+const GROUPS: [string, (id: string) => boolean][] = [
+  ['Treble clef', (id) => id.startsWith('t-')],
+  ['Bass clef', (id) => id.startsWith('b-')],
+  ['Both clefs', (id) => id === 'grand'],
+  ['Chords', (id) => id === 'ints' || id === 'triads'],
+]
+
+const meter = (pct: number, solid: boolean, label: string) =>
+  `<div class="meter${solid ? ' solid' : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><i style="width:${Math.round(pct * 100)}%"></i></div>`
+
+export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) {
+  const next = rows.find((r) => r.next)!
+  let group = ''
+  const body = rows
+    .map((r) => {
+      const g = GROUPS.find(([, f]) => f(r.stage.id))![0]
+      const head = g !== group ? `<tr class="grp"><th colspan="5" scope="colgroup">${g}</th></tr>` : ''
+      group = g
+      const pct = Math.round(r.pct * 100)
+      return `${head}<tr>
+        <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag">Next</span>' : ''}<small>${esc(r.stage.blurb)}</small></td>
+        <td>${esc(names(r.stage))}</td>
+        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>
+          <small style="color:var(--ink-3)">${r.solid ? 'Solid' : r.seen ? `${r.seen} of ${r.total} notes seen` : 'Not started'}</small></td>
+        <td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : '—'}</td>
+        <td class="acts"><div class="row-actions"><button class="btn" data-stage="${r.stage.id}">Practice</button></div></td></tr>`
+    })
+    .join('')
+  el.innerHTML = `
+    <div class="lib-head">
+      <h1>Read music</h1>
+      <p>Short drills that train your eyes. Notes appear on the staff and the song waits for you to play them. The falling notes are hidden, so the staff is all you have.</p>
+    </div>
+    <div class="next-strip">
+      <span>Next up: <b>${esc(next.stage.name)}</b>. ${esc(next.stage.blurb)}</span>
+      <span class="row-actions">
+        ${canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}
+        <button class="btn primary" data-stage="${next.stage.id}">${icon('play')}Start</button>
+      </span>
+    </div>
+    <table class="songs stages"><caption>Stages</caption>
+      <colgroup><col><col style="width:190px"><col style="width:250px"><col style="width:130px"><col style="width:130px"></colgroup>
+      <thead><tr><th scope="col">Stage</th><th scope="col">Notes</th><th scope="col">Mastery</th><th scope="col" class="num">Median time</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+      <tbody>${body}</tbody></table>`
+}
+
+export interface DrillSummary {
+  stage: string
+  cards: number
+  clean: number // 0..1
+  medianMs: number
+  weakest: { name: string; clean: number; rt: number }[]
+  before: number // mastery 0..1
+  after: number
+  solid: boolean
+  nextName: string
+}
+
+export function drillResults(d: DrillSummary) {
+  const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
+  return `
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Drill results">
+    <h2>${esc(d.stage)}: set complete</h2>
+    <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · median <b>${secs(d.medianMs)}</b> a card</p>
+    <div>
+      <p class="line" style="margin-bottom:6px">Stage mastery went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${d.solid ? '. Solid.' : '. It is solid when every note is first-try right and fast.'}</p>
+      <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, 'Stage mastery after this set')}<b>${Math.round(d.after * 100)}%</b></div>
+    </div>
+    ${d.solid ? `<p class="line">Next up: <b>${esc(d.nextName)}</b></p>` : ''}
+    ${
+      d.weakest.length
+        ? `<div><p class="line" style="margin-bottom:6px">Needs the most work</p><ul style="margin:0;padding-left:20px;color:var(--ink-2)">${d.weakest
+            .map((w) => `<li>${esc(w.name)}: ${Math.round(w.clean * 100)}% first try, ${secs(w.rt)}</li>`)
+            .join('')}</ul></div>`
+        : ''
+    }
+    <div class="row">
+      <button class="btn primary big" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
+      <button class="btn ghost" id="toStages">All stages</button>
+    </div>
+  </div></div>`
+}

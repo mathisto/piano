@@ -3,7 +3,7 @@ import { Judge, type Ev, type Grade } from './judge'
 import { settings } from './settings'
 import { barAt, type Note, type Song } from './song'
 
-export type Mode = 'perform' | 'learn'
+export type Mode = 'perform' | 'learn' | 'read'
 export type Phase = 'ready' | 'countin' | 'playing' | 'waiting' | 'paused' | 'done'
 export type HandMode = 'play' | 'listen' | 'hide'
 
@@ -23,7 +23,7 @@ export interface Result {
 
 export type GameEvent =
   | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number }
-  | { type: 'ok'; note: Note }
+  | { type: 'ok'; note: Note; rt: number; clean: boolean } // rt: ms the song waited on this card (0 if you were ahead)
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'milestone'; combo: number }
@@ -55,6 +55,8 @@ export class Game {
   autoUntil = new Map<number, number>() // pitches the app is playing for you -> perf ms
   heat: number[] = []
   offs: number[] = []
+  showNotes = false // reading drills hide the falling notes and key names unless asked
+  showNames = false
   private listeners: ((e: GameEvent) => void)[] = []
   private anchorPerf = 0
   private anchorT = 0
@@ -63,6 +65,7 @@ export class Game {
   private stallAt = 0
   private stallBar = 0
   private lastPerf = 0
+  private wrongMark = 0
 
   on(fn: (e: GameEvent) => void) {
     this.listeners.push(fn)
@@ -87,6 +90,11 @@ export class Game {
       this.hands = { R: 'play', L: 'play' }
     } else {
       this.wait = true
+      if (mode === 'read') {
+        this.rate = 1
+        this.loop = null
+        this.hands = { R: 'play', L: 'play' }
+      }
     }
     this.restart()
   }
@@ -111,6 +119,7 @@ export class Game {
   /** Re-score after a setting change without leaving the song. */
   private rescore() {
     this.judge = new Judge(this.song.notes, this.cfg(), this.scored)
+    this.wrongMark = 0
     this.autoI = this.song.notes.findIndex((n) => n.t >= this.t)
     if (this.autoI < 0) this.autoI = this.song.notes.length
   }
@@ -283,7 +292,10 @@ export class Game {
         this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult })
         if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
-        this.emit({ type: 'ok', note: this.song.notes[e.i] })
+        const clean = this.judge.wrong === this.wrongMark
+        this.wrongMark = this.judge.wrong
+        const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
+        this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
         this.bump(note.bar, 1)

@@ -39,20 +39,22 @@ export interface Raw {
   p: number
   v: number
   track: number
+  h?: Hand // set when the source already knows the hand
 }
 
 /** Hands: two tracks -> lower mean pitch is left; anything else splits at `split`. */
 function assignHands(raw: Raw[], split: number): Hand[] {
   const tracks = [...new Set(raw.map((r) => r.track))]
+  let base: Hand[]
   if (tracks.length === 2) {
     const mean = (k: number) => {
       const xs = raw.filter((r) => r.track === k)
       return xs.reduce((s, r) => s + r.p, 0) / xs.length
     }
     const left = mean(tracks[0]) <= mean(tracks[1]) ? tracks[0] : tracks[1]
-    return raw.map((r) => (r.track === left ? 'L' : 'R'))
-  }
-  return raw.map((r) => (r.p >= split ? 'R' : 'L'))
+    base = raw.map((r) => (r.track === left ? 'L' : 'R'))
+  } else base = raw.map((r) => (r.p >= split ? 'R' : 'L'))
+  return raw.map((r, i) => r.h ?? base[i]) // a hand the source states wins
 }
 
 export function barAt(bars: Bar[], t: number): number {
