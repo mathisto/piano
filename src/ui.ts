@@ -184,6 +184,8 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
     <label class="field"><span>MIDI input</span>
       <select id="sDevice"><option value="">All connected keyboards</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select></label>
     <p id="sStatus">${esc(status)}</p>
+    <p id="sMon" role="status" style="color:var(--ink)"></p>
+    ${inputs.length ? '' : `<p>No keyboard is listed. Check that it is switched on (many keyboards power off after a while), the USB cable carries data (some only charge), and that it is not paired over Bluetooth only. Then unplug and replug it, or reload this page.</p>`}
     <p>No keyboard? Play with your computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> for white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> for black, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave.</p>
   </fieldset>
   <fieldset><legend>Timing</legend>

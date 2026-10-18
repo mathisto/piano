@@ -10,7 +10,8 @@ import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { multiplier, type Grade } from './judge'
-import { chooseInput, connect, inputs, midiSupported, onMidi, typingKeyboard } from './midi'
+import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, typingKeyboard } from './midi'
+import { noteName } from './spell'
 import { save, settings } from './settings'
 import { fromSpec, type Song } from './song'
 import { Staff } from './staff'
@@ -545,8 +546,21 @@ async function connectMidi() {
   updateBanner()
 }
 
+let chipTimer = 0
+function chipFlash(p: number) {
+  const chip = $('#dev')
+  chip.classList.add('live')
+  $('#devName').textContent = noteName(p)
+  clearTimeout(chipTimer)
+  chipTimer = window.setTimeout(() => {
+    chip.classList.remove('live')
+    updateChip()
+  }, 450)
+}
+
 onMidi((m) => {
   if (m.on) {
+    chipFlash(m.p)
     if (!played) {
       played = true
       updateBanner()
@@ -558,11 +572,18 @@ typingKeyboard()
 
 // ---------------------------------------------------------------- drawer
 
+let monTimer = 0
+
 function openDrawer() {
   const d = $('#drawer')
   drawer(d, inputs(), midiState === 'ok' ? (inputs().length ? `${inputs().length} connected.` : 'Connected to the browser, but no keyboard is plugged in.') : midiMsg || 'Not connected yet. Use the Connect button.')
   d.hidden = false
   $('#main').inert = true // the drawer holds focus; the keyboard still plays
+  const mon = $('#sMon', d)
+  const tick = () => (mon.textContent = monitor.n ? `${monitor.n} messages received. Last: ${monitor.text}.` : 'Nothing received yet. Press a key on your keyboard.')
+  tick()
+  clearInterval(monTimer)
+  monTimer = window.setInterval(tick, 250)
   $('#settingsBtn').setAttribute('aria-expanded', 'true')
   const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => $<HTMLInputElement>(id, d).addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
   on('#sDevice', (el) => {
@@ -627,13 +648,14 @@ function closeDrawer() {
   const d = $('#drawer')
   if (d.hidden) return false
   d.hidden = true
+  clearInterval(monTimer)
   $('#main').inert = false
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
 }
 
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
-$('#dev').onclick = () => (inputs().length ? openDrawer() : void connectMidi())
+$('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
 $('#brand').onclick = () => (current ? leave() : void showSection('songs'))
 $('#stagesBtn').onclick = leave
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read')

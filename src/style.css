@@ -195,6 +195,14 @@ svg.i.solid {
 .chip.ok .dot {
   background: var(--great);
 }
+.chip.live {
+  border-color: var(--great);
+  color: var(--ink);
+}
+.chip.live .dot {
+  background: var(--great);
+  box-shadow: 0 0 0 4px rgba(61, 255, 158, 0.35);
+}
 
 .btn {
   display: inline-flex;

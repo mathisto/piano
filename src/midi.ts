@@ -1,3 +1,5 @@
+import { noteName } from './spell'
+
 export interface MidiMsg {
   on: boolean
   p: number
@@ -11,6 +13,9 @@ export interface Input {
 }
 
 type Handler = (m: MidiMsg) => void
+
+/** What the keyboard last sent, so the app can show that notes are arriving. */
+export const monitor = { n: 0, text: '' }
 
 let access: MIDIAccess | undefined
 let handler: Handler = () => {}
@@ -35,10 +40,23 @@ function bind() {
 
 function msg(e: MIDIMessageEvent) {
   const d = e.data
-  if (!d || d.length < 3) return
+  if (!d || d.length < 3) return // active sensing and clock ticks are one byte
   const s = d[0] & 0xf0
-  if (s === 0x90 && d[2] > 0) handler({ on: true, p: d[1], v: d[2] / 127, ts: e.timeStamp })
-  else if (s === 0x80 || s === 0x90) handler({ on: false, p: d[1], v: 0, ts: e.timeStamp })
+  // Some drivers stamp 0 or a stale clock; a bad stamp would make every press land far from its note.
+  const now = performance.now()
+  const ts = e.timeStamp > 0 && e.timeStamp <= now + 50 && now - e.timeStamp < 1500 ? e.timeStamp : now
+  if (s === 0x90 && d[2] > 0) {
+    monitor.n++
+    monitor.text = `note on ${noteName(d[1])}, velocity ${d[2]}`
+    handler({ on: true, p: d[1], v: d[2] / 127, ts })
+  } else if (s === 0x80 || s === 0x90) {
+    monitor.n++
+    monitor.text = `note off ${noteName(d[1])}`
+    handler({ on: false, p: d[1], v: 0, ts })
+  } else if (s === 0xb0 || s === 0xe0 || s === 0xc0) {
+    monitor.n++
+    monitor.text = s === 0xb0 ? `controller ${d[1]} = ${d[2]}` : s === 0xc0 ? 'program change' : 'pitch bend'
+  }
 }
 
 export function chooseInput(id: string) {
