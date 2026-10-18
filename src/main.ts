@@ -120,6 +120,7 @@ async function openSong(song: Song, mode: Mode) {
   current = { song, heat: prog.heat }
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
+  document.body.classList.toggle('reading', mode === 'read')
   $('#brand').setAttribute('aria-label', mode === 'read' ? 'piano: back to stages' : 'piano: back to songs')
   if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
   $('#modeSeg').hidden = mode === 'read'
@@ -147,6 +148,7 @@ function leave() {
   }
   current = undefined
   $('#stagesBtn').hidden = true
+  document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
   history.replaceState(null, '', location.pathname)
   void showSection(wasDrill ? 'read' : 'songs')
@@ -746,5 +748,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), stats: () => drillStats }
+  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
 }

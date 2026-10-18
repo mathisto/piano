@@ -7,7 +7,7 @@ const S = 10
 type Clef = 'treble' | 'bass'
 // Geometry (viewBox units): both staves, or one staff with room for ledger lines when a drill uses only one clef.
 const GRAND = { h: 158, base: { treble: 64, bass: 134 } }
-const SOLO = { h: 130, base: { treble: 86, bass: 86 } }
+const SOLO = { h: 104, base: { treble: 72, bass: 72 } }
 const MID_STEP = { treble: 34, bass: 22 } // B4, D3: the middle line of each clef
 const NS = 'http://www.w3.org/2000/svg'
 

@@ -19,7 +19,7 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="nav" value="read"><span>Read music</span></label>
     </div>
     <div class="song-title" id="title"></div>
-    <button class="btn ghost" id="stagesBtn" hidden>All stages</button>
+    <button class="btn" id="stagesBtn" hidden>All stages</button>
     <div class="seg" id="modeSeg" hidden role="radiogroup" aria-label="Mode">
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>

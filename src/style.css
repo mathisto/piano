@@ -524,7 +524,7 @@ table.songs td.acts {
   color: var(--lamp);
 }
 table.songs tr.grp th {
-  padding-top: 18px;
+  padding-top: 14px;
   font: 800 italic 20px/1 var(--display);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -546,14 +546,18 @@ table.songs tr.grp th {
   color: var(--ink);
 }
 #play.drill {
-  grid-template-rows: minmax(0, 1fr) clamp(160px, 27vh, 260px) auto;
+  grid-template-rows: minmax(0, 1fr) clamp(150px, 24vh, 230px) auto;
 }
 #play.drill #staff .lines line,
 #play.drill #staff .bars line {
   stroke-width: 1.7;
 }
-#play.drill .hud small {
+body.reading .hud small {
   font-size: 15px;
+}
+table.stages td {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 #play.drill .ready span {
   font-size: 20px;
