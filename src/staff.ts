@@ -68,7 +68,9 @@ export class Staff {
   private placed: Placed[] = []
   private bar0 = -1
   private count = 4 // bars per system
-  private sys = 1 // systems on the page: 2 in sheet view (current + next), else 1
+  private sys = 1 // systems on the page: 1, or 2 in a tall sheet view (current + next)
+  private total = GRAND.h // viewBox height
+  private yPad = 0 // centres a short page vertically in sheet view
   private w = 0
   private x0 = 0
   private x1 = 0
@@ -103,14 +105,18 @@ export class Staff {
   private windowFor(bar: number): number {
     const { notes, bars } = this.game.song
     if (this.game.view === 'sheet') {
-      // a page of two systems: the one you are in, and the next. It turns a system at a time.
-      this.sys = 2
-      const onsets = (from: number, n: number) => {
-        const on = new Set<number>()
-        for (const x of notes) if (x.bar >= from && x.bar < from + n) on.add(Math.round(x.t * 40))
-        return on.size
-      }
-      this.count = onsets(Math.floor(bar / 4) * 4, 4) > 40 ? 2 : 4
+      // sheet view: notation at about 26 px a staff space, as many bars as fit across, the page centred.
+      // A tall window fits a second system (the next one) at a readable size.
+      const r = this.host.getBoundingClientRect()
+      const two = GRAND.h * 2 + GAP
+      this.sys = r.height / two >= 2.2 ? 2 : 1
+      this.total = this.sys === 2 ? two : Math.max(GRAND.h, r.height / 2.6)
+      const avail = this.total * (r.width / Math.max(r.height, 1)) - 120
+      const on = new Set<number>()
+      const from = Math.floor(bar / 4) * 4
+      for (const x of notes) if (x.bar >= from && x.bar < from + 4) on.add(Math.round(x.t * 40))
+      const perBar = 70 + 15 * (on.size / 4)
+      this.count = Math.min(4, Math.max(1, Math.floor(avail / perBar)))
       return Math.floor(bar / this.count) * this.count
     }
     this.sys = 1
@@ -167,7 +173,7 @@ export class Staff {
     const col = i % this.count
     return {
       x: this.x0 + col * this.bw + this.pad + frac * (this.bw - this.pad * 2),
-      dy: Math.floor(i / this.count) * (this.vbH + GAP),
+      dy: this.yPad + Math.floor(i / this.count) * (this.vbH + GAP),
     }
   }
 
@@ -202,7 +208,10 @@ export class Staff {
     const { clefs, base } = this
     const top = base[clefs[0]] - 4 * S // y of the first staff's top line
     const bottom = base[clefs[clefs.length - 1]] // y of the last staff's bottom line
-    const total = this.vbH * this.sys + GAP * (this.sys - 1)
+    const sheet = this.game.view === 'sheet'
+    const total = sheet ? this.total : this.vbH * this.sys + GAP * (this.sys - 1)
+    const drawn = Math.min(this.sys, Math.ceil((song.bars.length - this.bar0) / this.count))
+    this.yPad = sheet ? (total - (this.vbH * drawn + GAP * (drawn - 1))) / 2 : 0
     this.w = Math.round(total * (r.width / r.height))
     const svg = this.svg
     svg.replaceChildren()
@@ -221,7 +230,7 @@ export class Staff {
     for (let sy = 0; sy < this.sys; sy++) {
       const from = this.bar0 + sy * this.count
       if (from >= song.bars.length) break
-      const dy = sy * (this.vbH + GAP)
+      const dy = this.yPad + sy * (this.vbH + GAP)
       const lines = el('g', { class: 'lines' }, svg)
       for (const clef of clefs) {
         for (let i = 0; i < 5; i++) {
@@ -427,6 +436,18 @@ export class Staff {
       const m = el('path', { class: 'miss-mark', d: `M${x - 4},${y + 5} L${x + 4},${y + 5} L${x},${y - 2} Z` }, p.head.parentElement!)
       m.setAttribute('aria-hidden', 'true')
     }
+  }
+
+  /** The grade as a word above the note, for staff-only view where there is no highway to show it. */
+  grade(noteId: number, grade: string, off: number) {
+    const p = this.byId.get(noteId)
+    if (!p?.head) return
+    const top = this.base[this.clefs[0]] - 4 * S
+    const word = grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : 'Good'
+    const arrow = grade === 'perfect' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
+    const t = el('text', { class: 'gr', 'data-g': grade, x: Number(p.head.getAttribute('x')), y: p.dy + top - 12 }, this.svg, word + arrow)
+    t.setAttribute('aria-hidden', 'true')
+    t.addEventListener('animationend', () => t.remove())
   }
 
   /** Ignite a note on the staff: it flares in its grade colour, then settles back to ink. */

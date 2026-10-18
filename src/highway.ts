@@ -5,6 +5,8 @@ import { C } from './palette'
 import { settings } from './settings'
 import { noteName } from './spell'
 
+const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)')
+
 interface K {
   p: number
   x: number
@@ -94,6 +96,11 @@ export class Highway {
     this.app.ticker.add((t) => this.draw(t.deltaMS))
   }
 
+  /** The effects level, capped to Calm while the OS asks for reduced motion. */
+  private effects(): 0 | 1 | 2 | 3 {
+    return reducedMotion && reducedMotion.matches ? (Math.min(settings.fx, 1) as 0 | 1) : settings.fx
+  }
+
   /** Pick the visible key range and place every key. Call on resize and song change. */
   layout() {
     const song = this.game.song
@@ -164,7 +171,7 @@ export class Highway {
     if (!k) return
     const color = grade === 'ok' ? C[hand] : gradeColor[grade]
     this.keyHue.set(p, C[hand])
-    const fx = this.game.view === 'sheet' ? 0 : settings.fx // sheet view stays calm: the staff carries the feedback
+    const fx = this.game.view === 'sheet' ? 0 : this.effects() // sheet view stays calm: the staff carries the feedback
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
     this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
@@ -244,7 +251,7 @@ export class Highway {
     const H = this.H
     const look = settings.fall
     const pps = H / look
-    const fx = settings.fx
+    const fx = this.effects()
     const hide = (g.mode === 'read' && !g.showNotes) || g.view === 'sheet' // reading drills and sheet view: no falling notes
     const names = g.mode === 'read' ? g.showNames : settings.names
 
@@ -330,8 +337,8 @@ export class Highway {
       const w = k.w - inset * 2
       const body = hit ? C.ink : col
       if (left) {
-        ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: col, alpha: 0.28 * a })
-        ng.roundRect(x + 1, yt + 1, w - 2, y2 - yt - 2, 4).stroke({ width: 2, color: body, alpha: a })
+        ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: col, alpha: 0.42 * a })
+        ng.roundRect(x + 1, yt + 1, w - 2, y2 - yt - 2, 4).stroke({ width: 2, color: hit ? C.ink : C.LEdge, alpha: a })
       } else {
         ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: body, alpha: 0.92 * a })
         if (!hit && y2 - yt > 12) ng.roundRect(x + 3, yt + 3, w - 6, y2 - yt - 11, 3).fill({ color: C.ink, alpha: 0.22 * a })
@@ -358,7 +365,7 @@ export class Highway {
     rc.rect(0, H - 4, this.W, 8).fill({ color: C.receptor, alpha: 1 })
     for (const k of this.whites) {
       const lit = g.held.has(k.p) || this.flashes.has(k.p) || need.has(k.p)
-      rc.circle(k.x + k.w / 2, H, lit ? 5.5 : 3.2).fill({ color: lit ? C.lamp : 0x575ea0, alpha: lit ? 1 : 0.9 })
+      rc.circle(k.x + k.w / 2, H, lit ? 5.5 : 3.2).fill({ color: lit ? C.lamp : C.muted, alpha: lit ? 1 : 0.9 })
     }
 
     // ----- keyboard
@@ -395,7 +402,7 @@ export class Highway {
     if (names) {
       for (const k of this.whites) {
         const c = k.p % 12 === 0
-        const s = this.label(c ? `C${Math.floor(k.p / 12) - 1}` : noteName(k.p, 0).replace(/\d/, ''), c ? C.ground : 0x5b5f8a, Math.min(16, k.w * 0.5))
+        const s = this.label(c ? `C${Math.floor(k.p / 12) - 1}` : noteName(k.p, 0).replace(/\d/, ''), c ? C.ground : C.muted, Math.min(16, k.w * 0.5))
         s.position.set(k.x + k.w / 2, H + this.kbH - 16)
         s.alpha = 1
       }

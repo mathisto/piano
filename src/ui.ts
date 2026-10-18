@@ -24,18 +24,18 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>
     </div>
-    <div class="seg" id="viewSeg" hidden role="radiogroup" aria-label="View">
-      <label><input type="radio" name="view" value="sheet"><span>Staff</span></label>
-      <label><input type="radio" name="view" value="both"><span>Both</span></label>
-      <label><input type="radio" name="view" value="falling"><span>Falling</span></label>
+    <div class="seg icons" id="viewSeg" hidden role="radiogroup" aria-label="View">
+      <label title="Sheet music only"><input type="radio" name="view" value="sheet"><span>${icon('viewStaff')}<em>Staff</em></span></label>
+      <label title="Sheet music and falling notes"><input type="radio" name="view" value="both"><span>${icon('viewBoth')}<em>Both</em></span></label>
+      <label title="Falling notes only"><input type="radio" name="view" value="falling"><span>${icon('viewFall')}<em>Falling</em></span></label>
     </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
       <div data-m="perform"><small>Score</small><b id="hScore">0</b></div>
       <div data-m="perform" class="combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
       <div data-m="perform"><small>Accuracy</small><b id="hAcc">100%</b></div>
-      <div data-m="learn"><small>Cleared</small><b id="hClr">0/0</b></div>
-      <div data-m="learn"><small>Slips</small><b id="hSlip">0</b></div>
+      <div data-m="learn"><small>Notes</small><b id="hClr">0/0</b></div>
+      <div data-m="learn"><small>Wrong</small><b id="hSlip">0</b></div>
       <div data-m="read"><small>Cards</small><b id="hCards">0/0</b></div>
       <div data-m="read"><small>Streak</small><b id="hStreak">0</b></div>
       <div data-m="read"><small>First try</small><b id="hClean">—</b></div>
@@ -76,9 +76,11 @@ export interface Row {
   len: number
   prog?: Progress
   user: boolean
+  thumb: string
+  cont?: boolean // the one row to carry the lamp: where to go next
 }
 
-export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>): Row[] {
+export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>, thumbs: Map<string, string>): Row[] {
   return starts.map((s, i) => ({
     id: s.spec.id,
     title: s.spec.title,
@@ -87,10 +89,11 @@ export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, 
     len: songs[i].end,
     prog: prog.get(s.spec.id),
     user: false,
+    thumb: thumbs.get(s.spec.id) ?? '',
   }))
 }
 
-export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number }>): Row[] {
+export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number }>, thumbs: Map<string, string>): Row[] {
   return stored.map((s) => ({
     id: s.id,
     title: s.title,
@@ -99,6 +102,7 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
     len: lens.get(s.id)?.len ?? 0,
     prog: prog.get(s.id),
     user: true,
+    thumb: thumbs.get(s.id) ?? '',
   }))
 }
 
@@ -106,22 +110,23 @@ function table(caption: string, rows: Row[], empty: string) {
   const body = rows.length
     ? rows
         .map(
-          (r) => `<tr>
-        <td class="name">${esc(r.title)}<small>${esc(r.sub)}</small></td>
+          (r) => `<tr class="open" data-open="${r.id}">
+        <td class="thumb">${r.thumb}</td>
+        <td class="name">${esc(r.title)}${r.cont ? ` <span class="tag">${r.prog?.last ? 'Continue' : 'Start here'}</span>` : ''}<small>${esc(r.sub)}</small></td>
         <td class="num">${r.bars || '—'}</td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
         <td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>
         <td class="acts"><div class="row-actions">
-          <button class="btn primary" data-play="${r.id}" data-mode="learn">${icon('play')}Learn</button>
-          <button class="btn" data-play="${r.id}" data-mode="perform">Perform</button>
+          <button class="btn${r.cont ? ' primary' : ''}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}Learn</button>
+          <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
           ${r.user ? `<button class="btn icon ghost" data-del="${r.id}" aria-label="Remove ${esc(r.title)}" title="Remove">${icon('x')}</button>` : ''}
         </div></td></tr>`,
         )
         .join('')
-    : `<tr><td colspan="5" class="empty">${empty}</td></tr>`
+    : `<tr><td colspan="6" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col><col style="width:90px"><col style="width:110px"><col style="width:150px"><col style="width:300px"></colgroup>
-    <thead><tr><th scope="col">Piece</th><th scope="col" class="num">Bars</th><th scope="col" class="num">Length</th><th scope="col" class="num">Best</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+    <colgroup><col style="width:128px"><col><col style="width:80px"><col style="width:100px"><col style="width:130px"><col style="width:270px"></colgroup>
+    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Bars</th><th scope="col" class="num">Length</th><th scope="col" class="num">Best</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
     <tbody>${body}</tbody></table>`
 }
 
@@ -155,19 +160,19 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
   const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
   const lean = Math.abs(mean) < 8 ? 'Your timing is centred.' : mean < 0 ? `You tend to play about ${Math.round(-mean)} ms early.` : `You tend to play about ${Math.round(mean)} ms late.`
   const hist = bins
-    .map((n, i) => `<rect class="${i === 6 ? 'mid' : ''}" x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
+    .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
   const perform = r.mode === 'perform'
   return `
   <div class="results"><div class="card" role="dialog" aria-label="Results">
-    <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : '✓'}</div>
+    <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
     <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}</p>
     ${
       perform
         ? `<div>
       <div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span><span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
-      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg>
+      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg>
       <div style="color:var(--ink-2)">${lean}</div></div>`
         : ''
     }
@@ -184,20 +189,7 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
 export function drawer(el: HTMLElement, inputs: Input[], status: string) {
   const split = settings.split
   el.innerHTML = `
-  <h2>Settings</h2>
-  <fieldset><legend>Keyboard</legend>
-    <label class="field"><span>MIDI input</span>
-      <select id="sDevice"><option value="">All connected keyboards</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select></label>
-    <p id="sStatus">${esc(status)}</p>
-    <p id="sMon" role="status" style="color:var(--ink)"></p>
-    ${inputs.length ? '' : `<p>No keyboard is listed. Check that it is switched on (many keyboards power off after a while), the USB cable carries data (some only charge), and that it is not paired over Bluetooth only. Then unplug and replug it, or reload this page.</p>`}
-    <p>No keyboard? Play with your computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> for white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> for black, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave. You can also click or touch the on-screen keys. Both make sound through the browser.</p>
-  </fieldset>
-  <fieldset><legend>Timing</legend>
-    <label class="field"><span>Input delay (ms)</span><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}"></label>
-    <p>Positive means your notes arrive late (display lag, Bluetooth). Calibrate by playing along to a click, or nudge by hand.</p>
-    <button class="btn" id="sCal">Calibrate…</button>
-  </fieldset>
+  <h2 id="drawerTitle" tabindex="-1">Settings</h2>
   <fieldset><legend>Look and feel</legend>
     <div class="field"><span>Effects</span>
       <div class="seg" role="radiogroup" aria-label="Effects">${['Off', 'Calm', 'Arcade', 'Max'].map((n, i) => `<label><input type="radio" name="fx" value="${i}"${settings.fx === i ? ' checked' : ''}><span>${n}</span></label>`).join('')}</div></div>
@@ -208,7 +200,22 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
   <fieldset><legend>Sound</legend>
     <label class="switch"><input id="sSound" type="checkbox"${settings.sound ? ' checked' : ''}><i></i>Play through the browser</label>
     <label class="field"><span>Volume</span><input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}"></label>
-    <p>Off by default: your keyboard's own speakers play. If you turn this on and hear every note twice, set Local Control to Off on the keyboard or turn it down.</p>
+    <p>Off by default: your keyboard's own speakers play. The Listen hand, the on-screen keys and the computer keys always sound through the browser. If you turn this on and hear every note twice, set Local Control to Off on the keyboard or turn it down.</p>
+  </fieldset>
+  <fieldset><legend>Timing</legend>
+    <label class="field"><span>Input delay (ms)</span><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}"></label>
+    <p>Positive means your notes arrive late (display lag, Bluetooth). Calibrate by playing along to a click, or nudge by hand.</p>
+    <button class="btn" id="sCal">Calibrate…</button>
+  </fieldset>
+  <fieldset><legend>Keyboard</legend>
+    <label class="field"><span>MIDI input</span>
+      <select id="sDevice"><option value="">All connected keyboards</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select></label>
+    <p id="sStatus">${esc(status)}</p>
+    <p id="sMon" role="status" style="color:var(--ink)"></p>
+    <details ${inputs.length ? '' : 'open'}><summary>Keyboard not detected?</summary>
+      <p>Check that it is switched on (many keyboards power off after a while), that the USB cable carries data (some only charge), and that it is not paired over Bluetooth only. Then unplug and replug it, or reload this page.</p></details>
+    <details><summary>No keyboard? Use the computer keys</summary>
+      <p><kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> are the white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> the black ones, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave. You can also click or touch the on-screen keys.</p></details>
   </fieldset>
   <fieldset><legend>Hands</legend>
     <label class="field"><span>Split point for single-track files</span>
@@ -222,7 +229,6 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
     <button class="btn" id="sExport">Export progress (JSON)</button>
   </fieldset>`
 }
-
 
 // ---------- reading drills ----------
 
@@ -259,7 +265,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
   const body = rows
     .map((r) => {
       const g = GROUPS.find(([, f]) => f(r.stage.id))![0]
-      const head = g !== group ? `<tr class="grp"><th colspan="5" scope="colgroup">${g}</th></tr>` : ''
+      const head = g !== group ? `<tr class="band"><th colspan="5" scope="colgroup">${g}</th></tr>` : ''
       group = g
       const pct = Math.round(r.pct * 100)
       return `${head}<tr>
@@ -268,7 +274,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>
           <small style="color:var(--ink-3)">${r.solid ? 'Solid' : r.seen ? `${r.seen} of ${r.total} notes seen` : 'Not started'}</small></td>
         <td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : '—'}</td>
-        <td class="acts"><div class="row-actions"><button class="btn" data-stage="${r.stage.id}">Practice</button></div></td></tr>`
+        <td class="acts"><div class="row-actions"><button class="btn" data-stage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">Practice</button></div></td></tr>`
     })
     .join('')
   el.innerHTML = `

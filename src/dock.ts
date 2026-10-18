@@ -32,35 +32,36 @@ export class Dock {
     private game: Game,
   ) {
     host.innerHTML = `
-      <div class="dock-top" data-modes="perform learn">
-        <div class="scrub" id="scrub" tabindex="0" role="slider" aria-label="Song position" aria-valuemin="1">
+      <div class="dock-row">
+        <button class="btn primary big" id="go"></button>
+        <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
+        <div class="scrub" id="scrub" data-modes="perform learn">
           <svg viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="loop" hidden></div>
           <div class="head"></div>
           <div class="lbl tip" hidden></div>
         </div>
-        <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
-      </div>
-      <div class="controls">
-        <button class="btn primary big" id="go"></button>
-        <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
-        <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
-        <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
-        <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
-        <div class="grp" data-modes="learn read">
-          <span class="cap">Tempo</span>
-          <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
-          <span class="tempo-val" id="tempoVal">100%</span>
-          ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}">${t}</button>`).join('')}
-        </div>
         <div class="dock-end" data-modes="learn">
           <button class="btn" id="loopWorst">${icon('loop')}Loop worst bars</button>
           <button class="btn" id="loopClear" disabled>Clear loop</button>
         </div>
+      </div>
+      <div class="dock-row aids" data-modes="learn read">
+        <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
+        <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
+        <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
+        <div class="grp">
+          <span class="cap">Tempo</span>
+          <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
+          <span class="tempo-val" id="tempoVal">100%</span>
+          ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
+        </div>
+        <span class="dock-fill"></span>
+        <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
     const q = <T extends HTMLElement>(s: string) => host.querySelector(s) as T
     this.scrub = q('#scrub')
-    this.svg = host.querySelector('svg') as SVGSVGElement
+    this.svg = host.querySelector('.scrub svg') as SVGSVGElement
     this.head = q('.head')
     this.tip = q('.tip')
     this.loopEl = q('.loop')
@@ -109,7 +110,11 @@ export class Dock {
       if (r) r.checked = true
     }
     ;(this.host.querySelector('#loopClear') as HTMLButtonElement).disabled = !g.loop
-    this.scrub.style.cursor = learn ? 'pointer' : 'default'
+    // in Perform the strip is a progress bar, not a control
+    this.scrub.classList.toggle('still', !learn)
+    this.scrub.setAttribute('role', learn ? 'slider' : 'progressbar')
+    this.scrub.setAttribute('aria-label', learn ? 'Song position' : 'Song progress')
+    this.scrub.tabIndex = learn ? 0 : -1
     this.drawLoop()
   }
 
@@ -142,8 +147,8 @@ export class Dock {
         const h = 8 + (counts[b.i] / max) * 30
         const hot = heat(b.i)
         return (
-          `<rect x="${x}" y="${44 - h}" width="${w}" height="${h}" fill="#7479a8" opacity=".55"/>` +
-          (hot > 0.05 ? `<rect x="${x}" y="0" width="${w}" height="44" fill="#ff4a3d" opacity="${(hot * 0.55).toFixed(2)}"/>` : '')
+          `<rect x="${x}" y="${44 - h}" width="${w}" height="${h}" style="fill:var(--ink-3)" opacity=".5"/>` +
+          (hot > 0.05 ? `<rect x="${x}" y="0" width="${w}" height="44" style="fill:var(--bad)" opacity="${(hot * 0.55).toFixed(2)}"/>` : '')
         )
       })
       .join('')

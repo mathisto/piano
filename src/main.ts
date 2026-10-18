@@ -17,6 +17,7 @@ import { fromSpec, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
+import { thumb } from './thumb'
 import { $, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
@@ -59,6 +60,8 @@ let drillStats: Stats = {}
 
 const lens = new Map<string, { bars: number; len: number }>()
 
+const thumbs = new Map<string, string>(STARTERS.map((st) => [st.spec.id, thumb(fromSpec(st.spec))]))
+
 async function showLibrary(err = '') {
   const [stored, prog] = await Promise.all([store.listSongs(), store.allProgress()])
   for (const s of stored) {
@@ -66,12 +69,19 @@ async function showLibrary(err = '') {
       try {
         const song = await store.toSong(s, settings.split)
         lens.set(s.id, { bars: song.bars.length, len: song.end })
+        thumbs.set(s.id, thumb(song))
       } catch {
         lens.set(s.id, { bars: 0, len: 0 })
       }
     }
   }
-  library($('#library'), starterRows(STARTERS, starters, prog), userRows(stored, prog, lens), err)
+  const starts = starterRows(STARTERS, starters, prog, thumbs)
+  const mine = userRows(stored, prog, lens, thumbs)
+  // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
+  const all = [...starts, ...mine]
+  const last = all.filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
+  last.cont = true
+  library($('#library'), starts, mine, err)
 }
 
 function view(name: 'library' | 'read' | 'play') {
@@ -255,8 +265,11 @@ function frame() {
 
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
 
-function popup(grade: Grade, off: number, p: number) {
-  if (game.view === 'sheet') return // the staff carries the feedback there
+function popup(grade: Grade, off: number, p: number, noteId: number) {
+  if (game.view === 'sheet') {
+    if (grade !== 'miss') staff.grade(noteId, grade, off) // the grade, as a word on the staff
+    return
+  }
   const el = $('#judge')
   el.dataset.g = grade
   el.innerHTML = `${WORDS[grade]}<small>${grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'}</small>`
@@ -300,7 +313,7 @@ game.on((e: GameEvent) => {
     case 'hit':
       highway.hit(e.note.p, e.grade, e.note.h)
       staff.mark(e.note.id, `hit-${e.grade}`)
-      popup(e.grade, e.off, e.note.p)
+      popup(e.grade, e.off, e.note.p, e.note.id)
       break
     case 'ok':
       highway.hit(e.note.p, 'ok', e.note.h)
@@ -309,7 +322,7 @@ game.on((e: GameEvent) => {
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
-      popup('miss', 0, e.note.p)
+      popup('miss', 0, e.note.p, e.note.id)
       break
     case 'wrong':
       highway.wrong(e.p)
@@ -340,13 +353,14 @@ function onPhase() {
   r.hidden = game.phase !== 'ready'
   if (game.phase === 'ready') {
     resOpen(false)
+    const legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
     r.innerHTML = drill
       ? `<b>${esc(drill.title)}</b><span>Read the staff and play what you see. Press <kbd>Space</kbd>. The song waits for you.</span>`
       : calibrating
-      ? `<b>Play middle C on every beat</b><span>Press <kbd>Space</kbd> to start. On the computer keyboard, that is <kbd>A</kbd>.</span>`
-      : game.mode === 'perform'
-        ? `<b>${esc(current.song.title)}</b><span>Press <kbd>Space</kbd> to start. You get a four-beat count-in.</span>`
-        : `<b>Learn mode</b><span>The song waits for you. Press <kbd>Space</kbd>, slow it down, loop the hard bars.</span>`
+        ? `<b>Play middle C on every beat</b><span>Press <kbd>Space</kbd> to start. On the computer keyboard, that is <kbd>A</kbd>.</span>`
+        : game.mode === 'perform'
+          ? `<b>${esc(current.song.title)}</b><span>Press <kbd>Space</kbd> to start. You get a four-beat count-in.</span>${legend}`
+          : `<b>${esc(current.song.title)}</b><span>Learn mode: the song waits for you. Press <kbd>Space</kbd>, slow it down, loop the hard bars.</span>${legend}`
   }
   if (game.phase === 'paused') say('Paused')
   if (game.phase === 'waiting') say('Waiting for you')
@@ -572,7 +586,7 @@ function updateChip() {
   const chip = $('#dev')
   chip.classList.toggle('ok', list.length > 0)
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
-  $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'Connect keyboard'
+  $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
 }
 
 async function connectMidi() {
@@ -627,8 +641,10 @@ let monTimer = 0
 function openDrawer() {
   const d = $('#drawer')
   drawer(d, inputs(), midiState === 'ok' ? (inputs().length ? `${inputs().length} connected.` : 'Connected to the browser, but no keyboard is plugged in.') : midiMsg || 'Not connected yet. Use the Connect button.')
+  const wasOpen = !d.hidden
   d.hidden = false
   $('#main').inert = true // the drawer holds focus; the keyboard still plays
+  if (!wasOpen) $('#drawerTitle', d).focus()
   const mon = $('#sMon', d)
   const tick = () => (mon.textContent = monitor.n ? `${monitor.n} messages received. Last: ${monitor.text}.` : 'Nothing received yet. Press a key on your keyboard.')
   tick()
@@ -694,6 +710,7 @@ function closeDrawer() {
   d.hidden = true
   clearInterval(monTimer)
   $('#main').inert = false
+  $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
 }
@@ -750,26 +767,31 @@ addEventListener('pagehide', () => game.endPass())
 // ---------------------------------------------------------------- library actions + import
 
 $('#library').addEventListener('click', async (e) => {
-  const b = (e.target as HTMLElement).closest('button')
+  const t = e.target as HTMLElement
+  const b = t.closest('button')
+  const row = t.closest<HTMLElement>('tr[data-open]')
+  if (!b && row) return void openById(row.dataset.open!, 'learn') // the whole row opens Learn
   if (!b) return
   if (b.dataset.play) {
-    const id = b.dataset.play
-    const mode = b.dataset.mode as Mode
-    const i = STARTERS.findIndex((s) => s.spec.id === id)
-    if (i >= 0) return void openSong(starters[i], mode)
-    const row = (await store.listSongs()).find((s) => s.id === id)
-    if (row) {
-      try {
-        await openSong(await store.toSong(row, settings.split), mode)
-      } catch (err) {
-        void showLibrary((err as Error).message)
-      }
-    }
+    return void openById(b.dataset.play, b.dataset.mode as Mode)
   } else if (b.dataset.del) {
     await store.removeSong(b.dataset.del)
     void showLibrary()
   }
 })
+
+async function openById(id: string, mode: Mode) {
+  const i = STARTERS.findIndex((s) => s.spec.id === id)
+  if (i >= 0) return void openSong(starters[i], mode)
+  const row = (await store.listSongs()).find((s) => s.id === id)
+  if (row) {
+    try {
+      await openSong(await store.toSong(row, settings.split), mode)
+    } catch (err) {
+      void showLibrary((err as Error).message)
+    }
+  }
+}
 
 async function importFiles(files: FileList | File[]) {
   const errs: string[] = []
