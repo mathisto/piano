@@ -1,0 +1,377 @@
+import type { Game } from './game'
+import { BOTTOM_STEP, clefFor, keyAcc, keySigSteps, spell, type Spelled } from './spell'
+import { barAt, type Note } from './song'
+
+// One staff space is S viewBox units; Bravura's em is four spaces.
+const S = 10
+const VB_H = 158
+const BASE = { treble: 64, bass: 134 } // y of each clef's bottom line
+const MID_STEP = { treble: 34, bass: 15 } // B4, D3
+const NS = 'http://www.w3.org/2000/svg'
+
+const G = {
+  gClef: '',
+  fClef: '',
+  whole: '',
+  half: '',
+  black: '',
+  sharp: '',
+  flat: '',
+  natural: '',
+  dot: '',
+  flagUp: ['', ''], // 8th, 16th
+  flagDown: ['', ''],
+  digit: (d: number) => String.fromCharCode(0xe080 + d),
+}
+
+const VALUES = [4, 3, 2, 1.5, 1, 0.75, 0.5, 0.25]
+const quant = (b: number) => VALUES.reduce((a, v) => (Math.abs(v - b) < Math.abs(a - b) ? v : a))
+
+function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, parent: Element, text?: string) {
+  const e = document.createElementNS(NS, tag)
+  for (const k in attrs) e.setAttribute(k, String(attrs[k]))
+  if (text !== undefined) e.textContent = text
+  parent.appendChild(e)
+  return e
+}
+
+const yOf = (step: number, clef: 'treble' | 'bass') => BASE[clef] - (step - BOTTOM_STEP[clef]) * (S / 2)
+
+interface Chord {
+  items: Placed[]
+  clef: 'treble' | 'bass'
+  x: number
+  t: number
+  bar: number
+  beats: number
+  up: boolean
+  lo: number
+  hi: number
+}
+
+interface Placed {
+  note: Note
+  sp: Spelled
+  clef: 'treble' | 'bass'
+  x: number
+  head?: SVGElement
+}
+
+export class Staff {
+  private svg: SVGSVGElement
+  private cursor!: SVGLineElement
+  private placed: Placed[] = []
+  private bar0 = -1
+  private count = 0
+  private w = 0
+  private x0 = 0
+  private x1 = 0
+  private bw = 0
+  private pad = 14
+  private seen = 0
+  private lastT = 0
+  private byId = new Map<number, Placed>()
+  private awaiting = new Set<number>()
+
+  constructor(
+    private host: HTMLElement,
+    private game: Game,
+  ) {
+    this.svg = document.createElementNS(NS, 'svg') as SVGSVGElement
+    this.svg.setAttribute('role', 'img')
+    this.svg.setAttribute('aria-label', 'Grand staff showing the notes about to be played')
+    host.appendChild(this.svg)
+    new ResizeObserver(() => this.render()).observe(host)
+  }
+
+  /** Force a rebuild (new song, settings, resize). */
+  render() {
+    this.bar0 = -1
+    this.frame()
+  }
+
+  private windowFor(bar: number) {
+    const onsets = new Set<number>()
+    for (const n of this.game.song.notes) if (n.bar === bar || n.bar === bar + 1) onsets.add(Math.round(n.t * 40))
+    // two bars of reading ahead, one when the music is dense
+    this.count = bar + 1 < this.game.song.bars.length && onsets.size <= 22 ? 2 : 1
+  }
+
+  frame() {
+    const { song, t } = this.game
+    const bar = Math.max(0, barAt(song.bars, Math.max(0, t)))
+    const back = t < this.lastT - 0.05 // a seek or loop wrap: rebuild so played-note dimming resets
+    this.lastT = t
+    if (bar !== this.bar0 || back) {
+      this.bar0 = bar
+      this.windowFor(bar)
+      this.build()
+    }
+    this.moveCursor()
+    this.markAwaited()
+    // dim the notes already played
+    for (; this.seen < this.placed.length && this.placed[this.seen].note.t < t - 0.02; this.seen++) {
+      this.placed[this.seen].head?.classList.add('past')
+    }
+  }
+
+  /** In wait mode, light the noteheads the song is waiting for. */
+  private markAwaited() {
+    const need = this.game.phase === 'waiting' ? new Set(this.game.judge.required(this.game.t)) : new Set<number>()
+    if (!need.size && !this.awaiting.size) return
+    for (const id of this.awaiting) if (!need.has(id)) this.byId.get(id)?.head?.classList.remove('await')
+    for (const id of need) if (!this.awaiting.has(id)) this.byId.get(id)?.head?.classList.add('await')
+    this.awaiting = need
+  }
+
+  private xAt(t: number): number {
+    const b = this.game.song.bars[Math.min(Math.max(0, barAt(this.game.song.bars, t)), this.game.song.bars.length - 1)]
+    const i = b.i - this.bar0
+    const frac = Math.min(1, Math.max(0, (t - b.t0) / (b.t1 - b.t0)))
+    return this.x0 + i * this.bw + this.pad + frac * (this.bw - this.pad * 2)
+  }
+
+  private moveCursor() {
+    const t = Math.min(Math.max(this.game.t, this.game.song.bars[this.bar0].t0), this.game.song.bars[Math.min(this.bar0 + this.count, this.game.song.bars.length) - 1].t1)
+    const x = this.xAt(t)
+    this.cursor.setAttribute('x1', String(x))
+    this.cursor.setAttribute('x2', String(x))
+  }
+
+  private build() {
+    const { song } = this.game
+    const r = this.host.getBoundingClientRect()
+    if (!r.width || !r.height) return
+    this.w = Math.round(VB_H * (r.width / r.height))
+    const svg = this.svg
+    svg.replaceChildren()
+    svg.setAttribute('viewBox', `0 0 ${this.w} ${VB_H}`)
+    this.placed = []
+    this.byId.clear()
+    this.awaiting.clear()
+    this.seen = 0
+
+    const fifths = song.fifths
+    const first = this.bar0 === 0
+    this.x0 = 14 + 40 + Math.abs(fifths) * 9 + (first ? 26 : 8)
+    this.x1 = this.w - 10
+    this.bw = (this.x1 - this.x0) / this.count
+
+    const lines = el('g', { class: 'lines' }, svg)
+    for (const clef of ['treble', 'bass'] as const) {
+      for (let i = 0; i < 5; i++) {
+        const y = BASE[clef] - i * S
+        el('line', { x1: 8, x2: this.x1, y1: y, y2: y }, lines)
+      }
+    }
+    el('line', { x1: 8, x2: 8, y1: BASE.treble - 4 * S, y2: BASE.bass }, lines)
+
+    // clefs, key and time signature
+    const sym = el('g', { class: 'sym' }, svg)
+    el('text', { x: 14, y: BASE.treble - S, class: 'smufl' }, sym, G.gClef)
+    el('text', { x: 14, y: BASE.bass - 3 * S, class: 'smufl' }, sym, G.fClef)
+    for (const clef of ['treble', 'bass'] as const) {
+      keySigSteps(fifths, clef).forEach((step, i) =>
+        el('text', { x: 14 + 38 + i * 9, y: yOf(step, clef), class: 'smufl' }, sym, fifths > 0 ? G.sharp : G.flat),
+      )
+    }
+    if (first) {
+      const b = song.bars[0]
+      const x = 14 + 40 + Math.abs(fifths) * 9
+      for (const clef of ['treble', 'bass'] as const) {
+        el('text', { x, y: BASE[clef] - 2 * S, class: 'smufl' }, sym, String(b.n).split('').map((c) => G.digit(Number(c))).join(''))
+        el('text', { x, y: BASE[clef], class: 'smufl' }, sym, String(b.den).split('').map((c) => G.digit(Number(c))).join(''))
+      }
+    }
+
+    // bar lines and bar numbers
+    const bl = el('g', { class: 'bars' }, svg)
+    for (let i = 0; i <= this.count; i++) {
+      const bar = this.bar0 + i
+      if (bar > song.bars.length) break
+      const x = this.x0 + i * this.bw
+      el('line', { x1: x, x2: x, y1: BASE.treble - 4 * S, y2: BASE.treble }, bl)
+      el('line', { x1: x, x2: x, y1: BASE.bass - 4 * S, y2: BASE.bass }, bl)
+      if (i < this.count && bar < song.bars.length) el('text', { x: x + 4, y: 12, class: 'barno' }, bl, String(bar + 1))
+    }
+
+    // the cursor sits behind the noteheads so it never covers what you are about to play
+    this.cursor = el('line', { class: 'cursor', y1: BASE.treble - 4 * S - 12, y2: BASE.bass + 12 }, svg) as SVGLineElement
+    this.notes()
+  }
+
+  private notes() {
+    const { song } = this.game
+    const hidden = (n: Note) => this.game.hands[n.h] === 'hide'
+    const end = Math.min(this.bar0 + this.count, song.bars.length)
+    const inWin = song.notes.filter((n) => n.bar >= this.bar0 && n.bar < end && !hidden(n))
+    const acc = new Map<string, number>() // `${bar}:${clef}:${step}` -> accidental in force
+    const ka = keyAcc(song.fifths)
+
+    // chords: same onset, same staff
+    const groups = new Map<string, Placed[]>()
+    for (const n of inWin) {
+      const clef = clefFor(n.p, n.h)
+      const key = `${Math.round(n.t * 100)}:${clef}`
+      const p: Placed = { note: n, sp: spell(n.p, song.fifths), clef, x: this.xAt(n.t) }
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(p)
+    }
+    const chords: Chord[] = [...groups.values()].map((items) => {
+      items.sort((a, b) => a.sp.step - b.sp.step)
+      const clef = items[0].clef
+      const mean = items.reduce((s, p) => s + p.sp.step, 0) / items.length
+      return {
+        items,
+        clef,
+        x: items[0].x,
+        t: items[0].note.t,
+        bar: items[0].note.bar,
+        beats: quant(Math.min(...items.map((p) => p.note.beats))),
+        up: mean < MID_STEP[clef],
+        lo: items[0].sp.step,
+        hi: items[items.length - 1].sp.step,
+      }
+    })
+
+    // beam runs of eighths and sixteenths inside one beat, with no rest between
+    const runs: Chord[][] = []
+    for (const clef of ['treble', 'bass'] as const) {
+      let run: Chord[] = []
+      const flush = () => {
+        if (run.length > 1) runs.push(run)
+        run = []
+      }
+      for (const c of chords.filter((x) => x.clef === clef)) {
+        const b = song.bars[c.bar]
+        const q = (b.t1 - b.t0) / ((b.n * 4) / b.den)
+        const beat = q * (b.den === 8 && b.n % 3 === 0 ? 1.5 : 4 / b.den)
+        const idx = Math.floor((c.t - b.t0) / beat + 1e-6)
+        const last = run[run.length - 1]
+        const same = last && last.bar === c.bar && Math.floor((last.t - b.t0) / beat + 1e-6) === idx
+        const touching = last && Math.abs(c.t - (last.t + last.beats * q)) < 0.06 * q
+        if (c.beats > 0.5 || !same || !touching) flush()
+        if (c.beats <= 0.5) run.push(c)
+      }
+      flush()
+    }
+    const beamed = new Map<Chord, Chord[]>()
+    for (const run of runs) {
+      const steps = run.flatMap((c) => c.items.map((p) => p.sp.step))
+      const up = steps.reduce((a, b) => a + b, 0) / steps.length < MID_STEP[run[0].clef]
+      for (const c of run) {
+        c.up = up
+        beamed.set(c, run)
+      }
+    }
+
+    const g = el('g', { class: 'notes' }, this.svg)
+    for (const c of chords.sort((a, b) => a.t - b.t)) {
+      const { clef, up, x, beats, items: chord } = c
+      const head = beats >= 4 ? G.whole : beats >= 2 ? G.half : G.black
+      const bottom = BOTTOM_STEP[clef]
+      for (let s = bottom - 2; s >= c.lo; s -= 2) {
+        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: yOf(s, clef), y2: yOf(s, clef) }, g)
+      }
+      for (let s = bottom + 10; s <= c.hi; s += 2) {
+        el('line', { class: 'ledger', x1: x - 11, x2: x + 11, y1: yOf(s, clef), y2: yOf(s, clef) }, g)
+      }
+
+      // stem: to its own length, or to the shared beam line
+      if (beats < 4) {
+        const sx = up ? x + 5.4 : x - 5.4
+        const yLo = yOf(c.lo, clef)
+        const yHi = yOf(c.hi, clef)
+        const run = beamed.get(c)
+        const reach = run
+          ? up
+            ? Math.min(...run.map((r) => yOf(r.hi, clef))) - 3.5 * S
+            : Math.max(...run.map((r) => yOf(r.lo, clef))) + 3.5 * S
+          : up
+            ? yHi - 3.5 * S
+            : yLo + 3.5 * S
+        el('line', { class: 'stem', x1: sx, x2: sx, y1: up ? yLo : yHi, y2: reach }, g)
+        if (!run && beats <= 0.75) el('text', { class: 'smufl', x: sx - 0.3, y: reach }, g, (up ? G.flagUp : G.flagDown)[beats <= 0.25 ? 1 : 0])
+        if (run && c === run[0]) this.beams(g, run, up, reach)
+      }
+
+      // heads (displace seconds), accidentals, dots
+      let lastAccStep = -99
+      let accCol = 0
+      const order = up ? chord : [...chord].reverse()
+      let prev: Placed | undefined
+      for (const p of order) {
+        const second = prev && Math.abs(p.sp.step - prev.sp.step) === 1 && prev.head?.getAttribute('data-dx') === '0'
+        const dx = second ? (up ? 11.4 : -11.4) : 0
+        const y = yOf(p.sp.step, clef)
+        const h = el('text', { class: 'smufl head', x: x + dx, y, 'text-anchor': 'middle', 'data-dx': dx ? 1 : 0, 'data-id': p.note.id }, g, head)
+        p.head = h
+        prev = p
+        if (beats === 1.5 || beats === 3 || beats === 0.75) el('text', { class: 'smufl', x: x + 10 + Math.max(0, dx), y: y - (p.sp.step % 2 === bottom % 2 ? S / 2 : 0) }, g, G.dot)
+
+        const k = `${p.note.bar}:${clef}:${p.sp.step}`
+        const inForce = acc.get(k) ?? ka[p.sp.letter]
+        if (p.sp.acc !== inForce) {
+          if (Math.abs(p.sp.step - lastAccStep) < 6) accCol++
+          else accCol = 0
+          lastAccStep = p.sp.step
+          el('text', { class: 'smufl acc', x: x - 15 - accCol * 8 - (dx < 0 ? 11 : 0), y, 'text-anchor': 'middle' }, g, p.sp.acc > 0 ? G.sharp : p.sp.acc < 0 ? G.flat : G.natural)
+          acc.set(k, p.sp.acc)
+        }
+      }
+      for (const p of chord) {
+        this.placed.push(p)
+        this.byId.set(p.note.id, p)
+      }
+    }
+    this.placed.sort((a, b) => a.note.t - b.note.t)
+    // marks that survive a rebuild: notes already missed this pass
+    for (const p of this.placed) {
+      const i = p.note.id
+      if (this.game.judge.st[i] === 2) this.flag(p, 'miss')
+      else if (p.note.t < this.game.t - 0.02) p.head?.classList.add('past')
+    }
+  }
+
+  /** A flat beam across the run's stem tips; a second beam (or a stub) for sixteenths. */
+  private beams(g: Element, run: Chord[], up: boolean, y: number) {
+    const sx = (c: Chord) => (up ? c.x + 5.4 : c.x - 5.4)
+    const T = 5
+    const row = (a: number, b: number, off: number) =>
+      el('rect', { class: 'beam', x: Math.min(a, b), y: (up ? y : y - T) + (up ? off : -off), width: Math.abs(b - a) + 1.3, height: T }, g)
+    row(sx(run[0]), sx(run[run.length - 1]), 0)
+    for (let i = 0; i < run.length; i++) {
+      if (run[i].beats > 0.25) continue
+      const next = run[i + 1]
+      const prev = run[i - 1]
+      if (next && next.beats <= 0.25) row(sx(run[i]), sx(next), 7.5)
+      else if (!(prev && prev.beats <= 0.25)) {
+        const d = next ? 7 : -7
+        row(sx(run[i]), sx(run[i]) + d, 7.5)
+      }
+    }
+  }
+
+  private flag(p: Placed, cls: string) {
+    if (!p.head) return
+    p.head.classList.add(cls)
+    if (cls === 'miss') {
+      const y = Number(p.head.getAttribute('y')) + 12
+      const x = Number(p.head.getAttribute('x'))
+      const m = el('path', { class: 'miss-mark', d: `M${x - 4},${y + 5} L${x + 4},${y + 5} L${x},${y - 2} Z` }, p.head.parentElement!)
+      m.setAttribute('aria-hidden', 'true')
+    }
+  }
+
+  /** Ignite a note on the staff: it flares in its grade colour, then settles back to ink. */
+  mark(noteId: number, cls: string) {
+    const p = this.byId.get(noteId)
+    if (!p) return
+    if (cls === 'miss') return this.flag(p, 'miss')
+    const h = p.head
+    if (!h) return
+    h.classList.remove('hit-perfect', 'hit-great', 'hit-good', 'hit-ok')
+    void h.getBoundingClientRect()
+    h.classList.add(cls)
+  }
+}
