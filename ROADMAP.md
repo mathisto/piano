@@ -57,3 +57,46 @@ Run it: `npm run ios` (builds the web app, syncs, opens Xcode); pick the iPad; R
 - [x] Capacitor 8 project, CoreMIDI plugin, JS shim (tested in a desktop browser against a faked plugin), playback audio session, screen kept awake, landscape, safe areas, share-sheet export, hash without `crypto.subtle`.
 - [ ] Run on the iPad and check: FP-10 over USB (notes, timing; use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files (`.mid`, `.musicxml`, `.mxl`), Stage Manager resize.
 - [ ] Known limits: web view is capped at 60 Hz; the app starts with its own empty storage (not shared with the website); Bluetooth MIDI pairing screen reportedly crashes on iPadOS 27.0, so pair in another app or use USB.
+
+## Next: input fidelity and touch (designed 2026-10-18, not built)
+
+Ideas from the first real session on the iPad with the FP-10. Everything below needs the same plumbing first: note-off, pedal and velocity must reach `Game` and `Judge` with their timestamps (today `midi.ts` forwards note-offs and velocity, but `Judge` grades onsets only and ignores releases, and CC64 pedal is only counted in the monitor).
+
+### Phase A: see and hold (about 6-8 h)
+
+- [ ] **Ghost note on the staff.** When a key goes down, draw a translucent hollow notehead (dashed outline, Ink-2, not a hand or judgement colour) at the pitch pressed, at the staff x of the moment you pressed it, spelled by the song's key (with an accidental sign). Because it sits at your real press time, its distance from the written note is your timing error, early or late, made visible.
+  - Hit: the ghost snaps to the written note and flashes its grade colour (Perfect lime, Great mint, Good orange) with the same glow and streak-scaled sparkle as the key; Great/Good keep their persistent shape.
+  - Miss (note passed unplayed): the written note does a short downward 'thud' and settles red with the existing miss triangle.
+  - Wrong note (nothing written there): the ghost turns red with an X, wobbles once, fades.
+  - Effects level scales it (Off: colour only; Calm: no motion; Arcade/Max: sparkle and thud). Reduced motion caps at Calm. Optional soft thud sound, off by default.
+  - Open: ghost colour (proposal: Ink-2 outline so it is clearly 'not the score'); whether a held ghost should stretch into a duration bar (ties to hold scoring).
+- [ ] **Held-chord readout**, bottom right of the stage, above the keyboard, never over the falling lanes. Names what is held right now: pitch-class set matched against triads, sevenths, sus, dim, aug, power fifths, with inversions and slash bass ('C/E', 'G7', 'Dm'); two notes show the interval ('C and G: fifth'); one note shows its name. Spelled by the key. Settings switch, default on. Pure function of held pitches: easy to unit test.
+- [ ] **Hold scoring** (note length and release timing). Today only onsets are graded.
+  - Judge records each hit note's release time (note-off matched by pitch). Target release is the written end (the quantized note value in the staff, else the file's duration), capped at the next onset of the same hand so legato and rests are not punished.
+  - Grades per note: held (released within about 120 ms or 15% of the length, whichever is larger), short (released early), long (held into the next note). Held full value keeps the note's points; short or long scales its points down (floor 50%). A broken hold does not break the combo. Results show a Hold % next to Accuracy.
+  - Sustain pedal (CC64): while the pedal is down, an early release is not penalised. Needs CC64 parsing in `midi.ts`.
+  - Strictness setting: Off, Lenient (default in Perform), Strict. Learn keeps it Off unless switched on.
+  - Visual: the lit lane bar drains as you hold; an early release leaves a red remainder; a too-long hold tints the next note.
+  - Optional Learn mode 'hold to advance': the wait does not release until the note's length has been held.
+  - Open: how harsh the penalty feels for a beginner, and whether a long hold should score at all with the pedal down.
+
+### Phase B: velocity statistics (about 5-6 h)
+
+- [ ] Capture velocity (0-127) on every graded press and keep it on the result: per-note, mean, spread, per-hand, per-pitch region.
+- [ ] Lifetime statistics in IndexedDB (same pattern as the drill stats: moving averages, per song and per exercise), a Touch page with session history and trend, and a velocity histogram plus left-versus-right balance on the results card. Include in the JSON export.
+- [ ] **Personal calibration.** Velocity depends on the keyboard's touch setting and the player. A short exercise (ten soft, ten medium, ten loud notes) sets the player's own bands; defaults until then: soft 1-45, medium 46-85, hard 86-127, or the six dynamics pp to ff.
+- [ ] Optional 'play as written' for MIDI files that carry dynamics: compare your velocity to the file's, relative to your calibrated range.
+
+### Phase C: technique exercises (about 10-14 h)
+
+- [ ] A **Technique** page next to Songs and Read music: generated scales, arpeggios and five-finger patterns with targets for timing (existing), hold (Phase A) and velocity (Phase B).
+- [ ] Targets drawn on the note itself: soft, medium, hard as a coloured band or glow height on the falling bar and a dynamic mark on the staff; the judgement says 'soft ✓' or 'too hard'.
+- [ ] Exercise kinds: steady soft/medium/hard; crescendo and decrescendo across a scale; accents on beat one; evenness (every note within a tight band of your own mean); melody over accompaniment (right hand louder than left); staccato and legato by hold length.
+- [ ] Mastery and progress per exercise with the same meter used in Read music.
+
+### Cross-cutting
+
+- Event pipeline: carry `{ on, pitch, velocity, ts }` plus pedal into `Game.press/release` and `Judge.release`; keep `Judge` pure so it stays testable.
+- Timing honesty: release timestamps go through the same calibration offset as onsets; Bluetooth jitter will blur short holds, so USB is recommended for Strict hold scoring.
+- iPad: everything above works in the Capacitor app because MIDI arrives through the same shim (the native plugin already forwards note-offs and velocity; it drops controller messages today, so CC64 needs a one-line change in `PianoNative.swift`).
+- Tests first for the pure parts: chord naming, hold grading, velocity banding.
