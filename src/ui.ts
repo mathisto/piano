@@ -179,7 +179,10 @@ function libraryTable(lib: LibraryEntry[]) {
 }
 
 export function creditsDialog(lib: LibraryEntry[]) {
-  return `<h2>Credits</h2><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence.</p>
+  return `<h2>Credits</h2>
+    <h3>Sounds</h3>
+    <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano, organ, harp, strings, music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
+    <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence.</p>
     <div class="credlist">${lib.map((e) => `<pre>${esc(creditBlock(e))}</pre>`).join('')}</div>
     <div class="row-actions"><form method="dialog"><button class="btn">Close</button></form></div>`
 }
@@ -299,7 +302,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="srow"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. Other instruments: <a href="https://musescore.org/en/handbook/3/soundfonts-and-sfz-files" target="_blank" rel="noopener">MuseScore_General</a>, MIT, Frank Wen and S. Christian Collins. <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
+  <p class="fine foot"><button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
 }
 
 // ---------- reading drills ----------

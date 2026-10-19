@@ -1969,3 +1969,11 @@ dialog#credits h2 {
   margin: 4px 0 0;
   font-weight: 650;
 }
+
+dialog#credits h3 {
+  margin: 18px 0 4px;
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
