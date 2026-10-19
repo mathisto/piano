@@ -4,6 +4,7 @@ import '@fontsource-variable/hanken-grotesk'
 import './style.css'
 
 import * as audio from './audio'
+import { piano } from './audio'
 import { Dock } from './dock'
 import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -162,6 +163,7 @@ function screenKeys(canvas: HTMLCanvasElement) {
 async function openSong(song: Song, mode: Mode) {
   game.endPass()
   view('play')
+  void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
   await ensureStage()
   game.load(song, mode)
   const prog = await store.getProgress(song.id)
@@ -680,10 +682,19 @@ function openDrawer() {
     save()
     if (highway) highway.layout()
   }, 'change')
+  on('#sInst', (el) => {
+    settings.instrument = el.value as 'piano' | 'synth'
+    save()
+    const note = $('#sInstNote', d)
+    if (settings.instrument === 'piano') {
+      note.textContent = piano.state === 'ready' ? '' : 'Loading the piano sounds (about 2 MB)…'
+      void audio.preload().then(() => (note.textContent = piano.state === 'failed' ? 'The piano sounds did not load, so the simple synth plays instead. Reload to try again.' : ''))
+    } else note.textContent = ''
+  }, 'change')
   on('#sSound', (el) => {
     settings.sound = el.checked
     save()
-    if (el.checked) audio.unlock()
+    if (el.checked) audio.unlock() // also starts loading the piano
   }, 'change')
   on('#sVol', (el) => {
     settings.volume = Number(el.value)

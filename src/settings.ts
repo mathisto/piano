@@ -1,7 +1,8 @@
 export interface Settings {
   fx: 0 | 1 | 2 | 3 // effects: off, calm, arcade, max
   fall: number // seconds of look-ahead on the highway
-  sound: boolean // browser piano; the keyboard's own speakers are the default
+  sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
+  instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
   full: boolean // show all 88 keys instead of fitting the song
@@ -17,6 +18,7 @@ const DEFAULTS: Settings = {
   fx: reduced ? 1 : 2,
   fall: 3,
   sound: false,
+  instrument: 'piano',
   volume: 0.7,
   names: true,
   full: false,

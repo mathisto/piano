@@ -1,3 +1,4 @@
+import { piano } from './audio'
 import type { Result } from './game'
 import { icon } from './icons'
 import type { Input } from './midi'
@@ -200,7 +201,11 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
   </fieldset>
   <fieldset><legend>Sound</legend>
     <label class="switch"><input id="sSound" type="checkbox"${settings.sound ? ' checked' : ''}><i></i>Play through the browser</label>
+    <label class="field"><span>Instrument</span>
+      <select id="sInst"><option value="piano"${settings.instrument === 'piano' ? ' selected' : ''}>Grand piano (samples)</option><option value="synth"${settings.instrument === 'synth' ? ' selected' : ''}>Simple synth</option></select></label>
+    <p id="sInstNote" role="status">${piano.state === 'loading' ? 'Loading the piano sounds (about 2 MB)…' : piano.state === 'failed' ? 'The piano sounds did not load, so the simple synth plays instead. Reload to try again.' : ''}</p>
     <label class="field"><span>Volume</span><input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}"></label>
+    <p>Piano samples: Salamander Grand Piano by Alexander Holm, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</p>
     <p>Off by default: your keyboard's own speakers play. The Listen hand, the on-screen keys and the computer keys always sound through the browser. If you turn this on and hear every note twice, set Local Control to Off on the keyboard or turn it down.</p>
   </fieldset>
   <fieldset><legend>Timing</legend>

@@ -1224,6 +1224,10 @@ kbd {
   padding: 0;
   gap: 8px;
 }
+.drawer a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
 .drawer p {
   margin: 0;
   color: var(--ink-2);

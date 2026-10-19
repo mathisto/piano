@@ -14,7 +14,8 @@ Still to do:
 - [ ] Accidentals and key signatures in the drills (sharps, flats, naturals), then rhythm reading (a card stream you play in time, not waiting).
 - [ ] A reading-ahead mode: the next bar stays hidden until the current one ends, to train eye-hand span.
 - [ ] Full score view for imported MusicXML (more bars, rests, beams, ties, repeat signs). The staff strip still shows two bars with rhythm drawn simply.
-- [ ] Sound packs: Salamander piano samples, then General MIDI instruments from a soundfont. Check each pack's license first. Today: a two-partial oscillator.
+- [x] Sampled grand piano (Salamander V3, CC BY 3.0, bundled in public/samples, loaded when first wanted) with a simple-synth fallback and an instrument choice in Settings.
+- [ ] More instruments: General MIDI sounds from a soundfont (check each pack's licence), electric piano, organ. `src/audio.ts` has one voice factory per instrument; add another and a Settings option.
 - [ ] Note names that fade as mastery grows (today: a plain on/off toggle in Settings and in the drill dock).
 
 ## Known gaps in v1
