@@ -1228,7 +1228,7 @@ addEventListener('keydown', (e) => {
   } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
     e.preventDefault()
     game.toggle()
-  } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current && game.mode !== 'read') {
+  } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current) {
     setZoom(settings.zoom * (e.key === '-' ? 1 / ZOOM.step : ZOOM.step))
   } else if (e.key === 'v' && current && game.mode !== 'read') {
     const order = ['sheet', 'both', 'falling'] as const

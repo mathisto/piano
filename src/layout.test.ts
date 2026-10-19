@@ -349,3 +349,12 @@ describe('zoom: the player sizes the staff', () => {
     expect(w.nominal).toBeLessThanOrEqual(130 + 1) // under one pixel per viewBox unit would be smaller than that
   })
 })
+
+describe('zoom in a drill', () => {
+  it('shows more cards ahead when zoomed out', () => {
+    const s = song([4, 4], 12, Array.from({ length: 12 * 4 }, (_, i) => [64 + (i % 3), i, 1] as N))
+    const an = analyze(s, { read: true })
+    const cards = (zoom: number) => windowFor(an, 0, { view: 'both', px: { w: 1180, h: 400 }, zoom }).systems.reduce((n, x) => n + x.to - x.from, 0)
+    expect(cards(0.5)).toBeGreaterThan(cards(1))
+  })
+})

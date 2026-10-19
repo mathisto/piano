@@ -799,9 +799,6 @@ body.reading .hud small {
 .zoomc:focus-within {
   opacity: 1;
 }
-#play.drill .zoomc {
-  display: none;
-}
 #staff > svg {
   position: absolute;
   inset: 0;
