@@ -1999,7 +1999,7 @@ dialog.sheet > header p {
   color: var(--ink-2);
 }
 dialog.sheet > .body {
-  flex: 1;
+  flex: 1 1 auto; /* not `flex: 1`: iPad WebKit resolves its 0% basis against the dialog's auto height and squashes the body to nothing */
   min-height: 0;
   overflow: auto;
   padding: 4px 26px 12px;
