@@ -22,10 +22,10 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - [x] Second critique pass: 29/40 (from 26); zen layout bug, bar-fade band, one page measure, Today plan list, Technique form, Progress cells, copy cuts, miss decay all fixed. Projected 32-33 once polished further.
 - [x] DESIGN.md and sidecar rewritten from the shipped build: grammar, components, page templates, play states, rules, known debt.
 - [ ] Perform and Learn as a choice on a start sheet instead of a bar switch.
-- [ ] A start sheet per song: mode, tempo, hands, split, tracks (see Phase F).
-- [ ] Auto-hide bar reclaims its space without a layout jump (today it only fades; `M` reclaims).
-- [ ] Today: use the empty lower half for the generated plan (Phase E), not decoration.
-- [ ] Design debt carried over (full list in DESIGN.md, Known quirks): the Learn `✓` glyph, colour-only hit marks on the staff, hand hues reused for grades, Georgia italic dynamics, no portrait layout, literal values that are not tokens, the bar fade keeps its 56px band, zen is keyboard-only (no touch toggle).
+- [x] Start card per song: Perform or Learn, how much of the notes to show (Simplify, only when it would change something), credit line for library pieces; tempo and hands live in the dock, tracks and split in the song's Options.
+- [x] Decided: the bar only fades while playing, because reclaiming its 56px mid-song would shift the falling notes; the dock's focus button (and `M`) hide the bar and extras on purpose, on touch too.
+- [x] Today shows the generated plan (see Phase E).
+- [~] Design debt (full list in DESIGN.md, Known quirks): dynamics are now Bravura glyphs and zen has a touch button. Still open by decision: Perfect hits are colour-only on the staff (the default state needs no shape), hand hues are reused for the OK and B grades, no portrait layout under 1024px (the iPad app is landscape), some literal values are not tokens.
 - [x] PRODUCT.md platform facts updated (iPad app, iPad is the main screen). Five-tab navigation still to be described there.
 
 ## Phase E: progression and practice model (after the design pass)
@@ -35,28 +35,27 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 - [x] Error-targeted loop after every run: the results card offers the next step (loop the two worst bars at 70%, or lose the wait, or climb the tempo ladder). Clean passes are counted per loop pass, not per bar.
 - [x] Automatic tempo ramp in Learn loops (switch in the dock): +5% after three clean passes, -10% after two messy ones (`pace.ts`).
 - [x] Exit ramp suggested after a clean pass: lose the wait, then 50%, 75%, full tempo.
-- [~] Review scheduling: Leitner boxes (1, 2, 4, 8, 16 days) per Read card, due cards dealt more often, Due tag on Read, Today points at due review first. Not yet per exercise.
+- [x] Review scheduling: Leitner boxes (1, 2, 4, 8, 16 days) per Read card and per Technique exercise; due cards dealt more often; Due tags on Read and the Technique path; Today points at due review first.
 - [x] Today plan: warm-up, reading (due first), piece, the worst-bars loop and a second review, by 5, 10 or 20 minutes; steps tick off through the day; every row stands alone.
-- [ ] Effort and skill kept apart: days and minutes only rise; mastery can fall to Due.
+- [x] Effort and skill kept apart: days and minutes only rise; mastery states (New, Learning, Solid, Due) can fall.
 - [x] Monday recap of last week (minutes, days) with a goal suggestion after a met goal. The 'measure that improved most' is not built.
-- [ ] Fading feedback: judgement words and the note-name training wheels fade as mastery grows in Learn and Technique; mastery is graded on unaided runs.
-- [ ] Reading stages: cap isolated note-name drills at the landmark stages; add short melodic fragments in key, then rhythm reading (a card stream played in time) and a reading-ahead mode.
-- [ ] Technique breadth in syllabus order: five-finger, C G D F scales hands separate, contrary motion, arpeggios, remaining keys, minor keys; evenness, melody over accompaniment, staccato and legato by hold length; mastery per exercise with the Read meter.
-- [ ] Touch: per-pitch-region velocity, "play as written" for MIDI with dynamics, evenness before absolute level.
+- [x] Fading feedback: in Learn and Technique the judgement words go quiet after a run of eight clean notes (slips still speak), and a note's name fades from the falling bars once the Read drills show you know it (switch in Advanced). Mastery is graded on Perform runs.
+- [x] Reading: four-note melody stages in C, G, F and the bass clef; rhythm reading as Technique levels 1 to 3 (played in time, scored for timing); a Hide played switch in Learn trains reading ahead. The isolated-note stages stay (they are the landmark stages and the base for review).
+- [x] Technique breadth in syllabus order (31 exercises): five-finger, scales, hands together, contrary motion, arpeggios, dynamics, minor keys, legato and staccato (graded by hold), evenness, melody over accompaniment, rhythm; mastery per exercise.
+- [x] Touch: velocity by register (low, middle, high keys), 'Play the file's dynamics' (Advanced) maps a file's own dynamics onto your soft and hard, evenness as an exercise.
 
 ## Phase F: content and import quality (research under way)
 
-- [ ] `docs/research/public-domain-sources.md`: sources, licences, a graded 40-piece list, a fetch-and-manifest pipeline (agent running).
 - [x] Research: `docs/research/midi-import-audit.md` (the staff is not a notation engine: no quantization, voices, rests, ties, tuplets; tracks merged into two hands; plus real importer bugs: pad track labelled right hand, program change splitting a piano into two tracks, pickup bar shifting barlines, wrong enharmonic, key estimate dominated by long notes). Original Aerith file still needed; the snippet to recover it is in section 10 of the audit.
 - [x] Research: `docs/research/public-domain-sources.md` (Mutopia as MIDI, OpenScore Lieder as MusicXML, IMSLP manual only; 40-piece graded list; fetch script outline).
 - [~] F0/F1 first slice shipped 19 Oct: `src/midi-tracks.ts` (`inspectMidi`, `autoSelect`), a Tracks button on every multi-track MIDI row with a live crowding count, hands pinnable per track, track names recovered from empty heading tracks. The owner's ff7aerith.mid (13 instrument tracks, 5,082 notes, up to 35 a bar) now opens as oboe plus harp, 1,373 notes, at most 10 a bar. Still open here: sibling tracks split by a mid-file program change, the pad rule for the two-track hand split, a Share original MIDI button, a fuller import report (overlap, drums by note number, pickup, key margin). Original F0 text: `inspectMidi` import report per song from the stored bytes (tracks, density, overlaps, drums, pickup, key margin) and a Share original MIDI button.
-- [ ] F1 (2-3 days): track and channel selection with sensible defaults (skip drums, pads, tiny tracks), hand rule rewrite, program-change siblings merged; non-destructive options stored with the song.
+- [x] F1: track selection with a default that picks a lead and an accompaniment from crowded orchestral files and keeps whole piano scores; hands pinnable per track; single-track hand split follows the nearer line near the split pitch. Not reproduced in a real file, so not built: sibling tracks split by a program change.
 - [~] F2 importer side shipped on feature/f2-notation: `src/quantize.ts` (ticks and quarters only; chord clusters at 40 ms of local tempo; per-hand grid over 16th, triplet 8th and 32nd by Viterbi with drift read from beat onsets; pickup detection; graces flagged; written value clipped to the next onset in the voice and the barline; ties via `tieNext`/`qrest`/`tiedSegments`; voice 2 for long notes under a moving line), onset-weighted key estimate with `Song.keys` per stretch, `spellWindow` + `Note.acc`; MusicXML and spec songs fill the same `Note` fields. Open: the staff must consume them (F3); a lone triplet figure spanning two beats is written as sixteenths; no beat tracking for files without a tempo map (transcriptions); voice split is a one-rule heuristic; ornaments are flagged, not yet a user option; `Bar.ql` (pickup length) is ignored by `staff.ts`.
 - [ ] F3 (5-7 days): staff upgrades: pure layout function with tests, rests, ties, tuplet brackets, two voices, 8va, meter-aware beaming, rhythmic spacing, a too-dense fallback.
-- [ ] F4 (2-3 days, high value for a beginner): Simplify per song: full, two hands, melody and bass, melody only.
-- [ ] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
+- [x] F4: Simplify per song (full, two hands, melody and bass, melody only) with an automatic level for busy arrangements, set on the start card and remembered per song.
+- [x] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
 - [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
-- [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence.
+- [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence (an agent is on it).
 
 ## iPad app (developer mode, one person)
 
