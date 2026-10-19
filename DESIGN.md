@@ -349,6 +349,10 @@ Each component: anatomy, then states. All interactive states share the 2px Lamp 
 
 Piano Forte, PF for short: a P and an F built from rounded blocks, as if two notes had been dropped on the receptor line. In the bar it is Ink, 40x30, the only brand element (no wordmark), a 46px-tall button back to Today. As the app icon and favicon it is full colour on Ground: P in Right Hand cyan, F in Left Hand pink, with the Lamp receptor line under them. That line is the one place Lamp appears outside "play this", because the icon is a picture of the stage, not a control. Source: `public/favicon.svg`; the iOS icon is the same drawing at 1024px, full-bleed.
 
+### Staff zoom
+
+Two ghost icon buttons (minus, plus) in the bottom-right corner of the staff at 55% opacity, full on hover or focus; they are the single-pointer alternative to the two-finger pinch on the staff. Zooming out draws the staff smaller, so up to eight bars share a line, and a second (then third) line appears as soon as it fits in the pane; zooming in goes back to fewer bars and one line. A floor of 10 px per staff space stops it getting too small to read in a short pane, so the second line needs a taller pane (drag the divider). Not in drills.
+
 ### Segmented control
 - Ground well, Edge border, 8px, 3px padding, 2px gap; cells 32px at 4px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
 - Selected: Line Strong fill, Ink text, inset 1px Edge ring (no amber). Hover on unselected: Ink text, Panel Raised fill.

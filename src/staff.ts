@@ -154,7 +154,7 @@ export class Staff {
       this.an = analyze(song, { read, hide: (n) => hands[n.h] === 'hide' })
       this.anKey = key
     }
-    const cfg: Cfg = { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height } }
+    const cfg: Cfg = { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height }, zoom: settings.zoom }
     if (this.an.pages.size > 6) this.an.pages.clear() // one entry per window size seen
     this.L = layout(this.an, windowFor(this.an, bar, cfg), cfg)
     this.paint(this.L)

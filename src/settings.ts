@@ -18,6 +18,7 @@ export interface Settings {
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
   pane: number // the staff's share of the room when both show, 0..1
+  zoom: number // staff size: 1 is the default, below it the staff is smaller and shows more bars
   offset: number // ms, from calibration
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
@@ -42,6 +43,7 @@ const DEFAULTS: Settings = {
   full: false,
   view: 'both',
   pane: 0.4,
+  zoom: 1,
   offset: 0,
   split: 60,
   device: '',

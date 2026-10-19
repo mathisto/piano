@@ -315,3 +315,37 @@ describe('drills', () => {
     expect(L.rests).toHaveLength(0)
   })
 })
+
+describe('zoom: the player sizes the staff', () => {
+  const quarters = (bars: number): N[] => Array.from({ length: bars * 4 }, (_, i) => [60 + (i % 5), i, 1])
+  const s = song([4, 4], 24, quarters(24))
+  const win = (cfg: Cfg, bar = 0) => windowFor(analyze(s), bar, cfg)
+  const bars = (w: { systems: { from: number; to: number }[] }) => w.systems.reduce((n, x) => n + x.to - x.from, 0)
+
+  it('zoom 1 is the default size, as if no zoom were set', () => {
+    expect(win({ ...SHEET, zoom: 1 })).toEqual(win(SHEET))
+    expect(win({ ...BOTH, zoom: 1 })).toEqual(win(BOTH))
+  })
+  it('zooming out shows more bars, and a second line once two fit', () => {
+    const tall: Cfg = { view: 'sheet', px: { w: 1180, h: 560 } }
+    const at = (zoom: number) => win({ ...tall, zoom })
+    expect(at(1).systems).toHaveLength(1)
+    expect(bars(at(0.6))).toBeGreaterThan(bars(at(1)))
+    expect(at(0.45).systems.length).toBeGreaterThan(1)
+  })
+  it('zooming in again drops back to one line', () => {
+    const tall: Cfg = { view: 'sheet', px: { w: 1180, h: 900 } }
+    expect(win({ ...tall, zoom: 1 }).systems.length).toBeGreaterThan(1)
+    expect(win({ ...tall, zoom: 1.6 }).systems).toHaveLength(1)
+  })
+  it('the follow window zooms out from the bar being played', () => {
+    const w = win({ view: 'both', px: { w: 1180, h: 600 }, zoom: 0.4 }, 5)
+    expect(w.from).toBe(5)
+    expect(bars(w)).toBeGreaterThan(2)
+    expect(w.systems.length).toBeGreaterThan(1)
+  })
+  it('never draws the staff too small to read, however far it is zoomed out', () => {
+    const w = win({ view: 'both', px: { w: 1180, h: 130 }, zoom: 0.25 })
+    expect(w.nominal).toBeLessThanOrEqual(130 + 1) // under one pixel per viewBox unit would be smaller than that
+  })
+})

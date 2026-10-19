@@ -566,6 +566,7 @@ function solveX(bs: BarA[], ex: number[], avail: number): SysX {
 export interface Cfg {
   view: 'sheet' | 'both'
   px: { w: number; h: number } // the host in pixels
+  zoom?: number // 1 is the default size; below 1 the staff draws smaller, so more bars and more lines fit; above it the page fills the host at most
 }
 export interface Win {
   from: number
@@ -610,24 +611,38 @@ function widthOf(an: Analysis, from: number, to: number, u: number, s: number) {
 const sysCount = (cfg: Cfg) => (cfg.view === 'sheet' && cfg.px.h / (GRAND.h * 2 + GAP) >= 1.7 ? 2 : 1)
 const nominalH = (cfg: Cfg, sys: number) => (sys === 2 ? GRAND.h * 2 + GAP : Math.max(GRAND.h, cfg.px.h / 2.6))
 
+/** Pixels per viewBox unit below which the staff is too small to read, however far the player zooms out: a staff space is 10 units. */
+const MIN_PX = 1
+/** The zoom, but never past the point where the staff drops under MIN_PX: `vb` is the page height at zoom 1. */
+const zoomFor = (cfg: Cfg, vb: number) => Math.max(cfg.zoom ?? 1, Math.min(1, (vb * MIN_PX) / Math.max(cfg.px.h, 1)))
+
+/** A sheet page's height in viewBox units and how many lines fit in it, once the player's zoom is applied: a second line appears when two fit, and goes when they no longer do. */
+function sheetBox(cfg: Cfg) {
+  const sys0 = sysCount(cfg)
+  const zoom = zoomFor(cfg, nominalH(cfg, sys0))
+  const H = Math.max(GRAND.h, nominalH(cfg, sys0) / zoom)
+  return { H, zoom, n: zoom === 1 ? sys0 : Math.max(1, Math.floor((H + GAP) / (GRAND.h + GAP))) }
+}
+
 function sheetPages(an: Analysis, cfg: Cfg): Page[] {
-  const key = `${cfg.px.w}x${cfg.px.h}`
+  const key = `${cfg.px.w}x${cfg.px.h}x${cfg.zoom ?? 1}` // the zoom as asked: sheetBox applies the floor
   const hit = an.pages.get(key)
   if (hit) return hit
-  const sys = sysCount(cfg)
+  const { H, n: sys, zoom } = sheetBox(cfg)
+  const most = Math.min(8, Math.max(4, Math.round(4 / zoom))) // bars to a line: four on the default page, up to eight zoomed out
   const nb = an.bars.length
   const aspect = cfg.px.w / Math.max(cfg.px.h, 1)
   const pages: Page[] = []
   for (let b = 0; b < nb; ) {
     let page: Page | undefined
     for (const z of ZOOMS) {
-      const W = nominalH(cfg, sys) * z * aspect
+      const W = H * z * aspect
       const systems: { from: number; to: number }[] = []
       let c = b
       for (let k = 0; k < sys && c < nb; k++) {
         const avail = W - 10 - headerW(an, c)
         let e = c + 1
-        while (e < nb && e - c < 4 && widthOf(an, c, e + 1, 22, COMFORT) <= avail) e++
+        while (e < nb && e - c < most && widthOf(an, c, e + 1, 22, COMFORT) <= avail) e++
         systems.push({ from: c, to: e })
         c = e
       }
@@ -657,7 +672,24 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
       else hi = m - 1
     }
     const p = pages[lo]
-    return { from: p.from, to: p.to, systems: p.systems, z: p.z, nominal: nominalH(cfg, sysCount(cfg)) * p.z, follow: false }
+    return { from: p.from, to: p.to, systems: p.systems, z: p.z, nominal: sheetBox(cfg).H * p.z, follow: false }
+  }
+  // zoomed out: the bar being played and what follows it, in as many lines as fit
+  const vb = an.solo ? SOLO.h : GRAND.h
+  const zoom = zoomFor(cfg, vb)
+  if (zoom < 1 && !an.read) {
+    const H = vb / zoom
+    const u = Math.min(40, 22 + Math.max(0, zoom - 0.7) * 60) // bars space as tightly as a sheet page by 0.7, and as the default window at 1
+    const systems: { from: number; to: number }[] = []
+    let c = bar
+    for (let k = 0, n = Math.max(1, Math.floor((H + GAP) / (vb + GAP))); k < n && c < nb; k++) {
+      const avail = H * aspect - 10 - headerW(an, c)
+      let e = c + 1
+      while (e < nb && e - c < 8 && widthOf(an, c, e + 1, u, COMFORT) <= avail) e++
+      systems.push({ from: c, to: e })
+      c = e
+    }
+    return { from: bar, to: c, systems, z: 1, nominal: H, follow: true }
   }
   // one system from the bar being played: one bar, or two when they read comfortably
   let count = 1
@@ -821,7 +853,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
   const top = base[clefs[0]] - 4 * S
   const bottom = base[clefs[clefs.length - 1]]
   const midY = (c: Clef) => base[c] - 2 * S
-  const H0 = forceH ?? (win.follow ? vbH : win.nominal)
+  const H0 = forceH ?? (win.follow ? Math.max(vbH, win.nominal) : win.nominal)
   const W0 = Math.round(H0 * aspect)
 
   const L: Placed = {
@@ -1204,7 +1236,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
   const content = L.systems.reduce((n, s) => n + s.h, 0) + GAP * (L.systems.length - 1)
   L.h = Math.max(content, H0)
   L.w = Math.round(L.h * aspect)
-  let y = win.follow ? 0 : (L.h - content) / 2
+  let y = win.follow && win.nominal <= vbH ? 0 : (L.h - content) / 2 // the one-line follow window sits at the top; a zoomed-out page is centred
   for (const s of L.systems) {
     s.dy = y + s.pad
     y += s.h + GAP

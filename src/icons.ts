@@ -5,6 +5,7 @@ const P: Record<string, [string, boolean]> = {
   sliders: ['<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>', false],
   loop: ['<path d="M17 2l3 3-3 3"/><path d="M20 5H8a4 4 0 0 0-4 4v1"/><path d="M7 22l-3-3 3-3"/><path d="M4 19h12a4 4 0 0 0 4-4v-1"/>', false],
   plus: ['<path d="M12 5v14M5 12h14"/>', false],
+  minus: ['<path d="M5 12h14"/>', false],
   x: ['<path d="M6 6l12 12M18 6L6 18"/>', false],
   back: ['<path d="M15 5l-7 7 7 7"/>', false],
   check: ['<path d="M5 12.5l4.5 4.5L19 7"/>', false],

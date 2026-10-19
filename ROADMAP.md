@@ -4,7 +4,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 
 ## Shipped
 
-- Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), a draggable divider between the staff and the falling notes (drag to an end for one pane alone), count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
+- Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), a draggable divider between the staff and the falling notes (drag to an end for one pane alone), staff zoom (pinch, trackpad pinch, - and +, or the corner buttons: smaller shows more bars, and a second line appears once two fit), count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
 - Read: 17 sight-reading stages from landmarks to triads, sharps, flats, keys of G and F, weighted deck, mastery meters.
 - Technique: five-finger, scale and arpeggio in seven keys, either or both hands, with soft/medium/hard, crescendo, decrescendo and accent targets (pips on the falling bar, dynamics on the staff, a touch verdict per note).
 - Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
