@@ -677,7 +677,7 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
   // zoomed out: the bar being played and what follows it, in as many lines as fit
   const vb = an.solo ? SOLO.h : GRAND.h
   const zoom = zoomFor(cfg, vb)
-  if (zoom < 1 && !an.read) {
+  if (zoom < 1) {
     const H = vb / zoom
     const u = Math.min(40, 22 + Math.max(0, zoom - 0.7) * 60) // bars space as tightly as a sheet page by 0.7, and as the default window at 1
     const systems: { from: number; to: number }[] = []
@@ -685,7 +685,11 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
     for (let k = 0, n = Math.max(1, Math.floor((H + GAP) / (vb + GAP))); k < n && c < nb; k++) {
       const avail = H * aspect - 10 - headerW(an, c)
       let e = c + 1
-      while (e < nb && e - c < 8 && widthOf(an, c, e + 1, u, COMFORT) <= avail) e++
+      if (an.read) {
+        // drill cards share a line by how many notes they hold: the default window fits 22 in two cards
+        const cost = (i: number) => new Set(an.bars[i].cols.filter((x) => !x.virtual).map((x) => qk(x.q))).size * 9.2 + an.pad
+        for (let used = cost(c); e < nb && e - c < 8 && used + cost(e) <= avail; e++) used += cost(e)
+      } else while (e < nb && e - c < 8 && widthOf(an, c, e + 1, u, COMFORT) <= avail) e++
       systems.push({ from: c, to: e })
       c = e
     }
