@@ -17,6 +17,7 @@ export interface Result {
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
+  dyn?: string // the technique exercise's dynamics, when it was one
   clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
   holds: number // share of held notes released on time, 0..1; -1 when not graded
@@ -128,7 +129,7 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? HOLD[settings.strict] : 'off', ease: EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: EASE[settings.strict] }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -316,6 +317,7 @@ export class Game {
       touch: velStats(j.samples(), settings.edges),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
+      dyn: this.song.dyn,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),

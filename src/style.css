@@ -1882,3 +1882,19 @@ body.zen #dock .aids {
   margin: 8px 0;
   color: var(--ink-2);
 }
+
+.crow.wrap {
+  flex-wrap: wrap;
+  max-width: 760px;
+}
+.cell.due {
+  outline: 1.5px dashed var(--ink-2);
+  outline-offset: -2px;
+}
+.all {
+  margin-top: 12px;
+}
+.all summary {
+  cursor: pointer;
+  color: var(--ink-3);
+}

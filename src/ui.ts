@@ -11,7 +11,7 @@ import type { Starter } from './starters'
 import type { Stage } from './drill'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
-import { DYNS, KEYS, PATTERNS, type Opts } from './technique'
+import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -209,7 +209,7 @@ export function results(r: Result, next: Next | null) {
   <div class="results"><div class="card" role="dialog" aria-label="Results">
     <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
+    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
         ? `<div>
@@ -333,26 +333,59 @@ function touchStrip(cal: TouchCal | null, msg: string) {
   return `<div class="tcard strip" role="status">${inner}</div>${msg ? `<p class="note" role="status">${esc(msg)}</p>` : ''}`
 }
 
-export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, msg = '', preview = '') {
+const KEY_NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
+
+export interface PathRow {
+  id: string
+  label: string
+  state: 'new' | 'learning' | 'solid' | 'due'
+}
+
+export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, msg = '', preview = '', path: PathRow[] = []) {
   const sel = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
+  const keyVal = `${o.tonic}${o.minor ? 'm' : ''}`
+  const keys = (map: Record<number, number>, minor: boolean) =>
+    Object.keys(map).map(Number).sort((a, b) => map[a] - map[b]).map((pc) => opt(`${pc}${minor ? 'm' : ''}`, `${KEY_NAMES[pc]} ${minor ? 'minor' : 'major'}`, keyVal)).join('')
+  const rhythm = o.pattern === 'rhythm'
   el.innerHTML = `
-    ${head('Technique')}
+    ${head('Technique', `<button class="btn primary" id="tStart">${icon('play')}Start</button>`)}
     <div class="tech-form">
       ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
-      ${sel('tKey', 'Key', Object.keys(KEYS).map(Number).sort((a, b) => KEYS[a] - KEYS[b]).map((pc) => opt(pc, ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'][pc] + ' major', o.tonic)).join(''))}
-      ${sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both']].map(([v, l]) => opt(v, l, o.hands)).join(''))}
-      ${sel('tDyn', 'Dynamics', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join(''))}
+      ${
+        rhythm
+          ? sel('tLevel', 'Level', [[1, 'Quarters and halves'], [2, 'Eighths'], [3, 'Dotted and off-beat']].map(([v, l]) => opt(v, l as string, o.level ?? 1)).join(''))
+          : sel('tKey', 'Key', `<optgroup label="Major">${keys(KEYS, false)}</optgroup><optgroup label="Minor">${keys(KEYS_MINOR, true)}</optgroup>`) +
+            sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both']].map(([v, l]) => opt(v, l, o.hands)).join('')) +
+            sel('tDyn', 'Dynamics', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join('')) +
+            sel('tArtic', 'Notes', Object.entries(ARTICS).map(([v, l]) => opt(v, l, o.artic ?? 'normal')).join(''))
+      }
       ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} bpm`, o.bpm)).join(''))}
-      <button class="btn primary" id="tStart">${icon('play')}Start</button>
     </div>
     ${preview ? `<div class="tprev thumb">${preview}</div>` : ''}
-    ${touchStrip(cal, msg)}`
+    ${touchStrip(cal, msg)}
+    ${pathBlock(path)}`
+}
+
+const STATE_WORD = { new: '', learning: 'Learning', solid: 'Solid', due: 'Due' }
+
+/** The syllabus: what is next, with the rest folded away. Every row starts on its own; nothing is locked. */
+function pathBlock(path: PathRow[]) {
+  if (!path.length) return ''
+  const solid = path.filter((p) => p.state === 'solid').length
+  const row = (p: PathRow) =>
+    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}</b><span>${STATE_WORD[p.state]}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">Start</button></div></div>`
+  const next = path.filter((p) => p.state !== 'solid').slice(0, 5)
+  return `<h2 class="sec">Path</h2><p class="note">${solid} of ${path.length} solid.</p>
+    <div class="plan">${next.map(row).join('')}</div>
+    <details class="all"><summary>All exercises</summary><div class="plan">${path.map(row).join('')}</div></details>`
 }
 
 export interface TodayData {
   last: { id: string; title: string; sub: string; thumb: string; first: boolean }
   read: { id: string; name: string; pct: number; line: string }
   tech: string
+  techDue: boolean
+  techId: string
   fix?: { id: string; title: string; a: number; b: number } // the worst bars of the piece played last
   review?: { name: string; id: string; line: string } // a second reading stage, for the longest plan
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
@@ -372,7 +405,7 @@ const weekBlock = (w: TodayData['week'], goal: number) => `
 export function todayView(el: HTMLElement, d: TodayData) {
   type R = { key: string; lead?: string; title: string; sub: string; mid?: string; act: (cls: string) => string }
   const all: R[] = [
-    { key: 'warm', title: d.tech, sub: 'Warm-up', act: (c) => `<button class="btn${c}" data-today="tech">${icon('play')}Start</button>` },
+    { key: 'warm', title: d.tech, sub: d.techDue ? 'Warm-up, due for review' : 'Warm-up', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${icon('play')}Start</button>` },
     { key: 'read', title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${d.read.id}">Practice</button>` },
     { key: 'piece', lead: `<div class="tthumb thumb">${d.last.thumb}</div>`, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${d.last.id}">${d.last.first ? 'Start' : 'Continue'}</button>` },
     ...(d.fix ? [{ key: 'fix', title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${d.fix!.id}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
@@ -399,6 +432,7 @@ export interface ProgressData {
   week: TodayData['week']
   goal: number
   stages: StageRow[]
+  tech: PathRow[]
   log: TouchEntry[]
 }
 
@@ -430,6 +464,9 @@ export function progressView(el: HTMLElement, d: ProgressData) {
       const rs = d.stages.filter((r) => f(r.stage.id))
       return `<div class="cgrp"><small class="label">${g}</small><div class="crow">${rs.map((r) => `<i class="cell${r.solid ? ' solid' : ''}" title="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%" role="img" aria-label="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%"><b style="height:${Math.round(r.pct * 100)}%"></b></i>`).join('')}</div></div>`
     }).join('')}</div>
+    <h2 class="sec">Technique</h2>
+    <p class="note">${d.tech.filter((t) => t.state === 'solid').length} of ${d.tech.length} exercises solid${d.tech.some((t) => t.state === 'due') ? `, ${d.tech.filter((t) => t.state === 'due').length} due` : ''}.</p>
+    <div class="crow wrap">${d.tech.map((t) => `<i class="cell${t.state === 'solid' ? ' solid' : t.state === 'due' ? ' due' : ''}" title="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}" role="img" aria-label="${esc(t.label)}, ${t.state}"><b style="height:${t.state === 'solid' || t.state === 'due' ? 100 : t.state === 'learning' ? 50 : 0}%"></b></i>`).join('')}</div>
     <h2 class="sec">Touch</h2>
     ${spark ? `${spark}<table class="songs"><caption class="sr-only">Recent sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="note">Finish a song on a real keyboard and its touch shows up here.</p>'}`
 }

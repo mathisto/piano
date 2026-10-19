@@ -6,7 +6,7 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
-import { STAGES, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
+import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
@@ -24,6 +24,7 @@ import { nameChord } from './chord'
 import { thumb } from './thumb'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate } from './touch'
+import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
 import { dayKey, lastWeek, weekOf } from './week'
 import { $, CAL_NOTES, tracksDialog, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
@@ -120,7 +121,7 @@ async function showSection(name: Section, err = '') {
   if (name === 'today') await showToday()
   else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
-  else if (name === 'technique') showTechnique()
+  else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
 
@@ -137,13 +138,17 @@ async function stageRows(): Promise<StageRow[]> {
 async function showToday() {
   const [{ last }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
   const next = rows.find((r) => r.next)!
-  const ex = exercise(settings.tech, settings.edges)
+  const ts = await store.getTech()
+  const nr = nextRecipe(ts, dayNum())
+  const ex = exercise(nr.recipe.opts, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
   todayView($('#today'), {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
     read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
+    techDue: nr.reason === 'due',
+    techId: nr.recipe.id,
     fix: worst && last.bars ? { id: last.id, title: last.title, ...worst } : undefined,
     review: second ? { id: second.stage.id, name: `Review ${second.stage.name.toLowerCase()}`, line: `${second.due} ${second.due === 1 ? 'card' : 'cards'} due` } : undefined,
     week: weekOf(days),
@@ -160,8 +165,9 @@ async function showToday() {
 }
 
 async function showProgress() {
-  const [stages, days, log] = await Promise.all([stageRows(), store.getPractice(), store.getTouch()])
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log })
+  const [stages, days, log, ts] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech()])
+  const today = dayNum()
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -181,7 +187,7 @@ $('#today').addEventListener('click', (e) => {
   if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
   else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
   else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
-  else void openSong(exercise(settings.tech, settings.edges), 'perform')
+  else void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
 
 /** Open a piece in Learn with two worst bars looped at a lower tempo. */
@@ -195,40 +201,57 @@ async function fixBars(id: string, a: number, b: number) {
   onPhase()
 }
 
-function showTechnique() {
+async function showTechnique() {
   const el = $('#technique')
-  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)))
-  const pick = <K extends keyof Opts>(id: string, key: K, parse: (v: string) => Opts[K]) =>
-    ($(id, el) as HTMLSelectElement).addEventListener('change', (e) => {
-      settings.tech[key] = parse((e.target as HTMLSelectElement).value)
-      save()
-      el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
-    })
-  pick('#tPattern', 'pattern', (v) => v as Opts['pattern'])
-  pick('#tKey', 'tonic', Number)
-  pick('#tHands', 'hands', (v) => v as Opts['hands'])
-  pick('#tDyn', 'dyn', (v) => v as Opts['dyn'])
-  pick('#tBpm', 'bpm', Number)
+  const ts = await store.getTech()
+  const today = dayNum()
+  const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) }))
+  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)), path)
+  el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
+    const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)
+    if (r) void openSong(exercise(r.opts, settings.edges), 'perform')
+  }))
+  const redraw = () => void showTechnique()
+  const on = (id: string, f: (v: string) => void, rerender = false) => {
+    const sel = el.querySelector<HTMLSelectElement>(id)
+    if (sel)
+      sel.addEventListener('change', () => {
+        f(sel.value)
+        save()
+        if (rerender) redraw()
+        else el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
+      })
+  }
+  on('#tPattern', (v) => (settings.tech.pattern = v as Opts['pattern']), true)
+  on('#tKey', (v) => {
+    settings.tech.tonic = parseInt(v)
+    settings.tech.minor = v.endsWith('m') || undefined
+  })
+  on('#tHands', (v) => (settings.tech.hands = v as Opts['hands']))
+  on('#tDyn', (v) => (settings.tech.dyn = v as Opts['dyn']))
+  on('#tArtic', (v) => (settings.tech.artic = v === 'normal' ? undefined : (v as Opts['artic'])))
+  on('#tLevel', (v) => (settings.tech.level = Number(v) as 1 | 2 | 3))
+  on('#tBpm', (v) => (settings.tech.bpm = Number(v)))
   $('#tStart', el).onclick = () => void openSong(exercise(settings.tech, settings.edges), 'perform')
-  const on = (sel: string, f: () => void) => {
+  const click = (sel: string, f: () => void) => {
     const b = el.querySelector<HTMLButtonElement>(sel)
     if (b) b.onclick = f
   }
-  on('#calStart', () => {
+  click('#calStart', () => {
     touchCal = { step: 0, got: 0 }
     calGot = [[], [], []]
     calMsg = ''
-    showTechnique()
+    void showTechnique()
   })
-  on('#calCancel', () => {
+  click('#calCancel', () => {
     touchCal = null
-    showTechnique()
+    void showTechnique()
   })
-  on('#calReset', () => {
+  click('#calReset', () => {
     settings.edges = undefined
     save()
     calMsg = ''
-    showTechnique()
+    void showTechnique()
   })
 }
 
@@ -256,7 +279,7 @@ function calNote(vel: number) {
       touchCal = null
     }
   }
-  showTechnique()
+  void showTechnique()
   return true
 }
 
@@ -713,6 +736,7 @@ async function onDone(r: Result) {
   )
   current.heat = prog.heat
   void store.markPlan(dayKey(), current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
+  if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch

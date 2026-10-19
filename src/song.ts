@@ -34,6 +34,7 @@ export interface Song {
   lo: number
   hi: number
   spb: number // seconds per quarter note, first bar
+  artic?: 'legato' | 'staccato' // technique exercises: how long to hold each note
   dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
 }
 

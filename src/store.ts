@@ -1,5 +1,6 @@
 import { del, get, keys, set } from 'idb-keyval'
 import type { Stats } from './drill'
+import type { TechStats } from './syllabus'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
 import { fromMidi, type Song } from './song'
@@ -145,9 +146,17 @@ export async function markPlan(day: string, step: string) {
   if (!d.includes(step)) await set(`plan:${day}`, [...d, step])
 }
 
+export async function getTech(): Promise<TechStats> {
+  return (await get<TechStats>('tech:stats')) ?? {}
+}
+
+export async function saveTech(s: TechStats) {
+  await set('tech:stats', s)
+}
+
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -158,11 +167,12 @@ export async function importAll(text: string) {
   if (d.reading) await set('drill:stats', d.reading)
   if (d.touch) await set('touch:log', d.touch)
   if (d.practice) await set('practice:days', d.practice)
+  if (d.technique) await set('tech:stats', d.technique)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
