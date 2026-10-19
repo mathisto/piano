@@ -12,6 +12,7 @@ export interface Note {
   bar: number
   beats: number // duration in quarter notes
   flat?: boolean // a black key the source wants written as a flat (drills); otherwise spelled by the key
+  want?: [number, number] // key velocity range (1..127) this note is meant to be played in; technique exercises set it
 }
 
 export interface Bar {
@@ -42,6 +43,7 @@ export interface Raw {
   track: number
   h?: Hand // set when the source already knows the hand
   flat?: boolean
+  want?: [number, number]
 }
 
 /** Hands: two tracks -> lower mean pitch is left; anything else splits at `split`. */
@@ -86,7 +88,7 @@ export function build(
       const bar = barAt(bars, r.t + 1e-6)
       const b = bars[bar]
       const q = (b.t1 - b.t0) / ((b.n * 4) / b.den)
-      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, bar, beats: r.d / q, flat: r.flat }
+      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, bar, beats: r.d / q, flat: r.flat, want: r.want }
     })
   const last = notes.reduce((m, n) => Math.max(m, n.t + n.d), 0)
   const b0 = bars[0]

@@ -2,6 +2,7 @@ import type { Hand, Note } from './song'
 
 export type Grade = 'perfect' | 'great' | 'good' | 'miss'
 export type HoldGrade = 'held' | 'short' | 'long'
+export type VelGrade = 'ok' | 'low' | 'high' // struck inside, under or over the note's velocity range
 export type Hold = 'off' | 'lenient' | 'strict'
 
 // How far from the written end a release may land: the larger of a floor in seconds and a share of the note.
@@ -19,8 +20,8 @@ const CLUSTER = 0.03 // notes this close together count as one chord when waitin
 export const multiplier = (combo: number) => (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1)
 
 export type Ev =
-  | { k: 'hit'; i: number; grade: Grade; off: number; combo: number; mult: number }
-  | { k: 'ok'; i: number } // wait-mode hit, no timing grade
+  | { k: 'hit'; i: number; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade }
+  | { k: 'ok'; i: number; vel?: VelGrade } // wait-mode hit, no timing grade
   | { k: 'miss'; i: number }
   | { k: 'wrong'; p: number }
   | { k: 'hold'; i: number; grade: HoldGrade; f: number } // key released; f = share of the points kept
@@ -47,6 +48,7 @@ export class Judge {
   private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
   private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
   holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
+  touch: Record<VelGrade, number> = { ok: 0, low: 0, high: 0 } // notes with a velocity target, by result
   score = 0
   combo = 0
   maxCombo = 0
@@ -76,6 +78,7 @@ export class Judge {
     this.holdGrade = new Array(this.notes.length).fill(undefined)
     this.down.clear()
     this.holds = { held: 0, short: 0, long: 0 }
+    this.touch = { ok: 0, low: 0, high: 0 }
     this.total = 0
     this.notes.forEach((n, i) => {
       const ok = scored(n)
@@ -97,6 +100,21 @@ export class Judge {
     const out: { v: number; h: Hand }[] = []
     this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h }))
     return out
+  }
+
+  /** Share of targeted notes struck in their velocity range; -1 when nothing was targeted. */
+  get touchPct() {
+    const n = this.touch.ok + this.touch.low + this.touch.high
+    return n ? this.touch.ok / n : -1
+  }
+
+  private velGrade(i: number): VelGrade | undefined {
+    const want = this.notes[i].want
+    const v = this.vel[i]
+    if (!want || !v) return undefined
+    const g: VelGrade = v < want[0] ? 'low' : v > want[1] ? 'high' : 'ok'
+    this.touch[g]++
+    return g
   }
 
   /** Share of judged holds that were on time; 1 before any. */
@@ -134,7 +152,8 @@ export class Judge {
     this.vel[best] = vel ? Math.max(1, Math.round(vel * 127)) : 0
     this.hits++
     this.advance()
-    if (this.cfg.wait) return [{ k: 'ok', i: best }]
+    const vg = this.velGrade(best)
+    if (this.cfg.wait) return [{ k: 'ok', i: best, vel: vg }]
 
     const off = ((t - this.notes[best].t) / this.cfg.rate) * 1000
     const a = Math.abs(off)
@@ -150,7 +169,7 @@ export class Judge {
     this.weightSum += WEIGHT[grade]
     this.grade[best] = grade
     this.off[best] = off
-    return [{ k: 'hit', i: best, grade, off, combo: this.combo, mult }]
+    return [{ k: 'hit', i: best, grade, off, combo: this.combo, mult, vel: vg }]
   }
 
   /** A key came up at song time `t`. Grades it against the note's written end; the sustain pedal excuses an early release. */
