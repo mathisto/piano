@@ -66,5 +66,5 @@ export function exercise(o: Opts, e: Edges = DEFAULT_EDGES): Song {
   const bars: Bar[] = Array.from({ length: Math.ceil(steps.length / 4) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
   const fifths = KEYS[o.tonic] ?? 0
   const title = `${noteName(60 + o.tonic).replace(/\d+$/, '')} major ${PATTERNS[o.pattern].toLowerCase()}, ${DYNS[o.dyn].toLowerCase()}`
-  return build(`tech:${o.pattern}:${o.tonic}:${o.dyn}:${o.hands}`, title, raw, bars, fifths)
+  return { ...build(`tech:${o.pattern}:${o.tonic}:${o.dyn}:${o.hands}`, title, raw, bars, fifths), dyn: o.dyn }
 }

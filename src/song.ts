@@ -33,6 +33,7 @@ export interface Song {
   lo: number
   hi: number
   spb: number // seconds per quarter note, first bar
+  dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
 }
 
 export interface Raw {

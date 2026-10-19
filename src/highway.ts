@@ -4,6 +4,7 @@ import type { Grade } from './judge'
 import { C } from './palette'
 import { settings } from './settings'
 import { noteName } from './spell'
+import { band } from './touch'
 
 const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)')
 
@@ -342,6 +343,11 @@ export class Highway {
       } else {
         ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: body, alpha: 0.92 * a })
         if (!hit && y2 - yt > 12) ng.roundRect(x + 3, yt + 3, w - 6, y2 - yt - 11, 3).fill({ color: C.ink, alpha: 0.22 * a })
+      }
+      // the touch to aim for: one, two or three squares for soft, medium or hard
+      if (st === 0 && n.want && w >= 22 && h >= 26) {
+        const level = { soft: 1, medium: 2, hard: 3 }[band((n.want[0] + n.want[1]) / 2, settings.edges)]
+        for (let q = 0; q < 3; q++) ng.rect(x + w / 2 - 14 + q * 10, yt + 6, 8, 8).fill({ color: C.ground, alpha: (q < level ? 0.9 : 0.22) * a })
       }
       // a note let go early shows the length you did not play, in red, as it runs out
       if (hit && g.judge.holdGrade[i] === 'short' && T > g.judge.holdAt[i]) ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: C.bad, alpha: 0.85 })

@@ -60,6 +60,7 @@ interface Placed {
   clef: 'treble' | 'bass'
   x: number
   dy: number
+  up?: boolean // its stem points up
   head?: SVGElement
 }
 
@@ -286,6 +287,27 @@ export class Staff {
     // the cursor sits behind the noteheads so it never covers what you are about to play
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
     this.notes()
+    this.dynamics()
+  }
+
+  /** Technique exercises: the dynamic to aim for. Words go between the staves at the left of the system, accents sit on the notes. */
+  private dynamics() {
+    const dyn = this.game.song.dyn
+    if (!dyn || !this.placed.length) return
+    const g = el('g', { class: 'dyn', 'aria-hidden': 'true' }, this.svg)
+    const mid = this.base.treble + (this.base.bass - 4 * S - this.base.treble) / 2 // halfway between the staves
+    if (dyn === 'accent') {
+      for (const p of this.placed) {
+        if ((p.note.want?.[0] ?? 0) <= 60 || !p.head) continue
+        const x = Number(p.head.getAttribute('x'))
+        const y = Number(p.head.getAttribute('y')) + (p.up ? 15 : -15) // opposite the stem
+        el('path', { d: `M${x - 6},${y - 4} L${x + 5},${y} L${x - 6},${y + 4}` }, g)
+      }
+      return
+    }
+    const word = { soft: 'p', medium: 'mf', hard: 'f', cresc: 'cresc.', decresc: 'dim.' }[dyn]
+    if (!word) return
+    for (const dy of new Set(this.placed.map((p) => p.dy))) el('text', { x: this.x0 + 4, y: dy + mid + 6, class: word.length > 2 ? 'wd' : '' }, g, word)
   }
 
   private notes() {
@@ -358,6 +380,7 @@ export class Staff {
     const g = el('g', { class: 'notes' }, this.svg)
     for (const c of chords.sort((a, b) => a.t - b.t)) {
       const { clef, up, x, beats, items: chord } = c
+      for (const p of chord) p.up = up
       const head = beats >= 4 ? G.whole : beats >= 2 ? G.half : G.black
       const bottom = BOTTOM_STEP[clef]
       for (let s = bottom - 2; s >= c.lo; s -= 2) {
