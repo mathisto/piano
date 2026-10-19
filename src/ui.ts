@@ -161,7 +161,7 @@ const head = (title: string, actions = '', lede = '') =>
 const LEVELS = ['Beginner', 'Elementary', 'Intermediate']
 
 /** The open library, grouped by level; each group folds away. Nothing here is committed copyrighted music: see Credits. */
-function libraryTable(lib: LibraryEntry[]) {
+function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>) {
   if (!lib.length) return ''
   const groups = LEVELS.map((lv) => [lv, lib.filter((e) => e.level === lv)] as const).filter(([, es]) => es.length)
   return `<h2 class="sec">Open library</h2>${groups
@@ -169,7 +169,7 @@ function libraryTable(lib: LibraryEntry[]) {
       ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
       <table class="songs"><caption class="sr-only">${lv}</caption><tbody>${es
         .map(
-          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="acts"><div class="row-actions">
+          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
         )
@@ -187,12 +187,12 @@ export function creditsDialog(lib: LibraryEntry[]) {
     <div class="row-actions"><form method="dialog"><button class="btn">Close</button></form></div>`
 }
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = []) {
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = [], prog: Map<string, Progress> = new Map()) {
   el.innerHTML = `
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
-    ${libraryTable(lib)}
+    ${libraryTable(lib, prog)}
     ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }
 

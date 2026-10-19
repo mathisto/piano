@@ -102,7 +102,7 @@ async function libraryData() {
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err, libEntries)
+  library($('#library'), starts, mine, err, libEntries, await store.allProgress())
 }
 
 const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
