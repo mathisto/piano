@@ -175,22 +175,27 @@ table.songs caption,
 }
 .hud {
   display: flex;
-  align-items: baseline;
-  gap: 20px;
+  align-items: center;
+  gap: 24px;
 }
 .hud > div {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-items: center;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 3px;
 }
 .hud small {
+  grid-column: 1 / -1;
   color: var(--ink-3);
+  font-size: 11px;
 }
 .hud b {
-  font: 800 italic 34px/1 var(--display);
+  font: 800 italic 30px/1 var(--display);
   letter-spacing: 0.01em;
-  text-align: right;
   min-width: 2ch;
+  text-align: center;
 }
 #hScore {
   min-width: 5.4ch;
@@ -198,17 +203,8 @@ table.songs caption,
 #hCombo {
   min-width: 2.6ch;
 }
-#hAcc {
-  min-width: 4ch;
-}
-#hClr {
-  min-width: 5.4ch;
-}
 #hCards {
   min-width: 4.4ch;
-}
-#hMed {
-  min-width: 3.4ch;
 }
 .hud .mult {
   font: 800 italic 22px/1 var(--display);
@@ -1141,6 +1137,7 @@ kbd {
 }
 .scrub.still {
   cursor: default;
+  height: 18px;
 }
 .scrub svg {
   position: absolute;
@@ -1512,24 +1509,8 @@ dialog#help .btn {
   .hud {
     gap: 12px;
   }
-  .hud b {
-    font-size: 28px;
-  }
-  .hud > [data-m='perform'] small {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-  .seg.icons em,
-  .btn.sm[data-t],
-  .hand .hlbl {
+  .seg.icons em {
     display: none;
-  }
-  .hud > [data-m='learn'] small,
-  .hud > [data-m='read'] small {
-    font-size: 12px;
   }
   .bar {
     gap: 8px;
@@ -1537,6 +1518,13 @@ dialog#help .btn {
   }
   .chip {
     padding: 0 10px;
+  }
+}
+
+@media (max-width: 1180px) and (pointer: fine) {
+  .btn.sm[data-t],
+  .hand .hlbl {
+    display: none;
   }
 }
 
@@ -1563,4 +1551,35 @@ dialog#help .btn {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------- touch first: the iPad is the main screen ---------- */
+@media (pointer: coarse) {
+  :root {
+    --control: 44px;
+  }
+  .seg span {
+    height: 38px;
+  }
+  .btn.sm {
+    height: 44px;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    width: 32px;
+    height: 32px;
+    margin-top: -13px;
+  }
+}
+
+/* ---------- play focus: the top bar fades once the song runs, H hides the extras ---------- */
+.bar {
+  transition: opacity 0.35s var(--ease);
+}
+body.hush .bar {
+  opacity: 0;
+  pointer-events: none;
+}
+body.zen .bar,
+body.zen #dock .aids {
+  display: none;
 }

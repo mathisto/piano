@@ -143,7 +143,7 @@ export class Highway {
       if (left) this.keys.set(p, { p, x: left.x + ww - bw / 2, w: bw, black: true })
     }
     // sheet view gives the stage to the keyboard alone; otherwise the highway needs most of it
-    this.kbH = this.game.view === 'sheet' ? Math.max(fullH - 8, 60) : Math.min(Math.max(ww * 4.2, 92), fullH * 0.24)
+    this.kbH = this.game.view === 'sheet' ? Math.max(fullH - 8, 60) : Math.min(Math.max(ww * 3.6, 84), fullH * 0.2)
     this.H = fullH - this.kbH
 
     this.lanes.clear()

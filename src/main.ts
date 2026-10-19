@@ -30,6 +30,7 @@ skeleton(app)
 const game = new Game()
 const starters = STARTERS.map((s) => fromSpec(s.spec))
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+const coarse = matchMedia('(pointer: coarse)').matches // touch first: the iPad has no Space key
 
 let highway!: Highway
 let staff!: Staff
@@ -265,6 +266,7 @@ async function openSong(song: Song, mode: Mode) {
 }
 
 function leave() {
+  document.body.classList.remove('hush', 'zen')
   const wasDrill = !!drill
   const techSong = current?.song.id.startsWith('tech:')
   if (drill) void store.saveDrill(drillStats)
@@ -308,7 +310,7 @@ function syncMode() {
 
 // ---------------------------------------------------------------- per-frame
 
-let last = { score: -1, combo: -1, mult: 0, acc: '', clr: '', slip: -1, count: 0 }
+let last = { score: -1, combo: -1, count: 0 }
 
 function frame() {
   game.frame(performance.now())
@@ -323,14 +325,7 @@ function frame() {
       $('#hMult').hidden = m === 1
       $('#hMult').textContent = `×${m}`
     }
-    const acc = `${Math.round(j.accuracy * 100)}%`
-    if (acc !== last.acc) $('#hAcc').textContent = acc
-    last = { ...last, score: j.score, combo: j.combo, acc }
-  } else if (game.mode === 'learn') {
-    const clr = `${j.hits}/${j.total}`
-    if (clr !== last.clr) $('#hClr').textContent = clr
-    if (j.wrong !== last.slip) $('#hSlip').textContent = String(j.wrong)
-    last = { ...last, clr, slip: j.wrong }
+    last = { ...last, score: j.score, combo: j.combo }
   }
   const n = game.count
   if (n !== last.count) {
@@ -457,6 +452,15 @@ game.on((e: GameEvent) => {
   }
 })
 
+// the top bar fades two and a half seconds into a run and comes back on any pointer or key
+let idle = 0
+function wake() {
+  document.body.classList.remove('hush')
+  clearTimeout(idle)
+  if (current && game.phase !== 'ready' && game.phase !== 'paused' && game.phase !== 'done') idle = window.setTimeout(() => document.body.classList.add('hush'), 2500)
+}
+for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, wake, { passive: true })
+
 function say(msg: string) {
   $('#live').textContent = msg
 }
@@ -468,15 +472,23 @@ function onPhase() {
   r.hidden = game.phase !== 'ready'
   if (game.phase === 'ready') {
     resOpen(false)
-    const legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
+    const go = coarse ? 'Tap <b>Play</b>' : 'Press <kbd>Space</kbd>'
+    let legend = ''
+    try {
+      if (!localStorage.getItem('piano.legend') && !drill && !calibrating) {
+        legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
+        localStorage.setItem('piano.legend', '1') // the colours explain themselves after one song
+      }
+    } catch {
+      /* private mode: the legend shows every time */
+    }
     r.innerHTML = drill
-      ? `<b>${esc(drill.title)}</b><span>Read the staff and play what you see. Press <kbd>Space</kbd>. The song waits for you.</span>`
+      ? `<b>${esc(drill.title)}</b><span>${go} to start.</span>`
       : calibrating
-        ? `<b>Play middle C on every beat</b><span>Press <kbd>Space</kbd> to start. On the computer keyboard, that is <kbd>A</kbd>.</span>`
-        : game.mode === 'perform'
-          ? `<b>${esc(current.song.title)}</b><span>Press <kbd>Space</kbd> to start. You get a four-beat count-in.</span>${legend}`
-          : `<b>${esc(current.song.title)}</b><span>Learn mode: the song waits for you. Press <kbd>Space</kbd>, slow it down, loop the hard bars.</span>${legend}`
+        ? `<b>Play middle C on every beat</b><span>${go} to start.</span>`
+        : `<b>${esc(current.song.title)}</b><span>${go} to start.${game.mode === 'learn' ? ' The song waits for you.' : ''}</span>${legend}`
   }
+  wake()
   if (game.phase === 'paused') say('Paused')
   if (game.phase === 'waiting') say('Waiting for you')
   updateBanner()
@@ -528,9 +540,6 @@ function median(xs: number[]) {
 function drillHud() {
   if (!drill) return
   $('#hCards').textContent = `${drill.done}/${drill.cards.length}`
-  $('#hStreak').textContent = String(drill.streak)
-  $('#hClean').textContent = drill.done ? `${Math.round((drill.cleanN / drill.done) * 100)}%` : '—'
-  $('#hMed').textContent = drill.rts.length ? `${(median(drill.rts) / 1000).toFixed(1)} s` : '—'
 }
 
 function drillOk(noteId: number, rt: number, clean: boolean) {
@@ -905,7 +914,10 @@ addEventListener('keydown', (e) => {
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return
   if ((e.target as HTMLElement).closest('dialog')) return
   if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
-  else if (e.key === 'n') {
+  else if (e.key === 'm' && current) {
+    document.body.classList.toggle('zen')
+    highway?.layout()
+  } else if (e.key === 'n') {
     settings.names = !settings.names
     save()
   } else if (e.key === 'Escape') {

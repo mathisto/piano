@@ -38,20 +38,14 @@ export function skeleton(app: HTMLElement) {
     <div class="hud" id="hud" hidden>
       <div data-m="perform" role="group" aria-label="Score" title="Score"><small>Score</small><b id="hScore">0</b></div>
       <div data-m="perform" class="combo" role="group" aria-label="Combo" title="Combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
-      <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hAcc">100%</b></div>
-      <div data-m="learn" role="group" aria-label="Notes" title="Notes"><small>Notes</small><b id="hClr">0/0</b></div>
-      <div data-m="learn" role="group" aria-label="Wrong" title="Wrong"><small>Wrong</small><b id="hSlip">0</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
-      <div data-m="read" role="group" aria-label="Streak" title="Streak"><small>Streak</small><b id="hStreak">0</b></div>
-      <div data-m="read" role="group" aria-label="First try" title="First try"><small>First try</small><b id="hClean">—</b></div>
-      <div data-m="read" role="group" aria-label="Median" title="Median"><small>Median</small><b id="hMed">—</b></div>
     </div>
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
   <dialog id="help" aria-label="Shortcuts">
     <h2>Shortcuts</h2>
-    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
+    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide the extras</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
     <p class="fine">No keyboard: <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p>
     <form method="dialog"><button class="btn">Close</button></form>
   </dialog>
