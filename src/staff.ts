@@ -322,9 +322,10 @@ export class Staff {
       }
       return
     }
-    const word = { soft: 'p', medium: 'mf', hard: 'f', cresc: 'cresc.', decresc: 'dim.' }[dyn]
+    // dynamic letters are Bravura glyphs; the words are italic text
+    const word = { soft: '\uE520', medium: '\uE52D', hard: '\uE522', cresc: 'cresc.', decresc: 'dim.' }[dyn]
     if (!word) return
-    for (const dy of new Set(this.placed.map((p) => p.dy))) el('text', { x: this.x0 + 4, y: dy + mid + 6, class: word.length > 2 ? 'wd' : '' }, g, word)
+    for (const dy of new Set(this.placed.map((p) => p.dy))) el('text', { x: this.x0 + 4, y: dy + mid + (word.length > 1 ? 6 : 10), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
   }
 
   private notes() {

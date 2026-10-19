@@ -743,6 +743,10 @@ body.reading .hud small {
   fill: var(--ink-2);
   font: italic 700 20px Georgia, 'Times New Roman', serif;
 }
+#staff .dyn text.smufl {
+  font: 40px 'Bravura';
+  fill: var(--ink-2);
+}
 #staff .dyn text.wd {
   font-size: 15px;
   font-weight: 400;
