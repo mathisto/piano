@@ -33,7 +33,6 @@ skeleton(app)
 const game = new Game()
 const starters = STARTERS.map((s) => fromSpec(s.spec))
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-const coarse = matchMedia('(pointer: coarse)').matches // touch first: the iPad has no Space key
 
 let highway!: Highway
 let staff!: Staff
@@ -566,9 +565,9 @@ function onPhase() {
   dock.setPhase()
   const r = $('#ready')
   r.hidden = game.phase !== 'ready'
+  $('#modeSeg').hidden = game.mode === 'read' || game.phase === 'ready' // the start card carries the choice until play begins
   if (game.phase === 'ready') {
     resOpen(false)
-    const go = coarse ? 'Tap <b>Play</b>' : 'Press <kbd>Space</kbd>'
     let legend = ''
     try {
       if (!localStorage.getItem('piano.legend') && !drill && !calibrating) {
@@ -578,11 +577,14 @@ function onPhase() {
     } catch {
       /* private mode: the legend shows every time */
     }
+    const start = `<span class="hint">${matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'}</span>`
+    const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'}</span>`
     r.innerHTML = drill
-      ? `<b>${esc(drill.title)}</b><span>${go} to start.</span>`
+      ? `<b>${esc(drill.title)}</b>${start}`
       : calibrating
-        ? `<b>Play middle C on every beat</b><span>${go} to start.</span>`
-        : `<b>${esc(current.song.title)}</b><span>${go} to start.${game.mode === 'learn' ? ' The song waits for you.' : ''}</span>${legend}`
+        ? `<b>Play middle C on every beat</b>${start}`
+        : `<b>${esc(current.song.title)}</b>${sheet}${start}${legend}`
+    r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
   }
   wake()
   if (game.phase === 'paused') say('Paused')
@@ -1003,15 +1005,16 @@ $('#read').addEventListener('click', (e) => {
   } else if (b.dataset.review) void startDrill('review')
 })
 
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) {
-  r.onchange = () => {
-    game.endPass()
-    game.setMode(r.value as Mode)
-    resOpen(false)
-    syncMode()
-    onPhase()
-  }
+function chooseMode(mode: Mode) {
+  game.endPass()
+  game.setMode(mode)
+  ;($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
+  resOpen(false)
+  syncMode()
+  onPhase()
 }
+
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) r.onchange = () => chooseMode(r.value as Mode)
 
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=view]')) r.onchange = () => setView(r.value as 'both' | 'sheet' | 'falling')
 
