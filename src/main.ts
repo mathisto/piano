@@ -25,10 +25,10 @@ import { thumb } from './thumb'
 import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
-import { LEVELS, autoLevel, notesPerBar, simplify, type Level } from './simplify'
+import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
-import { exercise, type Opts } from './technique'
-import { dayKey, lastWeek, weekOf } from './week'
+import { exercise, PATTERNS, type Opts } from './technique'
+import { dayKey, improved, lastWeek, weekOf } from './week'
 import { $, CAL_NOTES, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
@@ -102,7 +102,7 @@ async function libraryData() {
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err, libEntries)
+  library($('#library'), starts, mine, err, libEntries, await store.allProgress())
 }
 
 const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
@@ -148,8 +148,15 @@ async function showToday() {
   const ex = exercise(nr.recipe.opts, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
+  // one snapshot a week lets the recap say what got better; the recap shows on Monday and Tuesday
+  const week = weekOf(days).days
+  const snap = { read: Object.fromEntries(rows.map((r) => [r.stage.id, r.pct])), tech: SYLLABUS.filter((r) => stateOf(ts, r.id, dayNum()) === 'solid').length }
+  if (!(await store.getSnap(week[0].key))) await store.putSnap(week[0].key, snap)
+  const lw = [1, 2].includes(new Date().getDay()) ? lastWeek(days, settings.goal) : null
+  const prevKey = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 7 - ((new Date().getDay() + 6) % 7)))
+  const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   todayView($('#today'), {
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
     read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
     techDue: nr.reason === 'due',
@@ -160,7 +167,7 @@ async function showToday() {
     goal: settings.goal,
     planMin: settings.planMin,
     done,
-    recap: new Date().getDay() === 1 ? lastWeek(days, settings.goal) ?? undefined : undefined,
+    recap: recap ?? undefined,
   })
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
     settings.planMin = Number(r.value) as 5 | 10 | 20
@@ -172,7 +179,7 @@ async function showToday() {
 async function showProgress() {
   const [stages, days, log, ts] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech()])
   const today = dayNum()
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) })) })
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -210,7 +217,7 @@ async function showTechnique() {
   const el = $('#technique')
   const ts = await store.getTech()
   const today = dayNum()
-  const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) }))
+  const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) }))
   techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)), path)
   el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
     const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)
@@ -624,7 +631,7 @@ function onPhase() {
     const start = `<span class="hint">${matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'}</span>`
     const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'}</span>`
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
-    const levels = shows ? `<div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
+    const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
     r.innerHTML = drill
       ? `<b>${esc(drill.title)}</b>${start}`
       : calibrating
@@ -981,6 +988,7 @@ function openDrawer() {
   on('#sNames', (el) => {
     settings.names = el.checked
     save()
+    openDrawer() // the fade switch only means something while names are shown
   }, 'change')
   on('#sWritten', (el) => {
     settings.asWritten = el.checked
@@ -996,9 +1004,9 @@ function openDrawer() {
     if (highway) highway.layout()
   }, 'change')
   on('#sInst', (el) => {
-    settings.instrument = el.value as 'piano' | 'synth'
+    settings.instrument = el.value
     save()
-    if (settings.instrument === 'piano') void audio.preload().then(openDrawer) // shows the failure line if the samples did not load
+    void audio.preload().then(openDrawer) // shows the failure line if the samples did not load
   }, 'change')
   on('#sVol', (el) => {
     settings.volume = Number(el.value)
@@ -1065,7 +1073,10 @@ function zen() {
   highway?.layout()
 }
 addEventListener('click', (e) => {
-  if ((e.target as HTMLElement).closest('#zen')) zen()
+  const t = e.target as HTMLElement
+  if (t.closest('#zen')) zen()
+  const x = t.closest<HTMLElement>('[data-close]')
+  if (x) x.closest('dialog')?.close()
 })
 
 function chooseMode(mode: Mode) {
@@ -1125,9 +1136,6 @@ $('#library').addEventListener('click', async (e) => {
     return void openById(b.dataset.play, b.dataset.mode as Mode)
   } else if (b.dataset.tracks) {
     void openTracks(b.dataset.tracks)
-  } else if (b.dataset.del) {
-    await store.removeSong(b.dataset.del)
-    void showLibrary()
   }
 })
 
@@ -1169,11 +1177,11 @@ async function openTracks(id: string) {
     ['Length', `${Math.floor(song.end / 60)}:${String(Math.round(song.end % 60)).padStart(2, '0')}`],
     ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
     ...(r ? ([['Drums', r.tracks.some((t) => t.percussion) ? 'Present, left out' : 'None']] as [string, string][]) : []),
-    ['Busiest bars', `${notesPerBar(song)} notes`],
   ]
   const dlg = $('#tracks') as HTMLDialogElement
+  const order = [...pick.tracks] // the tracks in use first, fixed while the dialog is open
   const draw = () => {
-    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName, facts)
+    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName, facts, order)
     dlg.querySelectorAll<HTMLInputElement>('input[data-tk]').forEach((c) => {
       c.onchange = () => {
         const i = Number(c.dataset.tk)
@@ -1195,6 +1203,12 @@ async function openTracks(id: string) {
       draw()
     })
     $('#tkCancel', dlg).onclick = () => dlg.close()
+    $('#tkRemove', dlg).onclick = async () => {
+      if (!confirm(`Remove ${s.title} from this browser?`)) return
+      await store.removeSong(id)
+      dlg.close()
+      void showLibrary()
+    }
     $('#tkShare', dlg).onclick = () => void shareFile(new File([s.bytes], `${s.title}${midi ? '.mid' : '.musicxml'}`, { type: midi ? 'audio/midi' : 'application/xml' }))
     const apply = dlg.querySelector<HTMLButtonElement>('#tkApply')
     if (apply)

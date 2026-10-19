@@ -155,6 +155,15 @@ export async function setSimplify(id: string, level: number) {
   await set(`simp:${id}`, level)
 }
 
+/** A weekly snapshot of skill, so the Monday recap can say what improved. */
+export async function getSnap(week: string): Promise<{ read: Record<string, number>; tech: number } | undefined> {
+  return get(`snap:${week}`)
+}
+
+export async function putSnap(week: string, s: { read: Record<string, number>; tech: number }) {
+  await set(`snap:${week}`, s)
+}
+
 export async function getTech(): Promise<TechStats> {
   return (await get<TechStats>('tech:stats')) ?? {}
 }
@@ -181,7 +190,7 @@ export async function importAll(text: string) {
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 

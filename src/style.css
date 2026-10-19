@@ -580,6 +580,14 @@ table.songs td.thumb {
 }
 .tag {
   margin-left: 10px;
+  padding: 3px 6px 2px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-1);
+  color: var(--ink-2);
+}
+.tag.next {
+  border-color: transparent;
+  padding-inline: 0;
   color: var(--lamp);
 }
 table.songs tr.band th {
@@ -640,20 +648,13 @@ table.songs tr.band th {
   max-width: 420px;
   height: auto;
 }
-.bands {
-  display: flex;
-  flex: 1;
-  gap: 4px;
-  max-width: 560px;
-}
 .bands span {
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: var(--r-1);
-  background: var(--panel-2);
+  border: 1px solid var(--edge);
   color: var(--ink-2);
-  font: 700 13px/1 var(--ui);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font: 650 14px/1 var(--ui);
+  white-space: nowrap;
 }
 h2.sec {
   margin: 28px 0 12px;
@@ -1515,40 +1516,7 @@ button.link {
   cursor: pointer;
   padding: 0;
 }
-dialog#help {
-  background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-3);
-  padding: 24px 28px;
-  max-width: 420px;
-}
-dialog#help::backdrop {
-  background: rgba(5, 6, 13, 0.7);
-}
 
-dialog#tracks {
-  background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-3);
-  padding: 22px 26px;
-  width: min(640px, 94vw);
-  max-height: 86vh;
-  overflow: auto;
-}
-dialog#tracks::backdrop {
-  background: rgba(5, 6, 13, 0.7);
-}
-dialog#tracks h2 {
-  margin: 0 0 6px;
-  font: 800 italic 28px/1 var(--display);
-  text-transform: uppercase;
-}
-dialog#tracks .fine {
-  margin: 0 0 14px;
-  color: var(--ink-2);
-}
 .tklist {
   display: grid;
   gap: 2px;
@@ -1575,17 +1543,6 @@ dialog#tracks .fine {
 .tkrow select {
   width: auto;
   flex: none;
-}
-dialog#tracks .row-actions {
-  justify-content: flex-end;
-}
-dialog#help h2 {
-  margin: 0 0 14px;
-  font: 800 italic 28px/1 var(--display);
-  text-transform: uppercase;
-}
-dialog#help .btn {
-  margin-top: 16px;
 }
 @media (hover: none) {
   .drawer .foot .link {
@@ -1874,30 +1831,9 @@ body.zen #dock .aids {
 .prow.done .pwho b {
   color: var(--ink-2);
 }
-.prow .pwho b svg {
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-  vertical-align: -3px;
-}
-.recap {
-  margin-bottom: 16px;
-}
-.recap summary {
-  cursor: pointer;
-  font-weight: 650;
-}
-.recap p {
-  margin: 8px 0;
-  color: var(--ink-2);
-}
 
-.crow.wrap {
-  flex-wrap: wrap;
-  max-width: 760px;
-}
 .cell.due {
-  outline: 1.5px dashed var(--ink-2);
+  outline: 2px solid var(--ink-2);
   outline-offset: -2px;
 }
 .all {
@@ -1912,33 +1848,18 @@ body.zen #dock .aids {
   margin: 0 0 8px;
 }
 .libgrp summary {
-  cursor: pointer;
-  padding: 10px 0;
-  font: 800 italic 20px/1 var(--display);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  min-height: var(--control);
+  display: flex;
+  align-items: center;
+  font-weight: 650;
 }
 .libgrp summary span {
+  margin-left: 8px;
   color: var(--ink-3);
-  font-style: normal;
 }
-dialog#credits {
-  background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-3);
-  padding: 22px 26px;
-  width: min(720px, 94vw);
-  max-height: 86vh;
-  overflow: auto;
-}
-dialog#credits::backdrop {
-  background: rgba(5, 6, 13, 0.7);
-}
-dialog#credits h2 {
-  margin: 0 0 6px;
-  font: 800 italic 28px/1 var(--display);
-  text-transform: uppercase;
+.label.cap {
+  margin: 36px 0 4px;
+  color: var(--ink-3);
 }
 .credlist pre {
   margin: 0;
@@ -1968,4 +1889,192 @@ dialog#credits h2 {
 .facts dd {
   margin: 4px 0 0;
   font-weight: 650;
+}
+
+
+/* ---------- one sheet for every dialog: header, scrolling body, pinned footer ---------- */
+dialog.sheet {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  padding: 0;
+  width: min(680px, 94vw);
+  max-height: 86vh;
+}
+dialog.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+dialog.sheet::backdrop {
+  background: rgba(5, 6, 13, 0.7);
+}
+dialog.sheet > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px 8px 26px;
+}
+dialog.sheet > header h2 {
+  margin: 0;
+  font: 800 italic 28px/1 var(--display);
+  text-transform: uppercase;
+}
+dialog.sheet > header p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+}
+dialog.sheet > .body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 26px 12px;
+}
+dialog.sheet > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 22px 18px;
+  border-top: 1px solid var(--line);
+}
+dialog.sheet h3 {
+  margin: 18px 0 4px;
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+dialog.sheet .fine {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+dialog.sheet#help {
+  width: min(440px, 94vw);
+}
+
+dialog.sheet footer .grow {
+  flex: 1;
+}
+
+/* one marker for every disclosure */
+.drawer summary,
+.libgrp summary,
+.all summary {
+  cursor: pointer;
+  list-style: none;
+}
+.libgrp summary::-webkit-details-marker,
+.all summary::-webkit-details-marker {
+  display: none;
+}
+.libgrp summary::before,
+.all summary::before {
+  content: '+';
+  display: inline-block;
+  width: 1.2em;
+  color: var(--ink-3);
+}
+.libgrp[open] > summary::before,
+.all[open] > summary::before {
+  content: '−';
+}
+@media (pointer: coarse) {
+  .all summary,
+  .drawer summary {
+    min-height: var(--control);
+    display: flex;
+    align-items: center;
+  }
+}
+
+.plead {
+  flex: none;
+  width: 24px;
+  color: var(--ink-2);
+}
+.plead svg {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+}
+.recap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  color: var(--ink-2);
+}
+.recap b {
+  color: var(--ink);
+}
+
+.pop {
+  position: relative;
+}
+.popmenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-2);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ready .cap {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ready {
+  background: rgba(9, 11, 23, 0.94);
+}
+
+.drawer .switch.sub {
+  margin-left: 52px;
+}
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slider small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.slider input {
+  flex: 1;
+}
+.drawer .foot .link {
+  min-height: var(--control);
+}
+.bands {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  max-width: 600px;
+}
+.bands > div {
+  display: flex;
+  gap: 4px;
+}
+.cgrp {
+  display: grid;
+  gap: 6px;
+}
+.tprev svg {
+  max-width: 260px;
+}
+
+dialog.sheet footer .btn {
+  white-space: nowrap;
 }

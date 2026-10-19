@@ -43,8 +43,8 @@ export class Dock {
           <div class="lbl tip" hidden></div>
         </div>
         <div class="dock-end" data-modes="learn">
-          <button class="btn" id="loopWorst">${icon('loop')}Loop worst bars</button>
-          <button class="btn" id="loopClear" disabled>Clear loop</button>
+          <button class="btn" id="loopWorst" hidden>${icon('loop')}Loop worst bars</button>
+          <button class="btn" id="loopClear" hidden>Clear loop</button>
         </div>
       </div>
       <div class="dock-row aids" data-modes="learn read">
@@ -57,9 +57,14 @@ export class Dock {
           <span class="tempo-val" id="tempoVal">100%</span>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
         </div>
-        <label class="switch" data-modes="learn"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
-        <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
-        <label class="switch" data-modes="learn"><input type="checkbox" id="holdAdvance"><i></i>Hold to move on</label>
+        <div class="pop" data-modes="learn">
+          <button class="btn" id="aidsBtn" aria-expanded="false" aria-haspopup="true" aria-controls="aidsMenu">Aids</button>
+          <div class="popmenu" id="aidsMenu" hidden>
+            <label class="switch"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
+            <label class="switch"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
+            <label class="switch"><input type="checkbox" id="holdAdvance"><i></i>Hold to advance</label>
+          </div>
+        </div>
         <span class="dock-fill"></span>
         <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
@@ -101,6 +106,21 @@ export class Dock {
       game.setLoop(null)
       this.sync()
     }
+    // the assist switches live in one popover: closes on an outside click or Escape
+    const btn = q<HTMLButtonElement>('#aidsBtn')
+    const menu = q('#aidsMenu')
+    const set = (open: boolean) => {
+      menu.hidden = !open
+      btn.setAttribute('aria-expanded', String(open))
+    }
+    btn.onclick = () => set(menu.hidden === true)
+    document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.pop') && set(false))
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        set(false)
+        btn.focus()
+      }
+    })
     this.pointer()
   }
 
@@ -119,7 +139,8 @@ export class Dock {
       const r = this.host.querySelector<HTMLInputElement>(`input[name=hand${h}][value=${g.hands[h]}]`)
       if (r) r.checked = true
     }
-    ;(this.host.querySelector('#loopClear') as HTMLButtonElement).disabled = !g.loop
+    ;(this.host.querySelector('#loopClear') as HTMLButtonElement).hidden = !g.loop
+    this.showWorst()
     // in Perform the strip is a progress bar, not a control
     this.scrub.classList.toggle('still', !learn)
     this.scrub.setAttribute('role', learn ? 'slider' : 'progressbar')
@@ -134,9 +155,15 @@ export class Dock {
     this.go.innerHTML = `${icon(label === 'Pause' ? 'pause' : 'play')}${label}`
   }
 
+  /** The worst-bars loop is offered only once there is a trouble spot to loop. */
+  private showWorst() {
+    ;(this.host.querySelector('#loopWorst') as HTMLButtonElement).hidden = !this.heat.some((h) => h > 0) && !this.game.heat.some((h) => h > 0)
+  }
+
   setSong(song: Song, heat: number[]) {
     this.song = song
     this.heat = heat
+    this.showWorst()
     this.scrub.setAttribute('aria-valuemax', String(song.bars.length))
     this.drawMap()
   }
@@ -174,6 +201,7 @@ export class Dock {
     this.heat = m
     this.drawMap()
     this.heat = prev
+    this.showWorst()
   }
 
   private drawLoop() {

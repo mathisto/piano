@@ -10,7 +10,8 @@
     "test": "vitest run",
     "ios": "npm run build && cap sync ios && cap open ios",
     "ios:sync": "npm run build && cap sync ios",
-    "library:fetch": "node scripts/fetch-library.mjs"
+    "library:fetch": "node scripts/fetch-library.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
