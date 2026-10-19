@@ -50,7 +50,7 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 - [ ] `docs/research/midi-import-audit.md`: why a fan MIDI of Aerith's Theme rendered as clutter; root causes and a fix plan (agent running). Needs the original file from the owner, or an in-app import report.
 - [ ] Import report and per-track selection (drums, pads, bass) at import time.
 - [ ] Quantization with tuplet detection, voice separation, a simplify control.
-- [ ] A curated public-domain library built from Mutopia and OpenScore with licence metadata, shown in Songs.
+- [ ] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
 - [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
 - [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence.
 

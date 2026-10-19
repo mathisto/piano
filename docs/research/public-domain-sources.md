@@ -1,5 +1,11 @@
 # Public-domain and open sources for a piano library
 
+> **Policy update, 19 Oct 2026 (owner).** The goal is free and open, not only public domain. Accept **CC0, public domain, CC BY and CC BY-SA** (Mutopia's "Public Domain", "CC BY" and "CC BY-SA" tags; OpenScore CC0; IMSLP's CC BY and CC BY-SA editions). Credit every piece in the app. Consequences:
+> - **Credit:** each library entry carries composer (with dates), arranger or editor or typesetter, licence name and link, source URL and source edition. A Credits screen (reachable from Settings and from each piece) prints them; the piece's start sheet shows a one-line credit.
+> - **Share-alike:** a CC BY-SA score stays CC BY-SA, including any converted or edited copy we store. The app's code stays MIT; the scores are data under their own licences, kept in `public/library/` with a `LICENSES.md` and the original licence header in each file's metadata. Do not mix SA material into the MIT-licensed code or into hand-written starter specs.
+> - **NC licences** (CC BY-NC, CC BY-NC-SA) are free to use for a free, non-commercial site, but they would block ever monetising it. Allow only with a manifest flag `nc: true` and show it in Credits; the owner decides case by case.
+> - Mixed licences inside a composer's set are per piece: the pieces marked "left out on purpose" below (Mozart K.545, Moonlight, Satie, Diabelli Op.149, Schumann Melodie) are now fair game.
+
 Research date: 2026-10-19. Scope: where `piano.mattkelly.io` can get legally safe sheet music in a form its importers can use.
 
 Claim markers used throughout:
@@ -106,7 +112,7 @@ Grades are mine. Licence clarity: A = machine-readable per-piece licence I could
   - CC BY-SA: Satie Gnossiennes and other Satie (4.0); Diabelli Op.149 (3.0); Schumann Album für die Jugend Op.68 (2.5/3.0); Mozart K.545 (3.0); Beethoven Moonlight (2.5); Chopin Op.28 Nos 1 and 2.
   - Within one composer: Schumann Kinderszenen Nos 1, 5, 7 are PD but Nos 2, 3, 4, 6 are CC BY 3.0 [V]. Bach Inventions 1, 6, 9 are CC BY-SA while 2, 3, 4, 5, 7, 8, 10 are PD [V].
 - Not found in Mutopia [V, "no matches"]: Ode to Joy as a piano piece, Beethoven Sonatinas, Bach "Little Prelude", and a "Hymn medley" collection. The Hymn style has only six pieces.
-- Attribution rule for our use: PD needs none legally, but credit anyway (section 7). CC BY needs the author credit. CC BY-SA needs credit and share-alike on the resulting work, which complicates a mixed-licence public repo. I would ship PD-only in v1.
+- Attribution rule for our use: PD needs none legally, but credit anyway (section 7). CC BY needs the author credit. CC BY-SA needs credit and share-alike on the resulting work, which complicates a mixed-licence public repo. The owner has since decided to take CC BY and CC BY-SA too (see the policy update at the top).
 
 ### 3.2 OpenScore (Lieder; also String Quartets)
 
@@ -245,7 +251,7 @@ public/library/
 `fetch-library.mjs` outline:
 
 ```js
-const ALLOW = new Set(['Public Domain', 'CC0'])          // v1: no BY, no BY-SA
+const ALLOW = new Set(['Public Domain', 'CC0', 'CC BY', 'CC BY-SA']) // owner policy 19 Oct 2026: any free licence with credit
 for (const e of input) {
   if (e.src === 'mutopia') {
     const html = await get(`https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${e.pieceId}`)
@@ -269,7 +275,7 @@ write('public/library/index.json', JSON.stringify(manifest, null, 1))
 Checks that must fail the build (put them in `vitest`, next to `starters.test.ts`):
 
 1. Every file in `public/library/` has a manifest entry, and no manifest entry points at a missing file.
-2. `licence` is in `ALLOW`. A CC BY or BY-SA entry fails until the UI shows credits and the SA consequence is decided.
+2. `licence` is in `ALLOW`. CC BY and CC BY-SA entries pass only when the manifest carries the credit fields the Credits screen prints (see the policy update at the top).
 3. `lifespan` death year is <= 1955 and the source edition is dated <= 1930, so the piece is PD in the US (<= 1930), EU (<= 1955) and Canada (<= 1971) at once (section 6).
 4. The file parses with `fromMidi` or `fromMusicXml`, has more than 20 notes and at least one bar, and `lo`/`hi` fall inside the piano range.
 5. Reject the file if its sha256 changed without the manifest changing (catches silent upstream edits).
@@ -287,7 +293,7 @@ App side (small): load `/library/index.json` lazily, show the `credit` line on t
 **Legal checks to automate vs. do by eye:**
 - Automated: licence allowlist, death-year bound, sha256, parse test.
 - By eye, once per piece: open the Mutopia "Source" field and confirm an edition published before 1923 [V rule, but legacy pieces may predate it]; open the IMSLP page of that edition if there is any doubt; confirm no editorial text (fingerings, annotations) from a modern editor leaked through (Mutopia strips these by policy but verify) [U].
-- A CC BY or BY-SA tier can come later, but only once credit lines are shown and the share-alike consequence for the repo's data files is accepted.
+- CC BY and CC BY-SA are in from the start under the owner's policy (see the top of this file); the Credits screen and the per-file licence headers are the price.
 
 ---
 
@@ -332,7 +338,7 @@ Ordered easiest to hardest. "Own spec" means we write it in the `Spec` format ou
 | 21 | Burgmüller, Innocence, Op. 100/5 | Mutopia id 214 | PD [V] |
 | 22 | Burgmüller, Tendre Fleur, Op. 100/10 | Mutopia id 221 | PD [V] |
 | 23 | Schumann, Von fremden Ländern, Op. 15/1 | Mutopia id 354 | PD [V] |
-| 24 | Schumann, Melodie, Op. 68/1 | Mutopia id 647 | **CC BY-SA 2.5** [V]. Defer to a later tier, or swap for a PD alternative |
+| 24 | Schumann, Melodie, Op. 68/1 | Mutopia id 647 | **CC BY-SA 2.5** [V]. Fine under the policy update: ship with credit and the SA notice |
 | 25 | Bach, Invention 8, BWV 779 | Mutopia id 61 | PD [V] |
 | 26 | Bach, Invention 4, BWV 775 | Mutopia id 67 | PD [V] |
 | 27 | Satie, Gymnopédie No. 1 | Mutopia id 37 | PD [V]. Other Satie on Mutopia is CC BY-SA |
@@ -417,4 +423,4 @@ Holes found that this research did not close (file in the roadmap):
 4. Find verified sources for Hanon, Beyer, Gurlitt, Bach Little Preludes, James Scott. Candidates are IMSLP plus hand entry.
 5. Read the unreadable terms (musescore.com, Kunst der Fuge, CPDL, free-scores, 8notes, Piano Society) from a browser, if any of those matter.
 6. Importer: repeats, key changes in MIDI, missing-tempo warning, part filtering (section 5).
-7. Decide the policy for a later CC BY and CC BY-SA tier.
+7. ~~Decide the policy for a later CC BY and CC BY-SA tier.~~ Decided 19 Oct 2026: accepted, with credit.
