@@ -490,9 +490,8 @@ input[type='range']::-moz-range-thumb {
   gap: 8px;
 }
 .err {
-  margin: 0 0 12px;
+  margin: 0 0 24px;
   color: var(--bad);
-  min-height: 0;
 }
 .err:empty {
   display: none;
@@ -775,6 +774,37 @@ body.reading .hud small {
   font-family: 'Bravura';
   font-size: 40px;
   fill: var(--ink);
+}
+#staff .smufl.small {
+  font-size: 26px;
+}
+#staff .tupn {
+  font-size: 28px;
+}
+#staff .tie {
+  fill: var(--ink);
+}
+#staff .tup {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+#staff .ott {
+  fill: var(--ink-2);
+  font: italic 400 15px Georgia, 'Times New Roman', serif;
+}
+#staff .ottl {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+#staff .fin {
+  fill: var(--ink-2);
+}
+#staff .barno.dense {
+  font-weight: 400;
+  font-style: italic;
 }
 #staff .past {
   fill: var(--ink-3);

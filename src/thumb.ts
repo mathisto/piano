@@ -5,18 +5,20 @@ import { BOTTOM_STEP, clefFor, spell } from './spell'
 export function thumb(song: Song): string {
   const base = { treble: 19, bass: 44 } // y of each clef's bottom line in the 140x52 box
   const stepY = 1.7
-  const upTo = song.bars[Math.min(1, song.bars.length - 1)].t1
+  const nb = Math.min(2, song.bars.length)
+  const ql = (i: number) => song.bars[i].ql ?? (song.bars[i].n * 4) / song.bars[i].den
+  const total = ql(0) + (nb > 1 ? ql(1) : 0)
   const lines = (['treble', 'bass'] as const)
     .map((c) => [0, 1, 2, 3, 4].map((i) => `<line class="ln" x1="3" x2="137" y1="${base[c] - i * 3.4}" y2="${base[c] - i * 3.4}"/>`).join(''))
     .join('')
   const heads = song.notes
-    .filter((n) => n.t < upTo)
+    .filter((n) => n.bar < nb)
     .slice(0, 48)
     .map((n) => {
       const clef = clefFor(n.p, n.h)
-      const y = base[clef] - (spell(n.p, song.fifths).step - BOTTOM_STEP[clef]) * stepY
+      const y = base[clef] - (spell(n.p, song.fifths, n.acc).step - BOTTOM_STEP[clef]) * stepY
       if (y < 2 || y > 50) return ''
-      return `<ellipse class="nt" cx="${(8 + (n.t / upTo) * 126).toFixed(1)}" cy="${y.toFixed(1)}" rx="2.6" ry="1.9"/>`
+      return `<ellipse class="nt" cx="${(8 + (((n.bar ? ql(0) : 0) + (n.qb ?? 0)) / total) * 126).toFixed(1)}" cy="${y.toFixed(1)}" rx="2.6" ry="1.9"/>`
     })
     .join('')
   return `<svg viewBox="0 0 140 52" aria-hidden="true">${lines}${heads}</svg>`
