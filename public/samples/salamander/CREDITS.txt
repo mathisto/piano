@@ -1,4 +1,4 @@
 Salamander Grand Piano V3, recorded and edited by Alexander Holm.
 Licensed under Creative Commons Attribution 3.0 (CC BY 3.0): http://creativecommons.org/licenses/by/3.0/
-Source: https://archive.org/details/SalamanderGrandPianoV3
-These 30 MP3 files (every third semitone, A0 to C8) are the reduced set distributed with Tone.js: https://github.com/Tonejs/audio
+Source: https://archive.org/details/SalamanderGrandPianoV3 (48 kHz 24-bit, 16 velocity layers; FLAC from https://github.com/sfzinstruments/SalamanderGrandPiano)
+These 90 MP3 files are derived from it by scripts/make-piano.py: three velocity layers (soft, medium, hard) for each of the 30 recorded notes (every third semitone, A0 to C8), mixed to mono, trimmed, faded and re-encoded at 96 kbps.

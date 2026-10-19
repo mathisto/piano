@@ -6,6 +6,7 @@ export interface Settings {
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
   instrument: string // an id from instruments.ts: grand piano (default), other sampled instruments, or the small built-in synth
   volume: number
+  click: number // count-in click level, 0 = silent
   names: boolean // note names on keys and notes
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
   fade: boolean // hide the name of a note on the bars once the Read drills show you know it
@@ -30,6 +31,7 @@ const DEFAULTS: Settings = {
   sound: false,
   instrument: 'piano',
   volume: 0.7,
+  click: 0.6,
   names: true,
   fade: true,
   asWritten: false,

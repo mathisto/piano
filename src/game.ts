@@ -269,7 +269,12 @@ export class Game {
 
     const lead = this.lead()
     const spb = this.song.spb
-    while (this.nextClick * spb <= this.t && this.nextClick * spb < lead.to - 1e-6) audio.click(this.nextClick++ * spb <= lead.from + 1e-6)
+    const look = 0.1 * this.rate // beats go to the audio clock a tenth of a second early, so a click is not late by up to a frame
+    while (this.nextClick * spb <= this.t + look && this.nextClick * spb < lead.to - 1e-6) {
+      const at = this.nextClick * spb
+      audio.click(at <= lead.from + 1e-6, Math.max(0, (at - this.t) / this.rate))
+      this.nextClick++
+    }
     if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
 
     // listen-hand notes play themselves
