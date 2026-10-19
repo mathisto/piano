@@ -8,6 +8,7 @@ import type { Progress, Stored } from './store'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
+import { band, type TouchStats } from './touch'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -156,6 +157,17 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
 
 // ---------- results ----------
 
+/** How hard the keys were struck: a histogram from soft to hard, then the average, spread and hand balance. */
+export function touchBlock(t: TouchStats) {
+  const peak = Math.max(1, ...t.hist)
+  const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
+  const x = 6 + (t.mean / 128) * 384
+  const hand = t.hands.R.n && t.hands.L.n ? ` · right hand ${Math.round(t.hands.R.mean)}, left ${Math.round(t.hands.L.mean)}` : ''
+  return `<div>
+    <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Key velocity, soft to hard, average ${Math.round(t.mean)}">${bars}<line class="mid" x1="${x}" x2="${x}" y1="0" y2="62"/><text x="6" y="80">soft</text><text x="390" y="80" text-anchor="end">hard</text></svg>
+    <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}.</div></div>`
+}
+
 export function results(r: Result, worst: { a: number; b: number } | null) {
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
@@ -179,6 +191,7 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
       <div style="color:var(--ink-2)">${lean}</div></div>`
         : ''
     }
+    ${r.touch.n >= 4 ? touchBlock(r.touch) : ''}
     <div class="row">
       ${worst ? `<button class="btn primary big" id="drill">${icon('loop')}Loop bars ${worst.a + 1}–${worst.b + 1}</button>` : ''}
       <button class="btn ${worst ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>

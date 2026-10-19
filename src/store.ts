@@ -90,9 +90,32 @@ export async function commit(id: string, heat: number[], result?: { score: numbe
   return p
 }
 
+export interface TouchEntry {
+  ts: number
+  id: string // song id, or 'calibration'
+  title: string
+  mode: string
+  n: number
+  mean: number
+  sd: number
+  R: { n: number; mean: number }
+  L: { n: number; mean: number }
+  bands: { soft: number; medium: number; hard: number }
+}
+
+const TOUCH_KEEP = 300
+
+export async function getTouch(): Promise<TouchEntry[]> {
+  return (await get<TouchEntry[]>('touch:log')) ?? []
+}
+
+export async function logTouch(e: TouchEntry) {
+  await set('touch:log', [...(await getTouch()), e].slice(-TOUCH_KEEP))
+}
+
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 export async function getDrill(): Promise<Stats> {

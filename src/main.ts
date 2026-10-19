@@ -517,6 +517,10 @@ async function onDone(r: Result) {
   )
   current.heat = prog.heat
   dock.setSong(current.song, prog.heat)
+  if (r.touch.n >= 4) {
+    const { n, mean, sd, hands, bands } = r.touch
+    void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
+  }
   const worst = worstBars(r.heat)
   const res = $('#res')
   res.innerHTML = results(r, worst)
