@@ -343,6 +343,8 @@ export class Highway {
         ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: body, alpha: 0.92 * a })
         if (!hit && y2 - yt > 12) ng.roundRect(x + 3, yt + 3, w - 6, y2 - yt - 11, 3).fill({ color: C.ink, alpha: 0.22 * a })
       }
+      // a note let go early shows the length you did not play, in red, as it runs out
+      if (hit && g.judge.holdGrade[i] === 'short' && T > g.judge.holdAt[i]) ng.roundRect(x, yt, w, y2 - yt, 5).fill({ color: C.bad, alpha: 0.85 })
       // the bright edge marks the moment to play
       if (!hit) ng.rect(x + 2, y2 - 5, w - 4, 3).fill({ color: C.ink, alpha: 0.85 * a })
       if (waiting && st === 0 && n.t <= T + 0.03) {

@@ -88,3 +88,69 @@ describe('judge', () => {
     expect(j.press(60, 1)[0]).toMatchObject({ k: 'wrong' })
   })
 })
+
+describe('holds', () => {
+  const nd = (id: number, t: number, p: number, d: number, h: 'R' | 'L' = 'R'): Note => ({ ...n(id, t, p), d, h })
+  const hold = (notes: Note[], hold: 'off' | 'lenient' | 'strict' = 'lenient') => mk(notes, { hold })
+
+  it('is silent when holds are off, in wait mode, or the key was never struck', () => {
+    const a = hold([nd(0, 1, 60, 1)], 'off')
+    a.press(60, 1)
+    expect(a.release(60, 1.1, false)).toEqual([])
+    const b = mk([nd(0, 1, 60, 1)], { hold: 'strict', wait: true })
+    b.press(60, 1)
+    expect(b.release(60, 1.1, false)).toEqual([])
+    expect(hold([nd(0, 1, 60, 1)]).release(60, 2, false)).toEqual([])
+  })
+
+  it('accepts a release near the written end', () => {
+    const j = hold([nd(0, 1, 60, 1)])
+    j.press(60, 1)
+    expect(j.release(60, 1.85, false)[0]).toMatchObject({ k: 'hold', i: 0, grade: 'held' })
+    expect(j.holds.held).toBe(1)
+    expect(j.holdPct).toBe(1)
+  })
+
+  it('takes points back for a short release, never below half, and leaves the combo alone', () => {
+    const j = hold([nd(0, 1, 60, 2)])
+    j.press(60, 1)
+    expect(j.score).toBe(100)
+    expect(j.release(60, 1.1, false)[0]).toMatchObject({ grade: 'short' })
+    expect(j.score).toBe(50)
+    expect(j.combo).toBe(1)
+    expect(j.holdPct).toBe(0)
+  })
+
+  it('caps the target at the next onset in the same hand', () => {
+    const j = hold([nd(0, 1, 60, 3), nd(1, 2, 62, 1)])
+    j.press(60, 1)
+    expect(j.release(60, 1.95, false)[0]).toMatchObject({ grade: 'held' })
+  })
+
+  it('does not punish a long hold when lenient, but does when strict', () => {
+    const l = hold([nd(0, 1, 60, 0.5)])
+    l.press(60, 1)
+    expect(l.release(60, 3, false)[0]).toMatchObject({ grade: 'held' })
+    const s = hold([nd(0, 1, 60, 0.5)], 'strict')
+    s.press(60, 1)
+    expect(s.release(60, 3, false)[0]).toMatchObject({ grade: 'long' })
+    expect(s.score).toBeLessThan(100)
+  })
+
+  it('excuses an early release while the sustain pedal is down', () => {
+    const j = hold([nd(0, 1, 60, 2)])
+    j.press(60, 1)
+    expect(j.release(60, 1.1, true)[0]).toMatchObject({ grade: 'held' })
+    expect(j.score).toBe(100)
+  })
+
+  it('is stricter about the same shortfall than lenient', () => {
+    const run = (m: 'lenient' | 'strict') => {
+      const j = hold([nd(0, 1, 60, 1)], m)
+      j.press(60, 1)
+      return j.release(60, 1.7, false)[0]
+    }
+    expect(run('lenient')).toMatchObject({ grade: 'held' })
+    expect(run('strict')).toMatchObject({ grade: 'short' })
+  })
+})

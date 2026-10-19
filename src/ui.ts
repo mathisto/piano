@@ -170,7 +170,7 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
   <div class="results"><div class="card" role="dialog" aria-label="Results">
     <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}</p>
+    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
         ? `<div>
@@ -211,6 +211,9 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
     <p>Off by default: your keyboard's own speakers play. The Listen hand, the on-screen keys and the computer keys always sound through the browser. If you turn this on and hear every note twice, set Local Control to Off on the keyboard or turn it down.</p>
   </fieldset>
   <fieldset><legend>Timing</legend>
+    <div class="field"><span>Hold the keys</span>
+      <div class="seg" role="radiogroup" aria-label="Hold the keys">${(['off', 'lenient', 'strict'] as const).map((v) => `<label><input type="radio" name="hold" value="${v}"${settings.hold === v ? ' checked' : ''}><span>${v[0].toUpperCase() + v.slice(1)}</span></label>`).join('')}</div></div>
+    <p>Perform mode takes points back when you let go well before the written length. Lenient allows a generous margin; Strict also marks keys held too long. The sustain pedal excuses early release. Learn and Read modes never check.</p>
     <label class="field"><span>Input delay (ms)</span><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}"></label>
     <p>Positive means your notes arrive late (display lag, Bluetooth). Calibrate by playing along to a click, or nudge by hand.</p>
     <button class="btn" id="sCal">Calibrate…</button>

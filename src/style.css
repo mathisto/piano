@@ -725,6 +725,11 @@ body.reading .hud small {
 #staff .head.miss {
   fill: var(--bad);
 }
+#staff .head.short {
+  stroke: var(--bad);
+  stroke-width: 1.4px;
+  paint-order: stroke;
+}
 #staff .hit-perfect {
   --c: var(--perfect);
   animation: ignite 0.8s ease-out;

@@ -1,6 +1,13 @@
 import type { Note } from './song'
 
 export type Grade = 'perfect' | 'great' | 'good' | 'miss'
+export type HoldGrade = 'held' | 'short' | 'long'
+export type Hold = 'off' | 'lenient' | 'strict'
+
+// How far from the written end a release may land: the larger of a floor in seconds and a share of the note.
+const SLACK = { lenient: { floor: 0.35, share: 0.3 }, strict: { floor: 0.12, share: 0.15 } }
+const HOLD_FLOOR = 0.5 // a cut-short note still keeps half its points
+const LONG_KEEP = 0.75
 
 // Real-time windows in ms, either side of the note. Tune by feel.
 export const WIN = { perfect: 45, great: 80, good: 125 }
@@ -16,11 +23,13 @@ export type Ev =
   | { k: 'ok'; i: number } // wait-mode hit, no timing grade
   | { k: 'miss'; i: number }
   | { k: 'wrong'; p: number }
+  | { k: 'hold'; i: number; grade: HoldGrade; f: number } // key released; f = share of the points kept
 
 export interface Cfg {
   rate: number // 1 = 100% tempo
   wait: boolean
   strict: boolean // wrong notes break the combo
+  hold?: Hold // grade how long keys are held; absent = off
 }
 
 const PENDING = 0
@@ -32,6 +41,11 @@ export class Judge {
   st = new Int8Array(0)
   grade: (Grade | undefined)[] = []
   off = new Float32Array(0)
+  holdGrade: (HoldGrade | undefined)[] = [] // per note, once its key has come up
+  holdAt = new Float32Array(0) // song time of that release
+  private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
+  private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
+  holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
   score = 0
   combo = 0
   maxCombo = 0
@@ -55,6 +69,11 @@ export class Judge {
     this.st = new Int8Array(this.notes.length)
     this.grade = new Array(this.notes.length).fill(undefined)
     this.off = new Float32Array(this.notes.length)
+    this.pts = new Float32Array(this.notes.length)
+    this.holdAt = new Float32Array(this.notes.length)
+    this.holdGrade = new Array(this.notes.length).fill(undefined)
+    this.down.clear()
+    this.holds = { held: 0, short: 0, long: 0 }
     this.total = 0
     this.notes.forEach((n, i) => {
       const ok = scored(n)
@@ -69,6 +88,12 @@ export class Judge {
 
   get accuracy() {
     return this.judged ? this.weightSum / this.judged : 1
+  }
+
+  /** Share of judged holds that were on time; 1 before any. */
+  get holdPct() {
+    const n = this.holds.held + this.holds.short + this.holds.long
+    return n ? this.holds.held / n : 1
   }
 
   private advance() {
@@ -105,7 +130,9 @@ export class Judge {
     const a = Math.abs(off)
     const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : 'good'
     const mult = multiplier(this.combo)
-    this.score += POINTS[grade] * mult
+    this.pts[best] = POINTS[grade] * mult
+    this.score += this.pts[best]
+    this.down.set(p, best)
     this.combo++
     this.maxCombo = Math.max(this.maxCombo, this.combo)
     this.counts[grade]++
@@ -114,6 +141,41 @@ export class Judge {
     this.grade[best] = grade
     this.off[best] = off
     return [{ k: 'hit', i: best, grade, off, combo: this.combo, mult }]
+  }
+
+  /** A key came up at song time `t`. Grades it against the note's written end; the sustain pedal excuses an early release. */
+  release(p: number, t: number, pedal: boolean): Ev[] {
+    const i = this.down.get(p)
+    this.down.delete(p)
+    const mode = this.cfg.hold
+    if (i === undefined || !mode || mode === 'off' || this.cfg.wait) return []
+    const n = this.notes[i]
+    let end = n.t + n.d
+    for (let k = i + 1; k < this.notes.length; k++) {
+      const m = this.notes[k]
+      if (m.t > end) break
+      if (m.h === n.h && m.t > n.t + 0.02) {
+        end = m.t
+        break
+      }
+    }
+    const dur = end - n.t
+    const { floor, share } = SLACK[mode]
+    const tol = Math.max(floor * this.cfg.rate, share * dur)
+    let grade: HoldGrade = 'held'
+    let f = 1
+    if (t < end - tol && !pedal) {
+      grade = 'short'
+      f = Math.max(HOLD_FLOOR, 1 - (end - t) / dur)
+    } else if (mode === 'strict' && t > end + tol) {
+      grade = 'long'
+      f = LONG_KEEP
+    }
+    this.score -= this.pts[i] * (1 - f)
+    this.holds[grade]++
+    this.holdGrade[i] = grade
+    this.holdAt[i] = t
+    return [{ k: 'hold', i, grade, f }]
   }
 
   private stray(p: number): Ev[] {
