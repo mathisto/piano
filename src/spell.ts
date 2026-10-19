@@ -18,21 +18,64 @@ export function keyAcc(fifths: number): number[] {
   return a
 }
 
-export function spell(midi: number, fifths: number): Spelled {
+// Spelling lives on the line of fifths: F C G D A E B are -1..5, sharps run on from 6, flats back from -2.
+const LOF = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5] // pitch class -> line-of-fifths position in 0..11
+
+/** The accidental a black key takes in the key of `k` fifths: the spelling nearest the key's centre on the line of fifths. */
+function chromaticAcc(pc: number, k: number, tieUp: boolean): 1 | -1 {
+  const sharp = LOF[pc]
+  const c = k + 2
+  const d = Math.abs(sharp - c) - Math.abs(sharp - 12 - c)
+  return d < 0 || (d === 0 && tieUp) ? 1 : -1
+}
+
+const BLACK = [1, 3, 6, 8, 10]
+
+/**
+ * Accidental of every black key in a passage, from the notes around it: pick the key signature that the
+ * neighbours fit best (the raised leading tone of its relative minor counts as half a fit), then spell by it.
+ * So C sharp in a D minor passage is C sharp, B flat in C major is B flat. White keys get undefined.
+ */
+export function spellWindow(pitches: number[], at: number[], fifths: number, win = 8): (1 | -1 | undefined)[] {
+  const order = pitches.map((_, i) => i).sort((a, b) => at[a] - at[b])
+  const out: (1 | -1 | undefined)[] = new Array(pitches.length)
+  const hist = new Array(12).fill(0)
+  let lo = 0
+  let hi = 0
+  for (const i of order) {
+    while (hi < order.length && at[order[hi]] <= at[i] + win) hist[pitches[order[hi++]] % 12]++
+    while (at[order[lo]] < at[i] - win) hist[pitches[order[lo++]] % 12]--
+    const pc = pitches[i] % 12
+    if (!BLACK.includes(pc)) continue
+    let best = fifths
+    let top = -1
+    for (let k = -7; k <= 7; k++) {
+      let fit = 0
+      for (let x = 0; x < 12; x++) {
+        const f = (LOF[x] - k + 1 + 24) % 12 // 0..6 are the key's seven notes, 9 is the relative minor's leading tone
+        fit += hist[x] * (f <= 6 ? 1 : f === 9 ? 0.5 : 0)
+      }
+      const pref = (j: number) => Math.abs(j) + 0.5 * Math.abs(j - fifths) // ties: fewer accidentals, then nearer the piece's key (F sharp and G flat major fit alike)
+      if (fit > top + 1e-9 || (Math.abs(fit - top) < 1e-9 && pref(k) < pref(best))) (top = fit), (best = k)
+    }
+    out[i] = chromaticAcc(pc, best, true)
+  }
+  return out
+}
+
+/** `acc` forces the accidental of a black key (from spellWindow); otherwise the key signature decides, and out of key a black key follows its sign. */
+export function spell(midi: number, fifths: number, acc?: 1 | -1): Spelled {
   const pc = midi % 12
   const ka = keyAcc(fifths)
-  let letter = NAT_PC.findIndex((n, i) => (((n + ka[i]) % 12) + 12) % 12 === pc)
-  let acc = letter >= 0 ? ka[letter] : 0
+  let letter = BLACK.includes(pc) && acc ? -1 : NAT_PC.findIndex((n, i) => (((n + ka[i]) % 12) + 12) % 12 === pc)
+  let a: number = letter >= 0 ? ka[letter] : 0
   if (letter < 0 && NAT_PC.includes(pc)) letter = NAT_PC.indexOf(pc) // a white key the key signature alters: natural
   else if (letter < 0) {
-    // chromatic note: sharp it in sharp keys, flat it in flat keys
-    const up = fifths >= 0
-    const l = NAT_PC.findIndex((n) => (n + (up ? 1 : -1) + 12) % 12 === pc)
-    letter = l
-    acc = up ? 1 : -1
+    a = acc ?? (fifths >= 0 ? 1 : -1) // without context: sharps in sharp keys, flats in flat keys (chord names and drills rely on it)
+    letter = NAT_PC.findIndex((n) => (n + a + 12) % 12 === pc)
   }
-  const oct = (midi - acc - NAT_PC[letter]) / 12 - 1
-  return { letter, acc: acc as -1 | 0 | 1, oct, step: oct * 7 + letter }
+  const oct = (midi - a - NAT_PC[letter]) / 12 - 1
+  return { letter, acc: a as -1 | 0 | 1, oct, step: oct * 7 + letter }
 }
 
 export function noteName(midi: number, fifths = 0): string {

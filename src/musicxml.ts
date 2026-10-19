@@ -201,11 +201,11 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     return s
   }
 
-  for (let m = 0; m < measures; m++) bars.push({ i: m, t0: secAt(mq[m]), t1: secAt(mq[m + 1]), n: sigs[m].n, den: sigs[m].den })
+  for (let m = 0; m < measures; m++) bars.push({ i: m, t0: secAt(mq[m]), t1: secAt(mq[m + 1]), n: sigs[m].n, den: sigs[m].den, ql: mq[m + 1] - mq[m] })
 
   const raw: Raw[] = evs.map((e) => {
     const t = secAt(mq[e.m] + e.q)
-    return { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: 0.7, track: e.track, h: e.h }
+    return { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: 0.7, track: e.track, h: e.h, q: mq[e.m] + e.q, dq: e.dq }
   })
   if (!raw.length) throw new Error('No notes found in this score.')
   return build(id, title, raw, bars, fifths ?? estimateFifths(raw))
