@@ -19,6 +19,7 @@ import { fromSpec, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
+import { nameChord } from './chord'
 import { thumb } from './thumb'
 import { $, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
@@ -311,15 +312,39 @@ function slam(combo: number) {
   )
 }
 
+let chordTimer = 0
+/** The readout of what is held now; it lingers a moment after the last key comes up. */
+function chordUpdate() {
+  const el = $('#chord')
+  const c = settings.chord ? nameChord([...game.held.keys()], game.song.fifths) : null
+  clearTimeout(chordTimer)
+  if (c) {
+    $('b', el).textContent = c.name
+    $('small', el).textContent = c.detail
+    el.style.bottom = `${$('#dock').offsetHeight + highway.kbH + 12}px` // just above the keyboard
+    el.hidden = false
+  } else chordTimer = window.setTimeout(() => (el.hidden = true), 700)
+}
+
 game.on((e: GameEvent) => {
   switch (e.type) {
+    case 'press':
+      staff?.ghost(e.p, e.t)
+      chordUpdate()
+      break
+    case 'release':
+      staff?.ghostEnd(e.p)
+      chordUpdate()
+      break
     case 'hit':
       highway.hit(e.note.p, e.grade, e.note.h)
+      staff.ghostHit(e.note.p, e.note.id, e.grade)
       staff.mark(e.note.id, `hit-${e.grade}`)
       popup(e.grade, e.off, e.note.p, e.note.id)
       break
     case 'ok':
       highway.hit(e.note.p, 'ok', e.note.h)
+      staff.ghostHit(e.note.p, e.note.id, 'great')
       staff.mark(e.note.id, 'hit-ok')
       if (drill) drillOk(e.note.id, e.rt, e.clean)
       break
@@ -329,6 +354,7 @@ game.on((e: GameEvent) => {
       break
     case 'wrong':
       highway.wrong(e.p)
+      staff.ghostBad(e.p)
       break
     case 'milestone':
       slam(e.combo)
@@ -677,6 +703,11 @@ function openDrawer() {
   on('#sNames', (el) => {
     settings.names = el.checked
     save()
+  }, 'change')
+  on('#sChord', (el) => {
+    settings.chord = el.checked
+    save()
+    chordUpdate()
   }, 'change')
   on('#sFull', (el) => {
     settings.full = el.checked

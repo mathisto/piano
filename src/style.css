@@ -637,6 +637,7 @@ table.stages td {
 
 /* ---------- play: layout by view ---------- */
 #play {
+  position: relative;
   grid-template-rows: minmax(160px, 31vh) minmax(0, 1fr) auto;
 }
 #play.v-sheet {
@@ -762,6 +763,95 @@ body.reading .hud small {
 }
 #staff .gshape.good {
   fill: var(--good);
+}
+/* ghosts: what you pressed, as a hollow dashed notehead. Grey, so it is plainly not the score. */
+#staff .ghost {
+  pointer-events: none;
+  transition:
+    transform 0.14s var(--ease),
+    opacity 0.25s;
+}
+#staff .ghost ellipse {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 3.2 2.4;
+  opacity: 0.9;
+}
+#staff .ghost line {
+  stroke: var(--ink-3);
+  stroke-width: 1.2;
+}
+#staff .ghost text {
+  fill: var(--ink-2);
+}
+#staff .ghost.gone {
+  opacity: 0;
+}
+#staff .ghost[data-g='perfect'] {
+  --c: var(--perfect);
+}
+#staff .ghost[data-g='great'] {
+  --c: var(--great);
+}
+#staff .ghost[data-g='good'] {
+  --c: var(--good);
+}
+#staff .ghost.snap ellipse {
+  stroke: var(--c);
+  stroke-dasharray: none;
+  fill: var(--c);
+  fill-opacity: 0.4;
+  filter: drop-shadow(0 0 6px var(--c));
+}
+#staff .ghost.snap {
+  animation: ghostsnap 0.52s ease-out forwards;
+}
+#staff .ghost.bad ellipse {
+  stroke: var(--bad);
+}
+#staff .ghost .x {
+  stroke: var(--bad);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+#staff .ghost.bad {
+  animation: ghostshake 0.5s ease-out;
+}
+#staff .head.thud {
+  animation: thud 0.35s var(--ease);
+}
+@keyframes ghostsnap {
+  0% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes ghostshake {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  25% {
+    translate: -2px 0;
+  }
+  50% {
+    translate: 2px 0;
+  }
+  75% {
+    translate: -1px 0;
+    opacity: 0.6;
+  }
+}
+@keyframes thud {
+  35% {
+    translate: 0 3px;
+  }
 }
 /* the grade, as a word on the staff, for staff-only view */
 #staff .gr {
@@ -1069,6 +1159,32 @@ kbd {
 }
 .dock-fill {
   flex: 1;
+}
+
+/* ---------- held chord ---------- */
+.chord {
+  position: absolute;
+  right: 16px;
+  z-index: 4;
+  min-width: 120px;
+  padding: 8px 16px 10px;
+  text-align: right;
+  background: var(--scrim);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  pointer-events: none;
+}
+.chord b {
+  display: block;
+  font: 800 italic 34px/1 var(--display);
+  letter-spacing: 0.02em;
+}
+.chord small {
+  display: block;
+  margin-top: 2px;
+  font: 700 13px/1.2 var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
 }
 
 /* ---------- results ---------- */

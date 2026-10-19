@@ -5,6 +5,7 @@ export interface Settings {
   instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
+  chord: boolean // name the chord you are holding
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
   offset: number // ms, from calibration
@@ -21,6 +22,7 @@ const DEFAULTS: Settings = {
   instrument: 'piano',
   volume: 0.7,
   names: true,
+  chord: true,
   full: false,
   view: 'both',
   offset: 0,

@@ -1,4 +1,5 @@
 import type { Game } from './game'
+import { settings } from './settings'
 import { BOTTOM_STEP, clefFor, keyAcc, keySigSteps, spell, type Spelled } from './spell'
 import { barAt, type Note } from './song'
 
@@ -82,6 +83,7 @@ export class Staff {
   private vbH = GRAND.h
   private clefs: Clef[] = ['treble', 'bass']
   private byId = new Map<number, Placed>()
+  private ghosts = new Map<number, SVGGElement>() // what you are pressing, by pitch
   private awaiting = new Set<number>()
 
   constructor(
@@ -227,6 +229,7 @@ export class Staff {
     this.placed = []
     this.byId.clear()
     this.awaiting.clear()
+    this.ghosts.clear() // the page was redrawn: the ghosts went with it
     this.seen = 0
 
     const fifths = song.fifths
@@ -443,11 +446,67 @@ export class Staff {
     if (!p.head) return
     p.head.classList.add(cls)
     if (cls === 'miss') {
+      if (settings.fx >= 2 && !matchMedia('(prefers-reduced-motion: reduce)').matches) p.head.classList.add('thud') // a short drop
       const y = Number(p.head.getAttribute('y')) + 12
       const x = Number(p.head.getAttribute('x'))
       const m = el('path', { class: 'miss-mark', d: `M${x - 4},${y + 5} L${x + 4},${y + 5} L${x},${y - 2} Z` }, p.head.parentElement!)
       m.setAttribute('aria-hidden', 'true')
     }
+  }
+
+  /** A hollow dashed notehead where you pressed a key: not part of the score, but the note you played. */
+  ghost(pitch: number, t: number) {
+    const { bars, fifths } = this.game.song
+    if (!bars.length || !this.clefs.length) return
+    this.ghosts.get(pitch)?.remove()
+    const last = Math.min(this.bar0 + this.count * this.sys, bars.length) - 1
+    const pos = this.posAt(Math.min(Math.max(t, bars[this.bar0].t0), bars[last].t1))
+    const sp = spell(pitch, fifths)
+    const want: Clef = pitch >= 60 ? 'treble' : 'bass'
+    const clef = this.clefs.includes(want) ? want : this.clefs[0] // a one-clef drill has only its own staff
+    const y = this.y(sp.step, clef, pos.dy)
+    const g = el('g', { class: 'ghost' }, this.svg) as SVGGElement
+    g.style.transform = `translate(${pos.x}px, ${y}px)`
+    g.setAttribute('aria-hidden', 'true')
+    const bottom = BOTTOM_STEP[clef]
+    const off = (step: number) => this.y(step, clef, pos.dy) - y
+    for (let st = bottom - 2; st >= sp.step; st -= 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
+    for (let st = bottom + 10; st <= sp.step; st += 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
+    el('ellipse', { rx: 6.4, ry: 4.7, transform: 'rotate(-20)' }, g)
+    if (sp.acc !== keyAcc(fifths)[sp.letter]) el('text', { class: 'smufl', x: -16, y: 0, 'text-anchor': 'middle' }, g, sp.acc > 0 ? G.sharp : sp.acc < 0 ? G.flat : G.natural)
+    this.ghosts.set(pitch, g)
+    if (this.ghosts.size > 12) this.ghosts.get(this.ghosts.keys().next().value as number)?.remove()
+  }
+
+  /** The key came up without being scored (or after it was): fade the ghost. */
+  ghostEnd(pitch: number) {
+    const g = this.ghosts.get(pitch)
+    if (!g) return
+    this.ghosts.delete(pitch)
+    g.classList.add('gone')
+    setTimeout(() => g.remove(), 260)
+  }
+
+  /** The press matched a written note: the ghost slides onto it and flashes the grade. */
+  ghostHit(pitch: number, noteId: number, grade: string) {
+    const g = this.ghosts.get(pitch)
+    if (!g) return
+    this.ghosts.delete(pitch)
+    const head = this.byId.get(noteId)?.head
+    if (head) g.style.transform = `translate(${head.getAttribute('x')}px, ${head.getAttribute('y')}px)`
+    g.dataset.g = grade
+    g.classList.add('snap')
+    setTimeout(() => g.remove(), 520)
+  }
+
+  /** A press with no note to match: the ghost goes red, with an X, and shakes. */
+  ghostBad(pitch: number) {
+    const g = this.ghosts.get(pitch)
+    if (!g) return
+    this.ghosts.delete(pitch)
+    el('path', { d: 'M-3.6,-3.6 L3.6,3.6 M3.6,-3.6 L-3.6,3.6', class: 'x' }, g)
+    g.classList.add('bad')
+    setTimeout(() => g.remove(), 760)
   }
 
   /** The grade as a word above the note, for staff-only view where there is no highway to show it. */

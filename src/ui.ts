@@ -60,6 +60,7 @@ export function skeleton(app: HTMLElement) {
         <div id="live" class="sr-only" aria-live="polite" style="position:absolute;left:-9999px"></div>
       </div>
       <div id="dock"></div>
+      <div id="chord" class="chord" hidden aria-hidden="true"><b></b><small></small></div>
     </section>
   </main>
   <aside id="drawer" class="drawer" hidden aria-label="Settings"></aside>`
@@ -197,6 +198,7 @@ export function drawer(el: HTMLElement, inputs: Input[], status: string) {
       <div class="seg" role="radiogroup" aria-label="Effects">${['Off', 'Calm', 'Arcade', 'Max'].map((n, i) => `<label><input type="radio" name="fx" value="${i}"${settings.fx === i ? ' checked' : ''}><span>${n}</span></label>`).join('')}</div></div>
     <label class="field"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names on keys and notes</label>
+    <label class="switch"><input id="sChord" type="checkbox"${settings.chord ? ' checked' : ''}><i></i>Name the chord I am holding</label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>Show all 88 keys</label>
   </fieldset>
   <fieldset><legend>Sound</legend>
