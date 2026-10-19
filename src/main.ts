@@ -22,6 +22,7 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
+import { served } from './net'
 import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
@@ -1120,6 +1121,10 @@ function closeDrawer() {
   return true
 }
 
+// a tap anywhere outside the drawer closes it
+document.addEventListener('pointerdown', (e) => {
+  if (!$('#drawer').hidden && !(e.target as HTMLElement).closest('#drawer, #settingsBtn, #dev, dialog')) closeDrawer()
+}, true)
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
 $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
@@ -1221,7 +1226,7 @@ async function openLibrary(id: string, mode: Mode) {
   if (!e) return
   try {
     const r = await fetch(libraryUrl(e.file))
-    if (!r.ok) throw new Error(`${e.title} could not be loaded.`)
+    if (!served(r)) throw new Error(`${e.title} could not be loaded.`)
     const song = await store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
     await openSong(song, mode)
     if (current) current.credit = creditLine(e)

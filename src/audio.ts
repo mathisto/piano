@@ -1,4 +1,5 @@
 import { PIANO, instrument, type Instrument, type Root } from './instruments'
+import { served } from './net'
 import { settings } from './settings'
 
 let ctx: AudioContext | undefined
@@ -74,7 +75,7 @@ export function preload(id = settings.instrument): Promise<void> {
         const file = k === undefined ? r.name : `${r.name}-${k}`
         try {
           const res = await fetch(`${base}${file}.mp3`)
-          if (!res.ok) throw new Error(String(res.status))
+          if (!served(res)) throw new Error(String(res.status))
           buffers.set(`${inst.base}/${file}`, await c.decodeAudioData(await res.arrayBuffer()))
           return 1
         } catch {
@@ -84,6 +85,7 @@ export function preload(id = settings.instrument): Promise<void> {
       const mid = inst.layers ? Math.floor(inst.layers / 2) : undefined
       const ok = (await Promise.all(inst.roots.map((r) => get(r, mid)))).reduce<number>((a, b) => a + b, 0)
       states.set(inst.id, ok ? 'ready' : 'failed')
+      if (ok < inst.roots.length) console.warn(`${inst.id}: ${ok} of ${inst.roots.length} recordings loaded`)
       if (ok && inst.layers) for (let k = 0; k < inst.layers; k++) if (k !== mid) void Promise.all(inst.roots.map((r) => get(r, k))) // soft and hard follow the medium one
       if (!ok) loading.delete(inst.id) // let a later try fetch again
     })()
@@ -145,6 +147,7 @@ export function mix(vel: number, have: (k: number) => boolean): [number, number]
 }
 
 function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number): Voice | undefined {
+  if (!inst.roots.length) return undefined // the synth has no recordings to pick from
   const s = pickSample(p, inst)
   const key = `${inst.base}/${s.name}`
   const parts = (inst.layers ? mix(vel, (k) => buffers.has(`${key}-${k}`)).map(([k, w]) => [buffers.get(`${key}-${k}`)!, w] as const) : buffers.has(key) ? [[buffers.get(key)!, 1] as const] : [])
