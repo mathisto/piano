@@ -322,11 +322,11 @@ UI text has three sizes: 13 (label, kbd, sub-lines, fine print), 15 (body, contr
 
 ## Layout
 
-A single-column app grid: 56px top bar (safe-area insets padded for the iPad), then one view. Top bar, left to right: wordmark (Display 30px, Ink), the five-tab section switch (hidden on the play screen), the song title (play), "All stages" (drills) or the Perform | Learn switch (hidden on the start card, which carries the choice) and Staff / Both / Falling view switch (songs), a spacer, the HUD, the MIDI chip, the settings icon button.
+A single-column app grid: 56px top bar (safe-area insets padded for the iPad), then one view. Top bar, left to right: wordmark (Display 30px, Ink), the five-tab section switch (hidden on the play screen), the song title (play), "All stages" (drills) or the Perform | Learn switch (hidden on the start card, which carries the choice) (songs), a spacer, the HUD, the MIDI chip, the settings icon button.
 
 Every non-play page (Today, Songs, Read, Technique, Progress) pads `32px clamp(16px, 6vw, 96px) 64px`, scrolls, and centres its children at `min(100%, 1100px)` (One Measure). Play rows by view: Both is staff `minmax(160px, 31vh)` + highway + dock; Staff is the staff filling the screen with a `clamp(96px, 15vh, 150px)` highway strip; Falling drops the staff row; a reading drill is staff `minmax(0, 1fr)` + strip `clamp(150px, 24vh, 230px)` + dock. The keyboard is drawn inside the highway canvas, 24% of stage height at most.
 
-Spacing rhythm is 4 / 8 / 12 / 16 / 24 / 32 with 6, 10, 14, 18, 20 inside controls and cards. Responsive: under 1360px the view switch is icons only; under 1180px bar gaps tighten and, with a fine pointer only, tempo presets and hand labels hide (a coarse pointer keeps them); under 820px tall the ready card compacts; `pointer: coarse` sets `--control` to 44px, segment cells to 38px, small buttons to 44px, slider thumbs to 32px; `hover: none` hides the drawer footer links (see debt); disclosure summaries get a 44px row. Below 1024px wide a fixed notice covers the app (iPad portrait gets it; see debt).
+Spacing rhythm is 4 / 8 / 12 / 16 / 24 / 32 with 6, 10, 14, 18, 20 inside controls and cards. Responsive: under 1180px bar gaps tighten and, with a fine pointer only, tempo presets and hand labels hide (a coarse pointer keeps them); under 820px tall the ready card compacts; `pointer: coarse` sets `--control` to 44px, segment cells to 38px, small buttons to 44px, slider thumbs to 32px; `hover: none` hides the drawer footer links (see debt); disclosure summaries get a 44px row. Below 1024px wide a fixed notice covers the app (iPad portrait gets it; see debt).
 
 ## Elevation & Depth
 
@@ -347,7 +347,7 @@ Each component: anatomy, then states. All interactive states share the 2px Lamp 
 
 ### Segmented control
 - Ground well, Edge border, 8px, 3px padding, 2px gap; cells 32px at 4px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
-- Selected: Line Strong fill, Ink text, inset 1px Edge ring (no amber). Hover on unselected: Ink text, Panel Raised fill. Icon variant (view switch): 18px icon + word, word hidden under 1360px.
+- Selected: Line Strong fill, Ink text, inset 1px Edge ring (no amber). Hover on unselected: Ink text, Panel Raised fill.
 - Used for: section tabs, Perform | Learn (bar and start card), view, hand modes, plan length (5 / 10 / 20 min), Notes shown (Full, Thin chords, Melody and bass, Melody) and every drawer choice row.
 
 ### Switch
@@ -510,7 +510,7 @@ All five pages are `section.view` with the One Measure.
 ### Play screen and focus states
 
 Layout is under Layout. States:
-- **Ready:** full bar, Perform | Learn and view switches, dock; Scrim ready card with title and one sentence; legend once.
+- **Ready:** full bar, Perform | Learn, the pane divider, dock; Scrim ready card with title and one sentence; legend once.
 - **Running:** count-in numeral, then play. Two and a half seconds into a run (not ready, paused or done) the top bar children go to opacity 0 and stop taking pointer events over 0.35s (hushed). Any pointer move, press or key restores them. The 56px band stays.
 - **Hushed:** HUD, title, chip and settings fade together; staff, highway and dock keep their place.
 - **Zen:** the dock focus button (any pointer) or M toggles; the bar and the dock aids row are removed, the grid becomes one row, the highway re-lays out. The first dock row stays, so the focus button restores it.

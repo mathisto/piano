@@ -34,11 +34,6 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>
     </div>
-    <div class="seg icons" id="viewSeg" hidden role="radiogroup" aria-label="View">
-      <label title="Sheet music only"><input type="radio" name="view" value="sheet"><span>${icon('viewStaff')}<em>Staff</em></span></label>
-      <label title="Sheet music and falling notes"><input type="radio" name="view" value="both"><span>${icon('viewBoth')}<em>Both</em></span></label>
-      <label title="Falling notes only"><input type="radio" name="view" value="falling"><span>${icon('viewFall')}<em>Falling</em></span></label>
-    </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
       <div data-m="perform" role="group" aria-label="Score" title="Score"><small>Score</small><b id="hScore">0</b></div>
@@ -63,6 +58,7 @@ export function skeleton(app: HTMLElement) {
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
       <div id="staff"></div>
+      <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
         <div id="slam" aria-hidden="true"></div>

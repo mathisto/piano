@@ -492,12 +492,11 @@
       "refersTo": "segmented"
     },
     {
-      "name": "View Switch",
+      "name": "Pane Divider",
       "kind": "nav",
-      "description": "Staff / Both / Falling, icon plus word; icons only under 1360px.",
-      "html": "<div class=\"ds-seg\"><span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/></svg>Staff</span><span class=\"on\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/></svg>Both</span><span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/></svg>Falling</span></div>",
-      "css": ".ds-seg{display:inline-flex;background:var(--ground);border:1px solid var(--edge);border-radius:8px;padding:3px;gap:2px}.ds-seg span{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;color:var(--ink-2);font:650 15px var(--ui)}.ds-seg .on{background:var(--line-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--edge)}.ds-seg span:not(.on):hover{color:var(--ink);background:var(--panel-2)}",
-      "refersTo": "segmented"
+      "description": "Between the staff and the falling notes: an 18px bar with a 48px grabber, a 46px touch target, drag to resize; past an end only one pane shows, a tap there brings both back. Arrow keys step, double-click resets.",
+      "html": "<div class=\"ds-split\" style=\"height:18px;display:grid;place-items:center;background:var(--panel)\"><span style=\"width:48px;height:5px;border-radius:3px;background:var(--ink-3)\"></span></div>",
+      "css": ".ds-split span{display:block}"
     },
     {
       "name": "Switch and Slider",

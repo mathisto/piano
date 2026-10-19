@@ -688,16 +688,63 @@ table.stages td {
 /* ---------- play: layout by view ---------- */
 #play {
   position: relative;
-  grid-template-rows: minmax(160px, 31vh) minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, var(--pa, 40fr)) 18px minmax(0, var(--pb, 60fr)) auto;
 }
 #play.v-sheet {
-  grid-template-rows: minmax(0, 1fr) clamp(96px, 15vh, 150px) auto;
+  grid-template-rows: minmax(0, 1fr) 18px clamp(96px, 15vh, 150px) auto;
 }
 #play.v-falling {
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: 18px minmax(0, 1fr) auto;
 }
 #play.drill {
   grid-template-rows: minmax(0, 1fr) clamp(150px, 24vh, 230px) auto;
+}
+#play.v-sheet #ready {
+  top: auto;
+  bottom: 10px; /* the stage is only a keyboard strip here: the card shrinks to title and mode, over the keys, off the music */
+  transform: translateX(-50%);
+  padding: 10px 24px 12px;
+}
+#play.v-sheet #ready b {
+  font-size: 34px;
+}
+#play.v-sheet #ready :is(.hint, .cap, .seg ~ .seg, .legend) {
+  display: none;
+}
+#play.v-sheet .results {
+  position: fixed;
+  inset: 56px 0 0;
+}
+#split {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  cursor: row-resize;
+  touch-action: none;
+  outline-offset: -2px;
+}
+#split[hidden] {
+  display: none;
+}
+#split::before {
+  content: '';
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink-3);
+}
+#split::after {
+  content: '';
+  position: absolute;
+  inset: -14px 0; /* a 46px target around the 18px bar */
+  z-index: 3;
+}
+#split:hover::before,
+#split.drag::before,
+#split:focus-visible::before {
+  background: var(--ink-2);
 }
 #play.drill #staff .lines line,
 #play.drill #staff .bars line {
@@ -1593,27 +1640,10 @@ button.link {
   font-size: 15px;
 }
 
-/* ---------- view switch: icon plus word ---------- */
-.seg.icons span svg {
-  width: 18px;
-  height: 18px;
-}
-.seg.icons em {
-  font-style: normal;
-}
-
 /* ---------- narrower windows ---------- */
-@media (max-width: 1360px) {
-  .seg.icons em {
-    display: none;
-  }
-}
 @media (max-width: 1180px) {
   .hud {
     gap: 12px;
-  }
-  .seg.icons em {
-    display: none;
   }
   .bar {
     gap: 8px;

@@ -8,10 +8,7 @@ const P: Record<string, [string, boolean]> = {
   x: ['<path d="M6 6l12 12M18 6L6 18"/>', false],
   back: ['<path d="M15 5l-7 7 7 7"/>', false],
   check: ['<path d="M5 12.5l4.5 4.5L19 7"/>', false],
-  viewStaff: ['<path d="M3 6h18M3 10h18M3 14h18M3 18h18"/>', false],
-  viewBoth: ['<path d="M3 5h18M3 9h18"/><path d="M7 13v7M12 13v7M17 13v7"/>', false],
   focus: ['<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', false],
-  viewFall: ['<path d="M6 4v9M12 9v11M18 4v6"/>', false],
 }
 
 export const icon = (name: keyof typeof P) =>
