@@ -50,13 +50,15 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             MIDIObjectGetIntegerProperty(src, kMIDIPropertyUniqueID, &uid)
             var name: Unmanaged<CFString>?
             MIDIObjectGetStringProperty(src, kMIDIPropertyDisplayName, &name)
+            let label = (name?.takeRetainedValue() as String?) ?? "MIDI input"
+            if label.hasPrefix("Network Session") { continue } // Apple's built-in network MIDI, not a keyboard
             live.insert(uid)
             if !connected.contains(uid) {
                 // the +1 keeps a unique id of 0 from becoming a null refCon
                 MIDIPortConnectSource(port, src, UnsafeMutableRawPointer(bitPattern: Int(UInt32(bitPattern: uid)) + 1))
                 connected.insert(uid)
             }
-            list.append(["id": String(uid), "name": (name?.takeRetainedValue() as String?) ?? "MIDI input"])
+            list.append(["id": String(uid), "name": label])
         }
         connected.formIntersection(live) // a replugged keyboard connects again
         sources = list

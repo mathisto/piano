@@ -1,6 +1,7 @@
 // In the iPad app (a Capacitor web view) WebKit has no Web MIDI, so fake it on top of the native CoreMidi
 // plugin (ios/App/App/PianoNative.swift). Imported first in main.ts: midi.ts reads `requestMIDIAccess` when it loads.
 // Elsewhere (desktop browsers) this does nothing.
+import { Capacitor, registerPlugin } from '@capacitor/core'
 
 interface Source {
   id: string
@@ -16,10 +17,8 @@ interface Port extends Source {
   onmidimessage: ((e: { data: Uint8Array; timeStamp: number }) => void) | null
 }
 
-const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; registerPlugin: <T>(n: string) => T } }).Capacitor
-
-if (cap?.isNativePlatform?.() && !Reflect.has(navigator, 'requestMIDIAccess')) {
-  const native = cap.registerPlugin<Native>('CoreMidi')
+if (Capacitor.isNativePlatform() && !Reflect.has(navigator, 'requestMIDIAccess')) {
+  const native = registerPlugin<Native>('CoreMidi')
   const inputs = new Map<string, Port>()
   const access = { inputs, onstatechange: null as null | ((e: unknown) => void) }
 
