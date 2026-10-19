@@ -13,13 +13,14 @@ export interface Instrument {
   release: number // seconds the damper takes on key-up
   gain: number // trim so the instruments sit at about the same loudness
   dyn: number // 0..1: how much hitting harder is louder and brighter (an organ barely cares)
+  layers?: number // recordings per note at different strengths, NAME-0 (soft) up; blended by how hard the key is hit
 }
 
 const NAMES: [string, number][] = [['C', 0], ['Ds', 3], ['Fs', 6], ['A', 9]]
 const ladder = (from: number, to: number): Root[] =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i).flatMap((o) => NAMES.map(([n, pc]): Root => ({ name: `${n}${o}`, midi: 12 * (o + 1) + pc })))
 
-/** Salamander Grand Piano V3: one recording every third semitone, A0 to C8. */
+/** Salamander Grand Piano V3 (scripts/make-piano.py): a soft, a medium and a hard recording every third semitone, A0 to C8. */
 const PIANO_ROOTS: Root[] = [{ name: 'A0', midi: 21 }, ...ladder(1, 7), { name: 'C8', midi: 108 }]
 /** MuseScore_General renderings (scripts/make-sounds.py): every third semitone, C2 to C7. */
 const GM_ROOTS: Root[] = [...ladder(2, 6), { name: 'C7', midi: 96 }]
@@ -34,7 +35,7 @@ const gm = (id: string, label: string, release: number, gain: number, dyn: numbe
 })
 
 export const INSTRUMENTS: Instrument[] = [
-  { id: 'piano', label: 'Grand piano', base: 'salamander', roots: PIANO_ROOTS, release: 0.3, gain: 1, dyn: 1 },
+  { id: 'piano', label: 'Grand piano', base: 'salamander', roots: PIANO_ROOTS, release: 0.3, gain: 1, dyn: 0, layers: 3 },
   gm('ep', 'Electric piano', 0.25, 1, 1),
   gm('organ', 'Church organ', 0.12, 0.5, 0.5),
   gm('harp', 'Harp', 0.5, 1, 1),

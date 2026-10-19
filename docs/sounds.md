@@ -4,7 +4,7 @@ Checked 2026-10-19. Every sample in `public/samples/` and where it came from.
 
 | Instrument | id | Source | Licence | Folder | Size |
 |---|---|---|---|---|---|
-| Grand piano | `piano` | Salamander Grand Piano V3 (Alexander Holm), the 30-file set from Tone.js | CC BY 3.0 | `salamander/` | 2.0 MB |
+| Grand piano | `piano` | Salamander Grand Piano V3 (Alexander Holm), original 48 kHz 24-bit FLAC from github.com/sfzinstruments/SalamanderGrandPiano, three of its 16 velocity layers | CC BY 3.0 | `salamander/` | 7.4 MB |
 | Electric piano | `ep` | MuseScore_General, preset 0:4 "Tine Electric Piano" | MIT | `ep/` | 466 KB |
 | Church organ | `organ` | MuseScore_General, preset 0:19 "Church Organ" | MIT | `organ/` | 229 KB |
 | Harp | `harp` | MuseScore_General, preset 0:46 "Harp" | MIT | `harp/` | 376 KB |
@@ -12,7 +12,11 @@ Checked 2026-10-19. Every sample in `public/samples/` and where it came from.
 | Music box | `musicbox` | MuseScore_General, preset 0:10 "Music Box" | MIT | `musicbox/` | 224 KB |
 | Synth | `synth` | none, two oscillators in `src/audio.ts` | n/a | n/a | 0 |
 
-Each set loads only when picked (or when it is the saved choice at start-up). The piano is the only big one.
+Each set loads only when picked (or when it is the saved choice at start-up). The piano is the only big one: its medium layer (2.5 MB) loads first and plays at once, the soft and hard layers follow.
+
+## Piano build
+
+`python3 scripts/make-piano.py` fetches layers 4, 9 and 14 of 16 for the 30 recorded notes, sums them to mono, trims each note 55 dB down (9 s in the bass, 5 s at the top), fades the tail, levels the layers to about -33, -26 and -22 dB RMS (the step from soft to hard, with each note's own loudness across the keyboard kept) and encodes 96 kbps mono MP3 as `NAME-0` (soft), `NAME-1`, `NAME-2` (hard). A hit blends the two nearest layers by velocity, equal-power (`mix` in `src/audio.ts`). This replaced the 30-file Tone.js set, which was one layer at about 37 kbps stereo: thin, and the same note at every strength. Every instrument now goes through a small synthesised hall (1.7 s, 20% wet) so a sample does not sound dry. The release-noise and sustain-pedal samples in the repo are not used. The earlier note below, that sound has not been judged by ear, still holds: check on the iPad.
 
 ## MuseScore_General (MIT)
 

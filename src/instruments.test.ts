@@ -16,9 +16,11 @@ describe('instrument registry', () => {
       expect(new Set(i.roots.map((r) => r.name)).size).toBe(i.roots.length)
       expect(new Set(i.roots.map((r) => r.midi)).size).toBe(i.roots.length)
       for (const r of i.roots) {
-        const f = `public/samples/${i.base}/${r.name}.mp3`
-        expect(existsSync(f), f).toBe(true)
-        expect(statSync(f).size, f).toBeGreaterThan(1000)
+        for (const k of i.layers ? Array.from({ length: i.layers }, (_, k) => `-${k}`) : ['']) {
+          const f = `public/samples/${i.base}/${r.name}${k}.mp3`
+          expect(existsSync(f), f).toBe(true)
+          expect(statSync(f).size, f).toBeGreaterThan(1000)
+        }
       }
     }
   })

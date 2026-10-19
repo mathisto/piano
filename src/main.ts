@@ -1075,6 +1075,11 @@ function openDrawer() {
     settings.volume = Number(el.value)
     save()
   })
+  on('#sClick', (el) => {
+    settings.click = Number(el.value)
+    save()
+    audio.click(true) // hear the level
+  }, 'change')
   on('#sSplit', (el) => {
     settings.split = Number(el.value)
     save()

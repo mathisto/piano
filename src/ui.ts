@@ -283,6 +283,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   ${loadState(settings.instrument) === 'failed' ? `<p class="fine" role="status">${instrument(settings.instrument).label} failed to load. Using the synth.</p>` : ''}`
       : ''
   }
+  <label class="srow"><span>Count-in click</span><input id="sClick" type="range" min="0" max="1" step="0.05" value="${settings.click}" aria-label="Count-in click volume"></label>
   ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
   <div class="srow"><span>Keyboard</span>${
     inputs.length > 1
