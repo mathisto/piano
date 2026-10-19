@@ -31,12 +31,14 @@ Open, no-account, in-browser. Combines what is split across other tools: Synthes
 
 ## Capabilities and Constraints
 
-- v1: Perform mode (scored falling notes, streaks, combo, judgement), Learn mode (wait mode, tempo 25-100%, A-B loop, hands separate/dim/mute), MIDI import library, calibration, and a small grand-staff strip above the falling notes showing upcoming notes (pitch spelling heuristic from MIDI).
-- v2: sight-reading drills (landmark notes first: Middle C, treble G, bass F; then steps, skips, intervals, chords, grand staff), MusicXML import, full score view, browser sound packs (Salamander piano default; GM instruments later).
-- Local only: progress, settings and imported songs in IndexedDB, JSON export. No accounts, no cloud.
-- Web MIDI called directly; no native shell, no MIDI abstraction layer.
+- Five places: Today (a generated plan, the week, a weekly goal), Songs (starter pieces, your files, an open library of credited public-domain and openly licensed scores), Read (sight-reading stages), Technique (a syllabus of scales, arpeggios, rhythm and touch exercises), Progress (mastery, touch history).
+- Play: Perform (scored, count-in) and Learn (wait mode, tempo ladder with Auto tempo, A-B loop, hands, hold to advance, hide played); ghost notes, chord readout, hold and pedal grading, key-velocity targets and calibration; judgement words go quiet as playing gets clean and note names fade as reading improves.
+- Import: MIDI and MusicXML (.musicxml, .mxl) with repeats and dynamics; a notation layer (quantization, tuplets, ties, voices) so imperfect performance MIDI reads as music; track selection, hands per track and Simplify levels for busy arrangements; credits for library pieces and sounds.
+- Sound: sampled grand piano plus five lazy-loaded instruments; the keyboard's own speakers by default.
+- Local only: progress, settings, practice time and imported songs in IndexedDB, JSON export and import. No accounts, no cloud.
+- Web MIDI called directly in browsers; the iPad app reaches CoreMIDI through a small plugin that fakes the same API.
 - Deploys to piano.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano`.
-- Undecided: final starter-song list; exact judgement windows (tuned by feel, start near ±50 ms perfect / ±100 ms good); name beyond "piano".
+- Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them); name beyond "piano".
 
 ## Brand Commitments
 
