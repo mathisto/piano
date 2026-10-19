@@ -16,7 +16,7 @@ export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document)
 export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
-    <button class="brand" id="brand" aria-label="piano — back to songs">piano</button>
+    <button class="brand" id="brand" aria-label="piano: Today">piano</button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="today" checked><span>Today</span></label>
       <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>
