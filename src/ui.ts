@@ -114,7 +114,7 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
     id: s.id,
     title: s.title,
     sub: new Date(s.added).toLocaleDateString() + ((lens.get(s.id)?.tracks?.all ?? 0) > 1 ? ` · ${lens.get(s.id)!.tracks!.used} of ${lens.get(s.id)!.tracks!.all} tracks` : ''),
-    tracks: (lens.get(s.id)?.tracks?.all ?? 0) > 1,
+    tracks: true,
     bars: lens.get(s.id)?.bars ?? 0,
     len: lens.get(s.id)?.len ?? 0,
     prog: prog.get(s.id),
@@ -136,7 +136,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
-          ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Choose tracks of ${esc(r.title)}">Tracks</button>` : ''}
+          ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Options for ${esc(r.title)}">Options</button>` : ''}
           ${r.user ? `<button class="btn icon ghost" data-del="${r.id}" aria-label="Remove ${esc(r.title)}" title="Remove">${icon('x')}</button>` : ''}
         </div></td></tr>`,
         )
@@ -194,21 +194,27 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '',
 
 // ---------- choosing the tracks of a MIDI file ----------
 
-export function tracksDialog(title: string, r: Report, pick: Selection, noteName: (p: number) => string) {
-  const used = r.tracks.filter((t) => pick.tracks.includes(t.index))
-  const busy = density(used, r.bars)
+export function tracksDialog(title: string, r: Report | undefined, pick: Selection, noteName: (p: number) => string, facts: [string, string][]) {
   const hand = (t: TrackInfo): string => pick.hands[t.index] ?? 'auto'
+  const used = r ? r.tracks.filter((t) => pick.tracks.includes(t.index)) : []
+  const busy = r ? density(used, r.bars) : 0
+  const multi = !!r && r.tracks.length > 1
   return `
     <h2>${esc(title)}</h2>
-    <p class="fine" id="tkSum" role="status">${used.length} of ${r.tracks.length} tracks, up to ${busy} notes in a bar${busy > COMFORT ? '. Crowded: try fewer tracks.' : ''}</p>
-    <div class="tklist">${r.tracks
+    <dl class="facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    ${
+      multi
+        ? `<p class="fine" id="tkSum" role="status">${used.length} of ${r!.tracks.length} tracks, up to ${busy} notes in a bar${busy > COMFORT ? '. Crowded: try fewer tracks.' : ''}</p>
+    <div class="tklist">${r!.tracks
       .map(
         (t) => `<div class="tkrow${t.percussion ? ' perc' : ''}">
         <label class="switch"><input type="checkbox" data-tk="${t.index}"${pick.tracks.includes(t.index) ? ' checked' : ''}><i></i><span><b>${esc(t.name)}</b><small>${esc(t.program)}${t.percussion ? ', drums' : ''} · ${t.notes} notes · ${noteName(t.lo)} to ${noteName(t.hi)}</small></span></label>
         <select data-tkh="${t.index}" aria-label="Hand for ${esc(t.name)}"><option value="auto"${hand(t) === 'auto' ? ' selected' : ''}>Hand: by pitch</option><option value="R"${hand(t) === 'R' ? ' selected' : ''}>Right hand</option><option value="L"${hand(t) === 'L' ? ' selected' : ''}>Left hand</option></select></div>`,
       )
-      .join('')}</div>
-    <div class="row-actions"><button class="btn ghost" id="tkAuto">Pick for me</button><button class="btn" id="tkCancel">Cancel</button><button class="btn primary" id="tkApply">Use these</button></div>`
+      .join('')}</div>`
+        : ''
+    }
+    <div class="row-actions"><button class="btn ghost" id="tkShare">Share original file</button>${multi ? '<button class="btn ghost" id="tkAuto">Pick for me</button>' : ''}<button class="btn" id="tkCancel">${multi ? 'Cancel' : 'Close'}</button>${multi ? '<button class="btn primary" id="tkApply">Use these</button>' : ''}</div>`
 }
 
 // ---------- results ----------

@@ -1952,3 +1952,20 @@ dialog#credits h2 {
   color: var(--ink);
   font-weight: 700;
 }
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0 16px;
+}
+.facts dt {
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.facts dd {
+  margin: 4px 0 0;
+  font-weight: 650;
+}

@@ -25,7 +25,7 @@ import { thumb } from './thumb'
 import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
-import { LEVELS, autoLevel, simplify, type Level } from './simplify'
+import { LEVELS, autoLevel, notesPerBar, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
 import { dayKey, lastWeek, weekOf } from './week'
@@ -1011,17 +1011,7 @@ function openDrawer() {
   $('#sCredits', d).onclick = openCredits
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
-    const text = await store.exportAll()
-    const file = new File([text], 'piano-progress.json', { type: 'application/json' })
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'piano progress' }).catch(() => {}) // the iPad app has no downloads folder: use the share sheet
-      return
-    }
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(file)
-    a.download = file.name
-    a.click()
-    URL.revokeObjectURL(a.href)
+    await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
   }
   const file = $<HTMLInputElement>('#sFile', d)
   $('#sImport', d).onclick = () => file.click()
@@ -1167,11 +1157,22 @@ function openCredits() {
 async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
   if (!s) return
-  const r = inspectMidi(s.bytes)
-  let pick = s.pick ?? autoSelect(r)
+  const midi = s.kind !== 'xml'
+  const r = midi ? inspectMidi(s.bytes) : undefined
+  let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
+  const song = await store.toSong(s, settings.split)
+  const f = song.fifths
+  const facts: [string, string][] = [
+    ['Notes', String(song.notes.length)],
+    ['Bars', String(song.bars.length)],
+    ['Length', `${Math.floor(song.end / 60)}:${String(Math.round(song.end % 60)).padStart(2, '0')}`],
+    ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
+    ...(r ? ([['Drums', r.tracks.some((t) => t.percussion) ? 'Present, left out' : 'None']] as [string, string][]) : []),
+    ['Busiest bars', `${notesPerBar(song)} notes`],
+  ]
   const dlg = $('#tracks') as HTMLDialogElement
   const draw = () => {
-    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName)
+    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName, facts)
     dlg.querySelectorAll<HTMLInputElement>('input[data-tk]').forEach((c) => {
       c.onchange = () => {
         const i = Number(c.dataset.tk)
@@ -1188,22 +1189,38 @@ async function openTracks(id: string) {
         pick = { ...pick, hands }
       }
     })
-    $('#tkAuto', dlg).onclick = () => {
-      pick = autoSelect(r)
+    dlg.querySelector<HTMLButtonElement>('#tkAuto')?.addEventListener('click', () => {
+      if (r) pick = autoSelect(r)
       draw()
-    }
+    })
     $('#tkCancel', dlg).onclick = () => dlg.close()
-    $('#tkApply', dlg).onclick = async () => {
-      if (!pick.tracks.length) return
-      await store.setPick(id, pick)
-      lens.delete(id)
-      thumbs.delete(id)
-      dlg.close()
-      void showLibrary()
-    }
+    $('#tkShare', dlg).onclick = () => void shareFile(new File([s.bytes], `${s.title}${midi ? '.mid' : '.musicxml'}`, { type: midi ? 'audio/midi' : 'application/xml' }))
+    const apply = dlg.querySelector<HTMLButtonElement>('#tkApply')
+    if (apply)
+      apply.onclick = async () => {
+        if (!pick.tracks.length) return
+        await store.setPick(id, pick)
+        lens.delete(id)
+        thumbs.delete(id)
+        dlg.close()
+        void showLibrary()
+      }
   }
   draw()
   dlg.showModal()
+}
+
+/** Save or share a file: the iPad has no downloads folder, so it uses the share sheet. */
+async function shareFile(file: File) {
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: file.name }).catch(() => {})
+    return
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(file)
+  a.download = file.name
+  a.click()
+  URL.revokeObjectURL(a.href)
 }
 
 async function openById(id: string, mode: Mode) {
