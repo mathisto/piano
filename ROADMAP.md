@@ -55,11 +55,11 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 - [x] F4: Simplify per song (full, two hands, melody and bass, melody only) with an automatic level for busy arrangements, set on the start card and remembered per song.
 - [x] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
 - [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
-- [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence (an agent is on it).
+- [x] More instruments: electric piano, church organ, harp, strings, music box from MuseScore_General (MIT, rendered from FluidR3), about 1.5 MB, loaded only when chosen, credited in Credits (`docs/sounds.md`, `src/instruments.ts`). Unverified: tone and loop seams were checked by decoding, never by ear.
 
 ## iPad app (developer mode, one person)
 
-Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoNative.swift`, and `src/native-midi.ts` faking `navigator.requestMIDIAccess`. Bundle id `io.mattkelly.piano`, free Personal Team: reinstall every 7 days with the same bundle id, never delete the app (that wipes its songs and progress). Last installed 19 Oct 2026 with ghost notes, hold scoring, count-in and the first Technique page; it does not yet have Touch, the design pass or anything after.
+Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoNative.swift`, and `src/native-midi.ts` faking `navigator.requestMIDIAccess`. Bundle id `io.mattkelly.piano`, free Personal Team: reinstall every 7 days with the same bundle id, never delete the app (that wipes its songs and progress). Installed 19 Oct 2026 (device was locked at launch, so the app was installed but not started) with everything up to the library and simplify; rebuild after the staff upgrade and the sounds.
 
 - [x] Capacitor project, CoreMIDI plugin, JS shim, playback audio session, wake lock, landscape, safe areas, share-sheet export.
 - [ ] Check on the iPad: FP-10 over USB (timing, use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files, Stage Manager resize, the sound of the piano samples, the count-in click.
@@ -76,10 +76,9 @@ Play and staff:
 - Bluetooth MIDI adds jitter that calibration cannot remove.
 - Web MIDI needs Chrome, Edge or Firefox on a computer; the iPad app has its own path.
 - Cloudflare injects a Web Analytics beacon at the edge; the app sends nothing itself.
-- Hold scoring: no tint for a too-long hold, no "hold to advance" in Learn.
 
 MusicXML import:
-- Repeats, voltas and da capo ignored; grace notes and unpitched percussion skipped; transposing instruments not transposed; dynamics do not set velocity; time-wise scores rejected.
+- Repeats and first/second endings are expanded and dynamics marks set velocity; da capo and segno are ignored; grace notes and unpitched percussion are skipped; transposing instruments are not transposed; time-wise scores are rejected (export partwise). Not planned.
 
 Evidence:
 - Key velocity feedback has no controlled evidence behind it; treat the Touch features as measurement, not proven pedagogy.
