@@ -37,3 +37,14 @@ export function velStats(samples: { v: number; h: Hand }[], e: Edges = DEFAULT_E
   }
   return { n, mean, sd: n ? Math.sqrt(samples.reduce((a, s) => a + (s.v - mean) ** 2, 0) / n) : 0, hist, hands: { R: hand('R'), L: hand('L') }, bands }
 }
+
+const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length
+const GAP = 12 // each band's average must sit at least this far above the last, or the player did not vary
+
+/** Edges from a run of deliberately soft, medium and hard notes; null if the three did not differ enough. */
+export function calibrate(soft: number[], med: number[], hard: number[]): Edges | null {
+  if (!soft.length || !med.length || !hard.length) return null
+  const [s, m, h] = [mean(soft), mean(med), mean(hard)]
+  if (m - s < GAP || h - m < GAP) return null
+  return { soft: Math.round((s + m) / 2), hard: Math.round((m + h) / 2) }
+}

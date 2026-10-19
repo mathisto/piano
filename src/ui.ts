@@ -4,11 +4,11 @@ import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings } from './settings'
-import type { Progress, Stored } from './store'
+import type { Progress, Stored, TouchEntry } from './store'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
-import { band, type TouchStats } from './touch'
+import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -19,6 +19,7 @@ export function skeleton(app: HTMLElement) {
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="songs" checked><span>Songs</span></label>
       <label><input type="radio" name="nav" value="read"><span>Read music</span></label>
+      <label><input type="radio" name="nav" value="touch"><span>Touch</span></label>
     </div>
     <div class="song-title" id="title"></div>
     <button class="btn" id="stagesBtn" hidden>All stages</button>
@@ -49,6 +50,7 @@ export function skeleton(app: HTMLElement) {
   <main id="main" style="display:grid;min-height:0">
     <section id="library" class="view on" aria-label="Songs"></section>
     <section id="read" class="view" aria-label="Read music"></section>
+    <section id="touch" class="view" aria-label="Touch"></section>
     <section id="play" class="view" aria-label="Play">
       <div id="staff"></div>
       <div id="stage">
@@ -319,6 +321,55 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
       <colgroup><col><col style="width:190px"><col style="width:250px"><col style="width:130px"><col style="width:130px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Notes</th><th scope="col">Mastery</th><th scope="col" class="num">Median time</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`
+}
+
+export interface TouchCal {
+  step: 0 | 1 | 2 // soft, medium, hard
+  got: number // notes played in this step
+  msg?: string // outcome of the last run
+}
+
+export const CAL_STEPS = ['soft', 'medium', 'hard'] as const
+export const CAL_NOTES = 10
+
+export function touchView(el: HTMLElement, log: TouchEntry[], cal: TouchCal | null) {
+  const e = settings.edges ?? DEFAULT_EDGES
+  const bands = `Soft up to ${e.soft} · Medium ${e.soft + 1} to ${e.hard - 1} · Hard ${e.hard} and up`
+  const strip = cal
+    ? `<span>Play <b>${CAL_NOTES} ${CAL_STEPS[cal.step]}</b> notes on your keyboard, step ${cal.step + 1} of 3: <b>${cal.got} of ${CAL_NOTES}</b></span>
+       <span class="row-actions"><button class="btn" id="calCancel">Cancel</button></span>`
+    : `<span>Your bands: <b>${bands}</b> (${settings.edges ? 'calibrated' : 'default'}).</span>
+       <span class="row-actions">${settings.edges ? '<button class="btn" id="calReset">Use defaults</button>' : ''}<button class="btn primary" id="calStart">${icon('play')}Calibrate</button></span>`
+  const runs = log.filter((r) => r.id !== 'calibration')
+  const pts = runs.slice(-30)
+  const X = (i: number) => 8 + (pts.length > 1 ? (i / (pts.length - 1)) * 584 : 292)
+  const Y = (v: number) => 146 - (v / 127) * 140
+  const spark = pts.length
+    ? `<svg class="hist spark" viewBox="0 0 600 150" role="img" aria-label="Average velocity of your last ${pts.length} sessions">
+        <line class="mid" x1="8" x2="592" y1="${Y(e.soft)}" y2="${Y(e.soft)}" stroke-dasharray="3 5"/><line class="mid" x1="8" x2="592" y1="${Y(e.hard)}" y2="${Y(e.hard)}" stroke-dasharray="3 5"/><text x="592" y="${Y(e.hard) - 5}" text-anchor="end">hard</text><text x="592" y="${Y(e.soft) - 5}" text-anchor="end">soft</text>
+        <polyline points="${pts.map((r, i) => `${X(i)},${Y(r.mean)}`).join(' ')}"/>${pts.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r.mean)}" r="3.5"/>`).join('')}</svg>`
+    : ''
+  const rows = runs
+    .slice(-12)
+    .reverse()
+    .map((r) => {
+      const hand = r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : '—'
+      return `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode)}</small></td><td class="num">${r.n}</td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${hand}</td></tr>`
+    })
+    .join('')
+  el.innerHTML = `
+    <div class="lib-head">
+      <h1>Touch</h1>
+      <p>How hard you strike the keys, from 1 to 127, kept from every song you play on a real keyboard. The on-screen and computer keys do not send a strength.</p>
+    </div>
+    <div class="next-strip" role="status">${strip}</div>
+    ${cal?.msg ? `<p class="note" role="status">${esc(cal.msg)}</p>` : ''}
+    ${spark ? `<h2 class="sec">Average touch, last ${pts.length} sessions</h2>${spark}` : ''}
+    ${
+      rows
+        ? `<table class="songs"><caption>Sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Notes</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>`
+        : '<p class="note">Nothing yet. Finish a song with a keyboard connected and its touch shows up here.</p>'
+    }`
 }
 
 export interface DrillSummary {

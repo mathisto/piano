@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { band, velStats } from './touch'
+import { band, calibrate, velStats } from './touch'
 
 describe('touch', () => {
   it('bands velocity into soft, medium, hard at the default edges', () => {
@@ -34,5 +34,16 @@ describe('touch', () => {
     expect(s.n).toBe(0)
     expect(s.mean).toBe(0)
     expect(s.hands.R.n).toBe(0)
+  })
+})
+
+describe('calibrate', () => {
+  it('puts each edge halfway between the means of neighbouring bands', () => {
+    expect(calibrate([20, 30], [60, 70], [100, 110])).toEqual({ soft: 45, hard: 85 })
+  })
+
+  it('refuses a run where the bands do not rise clearly', () => {
+    expect(calibrate([60, 62], [61, 63], [64, 66])).toBeNull()
+    expect(calibrate([], [60], [100])).toBeNull()
   })
 })
