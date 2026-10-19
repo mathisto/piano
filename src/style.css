@@ -587,7 +587,6 @@ table.songs td.thumb {
 .tag.next {
   border-color: transparent;
   padding-inline: 0;
-  color: var(--lamp);
 }
 table.songs tr.band th {
   padding-top: 24px;
@@ -634,7 +633,7 @@ table.songs tr.band th {
 }
 .tech-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   align-items: end;
   gap: 16px;
   margin-bottom: 20px;
@@ -732,7 +731,7 @@ body.reading .hud small {
   display: block;
 }
 #staff .lines line {
-  stroke: var(--ink-2);
+  stroke: var(--ink-3);
   stroke-width: 1.1;
 }
 #staff .bars line {
@@ -806,8 +805,9 @@ body.reading .hud small {
   font-weight: 400;
   font-style: italic;
 }
-#staff .past {
-  fill: var(--ink-3);
+#staff .ch.past {
+  opacity: 0.42;
+  transition: opacity 0.3s 0.9s; /* after the hit flash has played */
 }
 #staff .beam {
   fill: var(--ink);
@@ -1575,8 +1575,8 @@ button.link {
   flex: none;
 }
 @media (hover: none) {
-  .drawer .foot .link {
-    display: none;
+  .drawer .foot #sHelp {
+    display: none; /* no keyboard on the iPad: the shortcut list is useless, Credits stays */
   }
 }
 .field {
@@ -2107,4 +2107,45 @@ dialog.sheet footer .grow {
 
 dialog.sheet footer .btn {
   white-space: nowrap;
+}
+
+#staff .barno.dense {
+  pointer-events: auto;
+  cursor: pointer;
+  fill: var(--ink-2);
+}
+.tag.next {
+  color: var(--ink);
+}
+
+.plan-cap {
+  align-self: center;
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.bands span {
+  border: 0;
+  border-bottom: 3px solid var(--edge);
+  border-radius: 0;
+  padding: 8px 0 6px;
+}
+
+.touch-only {
+  display: none;
+}
+@media (pointer: coarse) {
+  .touch-only {
+    display: inline-flex;
+  }
+  .tempo {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .dock-row.aids .grp > .cap {
+    display: none; /* the buttons say it; the label would push the hands onto a third row at 1180px */
+  }
 }

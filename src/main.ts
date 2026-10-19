@@ -307,6 +307,7 @@ async function ensureStage() {
   highway.onFrame = frame
   screenKeys(highway.app.canvas)
   staff = new Staff($('#staff'), game)
+  staff.onDense = () => void stepSimplify()
   dock = new Dock($('#dock'), game)
   dock.onNote = flash
   dock.onHands = () => staff.render()
@@ -621,22 +622,22 @@ function onPhase() {
     resOpen(false)
     let legend = ''
     try {
-      if (!localStorage.getItem('piano.legend') && !drill && !calibrating) {
+      if (!localStorage.getItem('piano.legend') && !drill && !calibrating && game.view !== 'sheet') {
         legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
         localStorage.setItem('piano.legend', '1') // the colours explain themselves after one song
       }
     } catch {
       /* private mode: the legend shows every time */
     }
-    const start = `<span class="hint">${matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'}</span>`
-    const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'}</span>`
+    const go = matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'
+    const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'} ${go}</span>`
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
     const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
     r.innerHTML = drill
-      ? `<b>${esc(drill.title)}</b>${start}`
+      ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
       : calibrating
-        ? `<b>Play middle C on every beat</b>${start}`
-        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${start}${legend}`
+        ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
+        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}`
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return
       const { base, credit } = current
@@ -1078,6 +1079,16 @@ addEventListener('click', (e) => {
   const x = t.closest<HTMLElement>('[data-close]')
   if (x) x.closest('dialog')?.close()
 })
+
+/** Thin the notes one level, from the 'too dense' hint on the staff. */
+async function stepSimplify() {
+  if (!current || current.level >= 3) return
+  const { base, credit } = current
+  await store.setSimplify(base.id, current.level + 1)
+  await openSong(base, game.mode)
+  if (current) current.credit = credit
+  onPhase()
+}
 
 function chooseMode(mode: Mode) {
   game.endPass()
