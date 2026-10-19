@@ -173,3 +173,28 @@ describe('velocity', () => {
     expect(j.samples()).toEqual([{ v: 32, h: 'R' }])
   })
 })
+
+describe('touch targets', () => {
+  const w = (id: number, t: number, want: [number, number]): Note => ({ ...n(id, t, 60 + id), want })
+
+  it('grades each struck note against its velocity range', () => {
+    const j = mk([w(0, 1, [20, 50]), w(1, 2, [20, 50]), w(2, 3, [20, 50])])
+    expect(j.press(60, 1, 40 / 127)[0]).toMatchObject({ k: 'hit', vel: 'ok' })
+    expect(j.press(61, 2, 10 / 127)[0]).toMatchObject({ vel: 'low' })
+    expect(j.press(62, 3, 90 / 127)[0]).toMatchObject({ vel: 'high' })
+    expect(j.touch).toEqual({ ok: 1, low: 1, high: 1 })
+    expect(j.touchPct).toBeCloseTo(1 / 3)
+  })
+
+  it('leaves notes without a target, and presses without a velocity, ungraded', () => {
+    const j = mk([n(0, 1, 60), w(1, 2, [20, 50])])
+    expect((j.press(60, 1, 0.9)[0] as { vel?: string }).vel).toBeUndefined()
+    expect((j.press(61, 2)[0] as { vel?: string }).vel).toBeUndefined()
+    expect(j.touchPct).toBe(-1)
+  })
+
+  it('also grades wait-mode hits', () => {
+    const j = mk([w(0, 1, [20, 50])], { wait: true })
+    expect(j.press(60, 1, 100 / 127)[0]).toMatchObject({ k: 'ok', vel: 'high' })
+  })
+})

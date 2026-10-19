@@ -11,7 +11,7 @@ import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
-import { multiplier, type Grade } from './judge'
+import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
@@ -22,7 +22,8 @@ import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
 import { calibrate } from './touch'
-import { $, CAL_NOTES, touchView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { exercise, type Opts } from './technique'
+import { $, CAL_NOTES, techniqueView, touchView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -88,8 +89,8 @@ async function showLibrary(err = '') {
   library($('#library'), starts, mine, err)
 }
 
-function view(name: 'library' | 'read' | 'touch' | 'play') {
-  for (const v of ['library', 'read', 'touch', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
+function view(name: 'library' | 'read' | 'technique' | 'touch' | 'play') {
+  for (const v of ['library', 'read', 'technique', 'touch', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'
   $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
@@ -97,12 +98,29 @@ function view(name: 'library' | 'read' | 'touch' | 'play') {
   if (name !== 'play') $('#title').textContent = ''
 }
 
-async function showSection(name: 'songs' | 'read' | 'touch') {
+async function showSection(name: 'songs' | 'read' | 'technique' | 'touch') {
   ;($(`input[name=nav][value=${name}]`) as HTMLInputElement).checked = true
   view(name === 'songs' ? 'library' : name)
   if (name === 'songs') await showLibrary()
   else if (name === 'read') await showRead()
+  else if (name === 'technique') showTechnique()
   else await showTouch()
+}
+
+function showTechnique() {
+  const el = $('#technique')
+  techniqueView(el, settings.tech)
+  const pick = <K extends keyof Opts>(id: string, key: K, parse: (v: string) => Opts[K]) =>
+    ($(id, el) as HTMLSelectElement).addEventListener('change', (e) => {
+      settings.tech[key] = parse((e.target as HTMLSelectElement).value)
+      save()
+    })
+  pick('#tPattern', 'pattern', (v) => v as Opts['pattern'])
+  pick('#tKey', 'tonic', Number)
+  pick('#tHands', 'hands', (v) => v as Opts['hands'])
+  pick('#tDyn', 'dyn', (v) => v as Opts['dyn'])
+  pick('#tBpm', 'bpm', Number)
+  $('#tStart', el).onclick = () => void openSong(exercise(settings.tech, settings.edges), 'perform')
 }
 
 // ---------------------------------------------------------------- touch page and calibration
@@ -250,6 +268,7 @@ async function openSong(song: Song, mode: Mode) {
 
 function leave() {
   const wasDrill = !!drill
+  const techSong = current?.song.id.startsWith('tech:')
   if (drill) void store.saveDrill(drillStats)
   drill = undefined
   game.endPass()
@@ -263,7 +282,7 @@ function leave() {
   document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
   history.replaceState(null, '', location.pathname)
-  void showSection(wasDrill ? 'read' : 'songs')
+  void showSection(wasDrill ? 'read' : techSong ? 'technique' : 'songs')
 }
 
 /** Show the panes the view asks for: staff only, both, or falling notes only. */
@@ -329,14 +348,19 @@ function frame() {
 
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
 
-function popup(grade: Grade, off: number, p: number, noteId: number) {
+const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
+
+/** `grade` is null in wait mode, where only the touch has a verdict. */
+function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?: VelGrade) {
   if (game.view === 'sheet') {
-    if (grade !== 'miss') staff.grade(noteId, grade, off) // the grade, as a word on the staff
+    if (grade !== 'miss') staff.grade(noteId, grade, off, vel && TOUCH[vel]) // the grade, as a word on the staff
     return
   }
   const el = $('#judge')
-  el.dataset.g = grade
-  el.innerHTML = `${WORDS[grade]}<small>${grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'}</small>`
+  el.dataset.g = grade ?? (vel === 'ok' ? 'perfect' : 'good')
+  const timing = grade === null || grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'
+  const touch = vel ? TOUCH[vel] : ''
+  el.innerHTML = `${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
   const x = Math.min(highway.W - 90, Math.max(90, highway.center(p)))
   el.style.left = `${x}px`
   el.style.top = `${highway.recY - 96}px`
@@ -400,12 +424,13 @@ game.on((e: GameEvent) => {
       highway.hit(e.note.p, e.grade, e.note.h)
       staff.ghostHit(e.note.p, e.note.id, e.grade)
       staff.mark(e.note.id, `hit-${e.grade}`)
-      popup(e.grade, e.off, e.note.p, e.note.id)
+      popup(e.grade, e.off, e.note.p, e.note.id, e.vel)
       break
     case 'ok':
       highway.hit(e.note.p, 'ok', e.note.h)
       staff.ghostHit(e.note.p, e.note.id, 'great')
       staff.mark(e.note.id, 'hit-ok')
+      if (e.vel) popup(null, 0, e.note.p, e.note.id, e.vel)
       if (drill) drillOk(e.note.id, e.rt, e.clean)
       break
     case 'hold':
@@ -842,7 +867,7 @@ $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDra
 $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
 $('#brand').onclick = () => (current ? leave() : void showSection('songs'))
 $('#stagesBtn').onclick = leave
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read' | 'touch')
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read' | 'technique' | 'touch')
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
   if (!b) return

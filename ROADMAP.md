@@ -89,10 +89,11 @@ Ideas from the first real session on the iPad with the FP-10. Everything below n
 
 ### Phase C: technique exercises (about 10-14 h)
 
-- [ ] A **Technique** page next to Songs and Read music: generated scales, arpeggios and five-finger patterns with targets for timing (existing), hold (Phase A) and velocity (Phase B).
-- [ ] Targets drawn on the note itself: soft, medium, hard as a coloured band or glow height on the falling bar and a dynamic mark on the staff; the judgement says 'soft ✓' or 'too hard'.
-- [ ] Exercise kinds: steady soft/medium/hard; crescendo and decrescendo across a scale; accents on beat one; evenness (every note within a tight band of your own mean); melody over accompaniment (right hand louder than left); staccato and legato by hold length.
-- [ ] Mastery and progress per exercise with the same meter used in Read music.
+- [x] (slice 1 shipped: `technique.ts`, five-finger, scale, arpeggio in seven keys, either or both hands, tempo; timing, hold and touch all graded) A **Technique** page next to Songs and Read music: generated scales, arpeggios and five-finger patterns with targets for timing (existing), hold (Phase A) and velocity (Phase B).
+- [x] (shipped: pips on the falling bar, p/mf/f, cresc./dim. and accent marks on the staff, verdict word 'touch ✓ / too soft / too hard' in the popups and results 'touch in range %') Targets drawn on the note itself: soft, medium, hard as a coloured band or glow height on the falling bar and a dynamic mark on the staff; the judgement says 'soft ✓' or 'too hard'.
+- [~] Exercise kinds (steady, crescendo, decrescendo and accent are built; still open: evenness (every note within a tight band of your own mean); melody over accompaniment (right hand louder than left); staccato and legato by hold length).
+- [ ] Mastery and progress per exercise with the same meter used in Read music. (Not built: nothing is remembered per exercise yet except the Touch log.)
+- Design debt: DESIGN.md does not yet describe the target pips, dynamic marks or the Touch and Technique pages; a documenter pass is owed.
 
 ### Cross-cutting
 

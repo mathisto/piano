@@ -9,6 +9,7 @@ import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
+import { DYNS, KEYS, PATTERNS, type Opts } from './technique'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -19,6 +20,7 @@ export function skeleton(app: HTMLElement) {
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="songs" checked><span>Songs</span></label>
       <label><input type="radio" name="nav" value="read"><span>Read music</span></label>
+      <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
       <label><input type="radio" name="nav" value="touch"><span>Touch</span></label>
     </div>
     <div class="song-title" id="title"></div>
@@ -50,6 +52,7 @@ export function skeleton(app: HTMLElement) {
   <main id="main" style="display:grid;min-height:0">
     <section id="library" class="view on" aria-label="Songs"></section>
     <section id="read" class="view" aria-label="Read music"></section>
+    <section id="technique" class="view" aria-label="Technique"></section>
     <section id="touch" class="view" aria-label="Touch"></section>
     <section id="play" class="view" aria-label="Play">
       <div id="staff"></div>
@@ -184,7 +187,7 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
   <div class="results"><div class="card" role="dialog" aria-label="Results">
     <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
+    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
         ? `<div>
@@ -321,6 +324,29 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
       <colgroup><col><col style="width:190px"><col style="width:250px"><col style="width:130px"><col style="width:130px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Notes</th><th scope="col">Mastery</th><th scope="col" class="num">Median time</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`
+}
+
+const opt = (v: string | number, label: string, cur: string | number) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${label}</option>`
+
+export function techniqueView(el: HTMLElement, o: Opts) {
+  const e = settings.edges ?? DEFAULT_EDGES
+  const sel = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
+  el.innerHTML = `
+    <div class="lib-head">
+      <h1>Technique</h1>
+      <p>Scales, arpeggios and five-finger patterns with a goal for how hard to play each note, on top of timing and holding. The target for every note shows on the falling bar and the staff.</p>
+    </div>
+    <div class="tech-form">
+      ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
+      ${sel('tKey', 'Key', Object.keys(KEYS).map(Number).sort((a, b) => KEYS[a] - KEYS[b]).map((pc) => opt(pc, ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'][pc] + ' major', o.tonic)).join(''))}
+      ${sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both, an octave apart']].map(([v, l]) => opt(v, l, o.hands)).join(''))}
+      ${sel('tDyn', 'Touch', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join(''))}
+      ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} beats a minute`, o.bpm)).join(''))}
+    </div>
+    <div class="next-strip">
+      <span>Soft is 1 to <b>${e.soft}</b>, medium <b>${e.soft + 1}</b> to <b>${e.hard - 1}</b>, hard <b>${e.hard}</b> and up${settings.edges ? ' (your calibration)' : '. Set your own on the Touch page'}. The on-screen and computer keys cannot be graded for touch.</span>
+      <span class="row-actions"><button class="btn primary" id="tStart">${icon('play')}Start</button></span>
+    </div>`
 }
 
 export interface TouchCal {

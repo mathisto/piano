@@ -1,3 +1,4 @@
+import type { Opts } from './technique'
 export interface Settings {
   fx: 0 | 1 | 2 | 3 // effects: off, calm, arcade, max
   fall: number // seconds of look-ahead on the highway
@@ -6,6 +7,7 @@ export interface Settings {
   volume: number
   names: boolean // note names on keys and notes
   chord: boolean // name the chord you are holding
+  tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
   hold: 'off' | 'lenient' | 'strict' // how closely to grade holding a key for the written length (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
@@ -26,6 +28,7 @@ const DEFAULTS: Settings = {
   names: true,
   chord: true,
   hold: 'lenient',
+  tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
   full: false,
   view: 'both',
   offset: 0,
