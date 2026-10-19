@@ -647,9 +647,8 @@ table.songs tr.band th {
   height: auto;
 }
 .bands span {
-  padding: 8px 10px;
-  border-radius: var(--r-1);
-  border: 1px solid var(--edge);
+  padding: 8px 0 6px;
+  border-bottom: 3px solid var(--edge); /* a flat range rule under each band, proportional in width */
   color: var(--ink-2);
   font: 650 14px/1 var(--ui);
   white-space: nowrap;
@@ -2124,12 +2123,6 @@ dialog.sheet footer .btn {
   font: 700 13px/1 var(--ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-.bands span {
-  border: 0;
-  border-bottom: 3px solid var(--edge);
-  border-radius: 0;
-  padding: 8px 0 6px;
 }
 
 .touch-only {
