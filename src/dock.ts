@@ -56,6 +56,7 @@ export class Dock {
           <span class="tempo-val" id="tempoVal">100%</span>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
         </div>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
         <span class="dock-fill"></span>
         <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
@@ -81,6 +82,7 @@ export class Dock {
       this.sync()
     }))
     this.wait.onchange = () => game.setWait(this.wait.checked)
+    q<HTMLInputElement>('#autoTempo').onchange = (e) => (game.autoTempo = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
     for (const h of ['R', 'L'] as const) {

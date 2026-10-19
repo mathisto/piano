@@ -1,5 +1,6 @@
 import { piano } from './audio'
 import type { Result } from './game'
+import type { Next } from './pace'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
@@ -194,7 +195,7 @@ export function touchBlock(t: TouchStats) {
     <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}.</div></div>`
 }
 
-export function results(r: Result, worst: { a: number; b: number } | null) {
+export function results(r: Result, next: Next | null) {
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
@@ -219,8 +220,8 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
     }
     ${r.touch.n >= 4 ? touchBlock(r.touch) : ''}
     <div class="row">
-      ${worst ? `<button class="btn primary big" id="drill">${icon('loop')}Loop bars ${worst.a + 1}–${worst.b + 1}</button>` : ''}
-      <button class="btn ${worst ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
+      ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
+      <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
       <button class="btn" id="toLib">Songs</button>
     </div>
   </div></div>`

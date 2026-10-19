@@ -10,6 +10,7 @@ import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
+import { nextStep } from './pace'
 import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
@@ -514,6 +515,11 @@ game.on((e: GameEvent) => {
     case 'milestone':
       slam(e.combo)
       break
+    case 'tempo':
+      dock.sync()
+      say(`Tempo ${Math.round(e.rate * 100)} percent`)
+      flash(`Tempo ${Math.round(e.rate * 100)}%`)
+      break
     case 'phase':
       onPhase()
       break
@@ -688,26 +694,34 @@ async function onDone(r: Result) {
     void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
   }
   const worst = worstBars(r.heat)
+  const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
-  res.innerHTML = results(r, worst)
+  res.innerHTML = results(r, next)
   resOpen(true)
-  res.querySelector<HTMLButtonElement>('#drill, #again')?.focus()
+  res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)
   $('#again', res).onclick = () => game.restart()
   $('#toLib', res).onclick = leave
-  const drillBtn = res.querySelector<HTMLButtonElement>('#drill')
-  if (drillBtn && worst)
-    drillBtn.onclick = () => {
-      ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
-      game.setMode('learn')
-      game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
+  const nextBtn = res.querySelector<HTMLButtonElement>('#next')
+  if (nextBtn && next)
+    nextBtn.onclick = () => {
+      if (next.kind === 'loop' && worst) {
+        ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
+        game.setMode('learn')
+        game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
+      } else if (next.kind === 'nowait') {
+        game.setWait(false)
+        game.restart()
+      } else if (next.rate) {
+        game.setRate(next.rate)
+        game.restart()
+      }
+      if (next.rate && next.kind === 'loop') game.setRate(next.rate)
       resOpen(false)
       syncMode()
       onPhase()
     }
 }
-
-// ---------------------------------------------------------------- calibration
 
 async function startCalibration() {
   closeDrawer()

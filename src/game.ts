@@ -1,4 +1,5 @@
 import * as audio from './audio'
+import { Pace } from './pace'
 import { velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -15,6 +16,7 @@ export interface Result {
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
+  clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
   holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
@@ -36,7 +38,8 @@ export type GameEvent =
   | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
   | { type: 'auto'; note: Note }
   | { type: 'phase'; phase: Phase }
-  | { type: 'loop' }
+  | { type: 'loop'; clean: boolean }
+  | { type: 'tempo'; rate: number } // the pace followed the player
   | { type: 'pass'; heat: number[] } // a stretch of practice ended; commit its trouble spots
   | { type: 'done'; result: Result }
 
@@ -76,6 +79,8 @@ export class Game {
   private stallBar = 0
   private lastPerf = 0
   private wrongMark = 0
+  readonly pace = new Pace()
+  autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
 
   /** Which panes to show. Reading drills always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {
@@ -125,6 +130,7 @@ export class Game {
   /** Back to the start (or the loop start), stopped. */
   restart() {
     this.endPass()
+    this.pace.reset()
     this.offs = []
     this.held.clear()
     this.seek(this.lead().from)
@@ -232,6 +238,7 @@ export class Game {
 
   setLoop(l: { a: number; b: number } | null) {
     this.loop = l
+    this.pace.reset()
     if (l) this.seek(this.lead().from)
     this.rescore()
     if (this.phase === 'waiting') this.setPhase('playing')
@@ -275,10 +282,17 @@ export class Game {
         }
       }
       if (this.loop && this.t >= this.loop.b) {
+        const j = this.judge
+        const clean = j.total > 0 && j.counts.miss === 0 && j.wrong <= 1
         this.endPass()
         this.seek(this.lead().from)
         this.rescore()
-        this.emit({ type: 'loop' })
+        this.emit({ type: 'loop', clean })
+        const next = this.mode === 'learn' && this.autoTempo ? this.pace.pass(clean, this.rate) : undefined
+        if (next !== undefined) {
+          this.setRate(next)
+          this.emit({ type: 'tempo', rate: next })
+        }
         return
       }
       const last = this.song.notes[this.song.notes.length - 1]
@@ -296,6 +310,7 @@ export class Game {
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
       touchPct: j.touchPct,
+      clean: j.counts.miss === 0 && j.wrong <= 1,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
