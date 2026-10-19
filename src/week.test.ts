@@ -28,3 +28,17 @@ describe('week', () => {
     expect(w.days[6].today).toBe(true)
   })
 })
+
+import { lastWeek } from './week'
+
+describe('last week', () => {
+  const wed = new Date(2026, 9, 21)
+  it('is null when nothing was practised', () => {
+    expect(lastWeek({}, 60, wed)).toBeNull()
+  })
+  it('totals the week before and suggests a higher goal only after meeting it', () => {
+    const days = { '2026-10-12': 1800, '2026-10-14': 2400, '2026-10-16': 600 }
+    expect(lastWeek(days, 60, wed)).toEqual({ minutes: 80, played: 3, suggest: 90 })
+    expect(lastWeek(days, 90, wed)).toEqual({ minutes: 80, played: 3, suggest: 90 })
+  })
+})

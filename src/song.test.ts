@@ -38,3 +38,20 @@ describe('song', () => {
     expect(estimateFifths(g)).toBe(1)
   })
 })
+
+import { assignHands } from './song'
+import type { Raw } from './song'
+
+describe('single-track hand split follows the line', () => {
+  const at = (t: number, p: number): Raw => ({ t, d: 0.4, p, v: 0.7, track: 0 })
+  it('keeps a melody that dips below the split in the right hand', () => {
+    const raw = [at(0, 64), at(0, 40), at(1, 62), at(1, 43), at(2, 60), at(2, 40), at(3, 59), at(3, 43), at(4, 58), at(4, 40)]
+    const h = assignHands(raw, 60)
+    expect(raw.map((r, i) => [r.p, h[i]]).filter(([p]) => (p as number) >= 58).every(([, x]) => x === 'R')).toBe(true)
+    expect(raw.map((r, i) => [r.p, h[i]]).filter(([p]) => (p as number) < 50).every(([, x]) => x === 'L')).toBe(true)
+  })
+  it('still splits a lone note far from either line by pitch', () => {
+    const h = assignHands([at(0, 72), at(5, 48)], 60)
+    expect(h).toEqual(['R', 'L'])
+  })
+})

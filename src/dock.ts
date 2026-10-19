@@ -35,6 +35,7 @@ export class Dock {
       <div class="dock-row">
         <button class="btn primary big" id="go"></button>
         <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
+        <button class="btn icon ghost" id="zen" aria-label="Hide controls" aria-pressed="false" title="Hide controls (M)">${icon('focus')}</button>
         <div class="scrub" id="scrub" data-modes="perform learn">
           <svg viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="loop" hidden></div>
@@ -56,6 +57,9 @@ export class Dock {
           <span class="tempo-val" id="tempoVal">100%</span>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
         </div>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="holdAdvance"><i></i>Hold to move on</label>
         <span class="dock-fill"></span>
         <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
@@ -81,6 +85,9 @@ export class Dock {
       this.sync()
     }))
     this.wait.onchange = () => game.setWait(this.wait.checked)
+    q<HTMLInputElement>('#holdAdvance').onchange = (e) => (game.holdAdvance = (e.target as HTMLInputElement).checked)
+    q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
+    q<HTMLInputElement>('#autoTempo').onchange = (e) => (game.autoTempo = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
     for (const h of ['R', 'L'] as const) {
@@ -105,6 +112,9 @@ export class Dock {
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait
+    ;(this.host.querySelector('#autoTempo') as HTMLInputElement).checked = g.autoTempo
+    ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
+    ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
     for (const h of ['R', 'L'] as const) {
       const r = this.host.querySelector<HTMLInputElement>(`input[name=hand${h}][value=${g.hands[h]}]`)
       if (r) r.checked = true

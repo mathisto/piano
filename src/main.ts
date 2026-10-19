@@ -6,10 +6,12 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
-import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
+import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
+import { nextStep } from './pace'
+import { knownPitches } from './quiet'
 import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
@@ -20,11 +22,14 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
+import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
-import { calibrate } from './touch'
+import { calibrate, writtenTargets } from './touch'
+import { LEVELS, autoLevel, notesPerBar, simplify, type Level } from './simplify'
+import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
-import { weekOf, dayKey } from './week'
-import { $, CAL_NOTES, tracksDialog, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { dayKey, lastWeek, weekOf } from './week'
+import { $, CAL_NOTES, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -32,12 +37,12 @@ skeleton(app)
 const game = new Game()
 const starters = STARTERS.map((s) => fromSpec(s.spec))
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-const coarse = matchMedia('(pointer: coarse)').matches // touch first: the iPad has no Space key
 
 let highway!: Highway
 let staff!: Staff
 let dock!: Dock
-let current: { song: Song; heat: number[] } | undefined
+let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
+let libEntries: LibraryEntry[] = []
 let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
 let played = false
@@ -89,14 +94,15 @@ async function libraryData() {
   const starts = starterRows(STARTERS, starters, prog, thumbs)
   const mine = userRows(stored, prog, lens, thumbs)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
-  const last = [...starts, ...mine].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
+  const libRows: Row[] = libEntries.map((e) => ({ id: `lib:${e.id}`, title: e.title, sub: `${e.composer} · ${e.level}`, bars: 0, len: 0, prog: prog.get(`lib:${e.id}`), user: false, thumb: '' }))
+  const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
   return { starts, mine, last }
 }
 
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err)
+  library($('#library'), starts, mine, err, libEntries)
 }
 
 const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
@@ -108,6 +114,7 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#hud').hidden = name !== 'play'
   if (name !== 'play') $('#title').textContent = ''
+  $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
 
 type Section = 'today' | 'songs' | 'read' | 'technique' | 'progress'
@@ -119,38 +126,53 @@ async function showSection(name: Section, err = '') {
   if (name === 'today') await showToday()
   else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
-  else if (name === 'technique') showTechnique()
+  else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
 
 async function stageRows(): Promise<StageRow[]> {
   drillStats = await store.getDrill()
-  const rec = nextStage(drillStats)
+  const f = focus(drillStats)
   return STAGES.map((stage) => {
     const m = mastery(stage, drillStats)
     const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
-    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === rec }
+    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === f.stage, due: dueCards(stage, drillStats) }
   })
 }
 
 async function showToday() {
-  const [{ last }, rows, days] = await Promise.all([libraryData(), stageRows(), store.getPractice()])
+  const [{ last }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
   const next = rows.find((r) => r.next)!
-  const ex = exercise(settings.tech, settings.edges)
+  const ts = await store.getTech()
+  const nr = nextRecipe(ts, dayNum())
+  const ex = exercise(nr.recipe.opts, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
+  const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
   todayView($('#today'), {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
-    read: { id: next.stage.id, name: next.stage.name, pct: next.pct, line: next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
+    read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
+    techDue: nr.reason === 'due',
+    techId: nr.recipe.id,
     fix: worst && last.bars ? { id: last.id, title: last.title, ...worst } : undefined,
+    review: second ? { id: second.stage.id, name: `Review ${second.stage.name.toLowerCase()}`, line: `${second.due} ${second.due === 1 ? 'card' : 'cards'} due` } : undefined,
     week: weekOf(days),
     goal: settings.goal,
+    planMin: settings.planMin,
+    done,
+    recap: new Date().getDay() === 1 ? lastWeek(days, settings.goal) ?? undefined : undefined,
   })
+  $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
+    settings.planMin = Number(r.value) as 5 | 10 | 20
+    save()
+    void showToday()
+  }))
 }
 
 async function showProgress() {
-  const [stages, days, log] = await Promise.all([stageRows(), store.getPractice(), store.getTouch()])
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log })
+  const [stages, days, log, ts] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech()])
+  const today = dayNum()
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -159,12 +181,18 @@ async function showProgress() {
 }
 
 $('#today').addEventListener('click', (e) => {
+  const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')
+  if (g) {
+    settings.goal = Number(g.dataset.goal)
+    save()
+    return void showToday()
+  }
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
   if (!b) return
   if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
   else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
   else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
-  else void openSong(exercise(settings.tech, settings.edges), 'perform')
+  else void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
 
 /** Open a piece in Learn with two worst bars looped at a lower tempo. */
@@ -178,40 +206,57 @@ async function fixBars(id: string, a: number, b: number) {
   onPhase()
 }
 
-function showTechnique() {
+async function showTechnique() {
   const el = $('#technique')
-  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)))
-  const pick = <K extends keyof Opts>(id: string, key: K, parse: (v: string) => Opts[K]) =>
-    ($(id, el) as HTMLSelectElement).addEventListener('change', (e) => {
-      settings.tech[key] = parse((e.target as HTMLSelectElement).value)
-      save()
-      el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
-    })
-  pick('#tPattern', 'pattern', (v) => v as Opts['pattern'])
-  pick('#tKey', 'tonic', Number)
-  pick('#tHands', 'hands', (v) => v as Opts['hands'])
-  pick('#tDyn', 'dyn', (v) => v as Opts['dyn'])
-  pick('#tBpm', 'bpm', Number)
+  const ts = await store.getTech()
+  const today = dayNum()
+  const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, state: stateOf(ts, r.id, today) }))
+  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)), path)
+  el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
+    const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)
+    if (r) void openSong(exercise(r.opts, settings.edges), 'perform')
+  }))
+  const redraw = () => void showTechnique()
+  const on = (id: string, f: (v: string) => void, rerender = false) => {
+    const sel = el.querySelector<HTMLSelectElement>(id)
+    if (sel)
+      sel.addEventListener('change', () => {
+        f(sel.value)
+        save()
+        if (rerender) redraw()
+        else el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
+      })
+  }
+  on('#tPattern', (v) => (settings.tech.pattern = v as Opts['pattern']), true)
+  on('#tKey', (v) => {
+    settings.tech.tonic = parseInt(v)
+    settings.tech.minor = v.endsWith('m') || undefined
+  })
+  on('#tHands', (v) => (settings.tech.hands = v as Opts['hands']))
+  on('#tDyn', (v) => (settings.tech.dyn = v as Opts['dyn']))
+  on('#tArtic', (v) => (settings.tech.artic = v === 'normal' ? undefined : (v as Opts['artic'])))
+  on('#tLevel', (v) => (settings.tech.level = Number(v) as 1 | 2 | 3))
+  on('#tBpm', (v) => (settings.tech.bpm = Number(v)))
   $('#tStart', el).onclick = () => void openSong(exercise(settings.tech, settings.edges), 'perform')
-  const on = (sel: string, f: () => void) => {
+  const click = (sel: string, f: () => void) => {
     const b = el.querySelector<HTMLButtonElement>(sel)
     if (b) b.onclick = f
   }
-  on('#calStart', () => {
+  click('#calStart', () => {
     touchCal = { step: 0, got: 0 }
     calGot = [[], [], []]
     calMsg = ''
-    showTechnique()
+    void showTechnique()
   })
-  on('#calCancel', () => {
+  click('#calCancel', () => {
     touchCal = null
-    showTechnique()
+    void showTechnique()
   })
-  on('#calReset', () => {
+  click('#calReset', () => {
     settings.edges = undefined
     save()
     calMsg = ''
-    showTechnique()
+    void showTechnique()
   })
 }
 
@@ -239,7 +284,7 @@ function calNote(vel: number) {
       touchCal = null
     }
   }
-  showTechnique()
+  void showTechnique()
   return true
 }
 
@@ -295,14 +340,22 @@ function screenKeys(canvas: HTMLCanvasElement) {
   for (const ev of ['pointerup', 'pointercancel'] as const) canvas.addEventListener(ev, (e) => lift(e.pointerId))
 }
 
-async function openSong(song: Song, mode: Mode) {
+async function openSong(base: Song, mode: Mode) {
   game.endPass()
+  // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
+  const level = mode === 'read' || base.id.startsWith('tech:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
+  const song = simplify(base, level)
+  if (settings.asWritten && !song.dyn && mode !== 'read') {
+    const w = writtenTargets(song.notes, settings.edges)
+    if (w) song.notes.forEach((n, i) => (n.want = w[i]))
+  }
+  game.known = knownPitches(await store.getDrill())
   view('play')
   void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
   await ensureStage()
   game.load(song, mode)
   const prog = await store.getProgress(song.id)
-  current = { song, heat: prog.heat }
+  current = { song, base, level, heat: prog.heat }
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
   document.body.classList.toggle('reading', mode === 'read')
@@ -322,8 +375,9 @@ async function openSong(song: Song, mode: Mode) {
 }
 
 function leave() {
+  if (document.body.classList.contains('zen')) zen()
   void flushPractice()
-  document.body.classList.remove('hush', 'zen')
+  document.body.classList.remove('hush')
   const wasDrill = !!drill
   const techSong = current?.song.id.startsWith('tech:')
   if (drill) void store.saveDrill(drillStats)
@@ -419,6 +473,8 @@ const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high
 
 /** `grade` is null in wait mode, where only the touch has a verdict. */
 function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?: VelGrade) {
+  const fine = (grade === null || grade === 'perfect' || grade === 'great') && vel !== 'low' && vel !== 'high'
+  if (fine && game.mode !== 'perform' && game.quiet.hushed) return // clean playing needs no praise; slips still speak
   if (game.view === 'sheet') {
     if (grade !== 'miss') staff.grade(noteId, grade, off, vel && TOUCH[vel]) // the grade, as a word on the staff
     return
@@ -502,6 +558,7 @@ game.on((e: GameEvent) => {
       break
     case 'hold':
       if (e.grade === 'short') staff.cut(e.note.id)
+      else if (e.grade === 'long') staff.over(e.note.id)
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
@@ -513,6 +570,14 @@ game.on((e: GameEvent) => {
       break
     case 'milestone':
       slam(e.combo)
+      break
+    case 'short':
+      flash('Hold it a little longer')
+      break
+    case 'tempo':
+      dock.sync()
+      say(`Tempo ${Math.round(e.rate * 100)} percent`)
+      flash(`Tempo ${Math.round(e.rate * 100)}%`)
       break
     case 'phase':
       onPhase()
@@ -544,9 +609,9 @@ function onPhase() {
   dock.setPhase()
   const r = $('#ready')
   r.hidden = game.phase !== 'ready'
+  $('#modeSeg').hidden = game.mode === 'read' || game.phase === 'ready' // the start card carries the choice until play begins
   if (game.phase === 'ready') {
     resOpen(false)
-    const go = coarse ? 'Tap <b>Play</b>' : 'Press <kbd>Space</kbd>'
     let legend = ''
     try {
       if (!localStorage.getItem('piano.legend') && !drill && !calibrating) {
@@ -556,11 +621,24 @@ function onPhase() {
     } catch {
       /* private mode: the legend shows every time */
     }
+    const start = `<span class="hint">${matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'}</span>`
+    const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'}</span>`
+    const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
+    const levels = shows ? `<div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
     r.innerHTML = drill
-      ? `<b>${esc(drill.title)}</b><span>${go} to start.</span>`
+      ? `<b>${esc(drill.title)}</b>${start}`
       : calibrating
-        ? `<b>Play middle C on every beat</b><span>${go} to start.</span>`
-        : `<b>${esc(current.song.title)}</b><span>${go} to start.${game.mode === 'learn' ? ' The song waits for you.' : ''}</span>${legend}`
+        ? `<b>Play middle C on every beat</b>${start}`
+        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${start}${legend}`
+    r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
+      if (!current) return
+      const { base, credit } = current
+      await store.setSimplify(base.id, Number(x.value))
+      await openSong(base, game.mode)
+      if (current) current.credit = credit
+      onPhase()
+    }))
+    r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
   }
   wake()
   if (game.phase === 'paused') say('Paused')
@@ -582,11 +660,10 @@ async function startDrill(which: Stage | 'review') {
   const stage = which === 'review' ? undefined : which
   const pool = stage ? cards(stage) : reviewPool(drillStats)
   const goal = stage ? stage.goalMs : 3000
-  const d = deck(pool, drillStats, goal, 24)
+  const d = deck(pool, drillStats, goal, stage?.scale ? 10 : 24) // a fragment takes four beats
   const title = stage ? stage.name : 'Weak notes review'
   const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d, stage?.fifths ?? 0)
-  const q = 60 / BPM
-  const noteCard = song.notes.map((n) => Math.round(n.t / q))
+  const noteCard = noteCards(d, song)
   drill = {
     stage: which,
     title,
@@ -634,6 +711,8 @@ function drillOk(noteId: number, rt: number, clean: boolean) {
 async function drillDone() {
   const d = drill!
   await store.saveDrill(drillStats)
+  const done = await store.getPlan(dayKey())
+  void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats) : undefined
   const nxt = nextStage(drillStats)
@@ -682,32 +761,42 @@ async function onDone(r: Result) {
     r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
   )
   current.heat = prog.heat
+  void store.markPlan(dayKey(), current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
+  if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
     void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
   }
   const worst = worstBars(r.heat)
+  const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
-  res.innerHTML = results(r, worst)
+  res.innerHTML = results(r, next)
   resOpen(true)
-  res.querySelector<HTMLButtonElement>('#drill, #again')?.focus()
+  res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)
   $('#again', res).onclick = () => game.restart()
   $('#toLib', res).onclick = leave
-  const drillBtn = res.querySelector<HTMLButtonElement>('#drill')
-  if (drillBtn && worst)
-    drillBtn.onclick = () => {
-      ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
-      game.setMode('learn')
-      game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
+  const nextBtn = res.querySelector<HTMLButtonElement>('#next')
+  if (nextBtn && next)
+    nextBtn.onclick = () => {
+      if (next.kind === 'loop' && worst) {
+        ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
+        game.setMode('learn')
+        game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
+      } else if (next.kind === 'nowait') {
+        game.setWait(false)
+        game.restart()
+      } else if (next.rate) {
+        game.setRate(next.rate)
+        game.restart()
+      }
+      if (next.rate && next.kind === 'loop') game.setRate(next.rate)
       resOpen(false)
       syncMode()
       onPhase()
     }
 }
-
-// ---------------------------------------------------------------- calibration
 
 async function startCalibration() {
   closeDrawer()
@@ -849,7 +938,7 @@ function openDrawer() {
   if (open) d.querySelector('details')!.open = true
   const wasOpen = !d.hidden
   d.hidden = false
-  $('#main').inert = true // the drawer holds focus; the keyboard still plays
+  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
   if (!wasOpen) $('#drawerTitle', d).focus()
   const mon = $('#sMon', d)
   const tick = () => (mon.textContent = monitor.n ? `Last: ${monitor.text}` : '')
@@ -893,6 +982,14 @@ function openDrawer() {
     settings.names = el.checked
     save()
   }, 'change')
+  on('#sWritten', (el) => {
+    settings.asWritten = el.checked
+    save()
+  }, 'change')
+  on('#sFade', (el) => {
+    settings.fade = el.checked
+    save()
+  }, 'change')
   on('#sFull', (el) => {
     settings.full = el.checked
     save()
@@ -912,19 +1009,10 @@ function openDrawer() {
     save()
     lens.clear()
   }, 'change')
+  $('#sCredits', d).onclick = openCredits
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
-    const text = await store.exportAll()
-    const file = new File([text], 'piano-progress.json', { type: 'application/json' })
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'piano progress' }).catch(() => {}) // the iPad app has no downloads folder: use the share sheet
-      return
-    }
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(file)
-    a.download = file.name
-    a.click()
-    URL.revokeObjectURL(a.href)
+    await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
   }
   const file = $<HTMLInputElement>('#sFile', d)
   $('#sImport', d).onclick = () => file.click()
@@ -950,7 +1038,7 @@ function closeDrawer() {
   if (d.hidden) return false
   d.hidden = true
   clearInterval(monTimer)
-  $('#main').inert = false
+  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = false))
   $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
@@ -970,15 +1058,26 @@ $('#read').addEventListener('click', (e) => {
   } else if (b.dataset.review) void startDrill('review')
 })
 
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) {
-  r.onchange = () => {
-    game.endPass()
-    game.setMode(r.value as Mode)
-    resOpen(false)
-    syncMode()
-    onPhase()
-  }
+/** Hide the top bar and the dock's extras so the staff and keyboard have the screen; the dock button brings them back. */
+function zen() {
+  const on = document.body.classList.toggle('zen')
+  document.querySelector('#zen')?.setAttribute('aria-pressed', String(on))
+  highway?.layout()
 }
+addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('#zen')) zen()
+})
+
+function chooseMode(mode: Mode) {
+  game.endPass()
+  game.setMode(mode)
+  ;($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
+  resOpen(false)
+  syncMode()
+  onPhase()
+}
+
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) r.onchange = () => chooseMode(r.value as Mode)
 
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=view]')) r.onchange = () => setView(r.value as 'both' | 'sheet' | 'falling')
 
@@ -988,10 +1087,8 @@ addEventListener('keydown', (e) => {
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return
   if ((e.target as HTMLElement).closest('dialog')) return
   if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
-  else if (e.key === 'm' && current) {
-    document.body.classList.toggle('zen')
-    highway?.layout()
-  } else if (e.key === 'n') {
+  else if (e.key === 'm' && current) zen()
+  else if (e.key === 'n') {
     settings.names = !settings.names
     save()
   } else if (e.key === 'Escape') {
@@ -1019,6 +1116,9 @@ $('#library').addEventListener('click', async (e) => {
   const t = e.target as HTMLElement
   const b = t.closest('button')
   const row = t.closest<HTMLElement>('tr[data-open]')
+  const lib = t.closest<HTMLElement>('tr[data-lib]')
+  if (!b && lib) return void openLibrary(lib.dataset.lib!, 'learn')
+  if (b?.dataset.libplay) return void openLibrary(b.dataset.libplay, b.dataset.mode as Mode)
   if (!b && row) return void openById(row.dataset.open!, 'learn') // the whole row opens Learn
   if (!b) return
   if (b.dataset.play) {
@@ -1031,15 +1131,49 @@ $('#library').addEventListener('click', async (e) => {
   }
 })
 
+/** Fetch a piece from the open library, then play it like any imported file, with its credit on the start card. */
+async function openLibrary(id: string, mode: Mode) {
+  const e = libEntries.find((x) => x.id === id)
+  if (!e) return
+  try {
+    const r = await fetch(libraryUrl(e.file))
+    if (!r.ok) throw new Error(`${e.title} could not be loaded.`)
+    const song = await store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
+    await openSong(song, mode)
+    if (current) current.credit = creditLine(e)
+    onPhase()
+  } catch (err) {
+    void showSection('songs', (err as Error).message)
+  }
+}
+
+function openCredits() {
+  const d = $('#credits') as HTMLDialogElement
+  d.innerHTML = creditsDialog(libEntries)
+  d.showModal()
+  d.scrollTop = 0
+}
+
 /** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */
 async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
   if (!s) return
-  const r = inspectMidi(s.bytes)
-  let pick = s.pick ?? autoSelect(r)
+  const midi = s.kind !== 'xml'
+  const r = midi ? inspectMidi(s.bytes) : undefined
+  let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
+  const song = await store.toSong(s, settings.split)
+  const f = song.fifths
+  const facts: [string, string][] = [
+    ['Notes', String(song.notes.length)],
+    ['Bars', String(song.bars.length)],
+    ['Length', `${Math.floor(song.end / 60)}:${String(Math.round(song.end % 60)).padStart(2, '0')}`],
+    ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
+    ...(r ? ([['Drums', r.tracks.some((t) => t.percussion) ? 'Present, left out' : 'None']] as [string, string][]) : []),
+    ['Busiest bars', `${notesPerBar(song)} notes`],
+  ]
   const dlg = $('#tracks') as HTMLDialogElement
   const draw = () => {
-    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName)
+    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName, facts)
     dlg.querySelectorAll<HTMLInputElement>('input[data-tk]').forEach((c) => {
       c.onchange = () => {
         const i = Number(c.dataset.tk)
@@ -1056,25 +1190,42 @@ async function openTracks(id: string) {
         pick = { ...pick, hands }
       }
     })
-    $('#tkAuto', dlg).onclick = () => {
-      pick = autoSelect(r)
+    dlg.querySelector<HTMLButtonElement>('#tkAuto')?.addEventListener('click', () => {
+      if (r) pick = autoSelect(r)
       draw()
-    }
+    })
     $('#tkCancel', dlg).onclick = () => dlg.close()
-    $('#tkApply', dlg).onclick = async () => {
-      if (!pick.tracks.length) return
-      await store.setPick(id, pick)
-      lens.delete(id)
-      thumbs.delete(id)
-      dlg.close()
-      void showLibrary()
-    }
+    $('#tkShare', dlg).onclick = () => void shareFile(new File([s.bytes], `${s.title}${midi ? '.mid' : '.musicxml'}`, { type: midi ? 'audio/midi' : 'application/xml' }))
+    const apply = dlg.querySelector<HTMLButtonElement>('#tkApply')
+    if (apply)
+      apply.onclick = async () => {
+        if (!pick.tracks.length) return
+        await store.setPick(id, pick)
+        lens.delete(id)
+        thumbs.delete(id)
+        dlg.close()
+        void showLibrary()
+      }
   }
   draw()
   dlg.showModal()
 }
 
+/** Save or share a file: the iPad has no downloads folder, so it uses the share sheet. */
+async function shareFile(file: File) {
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: file.name }).catch(() => {})
+    return
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(file)
+  a.download = file.name
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
 async function openById(id: string, mode: Mode) {
+  if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
   const i = STARTERS.findIndex((s) => s.spec.id === id)
   if (i >= 0) return void openSong(starters[i], mode)
   const row = (await store.listSongs()).find((s) => s.id === id)
@@ -1121,6 +1272,7 @@ addEventListener('drop', (e) => {
 // ---------------------------------------------------------------- boot
 
 void (async () => {
+  libEntries = await loadManifest()
   await showSection('today')
   updateChip()
   try {

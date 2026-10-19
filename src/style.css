@@ -743,6 +743,10 @@ body.reading .hud small {
   fill: var(--ink-2);
   font: italic 700 20px Georgia, 'Times New Roman', serif;
 }
+#staff .dyn text.smufl {
+  font: 40px 'Bravura';
+  fill: var(--ink-2);
+}
 #staff .dyn text.wd {
   font-size: 15px;
   font-weight: 400;
@@ -797,6 +801,11 @@ body.reading .hud small {
   to {
     fill: var(--ink-3);
   }
+}
+#staff .head.over {
+  stroke: var(--good);
+  stroke-width: 1.4px;
+  paint-order: stroke;
 }
 #staff .head.short {
   stroke: var(--bad);
@@ -1070,6 +1079,27 @@ kbd {
   color: var(--ink);
 }
 
+.ready .seg,
+.ready .btn {
+  pointer-events: auto;
+}
+.ready .seg {
+  display: inline-flex;
+  margin: 6px 0 4px;
+}
+.ready .seg span {
+  display: flex;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.ready .seg input:checked + span {
+  color: var(--ink);
+}
+.ready .hint {
+  font-size: 15px;
+  color: var(--ink-3);
+  margin-bottom: 2px;
+}
 .ready {
   position: absolute;
   left: 50%;
@@ -1839,4 +1869,103 @@ body.zen #dock .aids {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.prow.done .pwho b {
+  color: var(--ink-2);
+}
+.prow .pwho b svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -3px;
+}
+.recap {
+  margin-bottom: 16px;
+}
+.recap summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.recap p {
+  margin: 8px 0;
+  color: var(--ink-2);
+}
+
+.crow.wrap {
+  flex-wrap: wrap;
+  max-width: 760px;
+}
+.cell.due {
+  outline: 1.5px dashed var(--ink-2);
+  outline-offset: -2px;
+}
+.all {
+  margin-top: 12px;
+}
+.all summary {
+  cursor: pointer;
+  color: var(--ink-3);
+}
+
+.libgrp {
+  margin: 0 0 8px;
+}
+.libgrp summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font: 800 italic 20px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.libgrp summary span {
+  color: var(--ink-3);
+  font-style: normal;
+}
+dialog#credits {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  padding: 22px 26px;
+  width: min(720px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+dialog#credits::backdrop {
+  background: rgba(5, 6, 13, 0.7);
+}
+dialog#credits h2 {
+  margin: 0 0 6px;
+  font: 800 italic 28px/1 var(--display);
+  text-transform: uppercase;
+}
+.credlist pre {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  white-space: pre-wrap;
+  font: 14px/1.45 var(--ui);
+  color: var(--ink-2);
+}
+.credlist pre::first-line {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0 16px;
+}
+.facts dt {
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.facts dd {
+  margin: 4px 0 0;
+  font-weight: 650;
 }

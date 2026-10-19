@@ -6,6 +6,9 @@ export interface Settings {
   instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
+  asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
+  fade: boolean // hide the name of a note on the bars once the Read drills show you know it
+  planMin: 5 | 10 | 20 // how long a Today plan should take
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
@@ -26,7 +29,10 @@ const DEFAULTS: Settings = {
   instrument: 'piano',
   volume: 0.7,
   names: true,
+  fade: true,
+  asWritten: false,
   strict: 'standard',
+  planMin: 10,
   goal: 60,
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
   full: false,

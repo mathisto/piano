@@ -55,3 +55,52 @@ describe('technique exercises', () => {
     expect(s.spb).toBeCloseTo(60 / 80)
   })
 })
+
+describe('technique breadth', () => {
+  it('minor scales use the natural minor steps and the relative major signature', () => {
+    const s = mk({ pattern: 'scale', tonic: 9, minor: true })
+    expect(s.notes.slice(0, 8).map((n) => n.p)).toEqual([69, 71, 72, 74, 76, 77, 79, 81])
+    expect(s.fifths).toBe(0)
+    expect(mk({ pattern: 'scale', tonic: 4, minor: true }).fifths).toBe(1)
+  })
+
+  it('minor arpeggios stack a minor third', () => {
+    expect(mk({ pattern: 'arp', tonic: 9, minor: true }).notes.map((n) => n.p).slice(0, 4)).toEqual([69, 72, 76, 81])
+  })
+
+  it('contrary motion sends the hands out from the same tonic through the scale tones', () => {
+    const s = mk({ pattern: 'contrary', hands: 'R' }) // asks for both hands whatever was chosen
+    const r = s.notes.filter((n) => n.h === 'R').map((n) => n.p)
+    const l = s.notes.filter((n) => n.h === 'L').map((n) => n.p)
+    expect(r.slice(0, 8)).toEqual([60, 62, 64, 65, 67, 69, 71, 72])
+    expect(l.slice(0, 8)).toEqual([60, 59, 57, 55, 53, 52, 50, 48])
+  })
+
+  it('articulation sets the written length', () => {
+    const d = (a?: 'legato' | 'staccato') => mk({ artic: a }).notes[0].d
+    expect(d('staccato')).toBeLessThan(d())
+    expect(d('legato')).toBeGreaterThan(d())
+    expect(mk({ artic: 'staccato' }).artic).toBe('staccato')
+  })
+
+  it('evenness asks for no particular level', () => {
+    expect(mk({ dyn: 'even' }).notes.every((n) => n.want === undefined)).toBe(true)
+  })
+
+  it('balance keeps the right hand above the left', () => {
+    const s = mk({ dyn: 'balance', hands: 'both' })
+    const r = s.notes.find((n) => n.h === 'R')!.want!
+    const l = s.notes.find((n) => n.h === 'L')!.want!
+    expect(r[0]).toBeGreaterThan(l[1])
+  })
+
+  it('rhythm cards repeat one note in written values at each level', () => {
+    const s = mk({ pattern: 'rhythm', level: 2 })
+    expect(new Set(s.notes.map((n) => n.p)).size).toBe(1)
+    expect(s.bars).toHaveLength(4)
+    const beats = s.notes.map((n) => n.t / s.spb)
+    expect(beats.some((b) => b % 1 === 0.5)).toBe(true) // eighths at level 2
+    expect(mk({ pattern: 'rhythm', level: 1 }).notes.map((n) => n.t / (60 / 80)).every((b) => b % 1 === 0)).toBe(true)
+    expect(s.notes.every((n) => n.want === undefined)).toBe(true)
+  })
+})

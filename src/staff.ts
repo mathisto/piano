@@ -72,6 +72,7 @@ export class Staff {
   private count = 4 // bars per system
   private sys = 1 // systems on the page: 1, or 2 in a tall sheet view (current + next)
   private total = GRAND.h // viewBox height
+  private curtain?: SVGRectElement
   private yPad = 0 // centres a short page vertically in sheet view
   private w = 0
   private x0 = 0
@@ -194,6 +195,12 @@ export class Staff {
     const t = Math.min(Math.max(this.game.t, bars[this.bar0].t0), bars[last].t1)
     const { x, dy } = this.posAt(t)
     const cx = Math.min(x, this.x1) - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
+    const notes = this.svg.querySelector('.notes')
+    if (this.game.hidePlayed && this.curtain && notes) {
+      this.curtain.setAttribute('x', String(cx))
+      this.curtain.setAttribute('width', String(Math.max(0, this.w - cx)))
+      notes.setAttribute('clip-path', 'url(#ahead)')
+    } else notes?.removeAttribute('clip-path')
     this.cursor.setAttribute('x1', String(cx))
     this.cursor.setAttribute('x2', String(cx))
     const top = this.base[this.clefs[0]] - 4 * S
@@ -216,7 +223,14 @@ export class Staff {
     const r = this.host.getBoundingClientRect()
     if (!r.width || !r.height) return
     this.pickLayout()
-    this.pad = this.game.mode === 'read' ? 30 : 14 // drills: room left of a note for its accidental
+    // drills: room left of a note for its accidental, only when some note in the set has one
+    const song0 = this.game.song
+    const ka0 = keyAcc(song0.fifths)
+    const signs = song0.notes.some((n) => {
+      const sp = spell(n.p, n.flat ? -2 : song0.fifths)
+      return sp.acc !== ka0[sp.letter]
+    })
+    this.pad = this.game.mode === 'read' && signs ? 30 : 14
     const { clefs, base } = this
     const top = base[clefs[0]] - 4 * S // y of the first staff's top line
     const bottom = base[clefs[clefs.length - 1]] // y of the last staff's bottom line
@@ -288,6 +302,9 @@ export class Staff {
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
     this.notes()
     this.dynamics()
+    // a curtain behind the cursor: with Hide played on, notes vanish as you play them, which trains reading ahead
+    const clip = el('clipPath', { id: 'ahead' }, svg)
+    this.curtain = el('rect', { x: 0, y: 0, width: this.w, height: total }, clip) as SVGRectElement
   }
 
   /** Technique exercises: the dynamic to aim for. Words go between the staves at the left of the system, accents sit on the notes. */
@@ -305,9 +322,10 @@ export class Staff {
       }
       return
     }
-    const word = { soft: 'p', medium: 'mf', hard: 'f', cresc: 'cresc.', decresc: 'dim.' }[dyn]
+    // dynamic letters are Bravura glyphs; the words are italic text
+    const word = { soft: '\uE520', medium: '\uE52D', hard: '\uE522', cresc: 'cresc.', decresc: 'dim.' }[dyn]
     if (!word) return
-    for (const dy of new Set(this.placed.map((p) => p.dy))) el('text', { x: this.x0 + 4, y: dy + mid + 6, class: word.length > 2 ? 'wd' : '' }, g, word)
+    for (const dy of new Set(this.placed.map((p) => p.dy))) el('text', { x: this.x0 + 4, y: dy + mid + (word.length > 1 ? 6 : 10), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
   }
 
   private notes() {
@@ -565,6 +583,11 @@ export class Staff {
   /** A note whose key came up early gets a red outline; a note held through gets nothing. */
   cut(noteId: number) {
     this.byId.get(noteId)?.head?.classList.add('short')
+  }
+
+  /** A key held past its written end: an orange outline, the counterpart of the red one for letting go early. */
+  over(noteId: number) {
+    this.byId.get(noteId)?.head?.classList.add('over')
   }
 
   mark(noteId: number, cls: string) {

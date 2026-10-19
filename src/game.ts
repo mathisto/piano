@@ -1,4 +1,6 @@
 import * as audio from './audio'
+import { Pace } from './pace'
+import { Quiet } from './quiet'
 import { velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -15,6 +17,8 @@ export interface Result {
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
+  dyn?: string // the technique exercise's dynamics, when it was one
+  clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
   holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
@@ -36,7 +40,9 @@ export type GameEvent =
   | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
   | { type: 'auto'; note: Note }
   | { type: 'phase'; phase: Phase }
-  | { type: 'loop' }
+  | { type: 'loop'; clean: boolean }
+  | { type: 'short' } // a key came up before its note had been held long enough to move on
+  | { type: 'tempo'; rate: number } // the pace followed the player
   | { type: 'pass'; heat: number[] } // a stretch of practice ended; commit its trouble spots
   | { type: 'done'; result: Result }
 
@@ -67,6 +73,9 @@ export class Game {
   offs: number[] = []
   showNotes = false // reading drills hide the falling notes and key names unless asked
   showNames = false
+  holdAdvance = false // Learn: after the notes are struck the song waits until they have been held for their written length
+  private hold?: { idx: number[]; until: number }
+  hidePlayed = false // Learn: notes leave the staff as they are played, so you must read ahead
   private listeners: ((e: GameEvent) => void)[] = []
   private anchorPerf = 0
   private anchorT = 0
@@ -76,6 +85,10 @@ export class Game {
   private stallBar = 0
   private lastPerf = 0
   private wrongMark = 0
+  readonly pace = new Pace()
+  readonly quiet = new Quiet() // goes quiet on judgement words once the playing is clean
+  known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
+  autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
 
   /** Which panes to show. Reading drills always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {
@@ -119,12 +132,14 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? HOLD[settings.strict] : 'off', ease: EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: EASE[settings.strict] }
   }
 
   /** Back to the start (or the loop start), stopped. */
   restart() {
     this.endPass()
+    this.pace.reset()
+    this.quiet.reset()
     this.offs = []
     this.held.clear()
     this.seek(this.lead().from)
@@ -161,6 +176,7 @@ export class Game {
 
   private setPhase(p: Phase, force = false) {
     if (this.phase === p && !force) return
+    if (p !== 'waiting') this.hold = undefined
     this.phase = p
     this.emit({ type: 'phase', phase: p })
   }
@@ -232,6 +248,7 @@ export class Game {
 
   setLoop(l: { a: number; b: number } | null) {
     this.loop = l
+    this.pace.reset()
     if (l) this.seek(this.lead().from)
     this.rescore()
     if (this.phase === 'waiting') this.setPhase('playing')
@@ -244,6 +261,11 @@ export class Game {
     if (this.running()) this.t = this.anchorT + dt
     for (const [p, until] of this.autoUntil) if (until < perf) this.autoUntil.delete(p)
     if (!this.running() && this.phase !== 'waiting') return
+    if (this.hold && perf >= this.hold.until) {
+      this.hold = undefined
+      this.anchor(perf)
+      this.setPhase('playing')
+    }
 
     const lead = this.lead()
     const spb = this.song.spb
@@ -275,10 +297,17 @@ export class Game {
         }
       }
       if (this.loop && this.t >= this.loop.b) {
+        const j = this.judge
+        const clean = j.total > 0 && j.counts.miss === 0 && j.wrong <= 1
         this.endPass()
         this.seek(this.lead().from)
         this.rescore()
-        this.emit({ type: 'loop' })
+        this.emit({ type: 'loop', clean })
+        const next = this.mode === 'learn' && this.autoTempo ? this.pace.pass(clean, this.rate) : undefined
+        if (next !== undefined) {
+          this.setRate(next)
+          this.emit({ type: 'tempo', rate: next })
+        }
         return
       }
       const last = this.song.notes[this.song.notes.length - 1]
@@ -296,6 +325,8 @@ export class Game {
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
       touchPct: j.touchPct,
+      clean: j.counts.miss === 0 && j.wrong <= 1,
+      dyn: this.song.dyn,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
@@ -318,21 +349,25 @@ export class Game {
       if (e.k === 'hit') {
         const note = this.song.notes[e.i]
         this.offs.push(e.off)
+        this.quiet.note((e.grade === 'perfect' || e.grade === 'great') && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel })
         if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
+        this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel })
       } else if (e.k === 'hold') {
         this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
+        this.quiet.note(false)
         this.bump(note.bar, 1)
         this.emit({ type: 'miss', note })
       } else {
         this.bump(this.phase === 'waiting' ? this.stallBar : barAt(this.song.bars, Math.max(0, this.t)), 0.5)
+        this.quiet.note(false)
         this.emit({ type: 'wrong', p: e.p })
       }
     }
@@ -349,6 +384,12 @@ export class Game {
     this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel))
     if (this.phase === 'waiting') {
       if (!this.judge.required(this.t).length) {
+        if (this.holdAdvance && this.mode === 'learn') {
+          const idx = this.judge.cluster(this.t)
+          const d = Math.max(0, ...idx.map((i) => this.song.notes[i].d))
+          this.hold = { idx, until: performance.now() + Math.min(4000, ((d * 0.8) / this.rate) * 1000) }
+          return
+        }
         if (this.lastPerf - this.stallAt > 2500) this.bump(this.stallBar, 1)
         this.anchor(performance.now())
         this.setPhase('playing')
@@ -360,6 +401,11 @@ export class Game {
     this.held.delete(p)
     if (settings.sound || virtual) audio.noteOff(p)
     this.emit({ type: 'release', p })
+    if (this.hold && performance.now() < this.hold.until && this.hold.idx.some((i) => this.song.notes[i].p === p)) {
+      this.judge.reopen(this.hold.idx)
+      this.hold = undefined
+      this.emit({ type: 'short' })
+    }
     if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
   }
 

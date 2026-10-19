@@ -80,7 +80,9 @@ const keyed = (program: string) => /piano|clavi|harpsichord|guitar|harp|celesta|
 /** Everything when the file is already readable; otherwise a lead line and an accompaniment, with drums and pads left out. */
 export function autoSelect(r: Report): Selection {
   const live = r.tracks.filter((t) => !t.percussion)
-  if (density(live, r.bars) <= COMFORT) return { tracks: live.map((t) => t.index), hands: {} }
+  const all = { tracks: live.map((t) => t.index), hands: {} }
+  // a piano score is a few keyed tracks (often one per hand): keep them all and let Simplify thin a busy one
+  if (density(live, r.bars) <= COMFORT || live.length <= 3 || live.every((t) => keyed(t.program))) return all
 
   // a lead is a line of single notes in the singing register; a melodic instrument beats a keyed one, which is the accompaniment's job
   const score = (t: TrackInfo) => t.mono * Math.min(1, t.notes / 200) * Math.max(0.2, 1 - Math.abs((t.lo + t.hi) / 2 - 72) / 48)

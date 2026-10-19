@@ -97,9 +97,9 @@ export class Judge {
   }
 
   /** Velocities of the notes struck so far, for the touch statistics. */
-  samples(): { v: number; h: Hand }[] {
-    const out: { v: number; h: Hand }[] = []
-    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h }))
+  samples(): { v: number; h: Hand; p: number }[] {
+    const out: { v: number; h: Hand; p: number }[] = []
+    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h, p: this.notes[i].p }))
     return out
   }
 
@@ -231,6 +231,28 @@ export class Judge {
     }
     this.advance()
     return out
+  }
+
+  /** Notes struck at this moment (within one chord's spread of `t`). */
+  cluster(t: number): number[] {
+    const out: number[] = []
+    for (let i = 0; i < this.notes.length; i++) {
+      if (this.notes[i].t > t + CLUSTER) break
+      if (this.st[i] === HIT && this.notes[i].t >= t - CLUSTER) out.push(i)
+    }
+    return out
+  }
+
+  /** Take back hits so the notes are asked for again (a key let go too soon in Learn's hold-to-advance). */
+  reopen(idx: number[]) {
+    for (const i of idx) {
+      if (this.st[i] !== HIT) continue
+      this.st[i] = PENDING
+      this.hits--
+      this.vel[i] = 0
+      this.down.delete(this.notes[i].p)
+      this.first = Math.min(this.first, i)
+    }
   }
 
   /** Pending notes the clock must wait for at song time `t` (wait mode). */
