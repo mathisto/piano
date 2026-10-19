@@ -366,7 +366,7 @@ async function openSong(base: Song, mode: Mode) {
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
   document.body.classList.toggle('reading', mode === 'read')
-  $('#brand').setAttribute('aria-label', 'piano: leave this piece')
+  $('#brand').setAttribute('aria-label', 'Piano Forte: leave this piece')
   if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
   $('#modeSeg').hidden = mode === 'read'
   $('#play').classList.toggle('drill', mode === 'read')

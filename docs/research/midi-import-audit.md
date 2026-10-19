@@ -309,7 +309,7 @@ Rules: nothing is silently dropped, every drop appears as a line with its count;
 
 ## 10. What we need from the owner
 
-1. **The file, or the report.** Options in ascending effort: (a) wait for Phase 0 and open the song's Import report; (b) in Chrome on piano.mattkelly.io, open DevTools Console on the page and run the snippet below; it downloads the stored bytes (idb-keyval default store, verified against the dev server); (c) on the iPad, nothing exists yet, so Phase 0's "Share original MIDI" is the route.
+1. **The file, or the report.** Options in ascending effort: (a) wait for Phase 0 and open the song's Import report; (b) in Chrome on the web app (then piano.mattkelly.io), open DevTools Console on the page and run the snippet below; it downloads the stored bytes (idb-keyval default store, verified against the dev server); (c) on the iPad, nothing exists yet, so Phase 0's "Share original MIDI" is the route.
 
 ```js
 const db = await new Promise((r) => { const q = indexedDB.open('keyval-store'); q.onsuccess = () => r(q.result) })

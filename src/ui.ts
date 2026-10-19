@@ -20,7 +20,7 @@ export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document)
 export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
-    <button class="brand" id="brand" aria-label="piano: Today">piano</button>
+    <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="9 9 48 36" width="40" height="30" fill="currentColor" aria-hidden="true"><rect x="10" y="10" width="8" height="34" rx="2"/><rect x="10" y="10" width="20" height="8" rx="2"/><rect x="24" y="10" width="8" height="22" rx="2"/><rect x="10" y="24" width="22" height="8" rx="2"/><rect x="38" y="10" width="8" height="34" rx="2"/><rect x="38" y="10" width="18" height="8" rx="2"/><rect x="38" y="24" width="14" height="8" rx="2"/></svg></button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="today" checked><span>Today</span></label>
       <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>

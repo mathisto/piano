@@ -11,7 +11,7 @@ import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib'
 const ROOT = new URL('..', import.meta.url).pathname
 const SRC = `${ROOT}scripts/library-sources.json`
 const OUT = `${ROOT}public/library/`
-const UA = 'piano-trainer-library-fetch/0.1 (+https://piano.mattkelly.io; themattkellyshow@gmail.com)'
+const UA = 'piano-forte-library-fetch/0.1 (+https://pianoforte.mattkelly.io; themattkellyshow@gmail.com)'
 const NC_OK = ['CC-BY-NC-4.0', 'CC-BY-NC-SA-4.0', 'CC-BY-NC-3.0', 'CC-BY-NC-SA-3.0'] // only with nc:true on the piece
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

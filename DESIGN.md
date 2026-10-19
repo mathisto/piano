@@ -1,5 +1,5 @@
 ---
-name: piano
+name: Piano Forte
 description: Falling-notes piano trainer in a DDR-cabinet night room; the calm grand staff is the scoreboard.
 colors:
   ground: "#090b17"
@@ -266,7 +266,7 @@ The iPad in landscape is the main screen, a desktop browser the second. The play
 A navy-ink night palette with one amber lamp, two hand hues, and a four-step judgement spectrum (lime, mint, orange, red) that deliberately excludes amber.
 
 ### Primary
-- **Marquee Lamp** (#ffc83d): the verb and the "now" markers only. Primary buttons (at most one per view: the Continue / Start row on Songs, the Next row's Practice on Read, the first undone plan row on Today, Start in the Technique head, the dock Play and the big action on results, Use these in Options), the lamp Next tag on the same row as its primary, the staff cursor, scrubber playhead, awaited notehead (in a drill, every head of the next card), receptor lamps over lit keys, awaited-note outline on the highway, the "Play this" legend swatch, the count-in numeral and the combo slam, the focus ring and text selection. Hover is **Lamp Bright** (#ffd766). The wordmark, selected segments, switches, slider thumbs, combo number and x-multiplier are Ink, not lamp.
+- **Marquee Lamp** (#ffc83d): the verb and the "now" markers only. Primary buttons (at most one per view: the Continue / Start row on Songs, the Next row's Practice on Read, the first undone plan row on Today, Start in the Technique head, the dock Play and the big action on results, Use these in Options), the lamp Next tag on the same row as its primary, the staff cursor, scrubber playhead, awaited notehead (in a drill, every head of the next card), receptor lamps over lit keys, awaited-note outline on the highway, the "Play this" legend swatch, the count-in numeral and the combo slam, the focus ring and text selection. Hover is **Lamp Bright** (#ffd766). The PF mark in the bar, selected segments, switches, slider thumbs, combo number and x-multiplier are Ink, not lamp.
 - **Lamp Ink** (#1a1300): text on any lamp fill.
 
 ### Secondary (hands)
@@ -322,7 +322,7 @@ UI text has three sizes: 13 (label, kbd, sub-lines, fine print), 15 (body, contr
 
 ## Layout
 
-A single-column app grid: 56px top bar (safe-area insets padded for the iPad), then one view. Top bar, left to right: wordmark (Display 30px, Ink), the five-tab section switch (hidden on the play screen), the song title (play), "All stages" (drills) or the Perform | Learn switch (hidden on the start card, which carries the choice) (songs), a spacer, the HUD, the MIDI chip, the settings icon button.
+A single-column app grid: 56px top bar (safe-area insets padded for the iPad), then one view. Top bar, left to right: the PF mark (40x30, Ink), the five-tab section switch (hidden on the play screen), the song title (play), "All stages" (drills) or the Perform | Learn switch (hidden on the start card, which carries the choice) (songs), a spacer, the HUD, the MIDI chip, the settings icon button.
 
 Every non-play page (Today, Songs, Read, Technique, Progress) pads `32px clamp(16px, 6vw, 96px) 64px`, scrolls, and centres its children at `min(100%, 1100px)` (One Measure). Play rows by view: Both is staff `minmax(160px, 31vh)` + highway + dock; Staff is the staff filling the screen with a `clamp(96px, 15vh, 150px)` highway strip; Falling drops the staff row; a reading drill is staff `minmax(0, 1fr)` + strip `clamp(150px, 24vh, 230px)` + dock. The keyboard is drawn inside the highway canvas, 24% of stage height at most.
 
@@ -344,6 +344,10 @@ Four radii and one control height. 4px (kbd, thumbnails, scrubber, segment cells
 ## Components
 
 Each component: anatomy, then states. All interactive states share the 2px Lamp focus ring, 2px offset.
+
+### The PF mark
+
+Piano Forte, PF for short: a P and an F built from rounded blocks, as if two notes had been dropped on the receptor line. In the bar it is Ink, 40x30, the only brand element (no wordmark), a 46px-tall button back to Today. As the app icon and favicon it is full colour on Ground: P in Right Hand cyan, F in Left Hand pink, with the Lamp receptor line under them. That line is the one place Lamp appears outside "play this", because the icon is a picture of the stage, not a control. Source: `public/favicon.svg`; the iOS icon is the same drawing at 1024px, full-bleed.
 
 ### Segmented control
 - Ground well, Edge border, 8px, 3px padding, 2px gap; cells 32px at 4px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
@@ -466,7 +470,7 @@ Each component: anatomy, then states. All interactive states share the 2px Lamp 
 - **Don't** add synthwave sun, perspective grid, or glow on chrome.
 - **Don't** add a hard offset shadow or a hard text-shadow; use Shade.
 - **Don't** colour notation permanently; colour is a transient state.
-- **Don't** use amber for selection, switches, slider thumbs, the wordmark, combo or multiplier, and never for a judgement grade.
+- **Don't** use amber for selection, switches, slider thumbs, the PF mark in the bar, combo or multiplier, and never for a judgement grade.
 - **Don't** reuse a hand or judgement colour for chrome.
 - **Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 12px.
 - **Don't** invent a second dialog layout, an inline-styled modal or a coloured tag.
@@ -486,7 +490,7 @@ Each component: anatomy, then states. All interactive states share the 2px Lamp 
 | Colour | lamp / lamp-hi / lamp-ink | #ffc83d / #ffd766 / #1a1300 | verb and now |
 | Colour | R / L / L-edge | #3fe0ff / #ff4fa3 / #ff7bbd | hands |
 | Colour | perfect / great / good / bad | #d7ff3d / #34e89a / #ff8a3d / #ff4a3d | judgement |
-| Type, Display italic | 17 / 22 / 28 / 30 / 34 / 40 / 54 | staff grade word / section, badge / title, big button, tempo, drawer h2 / wordmark, HUD numeral / results h2, chord, narrow notice / page h1, judge / ready title | announced |
+| Type, Display italic | 17 / 22 / 28 / 30 / 34 / 40 / 54 | staff grade word / section, badge / title, big button, tempo, drawer h2 / HUD numeral / results h2, chord, narrow notice / page h1, judge / ready title | announced |
 | Type, Display italic, stage | 160 / `clamp(64px,11vw,150px)` / 190 | count-in / slam / results grade | announced |
 | Type, Hanken | 12 / 13 / 15 / 18 | HUD caption, bar numbers / label, kbd, fine, sub-line / body, controls / row name, ready sentence | read |
 | Spacing | 4 / 8 / 12 / 16 / 24 / 32 | gaps, card gaps, bar padding, section gaps, page top | rhythm |
@@ -562,7 +566,7 @@ HUD by mode: Perform shows Score and Combo (x-multiplier badge from x2); Read sh
 
 Recorded from the build; none of these is a rule for new surfaces.
 - Hushed bar keeps its 56px band; the stage does not reclaim it. Only Zen reclaims it.
-- Display sizes drifted from the earlier 22/28/34/54 ramp to 22/28/30/34/40 (+54 on the ready title, 17 on the staff grade word). 30 (wordmark, HUD) and 40 (h1, judge) were added ad hoc; there is no 24.
+- Display sizes drifted from the earlier 22/28/34/54 ramp to 22/28/30/34/40 (+54 on the ready title, 17 on the staff grade word). 30 (HUD) and 40 (h1, judge) were added ad hoc; there is no 24.
 - Learn results show a 150px stroked check icon where Perform shows the grade letter; the icon stands in for a grade and has no word beside it.
 - Staff hit marks: Perfect and the "ok" touch hit are colour only and decay to Ink Faint after 0.8s; only Great, Good and Miss leave a shape. The "ok" hit and letter grades B and D reuse hand hues (cyan, magenta) for a grade, against the Semantic Hue Rule.
 - Hold outlines on staff heads differ by hue only (orange held too long, red released early), against the Word And Shape Rule; the words exist only as the Perform "held n%" figure.
