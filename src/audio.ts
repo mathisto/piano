@@ -102,7 +102,6 @@ function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number):
   if (s.loop) {
     src.loop = true
     ;[src.loopStart, src.loopEnd] = s.loop
-    src.stop(c.currentTime + 30) // ponytail: a note nobody releases stops after 30 s instead of droning on
   }
   const k = inst.dyn
   const lp = c.createBiquadFilter() // soft hits are darker, hard hits brighter
@@ -112,6 +111,7 @@ function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number):
   g.gain.value = inst.gain * (1 - k + k * (0.12 + 0.88 * vel ** 1.6))
   src.connect(lp).connect(g).connect(master!)
   src.start()
+  if (s.loop) src.stop(c.currentTime + 30) // ponytail: a note nobody releases stops after 30 s instead of droning on
   src.onended = () => {
     if (voices.get(p)?.g === g) voices.delete(p)
     g.disconnect()
@@ -157,7 +157,7 @@ export function noteOn(p: number, vel: number, force = false) {
   noteOff(p, true)
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   const inst = instrument(settings.instrument)
-  void preload(inst.id)
+  if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note
   const v = sampleVoice(c, inst, p, vel) ?? synthVoice(c, p, vel)
   voices.set(p, v)
 }
