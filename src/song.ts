@@ -93,6 +93,8 @@ export function barAt(bars: Bar[], t: number): number {
   return lo
 }
 
+/** A rhythm written as 0.3333 is a third of a quarter. */
+const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 0.01 ? Math.round(x * 24) / 24 : x)
 const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
 
 export function build(
@@ -108,7 +110,7 @@ export function build(
   const bq = bars.map((b) => ({ q0: (acc += barQ(b)) - barQ(b), ql: barQ(b) }))
   // rhythm: as given, else read off the clock inside the bar (clean sources: drills, exercises)
   const rhythm = raw.map((r, k) => {
-    if (r.q !== undefined) return { q: r.q, dq: r.dq ?? r.d, hand: hands[k], grace: r.grace }
+    if (r.q !== undefined) return { q: onLattice(r.q), dq: r.dq ?? r.d, hand: hands[k], grace: r.grace }
     const i = barAt(bars, r.t + 1e-6)
     const qs = (bars[i].t1 - bars[i].t0) / barQ(bars[i])
     return { q: bq[i].q0 + Math.round(((r.t - bars[i].t0) / qs) * 24) / 24, dq: r.d / qs, hand: hands[k] }

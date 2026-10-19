@@ -67,8 +67,8 @@ const MEL = [69, 72, 74, 73, 77, 76, 74, 72, 70, 69, 74, 79, 77, 74, 73, 69] // 
 const ROOTS = [38, 34 + 12, 41, 36 + 12] // D, B flat, F, C (one octave up where it would go below A0 range of interest)
 
 /** 16 bars of 4/4 at 72 bpm: LH sixteenth arpeggios then triplet eighths, pedal rings to the barline, melody, rolled chords, graces, a quarter-note triplet. */
-export function pianoHuman(jitter = 30, drift = 70): Fixture {
-  const w = new Writer(jitter, (at) => (Math.sin((at / 32) * Math.PI * 2) * drift) / 1000, 7)
+export function pianoHuman(jitter = 30, drift = 70, seed = 7): Fixture {
+  const w = new Writer(jitter, (at) => (Math.sin((at / 32) * Math.PI * 2) * drift) / 1000, seed)
   let m = 0
   for (let bar = 0; bar < 16; bar++) {
     const b0 = bar * 4
@@ -148,6 +148,17 @@ export function sixEight(jitter = 0): Fixture {
   w.add(43, 0.5 + 24, 3, 'L')
   w.add(67, 0.5 + 24, 3, 'R')
   return w.done({ pickup: 0.5, bars: 9 })
+}
+
+/** 3/4 for four bars then 4/4 for four, with a slowdown mid-bar; eighths over a bar-long bass. */
+export function mixed(jitter = 0): Fixture {
+  const w = new Writer(jitter, () => 0, 9, 90, [3, 4])
+  w.midi.header.timeSignatures.push({ ticks: 12 * PPQ, timeSignature: [4, 4] } as never)
+  w.midi.header.tempos.push({ ticks: 18 * PPQ, bpm: 70 } as never)
+  w.midi.header.update()
+  for (const [at, len] of [[0, 3], [3, 3], [6, 3], [9, 3], [12, 4], [16, 4], [20, 4], [24, 4]]) w.add(48, at, len, 'L', { exact: !jitter, end: at + len - 0.05 })
+  for (let i = 0; i < 56; i++) w.add(72 + (i % 5), i / 2, 0.5, 'R', { exact: !jitter, end: i / 2 + 0.45 })
+  return w.done()
 }
 
 /** The orchestral-style file from midi-tracks.test.ts: melody, harp arpeggio, held pads, drums; exact ticks, 120 bpm. */

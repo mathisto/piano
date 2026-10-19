@@ -1,8 +1,9 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
-import { measure, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
+import { measure, mixed, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
 import { notate, quantize, tiedSegments } from './quantize'
-import { estimateFifths, fromMidi, type Note, type Song } from './song'
+import { fromMusicXml } from './musicxml'
+import { estimateFifths, fromMidi, fromSpec, type Note, type Song } from './song'
 import { spell, spellWindow } from './spell'
 
 const barQ = (s: Song, i: number) => s.bars[i].ql ?? (s.bars[i].n * 4) / s.bars[i].den
@@ -57,7 +58,7 @@ describe('quantize: a human piano arrangement', () => {
   it('puts onsets where they were meant, merges rolled chords and flags the grace note', () => {
     const a = accuracy(s, f)
     console.info('piano accuracy', a)
-    expect(a.hit).toBeGreaterThan(0.93)
+    expect(a.hit).toBeGreaterThan(0.98)
     expect(Math.abs(a.chords[0] - a.chords[1]) / a.chords[1]).toBeLessThan(0.01)
     expect(a.graces[0]).toBe(a.graces[1])
   })
@@ -107,6 +108,43 @@ describe('quantize: tempo changes', () => {
     expect(a.hit).toBeGreaterThan(0.95)
     expect(measure(s, true).crossing).toBe(0)
     expect(overlaps(s)).toBe(0)
+  })
+})
+
+describe('quantize: time signature changes', () => {
+  it('follows 3/4 into 4/4 and a tempo change without drift', () => {
+    for (const j of [0, 25]) {
+      const f = mixed(j)
+      const s = imp(f)
+      expect(s.bars.slice(0, 8).map((b) => [b.n, barQ(s, b.i)])).toEqual([[3, 3], [3, 3], [3, 3], [3, 3], [4, 4], [4, 4], [4, 4], [4, 4]])
+      expect(accuracy(s, f).hit).toBeGreaterThan(0.98)
+      expect(overlaps(s)).toBe(0)
+    }
+  })
+})
+
+describe('clean sources get the same fields', () => {
+  it('reads a spec song: positions, values, triplets', () => {
+    const s = fromSpec({ id: 't', title: 't', bpm: 120, fifths: 0, rh: 'C5:1 D5:0.5 E5:0.5 F5:1 G5:0.3333333 A5:0.3333333 B5:0.3333334 C6:4', lh: 'C3+G3:4 C3+G3:4' })
+    const rh = s.notes.filter((n) => n.h === 'R')
+    expect(rh.map((n) => [n.bar, +n.qb!.toFixed(3), +n.qd!.toFixed(3), !!n.tuplet])).toEqual([[0, 0, 1, false], [0, 1, 0.5, false], [0, 1.5, 0.5, false], [0, 2, 1, false], [0, 3, 0.333, true], [0, 3.333, 0.333, true], [0, 3.667, 0.333, true], [1, 0, 4, false]])
+    expect(s.notes.find((n) => n.p === 79)).toMatchObject({ bar: 0, voice: 1 })
+  })
+  it('reads MusicXML, tying a note across the barline and marking a triplet', () => {
+    const xml = `<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"/></part-list><part id="P1">
+ <measure number="1"><attributes><divisions>3</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+  <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration></note>
+  <note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration></note>
+  <note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration></note>
+  <note><pitch><step>F</step><octave>5</octave></pitch><duration>3</duration></note>
+  <note><pitch><step>G</step><octave>5</octave></pitch><duration>3</duration></note>
+  <note><pitch><step>A</step><octave>5</octave></pitch><duration>3</duration><tie type="start"/></note></measure>
+ <measure number="2"><note><pitch><step>A</step><octave>5</octave></pitch><duration>6</duration><tie type="stop"/></note><note><rest/><duration>6</duration></note></measure></part></score-partwise>`
+    const s = fromMusicXml(xml, 't', 'id')
+    expect(s.notes.slice(0, 3).map((n) => [n.qb, !!n.tuplet])).toEqual([[0, true], [1 / 3, true], [2 / 3, true]])
+    const a = s.notes.find((n) => n.p === 81)!
+    expect(a).toMatchObject({ bar: 0, qb: 3, qd: 1, tieNext: true, voice: 1 })
+    expect(a.qrest).toBeCloseTo(2, 5) // a quarter and then a half note: 3 quarters in all
   })
 })
 

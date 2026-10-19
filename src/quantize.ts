@@ -134,10 +134,11 @@ export interface QOut {
 const CHORD_S = 0.04 // onsets this close, at the local tempo, are one chord
 const EARLY = 0.12 // quarters: a note this early belongs to the next beat
 const SIGMA = 0.05 // quarters of timing noise a grid has to explain
+const SWITCH = 5 // cost of changing grid between two beats of one hand
 const GRIDS = [
   { pos: [0, 0.25, 0.5, 0.75], pen: 0 },
-  { pos: [0, 1 / 3, 2 / 3], pen: 3 },
-  { pos: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875], pen: 7 },
+  { pos: [0, 1 / 3, 2 / 3], pen: 1.5 },
+  { pos: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875], pen: 4 },
 ]
 
 interface Cluster {
@@ -233,27 +234,46 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
       if (!wins.has(key)) wins.set(key, { b, k, cs: [] })
       wins.get(key)!.cs.push(c)
     }
-    let drift = 0
-    for (const [, w] of [...wins].sort((a, b) => a[0] - b[0])) {
-      const origin = bq[w.b].q0 + w.k
-      const room = bq[w.b].ql - w.k
-      const res: number[] = []
-      for (const hand of ['R', 'L'] as Hand[]) {
+    const W = [...wins].sort((a, b) => a[0] - b[0]).map(([, w]) => ({ origin: bq[w.b].q0 + w.k, room: bq[w.b].ql - w.k, cs: w.cs }))
+    const mid = (xs: number[]) => xs.sort((a, b) => a - b)[xs.length >> 1]
+    // Rubato: how far off the beat the player is, read only from onsets on the beat itself (every grid has a beat),
+    // smoothed over the neighbouring beats. The grid never decides it, so a wrong grid cannot confirm itself.
+    const late = W.map((w) => w.cs.map((c) => c.x - w.origin).filter((x) => Math.abs(x) <= EARLY))
+    const drift = W.map((w) => {
+      const near = (span: number) => late.flatMap((l, j) => (Math.abs(W[j].origin - w.origin) <= span ? l : []))
+      const xs = near(3).length ? near(3) : near(8)
+      return xs.length ? Math.max(-0.15, Math.min(0.15, mid(xs))) : 0
+    })
+    // The grid of a hand is chosen over the whole piece (Viterbi): a passage of triplets stays triplets, which one beat alone cannot show.
+    for (const hand of ['R', 'L'] as Hand[]) {
+      const seq: { i: number; cs: Cluster[]; cost: number[]; snap: number[][] }[] = []
+      W.forEach((w, i) => {
         const cs = w.cs.filter((c) => c.hand === hand)
-        if (!cs.length) continue
-        let best = { cost: Infinity, snap: [] as number[] }
-        for (const g of GRIDS) {
-          const pos = g.pos.filter((p) => p < room - 1e-6)
-          const snap = cs.map((c) => pos.reduce((a, p) => (Math.abs(p - (c.x - drift - origin)) < Math.abs(a - (c.x - drift - origin)) ? p : a)))
-          const cost = g.pen + cs.reduce((s, c, i) => s + Math.min(((c.x - drift - origin - snap[i]) / SIGMA) ** 2, 9), 0)
-          if (cost < best.cost - 1e-9) best = { cost, snap }
-        }
-        cs.forEach((c, i) => {
-          c.q = origin + best.snap[i]
-          res.push(c.x - c.q)
+        if (!cs.length) return
+        const r = cs.map((c) => c.x - drift[i] - w.origin)
+        const snap = GRIDS.map((g) => {
+          const pos = g.pos.filter((p) => p < w.room - 1e-6)
+          return r.map((x) => pos.reduce((a, p) => (Math.abs(p - x) < Math.abs(a - x) ? p : a)))
         })
+        const cost = GRIDS.map((g, k) => g.pen + r.reduce((s, x, j) => s + Math.min(((x - snap[k][j]) / SIGMA) ** 2, 9), 0))
+        seq.push({ i, cs, cost, snap })
+      })
+      const back: number[][] = []
+      let dp = seq[0]?.cost ?? []
+      seq.forEach((e, n) => {
+        if (!n) return
+        dp = e.cost.map((c, k) => {
+          const from = dp.map((v, j) => v + (j === k ? 0 : SWITCH))
+          const j = from.indexOf(Math.min(...from))
+          ;(back[n] ??= [])[k] = j
+          return from[j] + c
+        })
+      })
+      let k = dp.indexOf(Math.min(...dp))
+      for (let n = seq.length - 1; n >= 0; n--) {
+        seq[n].cs.forEach((c, j) => (c.q = W[seq[n].i].origin + seq[n].snap[k][j]))
+        k = back[n]?.[k] ?? k
       }
-      if (res.length) drift = Math.max(-0.15, Math.min(0.15, 0.6 * drift + 0.4 * res.sort((a, b) => a - b)[res.length >> 1]))
     }
   }
 
