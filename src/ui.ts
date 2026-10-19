@@ -27,7 +27,7 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
       <label><input type="radio" name="nav" value="progress"><span>Progress</span></label>
     </div>
-    <div class="song-title" id="title"></div>
+    <div class="song-title" id="title" role="heading" aria-level="1"></div>
     <button class="btn" id="stagesBtn" hidden>All stages</button>
     <div class="seg" id="modeSeg" hidden role="radiogroup" aria-label="Mode">
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
@@ -134,7 +134,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
         ${best ? `<td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
-          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
+          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
           ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Options for ${esc(r.title)}">Options</button>` : ''}
           ${r.user ? `<button class="btn icon ghost" data-del="${r.id}" aria-label="Remove ${esc(r.title)}" title="Remove">${icon('x')}</button>` : ''}
@@ -271,7 +271,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     `<div class="srow"><span>${label}</span><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}"${cur === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div></div>`
   const device = settings.sound
   el.innerHTML = `
-  <h2 id="drawerTitle" tabindex="-1">Settings</h2>
+  <h2 id="drawerTitle" tabindex="-1" role="heading" aria-level="1">Settings</h2>
   ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm'], ['2', 'Arcade']], String(settings.fx))}
   ${seg('sound', 'Sound', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard')}
   ${

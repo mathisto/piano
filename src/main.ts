@@ -114,6 +114,7 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#hud').hidden = name !== 'play'
   if (name !== 'play') $('#title').textContent = ''
+  $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
 
 type Section = 'today' | 'songs' | 'read' | 'technique' | 'progress'
@@ -937,7 +938,7 @@ function openDrawer() {
   if (open) d.querySelector('details')!.open = true
   const wasOpen = !d.hidden
   d.hidden = false
-  $('#main').inert = true // the drawer holds focus; the keyboard still plays
+  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
   if (!wasOpen) $('#drawerTitle', d).focus()
   const mon = $('#sMon', d)
   const tick = () => (mon.textContent = monitor.n ? `Last: ${monitor.text}` : '')
@@ -1037,7 +1038,7 @@ function closeDrawer() {
   if (d.hidden) return false
   d.hidden = true
   clearInterval(monTimer)
-  $('#main').inert = false
+  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = false))
   $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
