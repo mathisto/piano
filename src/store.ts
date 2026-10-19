@@ -1,6 +1,7 @@
 import { del, get, keys, set } from 'idb-keyval'
 import type { Stats } from './drill'
 import { fromMusicXml, xmlText } from './musicxml'
+import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
 import { fromMidi, type Song } from './song'
 
 export interface Stored {
@@ -9,6 +10,7 @@ export interface Stored {
   bytes: ArrayBuffer
   added: number
   kind?: 'midi' | 'xml' // absent on older saves: MIDI
+  pick?: Selection // which MIDI tracks to import and the hand each is pinned to; absent = chosen automatically
 }
 
 export interface Progress {
@@ -47,6 +49,15 @@ export async function addFile(file: File): Promise<Stored> {
   return s
 }
 
+/** Change which tracks of a stored MIDI file are used; undefined goes back to the automatic pick. */
+export async function setPick(id: string, pick: Selection | undefined) {
+  const s = await get<Stored>(`song:${id}`)
+  if (!s) return
+  if (pick) s.pick = pick
+  else delete s.pick
+  await set(`song:${id}`, s)
+}
+
 export async function listSongs(): Promise<Stored[]> {
   const ks = (await keys()).filter((k) => String(k).startsWith('song:'))
   const rows = await Promise.all(ks.map((k) => get<Stored>(k)))
@@ -59,7 +70,7 @@ export async function removeSong(id: string) {
 }
 
 export async function toSong(s: Stored, split: number): Promise<Song> {
-  return s.kind === 'xml' ? fromMusicXml(await xmlText(s.bytes), s.title, s.id) : fromMidi(s.bytes, s.title, s.id, split)
+  return s.kind === 'xml' ? fromMusicXml(await xmlText(s.bytes), s.title, s.id) : fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)))
 }
 
 export async function getProgress(id: string): Promise<Progress> {

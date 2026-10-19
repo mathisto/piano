@@ -1496,6 +1496,59 @@ dialog#help {
 dialog#help::backdrop {
   background: rgba(5, 6, 13, 0.7);
 }
+
+dialog#tracks {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  padding: 22px 26px;
+  width: min(640px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+dialog#tracks::backdrop {
+  background: rgba(5, 6, 13, 0.7);
+}
+dialog#tracks h2 {
+  margin: 0 0 6px;
+  font: 800 italic 28px/1 var(--display);
+  text-transform: uppercase;
+}
+dialog#tracks .fine {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+.tklist {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.tkrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.tkrow.perc {
+  opacity: 0.7;
+}
+.tkrow .switch span {
+  display: grid;
+}
+.tkrow small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.tkrow select {
+  width: auto;
+  flex: none;
+}
+dialog#tracks .row-actions {
+  justify-content: flex-end;
+}
 dialog#help h2 {
   margin: 0 0 14px;
   font: 800 italic 28px/1 var(--display);
