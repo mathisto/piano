@@ -25,6 +25,7 @@ import { thumb } from './thumb'
 import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
+import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
 import { dayKey, lastWeek, weekOf } from './week'
@@ -40,7 +41,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 let highway!: Highway
 let staff!: Staff
 let dock!: Dock
-let current: { song: Song; heat: number[]; credit?: string } | undefined
+let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
 let libEntries: LibraryEntry[] = []
 let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
@@ -338,8 +339,11 @@ function screenKeys(canvas: HTMLCanvasElement) {
   for (const ev of ['pointerup', 'pointercancel'] as const) canvas.addEventListener(ev, (e) => lift(e.pointerId))
 }
 
-async function openSong(song: Song, mode: Mode) {
+async function openSong(base: Song, mode: Mode) {
   game.endPass()
+  // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
+  const level = mode === 'read' || base.id.startsWith('tech:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
+  const song = simplify(base, level)
   if (settings.asWritten && !song.dyn && mode !== 'read') {
     const w = writtenTargets(song.notes, settings.edges)
     if (w) song.notes.forEach((n, i) => (n.want = w[i]))
@@ -350,7 +354,7 @@ async function openSong(song: Song, mode: Mode) {
   await ensureStage()
   game.load(song, mode)
   const prog = await store.getProgress(song.id)
-  current = { song, heat: prog.heat }
+  current = { song, base, level, heat: prog.heat }
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
   document.body.classList.toggle('reading', mode === 'read')
@@ -618,11 +622,21 @@ function onPhase() {
     }
     const start = `<span class="hint">${matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'}</span>`
     const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'}</span>`
+    const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
+    const levels = shows ? `<div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
     r.innerHTML = drill
       ? `<b>${esc(drill.title)}</b>${start}`
       : calibrating
         ? `<b>Play middle C on every beat</b>${start}`
-        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${start}${legend}`
+        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${start}${legend}`
+    r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
+      if (!current) return
+      const { base, credit } = current
+      await store.setSimplify(base.id, Number(x.value))
+      await openSong(base, game.mode)
+      if (current) current.credit = credit
+      onPhase()
+    }))
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
   }
   wake()

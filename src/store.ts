@@ -146,6 +146,15 @@ export async function markPlan(day: string, step: string) {
   if (!d.includes(step)) await set(`plan:${day}`, [...d, step])
 }
 
+/** How much of a song to show: 0 full, 1 two hands, 2 melody and bass, 3 melody. Absent means the automatic level. */
+export async function getSimplify(id: string): Promise<number | undefined> {
+  return get<number>(`simp:${id}`)
+}
+
+export async function setSimplify(id: string, level: number) {
+  await set(`simp:${id}`, level)
+}
+
 export async function getTech(): Promise<TechStats> {
   return (await get<TechStats>('tech:stats')) ?? {}
 }
@@ -172,7 +181,7 @@ export async function importAll(text: string) {
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 

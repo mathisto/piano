@@ -43,3 +43,17 @@ describe('midi tracks', () => {
     expect(flute.every((n) => n.h === 'R')).toBe(true)
   })
 })
+
+describe('piano scores keep both hands', () => {
+  it('keeps a dense two-track piano file whole', () => {
+    const m = new Midi()
+    for (const [name, base] of [['rh', 72], ['lh', 48]] as const) {
+      const t = m.addTrack()
+      t.name = name
+      t.instrument.number = 0
+      for (let i = 0; i < 400; i++) t.addNote({ midi: base + (i % 7), time: i * 0.125, duration: 0.1 })
+    }
+    const r = inspectMidi(m.toArray().buffer as ArrayBuffer)
+    expect(autoSelect(r).tracks).toEqual(r.tracks.map((t) => t.index))
+  })
+})
