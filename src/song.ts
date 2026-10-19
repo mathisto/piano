@@ -68,6 +68,27 @@ export interface Raw {
   acc?: 1 | -1
 }
 
+/** One track: split at a pitch, but a note near the split follows whichever hand's line is nearest in pitch and time. */
+function splitByLine(raw: Raw[], split: number): Hand[] {
+  const out: Hand[] = new Array(raw.length)
+  const last: Record<Hand, { p: number; t: number } | undefined> = { R: undefined, L: undefined }
+  const near = (h: Hand, r: Raw) => (last[h] && r.t - last[h]!.t <= 1.5 ? Math.abs(r.p - last[h]!.p) : Infinity)
+  const order = raw.map((_, i) => i).sort((a, b) => raw[a].t - raw[b].t || raw[a].p - raw[b].p)
+  for (const i of order) {
+    const r = raw[i]
+    let h: Hand = r.p >= split ? 'R' : 'L'
+    if (Math.abs(r.p - split) <= 3) {
+      const dR = near('R', r)
+      const dL = near('L', r)
+      if (dR < dL && dR <= 7) h = 'R'
+      else if (dL < dR && dL <= 7) h = 'L'
+    }
+    out[i] = h
+    last[h] = { p: r.p, t: r.t }
+  }
+  return out
+}
+
 /** Hands: two tracks -> lower mean pitch is left; anything else splits at `split`. */
 export function assignHands(raw: Raw[], split: number): Hand[] {
   const tracks = [...new Set(raw.map((r) => r.track))]
@@ -79,7 +100,7 @@ export function assignHands(raw: Raw[], split: number): Hand[] {
     }
     const left = mean(tracks[0]) <= mean(tracks[1]) ? tracks[0] : tracks[1]
     base = raw.map((r) => (r.track === left ? 'L' : 'R'))
-  } else base = raw.map((r) => (r.p >= split ? 'R' : 'L'))
+  } else base = splitByLine(raw, split)
   return raw.map((r, i) => r.h ?? base[i]) // a hand the source states wins
 }
 
