@@ -198,3 +198,19 @@ describe('touch targets', () => {
     expect(j.press(60, 1, 100 / 127)[0]).toMatchObject({ k: 'ok', vel: 'high' })
   })
 })
+
+describe('strictness windows', () => {
+  const at = (ease: number, ms: number) => mk([n(0, 1, 60)], { ease }).press(60, 1 + ms / 1000)[0]
+
+  it('widens or narrows every timing window together', () => {
+    expect(at(1, 55)).toMatchObject({ grade: 'great' })
+    expect(at(1.3, 55)).toMatchObject({ grade: 'perfect' })
+    expect(at(1, 40)).toMatchObject({ grade: 'perfect' })
+    expect(at(0.75, 40)).toMatchObject({ grade: 'great' })
+  })
+
+  it('moves the edge of the good window too', () => {
+    expect(at(1, 140)).toMatchObject({ k: 'wrong' })
+    expect(at(1.3, 140)).toMatchObject({ k: 'hit', grade: 'good' })
+  })
+})

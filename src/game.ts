@@ -41,6 +41,8 @@ export type GameEvent =
   | { type: 'done'; result: Result }
 
 const COUNT_IN = 4
+const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
+const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
 const LEAD = 2.5 // song-seconds of empty highway before the first note
 const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500]
 
@@ -115,8 +117,9 @@ export class Game {
   private scored = (n: Note) =>
     this.hands[n.h] === 'play' && n.t >= this.t - 0.05 && (!this.loop || (n.t >= this.loop.a && n.t < this.loop.b))
 
-  private cfg() {
-    return { rate: this.rate, wait: this.wait, strict: this.mode === 'perform', hold: this.mode === 'perform' ? settings.hold : 'off' }
+  cfg() {
+    const perform = this.mode === 'perform'
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? HOLD[settings.strict] : 'off', ease: EASE[settings.strict] }
   }
 
   /** Back to the start (or the loop start), stopped. */

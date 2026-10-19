@@ -113,9 +113,36 @@ export async function logTouch(e: TouchEntry) {
   await set('touch:log', [...(await getTouch()), e].slice(-TOUCH_KEEP))
 }
 
+/** Seconds practised per local day, the effort measure: it only goes up. */
+export async function getPractice(): Promise<Record<string, number>> {
+  return (await get<Record<string, number>>('practice:days')) ?? {}
+}
+
+export async function addPractice(day: string, sec: number) {
+  const d = await getPractice()
+  d[day] = (d[day] ?? 0) + sec
+  await set('practice:days', d)
+}
+
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), settings: localStorage.getItem('piano.settings') }, null, 1)
+}
+
+/** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
+export async function importAll(text: string) {
+  const d = JSON.parse(text)
+  if (d?.version !== 1) throw new Error('Not a piano export.')
+  for (const [id, p] of Object.entries(d.progress ?? {})) await set(`prog:${id}`, p)
+  if (d.reading) await set('drill:stats', d.reading)
+  if (d.touch) await set('touch:log', d.touch)
+  if (d.practice) await set('practice:days', d.practice)
+  if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
+}
+
+export async function clearAll() {
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice):/.test(String(k))) await del(k)
+  localStorage.removeItem('piano.settings')
 }
 
 export async function getDrill(): Promise<Stats> {
