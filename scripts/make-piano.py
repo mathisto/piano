@@ -5,7 +5,7 @@
 
 Downloads three of the 16 velocity layers (soft, medium, hard) for each of the 30 recorded notes as 48 kHz 24-bit
 FLAC from github.com/sfzinstruments/SalamanderGrandPiano, sums to mono, trims each note where it has decayed
-(longer for the bass), fades the tail, levels the three layers against each other (a note's own loudness across
+(longer for the bass, within 6 to 2.5 s), fades the tail, levels the three layers against each other (a note's own loudness across
 the keyboard is kept) and writes NAME-0.mp3 (soft) to NAME-2.mp3 (hard). Needs ffmpeg, numpy, scipy.
 """
 import subprocess, sys, tempfile
@@ -45,11 +45,11 @@ def decode(f):
 
 
 def keep(x, m):
-    """Seconds of a note worth keeping: until it is 55 dB down, within 9 s in the bass down to 5 s at the top."""
+    """Seconds of a note worth keeping: until it is 55 dB down, within 6 s in the bass down to 2.5 s at the top. Every second is 190 KB of decoded audio held in memory per recording, and the iPad's web view is killed when the piano holds too much (117 MB did it)."""
     win = SR // 20
     env = np.sqrt(np.convolve(x * x, np.ones(win) / win, 'same'))
     loud = np.nonzero(env > env.max() * 10 ** (-55 / 20))[0]
-    cap = 9 - 4 * (m - 21) / 87
+    cap = 6 - 3.5 * (m - 21) / 87
     return float(np.clip(loud[-1] / SR if len(loud) else 2, 2, cap))
 
 

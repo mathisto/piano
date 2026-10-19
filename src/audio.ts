@@ -83,10 +83,17 @@ export function preload(id = settings.instrument): Promise<void> {
         }
       }
       const mid = inst.layers ? Math.floor(inst.layers / 2) : undefined
-      const ok = (await Promise.all(inst.roots.map((r) => get(r, mid)))).reduce<number>((a, b) => a + b, 0)
+      const layer = async (k?: number) => {
+        let n = 0
+        for (let i = 0; i < inst.roots.length; i += 4) n += (await Promise.all(inst.roots.slice(i, i + 4).map((r) => get(r, k)))).reduce<number>((a, b) => a + b, 0) // four at a time: all at once ran the iPad's web view out of memory
+        return n
+      }
+      const ok = await layer(mid)
       states.set(inst.id, ok ? 'ready' : 'failed')
       if (ok < inst.roots.length) console.warn(`${inst.id}: ${ok} of ${inst.roots.length} recordings loaded`)
-      if (ok && inst.layers) for (let k = 0; k < inst.layers; k++) if (k !== mid) void Promise.all(inst.roots.map((r) => get(r, k))) // soft and hard follow the medium one
+      if (ok && inst.layers) void (async () => {
+        for (let k = 0; k < inst.layers!; k++) if (k !== mid) await layer(k) // soft and hard follow the medium one
+      })()
       if (!ok) loading.delete(inst.id) // let a later try fetch again
     })()
     loading.set(inst.id, p)
