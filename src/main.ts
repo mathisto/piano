@@ -385,7 +385,7 @@ async function startDrill(which: Stage | 'review') {
   const goal = stage ? stage.goalMs : 3000
   const d = deck(pool, drillStats, goal, 24)
   const title = stage ? stage.name : 'Weak notes review'
-  const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d)
+  const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d, stage?.fifths ?? 0)
   const q = 60 / BPM
   const noteCard = song.notes.map((n) => Math.round(n.t / q))
   drill = {

@@ -350,7 +350,7 @@ export class Highway {
         need.add(n.p)
       }
       if (names && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
-        const s = this.label(noteName(n.p, g.song.fifths).replace(/\d/, ''), left ? col : C.ground, Math.min(18, w * 0.62))
+        const s = this.label(noteName(n.p, n.flat ? -2 : g.song.fifths).replace(/\d/, ''), left ? col : C.ground, Math.min(18, w * 0.62))
         s.position.set(x + w / 2, y2 - 16)
         s.alpha = a
       }

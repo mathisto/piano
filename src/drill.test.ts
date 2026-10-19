@@ -1,6 +1,42 @@
 import { describe, expect, it } from 'vitest'
-import { STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, weakest, whites, type Stats } from './drill'
-import { clefFor } from './spell'
+import { STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, whites, type Stats } from './drill'
+import { clefFor, spell } from './spell'
+
+describe('accidentals and keys', () => {
+  const stage = (id: string) => STAGES.find((s) => s.id === id)!
+
+  it('writes black keys as sharps in one stage and flats in the other, and keeps their stats apart', () => {
+    const sharps = cards(stage('sharps'))
+    const flats = cards(stage('flats'))
+    expect(sharps).toHaveLength(13)
+    expect(sharps.some((c) => c.flat)).toBe(false)
+    expect(flats.filter((c) => c.flat).map((c) => c.pitches[0])).toEqual([61, 63, 66, 68, 70])
+    const fs = sharps.find((c) => c.pitches[0] === 66)!
+    const gb = flats.find((c) => c.pitches[0] === 66)!
+    expect(cardKey(fs)).not.toBe(cardKey(gb))
+    // white keys are one skill whichever stage deals them
+    expect(cardKey(sharps.find((c) => c.pitches[0] === 62)!)).toBe(cardKey(flats.find((c) => c.pitches[0] === 62)!))
+  })
+
+  it('reads key stages in their own key and keeps them out of a mixed set in C', () => {
+    const g = cards(stage('keys-g'))
+    expect(g.map((c) => c.pitches[0])).toEqual([67, 69, 71, 72, 74, 76, 78, 79])
+    expect(g.every((c) => c.fifths === 1)).toBe(true)
+    const stats: Stats = {}
+    for (const c of g) record(stats, cardKey(c), true, 1000)
+    expect(reviewPool(stats)).toHaveLength(0)
+    expect(weakest({ [cardKey(g[6])]: { n: 5, clean: 0.2, rt: 4000 } }, 1)[0].name).toMatch(/F♯5, treble clef, key of G/)
+  })
+
+  it('carries spelling into the drill song', () => {
+    const f = deckSong('x', 'x', cards(stage('flats')).filter((c) => c.flat).slice(0, 4))
+    expect(f.notes.every((n) => n.flat)).toBe(true)
+    expect(spell(61, f.notes[0].flat ? -2 : f.fifths)).toMatchObject({ letter: 1, acc: -1 }) // D flat
+    const k = deckSong('y', 'y', cards(stage('keys-f')).slice(0, 4), -1)
+    expect(k.fifths).toBe(-1)
+    expect(spell(70, k.fifths)).toMatchObject({ letter: 6, acc: -1 }) // B flat, no sign needed: it is in the key
+  })
+})
 
 describe('drill', () => {
   it('lists white keys', () => {

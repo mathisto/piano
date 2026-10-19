@@ -13,9 +13,16 @@ export interface Stage {
   size: 1 | 2 | 3 // 1 = single notes, 2 = intervals, 3 = triads
   goalMs: number // "fluent" response time for one card
   hand?: Hand // pins the staff; otherwise middle C and up is treble
+  flat?: boolean // black keys are written as flats (default: sharps)
+  fifths?: number // key signature the whole set is read in (default: none)
+  notes?: string // how the pool is described on the Read page, when a range says too little
 }
 
 const T = (lo: number, hi: number) => whites(lo, hi)
+const BLACKS = [1, 3, 6, 8, 10]
+const isBlack = (p: number) => BLACKS.includes(p % 12)
+const chroma = (lo: number, hi: number) => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
+const major = (tonic: number) => [0, 2, 4, 5, 7, 9, 11, 12].map((i) => tonic + i)
 
 // Landmarks first (middle C, treble G, bass F), then neighbours, then the whole staff.
 export const STAGES: Stage[] = [
@@ -30,6 +37,10 @@ export const STAGES: Stage[] = [
   { id: 'b-staff', name: 'Bass staff', blurb: 'Every line and space, bottom G to top A.', pool: T(43, 57), size: 1, goalMs: 2500, hand: 'L' },
   { id: 'b-low', name: 'Bass reach', blurb: 'Ledger lines: low C up to middle C.', pool: T(36, 60), size: 1, goalMs: 3000, hand: 'L' },
   { id: 'grand', name: 'Both clefs', blurb: 'The whole grand staff, mixed.', pool: T(43, 77), size: 1, goalMs: 3000 },
+  { id: 'sharps', name: 'Sharps', blurb: 'Black keys written as sharps, mixed in with the white ones.', pool: chroma(60, 72), size: 1, goalMs: 3000, notes: 'C4 to C5, with sharps' },
+  { id: 'flats', name: 'Flats', blurb: 'The same black keys, written as flats.', pool: chroma(60, 72), size: 1, goalMs: 3000, flat: true, notes: 'C4 to C5, with flats' },
+  { id: 'keys-g', name: 'Key of G', blurb: 'One sharp in the key signature: every F is F sharp, with no sign beside the note.', pool: major(67), size: 1, goalMs: 3000, fifths: 1, notes: 'G major scale' },
+  { id: 'keys-f', name: 'Key of F', blurb: 'One flat in the key signature: every B is B flat, with no sign beside the note.', pool: major(65), size: 1, goalMs: 3000, fifths: -1, notes: 'F major scale' },
   { id: 'ints', name: 'Intervals', blurb: 'Two notes at once: seconds to fifths, treble clef.', pool: T(60, 74), size: 2, goalMs: 4000 },
   { id: 'triads', name: 'Triads', blurb: 'Three notes stacked in thirds, treble clef.', pool: T(60, 71), size: 3, goalMs: 5000 },
 ]
@@ -37,6 +48,8 @@ export const STAGES: Stage[] = [
 export interface Card {
   pitches: number[] // ascending
   hand: Hand
+  flat?: boolean // spelled as a flat
+  fifths?: number // read in this key
 }
 
 export interface NoteStat {
@@ -48,8 +61,9 @@ export type Stats = Record<string, NoteStat>
 
 const A = 0.3
 const NEED = 12 // sightings before a card can count as mastered: about two sets on a small stage
-const key = (c: Card | { pitches: number[]; hand: Hand }) =>
-  `${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches[0]}`
+// A card is the same skill wherever it is dealt, but F sharp and G flat are different reading, as are keys.
+const key = (c: Card) =>
+  `${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches[0]}${c.flat ? ':b' : ''}${c.fifths ? `:f${c.fifths}` : ''}`
 export const cardKey = key
 
 export function record(stats: Stats, k: string, clean: boolean, rt: number): Stats {
@@ -65,7 +79,7 @@ const handOf = (p: number): Hand => (p >= 60 ? 'R' : 'L')
 
 /** Every card a stage can deal. Intervals and triads stack diatonic steps on a white-key root. */
 export function cards(stage: Stage): Card[] {
-  if (stage.size === 1) return stage.pool.map((p) => ({ pitches: [p], hand: stage.hand ?? handOf(p) }))
+  if (stage.size === 1) return stage.pool.map((p) => ({ pitches: [p], hand: stage.hand ?? handOf(p), flat: stage.flat && isBlack(p) ? true : undefined, fifths: stage.fifths }))
   const ws = whites(stage.pool[0], stage.pool[stage.pool.length - 1] + 12)
   const out: Card[] = []
   for (const root of stage.pool) {
@@ -141,7 +155,8 @@ export function nextStage(stats: Stats): Stage {
 /** Every single-note card the player has already seen, for mixed review. */
 export function reviewPool(stats: Stats): Card[] {
   const seen = new Map<string, Card>()
-  for (const st of STAGES.filter((s) => s.size === 1))
+  // key-signature stages are read in their own key, so they stay out of a mixed set in C
+  for (const st of STAGES.filter((s) => s.size === 1 && !s.fifths))
     for (const c of cards(st)) if (stats[key(c)]) seen.set(key(c), c)
   return [...seen.values()]
 }
@@ -151,8 +166,10 @@ export function weakest(stats: Stats, n = 3): { name: string; clean: number; rt:
   return Object.entries(stats)
     .filter(([, s]) => s.n >= 2 && (s.clean < 0.9 || s.rt > 2500)) // only what actually needs work
     .map(([k, s]) => {
-      const [size, clef, p] = k.split(':')
-      const name = size === '1' ? `${noteName(Number(p))}, ${clef} clef` : `${size === '2' ? 'interval' : 'triad'} on ${noteName(Number(p))}`
+      const [size, clef, p, ...flags] = k.split(':')
+      const fifths = Number(flags.find((f) => f.startsWith('f'))?.slice(1) ?? 0)
+      const spelled = noteName(Number(p), flags.includes('b') ? -2 : fifths)
+      const name = size === '1' ? `${spelled}, ${clef} clef${fifths ? `, key of ${fifths > 0 ? 'G' : 'F'}` : ''}` : `${size === '2' ? 'interval' : 'triad'} on ${spelled}`
       return { name, clean: s.clean, rt: s.rt, score: s.clean - Math.min(1, s.rt / 6000) * 0.4 }
     })
     .sort((a, b) => a.score - b.score)
@@ -162,10 +179,10 @@ export function weakest(stats: Stats, n = 3): { name: string; clean: number; rt:
 export const BPM = 60
 
 /** A drill session as a song: one card per beat, four to a bar, read in wait mode. */
-export function deckSong(id: string, title: string, d: Card[]): Song {
+export function deckSong(id: string, title: string, d: Card[], fifths = 0): Song {
   const q = 60 / BPM
   const raw: Raw[] = []
-  d.forEach((c, i) => c.pitches.forEach((p) => raw.push({ t: i * q, d: q * 0.9, p, v: 0.7, track: 0, h: c.hand })))
+  d.forEach((c, i) => c.pitches.forEach((p) => raw.push({ t: i * q, d: q * 0.9, p, v: 0.7, track: 0, h: c.hand, flat: c.flat })))
   const bars: Bar[] = Array.from({ length: Math.ceil(d.length / 4) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
-  return build(id, title, raw, bars, 0)
+  return build(id, title, raw, bars, fifths)
 }

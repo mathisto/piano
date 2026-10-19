@@ -249,6 +249,7 @@ export interface StageRow {
 }
 
 const names = (s: Stage) => {
+  if (s.notes) return s.notes
   const n = (p: number) => noteName(p)
   if (s.size === 2) return 'Seconds to fifths'
   if (s.size === 3) return 'Root-position triads'
@@ -259,6 +260,7 @@ const GROUPS: [string, (id: string) => boolean][] = [
   ['Treble clef', (id) => id.startsWith('t-')],
   ['Bass clef', (id) => id.startsWith('b-')],
   ['Both clefs', (id) => id === 'grand'],
+  ['Accidentals and keys', (id) => id === 'sharps' || id === 'flats' || id.startsWith('keys-')],
   ['Chords', (id) => id === 'ints' || id === 'triads'],
 ]
 

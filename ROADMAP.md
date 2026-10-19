@@ -11,7 +11,8 @@ Done:
 - [x] View modes: Staff (two systems of bars, turns a system at a time), Both, Falling. Switch in the top bar or press V. Click or touch the on-screen keys to play them, with sound.
 
 Still to do:
-- [ ] Accidentals and key signatures in the drills (sharps, flats, naturals), then rhythm reading (a card stream you play in time, not waiting).
+- [x] Accidentals and keys in the drills: Sharps, Flats, Key of G, Key of F (stats keep F sharp and G flat apart).
+- [ ] More keys (D, B flat, minor keys), accidentals in the bass clef and in chords, then rhythm reading (a card stream you play in time, not waiting).
 - [ ] A reading-ahead mode: the next bar stays hidden until the current one ends, to train eye-hand span.
 - [ ] Full score view for imported MusicXML (more bars, rests, beams, ties, repeat signs). The staff strip still shows two bars with rhythm drawn simply.
 - [x] Sampled grand piano (Salamander V3, CC BY 3.0, bundled in public/samples, loaded when first wanted) with a simple-synth fallback and an instrument choice in Settings.

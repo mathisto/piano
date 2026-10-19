@@ -121,9 +121,16 @@ export class Staff {
     }
     this.sys = 1
     const on = new Set<number>()
-    for (const n of notes) if (n.bar === bar || n.bar === bar + 1) on.add(Math.round(n.t * 40))
+    let signs = false // an accidental needs room to its left, so a drill with any gets one wide bar
+    const ka = keyAcc(this.game.song.fifths)
+    for (const n of notes) {
+      if (n.bar !== bar && n.bar !== bar + 1) continue
+      on.add(Math.round(n.t * 40))
+      const sp = spell(n.p, n.flat ? -2 : this.game.song.fifths)
+      if (sp.acc !== ka[sp.letter]) signs = true
+    }
     // two bars of reading ahead, one when the music is dense
-    this.count = bar + 1 < bars.length && on.size <= 22 ? 2 : 1
+    this.count = bar + 1 < bars.length && on.size <= 22 && !(signs && this.game.mode === 'read') ? 2 : 1
     return bar
   }
 
@@ -205,6 +212,7 @@ export class Staff {
     const r = this.host.getBoundingClientRect()
     if (!r.width || !r.height) return
     this.pickLayout()
+    this.pad = this.game.mode === 'read' ? 30 : 14 // drills: room left of a note for its accidental
     const { clefs, base } = this
     const top = base[clefs[0]] - 4 * S // y of the first staff's top line
     const bottom = base[clefs[clefs.length - 1]] // y of the last staff's bottom line
@@ -287,7 +295,7 @@ export class Staff {
       const clef = clefFor(n.p, n.h)
       const key = `${Math.round(n.t * 100)}:${clef}`
       const pos = this.posAt(n.t)
-      const p: Placed = { note: n, sp: spell(n.p, song.fifths), clef, x: pos.x, dy: pos.dy }
+      const p: Placed = { note: n, sp: spell(n.p, n.flat ? -2 : song.fifths), clef, x: pos.x, dy: pos.dy }
       if (!groups.has(key)) groups.set(key, [])
       groups.get(key)!.push(p)
     }
