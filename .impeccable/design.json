@@ -741,7 +741,7 @@
       "**Don't** add synthwave sun, perspective grid, or glow on chrome.",
       "**Don't** add a hard offset shadow or a hard text-shadow; use Shade.",
       "**Don't** colour notation permanently; colour is a transient state.",
-      "**Don't** use amber for selection, switches, slider thumbs, the wordmark, combo or multiplier, and never for a judgement grade.",
+      "**Don't** use amber for selection, switches, slider thumbs, the PF mark in the bar, combo or multiplier, and never for a judgement grade.",
       "**Don't** reuse a hand or judgement colour for chrome.",
       "**Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 12px.",
       "**Don't** invent a second dialog layout, an inline-styled modal or a coloured tag.",

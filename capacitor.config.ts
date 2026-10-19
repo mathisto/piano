@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // the local CoreMidi plugin (ios/App/App/CoreMidiPlugin.swift) and src/native-midi.ts.
 const config: CapacitorConfig = {
   appId: 'io.mattkelly.piano',
-  appName: 'piano',
+  appName: 'Piano Forte',
   webDir: 'dist',
   ios: { contentInset: 'never', backgroundColor: '#090b17', scrollEnabled: false },
 }

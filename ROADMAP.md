@@ -10,7 +10,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
 - Content: MIDI and MusicXML (.musicxml, .mxl) import, eight starter pieces, sampled grand piano (Salamander, CC BY 3.0).
 - Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and touch history; six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
-- Deploy: static site at piano.mattkelly.io; iPad app via Capacitor with a CoreMIDI plugin (developer install, expires every 7 days).
+- Deploy: static site at pianoforte.mattkelly.io; iPad app via Capacitor with a CoreMIDI plugin (developer install, expires every 7 days).
 
 ## Phase D: design pass (in progress, branch `design/overhaul`)
 

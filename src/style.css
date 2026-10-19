@@ -162,10 +162,9 @@ table.songs caption,
 .brand {
   all: unset;
   cursor: pointer;
-  font: 800 italic 30px/1 var(--display);
-  letter-spacing: 0.02em;
+  display: grid;
   color: var(--ink);
-  padding: 4px 8px 4px 2px;
+  padding: 8px 10px 8px 2px; /* the 40x30 PF mark, in a 46px-tall target */
   border-radius: var(--r-1);
 }
 .brand:focus-visible {

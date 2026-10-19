@@ -44,7 +44,7 @@ describe('credits', () => {
   })
 
   it('resolves library files against the base', () => {
-    expect(libraryUrl('manifest.json', 'https://piano.mattkelly.io/')).toBe('https://piano.mattkelly.io/library/manifest.json')
+    expect(libraryUrl('manifest.json', 'https://pianoforte.mattkelly.io/')).toBe('https://pianoforte.mattkelly.io/library/manifest.json')
     expect(libraryUrl('a.mid', 'capacitor://localhost/index.html')).toBe('capacitor://localhost/library/a.mid')
     expect(libraryUrl('a.mid', 'http://localhost:5173/sub/')).toBe('http://localhost:5173/sub/library/a.mid')
   })

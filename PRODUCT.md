@@ -38,8 +38,8 @@ Open, no-account, in-browser. Combines what is split across other tools: Synthes
 - Sound: sampled grand piano plus five lazy-loaded instruments; the keyboard's own speakers by default.
 - Local only: progress, settings, practice time and imported songs in IndexedDB, JSON export and import. No accounts, no cloud.
 - Web MIDI called directly in browsers; the iPad app reaches CoreMIDI through a small plugin that fakes the same API.
-- Deploys to piano.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano`.
-- Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them); name beyond "piano".
+- Deploys to pianoforte.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano` (the app is Piano Forte, PF for short: a play on "pianoforte", and on finding your forte).
+- Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them); 
 
 ## Brand Commitments
 

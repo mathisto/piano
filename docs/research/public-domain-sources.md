@@ -6,7 +6,7 @@
 > - **NC licences** (CC BY-NC, CC BY-NC-SA) are free to use for a free, non-commercial site, but they would block ever monetising it. Allow only with a manifest flag `nc: true` and show it in Credits; the owner decides case by case.
 > - Mixed licences inside a composer's set are per piece: the pieces marked "left out on purpose" below (Mozart K.545, Moonlight, Satie, Diabelli Op.149, Schumann Melodie) are now fair game.
 
-Research date: 2026-10-19. Scope: where `piano.mattkelly.io` can get legally safe sheet music in a form its importers can use.
+Research date: 2026-10-19. Scope: where `pianoforte.mattkelly.io` can get legally safe sheet music in a form its importers can use.
 
 Claim markers used throughout:
 
