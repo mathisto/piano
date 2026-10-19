@@ -1,7 +1,7 @@
 import type { Hand, Note, Song } from './song'
 
 export type Level = 0 | 1 | 2 | 3
-export const LEVELS: Record<Level, string> = { 0: 'Full', 1: 'Both hands', 2: 'Melody and bass', 3: 'Melody' }
+export const LEVELS: Record<Level, string> = { 0: 'Full', 1: 'Thin chords', 2: 'Melody and bass', 3: 'Melody' }
 
 const CLUSTER = 0.03 // seconds: onsets this close are one chord
 const GRACE = 0.08 // seconds: shorter than this is an ornament

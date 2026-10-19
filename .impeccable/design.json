@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T12:00:00.000Z",
+  "generatedAt": "2026-10-19T18:00:00.000Z",
   "title": "Design System: piano",
   "extensions": {
     "colorMeta": {
@@ -363,6 +363,11 @@
         "purpose": "Settings drawer edge."
       },
       {
+        "name": "popover",
+        "value": "0 -8px 24px rgba(0,0,0,0.4)",
+        "purpose": "Aids popover over the Learn dock."
+      },
+      {
         "name": "shade",
         "value": "0 2px 24px rgba(0,0,0,0.6)",
         "purpose": "Soft shadow under stage words (slam, count-in). The judge popup uses a Ground halo with no offset."
@@ -519,7 +524,7 @@
     {
       "name": "Song Row",
       "kind": "custom",
-      "description": "Thumbnail, name with tag, one primary on the Continue row, ghost Perform. Plan rows share this grammar.",
+      "description": "Thumbnail, name with Next tag, one primary on the next row, ghost Perform and Options. Plan and path rows share this grammar.",
       "html": "<div class=\"ds-row\"><span class=\"ds-th\"></span><span class=\"ds-nm\">Ode to Joy <b>Continue</b></span><button class=\"ds-btn ds-primary\">Learn</button><button class=\"ds-btn ds-ghost\">Perform</button></div>",
       "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:var(--lamp-hi);border-color:var(--lamp-hi)}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line)}.ds-th{width:140px;height:52px;border-radius:4px;background:var(--panel)}.ds-nm{flex:1;font:650 18px var(--ui)}.ds-nm b{margin-left:10px;font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--lamp)}"
     },
@@ -549,9 +554,9 @@
     {
       "name": "Plan Row",
       "kind": "card",
-      "description": "Today plan: lead, title over sub-line, optional meter, one action; first action primary.",
-      "html": "<div class=\"ds-plan\"><div class=\"ds-who\"><b>Scale warm-up</b><span>Warm-up</span></div><button class=\"ds-btn ds-primary\">Start</button></div><div class=\"ds-plan\"><div class=\"ds-who\"><b>Treble C to G</b><span>5 of 12 seen</span></div><div class=\"ds-mrow\"><div class=\"ds-meter\"><i style=\"width:42%\"></i></div><b>42%</b></div><button class=\"ds-btn\">Practice</button></div>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:var(--lamp-hi);border-color:var(--lamp-hi)}.ds-plan{display:flex;align-items:center;gap:20px;padding:14px 4px;border-top:1px solid var(--line)}.ds-who{flex:1}.ds-who b{display:block;font:650 18px var(--ui)}.ds-who span{color:var(--ink-3);font-size:15px}.ds-mrow{display:flex;align-items:center;gap:10px;width:260px;color:var(--ink)}.ds-meter{flex:1;height:10px;border-radius:999px;background:var(--line);overflow:hidden}.ds-meter i{display:block;height:100%;background:var(--ink-2);border-radius:999px}.ds-mrow b{min-width:3.2ch;text-align:right}"
+      "description": "Today plan: 24px lead (check when done), title over sub-line with \"about N min\", optional meter, one action; first undone action primary.",
+      "html": "<div class=\"ds-plan\"><span class=\"ds-lead\"></span><div class=\"ds-who\"><b>Scale warm-up</b><span>Exercise · about 2 min</span></div><button class=\"ds-btn ds-primary\">Start</button></div><div class=\"ds-plan done\"><span class=\"ds-lead\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12l5 5 9-10\"/></svg></span><div class=\"ds-who\"><b>Treble C to G</b><span>5 of 12 seen</span></div><button class=\"ds-btn ds-ghost\">Practice</button></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:var(--lamp-hi);border-color:var(--lamp-hi)}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-plan{display:flex;align-items:center;gap:20px;padding:14px 4px;border-top:1px solid var(--line)}.ds-lead{flex:none;width:24px;color:var(--ink-2)}.ds-who{flex:1}.ds-who b{display:block;font:650 18px var(--ui)}.ds-plan.done .ds-who b{color:var(--ink-2)}.ds-who span{color:var(--ink-3);font-size:15px}"
     },
     {
       "name": "Week And Goal",
@@ -563,16 +568,16 @@
     {
       "name": "Mastery Cells",
       "kind": "custom",
-      "description": "Progress: one cell per reading stage, fill rises with mastery; Ink when solid.",
-      "html": "<div class=\"ds-cells\"><i class=\"ds-cell\"><b style=\"height:100%\"></b></i><i class=\"ds-cell\"><b style=\"height:60%\"></b></i><i class=\"ds-cell\"><b style=\"height:20%\"></b></i><i class=\"ds-cell\"></i></div>",
-      "css": ".ds-cells{display:flex;gap:4px}.ds-cell{position:relative;display:block;width:26px;height:40px;border-radius:4px;background:var(--panel-2);overflow:hidden}.ds-cell b{position:absolute;inset:auto 0 0;background:var(--ink-2)}.ds-cell:first-child b{background:var(--ink)}"
+      "description": "Progress: cells grouped under a Label caption, fill rises with mastery; Ink when solid; due adds an Ink Soft outline.",
+      "html": "<div class=\"ds-cgrp\"><small>Treble clef</small><div class=\"ds-cells\"><i class=\"ds-cell solid\"><b style=\"height:100%\"></b></i><i class=\"ds-cell\"><b style=\"height:60%\"></b></i><i class=\"ds-cell due\"><b style=\"height:100%\"></b></i><i class=\"ds-cell\"></i></div></div>",
+      "css": ".ds-cgrp{display:grid;gap:6px}.ds-cgrp small{font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-cells{display:flex;gap:4px}.ds-cell{position:relative;display:block;width:26px;height:40px;border-radius:4px;background:var(--panel-2);overflow:hidden}.ds-cell b{position:absolute;inset:auto 0 0;background:var(--ink-2)}.ds-cell.solid b{background:var(--ink)}.ds-cell.due{outline:2px solid var(--ink-2);outline-offset:-2px}"
     },
     {
       "name": "Touch Bands",
       "kind": "custom",
-      "description": "Soft, medium, hard velocity ranges as proportional chips, beside Set touch range.",
-      "html": "<div class=\"ds-card ds-strip\"><div class=\"ds-bands\"><span style=\"flex:40\">Soft</span><span style=\"flex:50\">Medium</span><span style=\"flex:37\">Hard</span></div><button class=\"ds-btn\">Set touch range</button></div>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:var(--lamp-hi);border-color:var(--lamp-hi)}.ds-card{padding:18px 20px;border:1px solid var(--edge);border-radius:12px;background:var(--panel)}.ds-strip{display:flex;align-items:center;justify-content:space-between;gap:16px}.ds-bands{display:flex;flex:1;gap:4px;max-width:560px}.ds-bands span{padding:8px 12px;border-radius:4px;background:var(--panel-2);color:var(--ink-2);font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase}"
+      "description": "Touch-range card: Label over outlined Soft, Medium, Hard value chips, beside Set touch range.",
+      "html": "<div class=\"ds-card ds-strip\"><div class=\"ds-bands\"><small>Touch range</small><div><span style=\"flex:40\">Soft 1–40</span><span style=\"flex:50\">Medium 41–90</span><span style=\"flex:37\">Hard 91+</span></div></div><button class=\"ds-btn\">Set touch range</button></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-card{padding:18px 20px;border:1px solid var(--edge);border-radius:12px;background:var(--panel)}.ds-strip{display:flex;align-items:center;justify-content:space-between;gap:16px}.ds-bands{display:grid;gap:6px;flex:1;max-width:600px}.ds-bands small{font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-bands div{display:flex;gap:4px}.ds-bands span{padding:8px 10px;border-radius:4px;border:1px solid var(--edge);color:var(--ink-2);font:650 14px/1 var(--ui);white-space:nowrap}"
     },
     {
       "name": "Select Field",
@@ -594,18 +599,50 @@
       "description": "Held chord name in Display 34px over a 13px caption, right of the play view.",
       "html": "<div class=\"ds-chord\"><b>C major</b><small>ROOT POSITION</small></div>",
       "css": ".ds-chord{min-width:120px;padding:8px 16px 10px;text-align:right;background:rgba(9,11,23,.82);border:1px solid var(--edge);border-radius:12px;color:var(--ink)}.ds-chord b{display:block;font:800 italic 34px/1 var(--display);letter-spacing:.02em}.ds-chord small{display:block;margin-top:2px;font:700 13px/1.2 var(--ui);letter-spacing:.08em;color:var(--ink-3)}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "description": "Outlined Ink Soft Label word; Next is lamp text on the primary's row.",
+      "html": "<span class=\"ds-tag\">Due</span> <span class=\"ds-tag next\">Next</span>",
+      "css": ".ds-tag{margin-left:10px;padding:3px 6px 2px;border:1px solid var(--edge);border-radius:4px;color:var(--ink-2);font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase}.ds-tag.next{border-color:transparent;padding-inline:0;color:var(--lamp)}",
+      "refersTo": "tag"
+    },
+    {
+      "name": "Dialog Sheet",
+      "kind": "card",
+      "description": "The one dialog grammar: header with close, scrolling body, pinned footer.",
+      "html": "<div class=\"ds-sheet\"><header><h2>Options</h2><button class=\"ds-btn ds-ghost\" aria-label=\"Close\">×</button></header><div class=\"ds-body\"><h3>Tracks</h3><p>2 of 3 in use</p></div><footer><button class=\"ds-btn\">Cancel</button><button class=\"ds-btn ds-primary\">Use these</button></footer></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-sheet{display:flex;flex-direction:column;width:420px;max-height:86vh;background:var(--panel);color:var(--ink);border:1px solid var(--edge);border-radius:12px}.ds-sheet header{display:flex;justify-content:space-between;gap:12px;padding:20px 22px 8px 26px}.ds-sheet h2{margin:0;font:800 italic 28px/1 var(--display);text-transform:uppercase}.ds-body{flex:1;overflow:auto;padding:4px 26px 12px}.ds-body h3{margin:18px 0 4px;font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-body p{margin:0;color:var(--ink-2)}.ds-sheet footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px 18px;border-top:1px solid var(--line)}",
+      "refersTo": "sheet"
+    },
+    {
+      "name": "Aids Popover",
+      "kind": "custom",
+      "description": "Learn dock assist switches in one upward popover.",
+      "html": "<div class=\"ds-pop\"><div class=\"ds-menu\"><label class=\"ds-sw\"><input type=\"checkbox\" checked><i></i>Auto tempo</label><label class=\"ds-sw\"><input type=\"checkbox\"><i></i>Hide played</label><label class=\"ds-sw\"><input type=\"checkbox\"><i></i>Hold to advance</label></div><button class=\"ds-btn\">Aids</button></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-pop{position:relative;padding-top:120px}.ds-menu{position:absolute;bottom:calc(100% - 112px);left:0;display:grid;gap:4px;min-width:200px;padding:10px 14px;background:var(--panel-2);border:1px solid var(--edge);border-radius:8px;box-shadow:0 -8px 24px rgba(0,0,0,.4)}.ds-sw{display:inline-flex;align-items:center;gap:10px;min-height:40px;font:600 15px var(--ui);color:var(--ink)}.ds-sw input{position:absolute;opacity:0}.ds-sw i{position:relative;width:46px;height:26px;border-radius:999px;background:var(--line-2);box-shadow:inset 0 0 0 1px var(--edge)}.ds-sw i::after{content:\"\";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink-3)}.ds-sw input:checked+i{background:var(--ink-2)}.ds-sw input:checked+i::after{transform:translateX(20px);background:var(--ground)}",
+      "refersTo": "popmenu"
+    },
+    {
+      "name": "Disclosure",
+      "kind": "custom",
+      "description": "The shared +/− marker for every details.",
+      "html": "<details class=\"ds-d\" open><summary>Beginner <span>12</span></summary></details><details class=\"ds-d\"><summary>5 more</summary></details>",
+      "css": ".ds-d summary{display:flex;align-items:center;min-height:40px;list-style:none;cursor:pointer;color:var(--ink-3);font-weight:650}.ds-d summary::-webkit-details-marker{display:none}.ds-d summary::before{content:\"+\";display:inline-block;width:1.2em;color:var(--ink-3)}.ds-d[open] summary::before{content:\"\\2212\"}.ds-d summary span{margin-left:8px}"
     }
   ],
   "narrative": {
     "northStar": "The DDR Cabinet at Night",
-    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the arcade turned down: the staff takes the screen and the highway shrinks to a strip.\n\nThe iPad in landscape is the main screen, a desktop browser the second. The player sits 1-2 m away with busy hands, so state is carried by word, shape, and hue together, never hue alone, and every target is thumb-sized on a coarse pointer. Density is moderate and fixed: a 56px top bar, one view, a docked transport. One control height (40px, 44px on touch) and four radii run through the whole shell. Five tabs live in the top bar until a piece opens: Today, Songs, Read, Technique, Progress.",
+    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the arcade turned down: the staff takes the screen and the highway shrinks to a strip.\n\nThe iPad in landscape is the main screen, a desktop browser the second. The player sits 1-2 m away with busy hands, so state is carried by word, shape, and hue together, never hue alone, and every target is thumb-sized on a coarse pointer. Density is moderate and fixed: a 56px top bar, one view, a docked transport. One control height (40px, 44px on touch) and four radii run through the whole shell. Five tabs live in the top bar until a piece opens: Today, Songs, Read, Technique, Progress. Today is a generated plan, not a menu.",
     "keyCharacteristics": [
       "Cool navy ground with one warm voice, the lamp amber, that means only \"play this / now\". Everything else in the shell is neutral Ink.",
       "Heavy italic condensed display type for what is announced; a quiet grotesk for what is read.",
       "Glow is a state signal on the staff and stage only. No hard offset shadows, no hard text-shadows.",
       "Every page shares one measure and one head; plan rows, song rows and stage rows are one grammar.",
       "Touch first: `pointer: coarse` raises controls to 44px. Below 1024px wide a full-screen notice still replaces the app.",
-      "Copy is label, value, nothing else."
+      "Copy is label, value, nothing else.",
+      "One dialog grammar (`dialog.sheet`), one tag style, one disclosure marker."
     ],
     "rules": [
       {
@@ -615,12 +652,12 @@
       },
       {
         "name": "The Calm Staff Rule",
-        "body": "Notation is Ink on Panel. Colour appears on a staff glyph only as state: lamp for awaited, grade colour for a hit, miss red for a miss; it then decays to Ink Faint as \"played\". Aids that are not score (ghost notes, dynamics marks) are Ink Soft or Ink Faint.",
+        "body": "Notation is Ink on Panel. Colour appears on a staff glyph only as state: lamp for awaited, grade colour for a hit, miss red for a miss; it then decays to Ink Faint as \"played\". A hold outline (orange for held too long, red for released early) is the one state that stays on the head. Aids that are not score (ghost notes, dynamics marks, 8va brackets, the Dense hint) are Ink Soft or Ink Faint.",
         "section": "colors"
       },
       {
         "name": "The One Lamp Rule",
-        "body": "Amber means \"play this, now\": the verb and the now-markers. It is never chrome, never selection, never a judgement grade, and never more than one primary per view.",
+        "body": "Amber means \"play this, now\": the verb and the now-markers. It is never chrome, never selection, never a judgement grade. Counted per screen: at most one lamp-filled button, and the lamp Next word only on that button's row. A page with nothing left to do (every plan row done) shows none. On the play screen the dock Play is the one fill; the cursor, awaited heads, receptor lamps and count-in are its now-markers.",
         "section": "colors"
       },
       {
@@ -655,13 +692,28 @@
       },
       {
         "name": "The Plan Rows Share Songs Grammar Rule",
-        "body": "A plan row, a song row and a stage row are one row: lead, name over sub-line, optional meter, one action at the right, one primary per view.",
+        "body": "A plan row, a song row, a stage row and a path row are one row: optional lead, name over sub-line, optional meter, one action at the right, one primary per view.",
         "section": "layout"
       },
       {
         "name": "The Touch Floor Rule",
         "body": "Targets are 40px with a fine pointer and 44px with a coarse one; sizes come from `--control`, not literals.",
         "section": "layout"
+      },
+      {
+        "name": "The Dialog Sheet Rule",
+        "body": "Every modal is `dialog.sheet`: header with close, scrolling body, pinned footer. One primary at most, in the footer. No modal invents its own frame.",
+        "section": "components"
+      },
+      {
+        "name": "The Tag Rule",
+        "body": "A tag is one outlined Ink Soft Label word. Only Next is lamp, and only on the row with the primary. Tags never use a hand or judgement hue.",
+        "section": "components"
+      },
+      {
+        "name": "The One Marker Rule",
+        "body": "Every disclosure uses the same +/− marker in Ink Faint.",
+        "section": "components"
       },
       {
         "name": "The Quiet Bar Rule",
@@ -678,6 +730,9 @@
       "**Do** build controls from `--control` and the four radii (4, 8, 12, pill) so touch sizing follows.",
       "**Do** start every non-play page with the page head and the 1100px measure.",
       "**Do** write plan, song and stage rows in the same row grammar.",
+      "**Do** build every modal as `dialog.sheet`; header with close, scrolling body, pinned footer.",
+      "**Do** mark every disclosure with the shared +/− marker.",
+      "**Do** show tags as outlined Ink Soft words; only Next is lamp, on the primary's row.",
       "**Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.",
       "**Do** mirror any new colour in `src/palette.ts` if Pixi draws it.",
       "**Do** show mastery and effort as Ink meters, cells and dots plus a number or word.",
@@ -690,6 +745,8 @@
       "**Don't** use amber for selection, switches, slider thumbs, the wordmark, combo or multiplier, and never for a judgement grade.",
       "**Don't** reuse a hand or judgement colour for chrome.",
       "**Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 12px.",
+      "**Don't** invent a second dialog layout, an inline-styled modal or a coloured tag.",
+      "**Don't** put a Label-style kicker above a heading.",
       "**Don't** add paragraphs, parentheticals or explanatory sentences to controls, headers or drawers.",
       "**Don't** show a streak, points or a loss-framed counter; effort only goes up."
     ]

@@ -33,6 +33,7 @@ function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, 
 
 interface Placed {
   head: SVGElement
+  grp: SVGElement // everything of the chord: dimmed as one once it has been played
   dy: number
   up: boolean
   want?: number
@@ -52,6 +53,7 @@ export class Staff {
   private dirty = true
   private seen = 0
   private lastT = 0
+  onDense?: () => void // the player tapped the 'too dense' hint: the app steps Simplify up
   private timeline: { t: number; el: SVGElement }[] = []
   private byId = new Map<number, Placed>()
   private all: Placed[] = []
@@ -192,7 +194,10 @@ export class Staff {
       for (const b of mine) {
         for (const clef of clefs) el('line', { x1: b.x, x2: b.x, y1: dy + base[clef] - 4 * S, y2: dy + base[clef] }, bl)
         el('text', { x: b.x + 4, y: b.numY + dy, class: 'barno' }, bl, String(b.i + 1))
-        if (b.dense) el('text', { x: b.x + 6 + String(b.i + 1).length * 8, y: b.numY + dy, class: 'barno dense' }, bl, 'Dense: simplify')
+        if (b.dense) {
+          const t = el('text', { x: b.x + 6 + String(b.i + 1).length * 8, y: b.numY + dy, class: 'barno dense', role: 'button', tabindex: 0, 'aria-label': 'Too dense: show fewer notes' }, bl, 'Too dense: tap to thin')
+          t.addEventListener('click', () => this.onDense?.())
+        }
       }
       const last = mine[mine.length - 1]
       if (last) {
@@ -256,14 +261,15 @@ export class Staff {
       const gr = this.game.judge.grade[id]
       if (this.game.judge.st[id] === 2) this.flag(id, p, 'miss')
       else if (note && note.t < this.game.t - 0.02) {
-        p.head.classList.add('past')
+        p.grp.classList.add('past')
         if (gr === 'great' || gr === 'good') this.shape(id, p, gr)
       }
     }
   }
 
   /** Everything of one chord: ledger lines, stem, flag, heads, accidentals, dots. */
-  private chord(g: Element, c: LChord, dy: number) {
+  private chord(parent: Element, c: LChord, dy: number) {
+    const g = el('g', { class: 'ch' }, parent)
     const small = c.grace
     for (const l of c.ledgers) el('line', { class: 'ledger', x1: l.x1, x2: l.x2, y1: l.y + dy, y2: l.y + dy }, g)
     if (c.stem) {
@@ -273,9 +279,9 @@ export class Staff {
     if (c.flag) el('text', { class: `smufl${small ? ' small' : ''}`, x: c.flag.x, y: c.flag.y + dy }, g, String.fromCharCode(c.flag.glyph))
     for (const h of c.heads) {
       const e = el('text', { class: `smufl head${small ? ' small' : ''}${h.cont ? ' cont' : ''}`, x: h.x, y: h.y + dy, 'text-anchor': 'middle' }, g, G.head[h.kind])
-      const p: Placed = { head: e, dy, up: h.up, want: h.want, x: h.x, y: h.y + dy }
+      const p: Placed = { head: e, grp: g, dy, up: h.up, want: h.want, x: h.x, y: h.y + dy }
       this.all.push(p)
-      this.timeline.push({ t: h.t, el: e })
+      if (h === c.heads[0]) this.timeline.push({ t: h.t, el: g })
       if (!h.cont && !small) for (const id of h.ids) this.byId.set(id, p)
       if (!h.cont && !small) e.setAttribute('data-id', String(h.ids[0]))
     }

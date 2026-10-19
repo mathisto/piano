@@ -53,8 +53,10 @@ export class Dock {
         <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
         <div class="grp">
           <span class="cap">Tempo</span>
+          <button class="btn icon sm touch-only" id="tempoDown" aria-label="Slower" title="Slower">−</button>
           <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
           <span class="tempo-val" id="tempoVal">100%</span>
+          <button class="btn icon sm touch-only" id="tempoUp" aria-label="Faster" title="Faster">+</button>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
         </div>
         <div class="pop" data-modes="learn">
@@ -89,6 +91,8 @@ export class Dock {
       game.setRate(Number(b.dataset.t) / 100)
       this.sync()
     }))
+    q('#tempoDown').onclick = () => (game.setRate(game.rate - 0.05), this.sync())
+    q('#tempoUp').onclick = () => (game.setRate(game.rate + 0.05), this.sync())
     this.wait.onchange = () => game.setWait(this.wait.checked)
     q<HTMLInputElement>('#holdAdvance').onchange = (e) => (game.holdAdvance = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
