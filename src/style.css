@@ -60,6 +60,18 @@ body {
   font: 15px/1.45 var(--ui);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation; /* no double-tap delay on buttons */
+  -webkit-user-select: none;
+  user-select: none; /* a long press on a label or the staff must not open the selection loupe */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input,
+select,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 ::selection {
   background: var(--lamp);
@@ -188,8 +200,7 @@ table.songs caption,
 }
 .hud small {
   grid-column: 1 / -1;
-  color: var(--ink-3);
-  font-size: 12px;
+  color: var(--ink-2); /* read mid-song at the music stand: the brighter tier */
 }
 .hud b {
   font: 800 italic 30px/1 var(--display);
@@ -746,6 +757,9 @@ table.stages td {
 #split:focus-visible::before {
   background: var(--ink-2);
 }
+#split.edge::before {
+  background: var(--ink); /* past a stop: letting go shows one pane alone */
+}
 #play.drill #staff .lines line,
 #play.drill #staff .bars line {
   stroke-width: 1.7;
@@ -804,8 +818,8 @@ body.reading .hud small {
   stroke-linejoin: round;
 }
 #staff .barno {
-  fill: var(--ink-3);
-  font: 700 12px var(--ui);
+  fill: var(--ink-2);
+  font: 700 14px var(--ui);
 }
 #staff .ledger {
   stroke: var(--ink);
@@ -1299,9 +1313,9 @@ kbd {
 .scrub .lbl {
   position: absolute;
   top: 2px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--ink-3);
+  color: var(--ink-2);
   pointer-events: none;
   padding-left: 4px;
 }
@@ -1311,7 +1325,7 @@ kbd {
   gap: 10px;
 }
 .grp > .cap {
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 .tempo {
   width: 150px;
@@ -1368,9 +1382,9 @@ kbd {
 .chord small {
   display: block;
   margin-top: 2px;
-  font: 700 13px/1.2 var(--ui);
+  font: 700 14px/1.2 var(--ui);
   letter-spacing: 0.08em;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
 /* ---------- results ---------- */
@@ -2107,7 +2121,7 @@ dialog.sheet footer .grow {
   gap: 8px;
 }
 .slider small {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 13px;
 }
 .slider input {

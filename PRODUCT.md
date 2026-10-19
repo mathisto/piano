@@ -26,6 +26,7 @@ Open, no-account, in-browser. Combines what is split across other tools: Synthes
 
 - Keyboard: Roland FP-10 over USB (Bluetooth MIDI works but adds latency). Keyboard's own speakers are the default sound; browser piano is an opt-in toggle, default off.
 - No lit keys, no hardware lighting. "Lighting" means on-screen visual effects only.
+- iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app is dark-only by decision (Apple allows it for immersive apps). The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
 - Audio and display latency are real; a one-time calibration sets a user offset. Screen mirroring to an iPad adds display lag.
 - Content: users import their own MIDI files (stay in the browser); a few public-domain pieces ship (Mutopia / OpenScore, license checked per piece). The repo is public, so no copyrighted MIDI is committed.
 
