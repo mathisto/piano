@@ -1,4 +1,5 @@
 import * as audio from './audio'
+import { velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade } from './judge'
 import { settings } from './settings'
 import { barAt, type Note, type Song } from './song'
@@ -13,6 +14,7 @@ export interface Result {
   grade: string
   counts: Record<Grade, number>
   maxCombo: number
+  touch: TouchStats // key velocities of the notes you struck
   holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
   offs: number[]
@@ -288,6 +290,7 @@ export class Game {
       grade: letter(j.accuracy),
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
+      touch: velStats(j.samples(), settings.edges),
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
@@ -338,7 +341,7 @@ export class Game {
     const t = live ? this.tAt(ts) - (settings.offset / 1000) * this.rate : this.t
     this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
     if (!live) return
-    this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t))
+    this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel))
     if (this.phase === 'waiting') {
       if (!this.judge.required(this.t).length) {
         if (this.lastPerf - this.stallAt > 2500) this.bump(this.stallBar, 1)

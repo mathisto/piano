@@ -1,4 +1,4 @@
-import type { Note } from './song'
+import type { Hand, Note } from './song'
 
 export type Grade = 'perfect' | 'great' | 'good' | 'miss'
 export type HoldGrade = 'held' | 'short' | 'long'
@@ -43,6 +43,7 @@ export class Judge {
   off = new Float32Array(0)
   holdGrade: (HoldGrade | undefined)[] = [] // per note, once its key has come up
   holdAt = new Float32Array(0) // song time of that release
+  private vel = new Uint8Array(0) // key velocity 1..127 of each struck note, 0 when unknown
   private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
   private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
   holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
@@ -70,6 +71,7 @@ export class Judge {
     this.grade = new Array(this.notes.length).fill(undefined)
     this.off = new Float32Array(this.notes.length)
     this.pts = new Float32Array(this.notes.length)
+    this.vel = new Uint8Array(this.notes.length)
     this.holdAt = new Float32Array(this.notes.length)
     this.holdGrade = new Array(this.notes.length).fill(undefined)
     this.down.clear()
@@ -90,6 +92,13 @@ export class Judge {
     return this.judged ? this.weightSum / this.judged : 1
   }
 
+  /** Velocities of the notes struck so far, for the touch statistics. */
+  samples(): { v: number; h: Hand }[] {
+    const out: { v: number; h: Hand }[] = []
+    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h }))
+    return out
+  }
+
   /** Share of judged holds that were on time; 1 before any. */
   get holdPct() {
     const n = this.holds.held + this.holds.short + this.holds.long
@@ -101,7 +110,7 @@ export class Judge {
   }
 
   /** `t` is song time, already corrected for the calibration offset. */
-  press(p: number, t: number): Ev[] {
+  press(p: number, t: number, vel = 0): Ev[] {
     const w = (WIN.good * this.cfg.rate) / 1000
     let best = -1
     let bestD = Infinity
@@ -122,6 +131,7 @@ export class Judge {
     if (best < 0) return this.stray(p)
 
     this.st[best] = HIT
+    this.vel[best] = vel ? Math.max(1, Math.round(vel * 127)) : 0
     this.hits++
     this.advance()
     if (this.cfg.wait) return [{ k: 'ok', i: best }]

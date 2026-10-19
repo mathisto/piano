@@ -6,6 +6,7 @@ export interface Settings {
   volume: number
   names: boolean // note names on keys and notes
   chord: boolean // name the chord you are holding
+  edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
   hold: 'off' | 'lenient' | 'strict' // how closely to grade holding a key for the written length (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
