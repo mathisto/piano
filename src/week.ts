@@ -28,3 +28,21 @@ export function lastWeek(days: Record<string, number>, goal: number, d = new Dat
   const up = GOALS.find((g) => g > goal)
   return { minutes: prev.minutes, played: prev.days.filter((x) => x.played).length, suggest: prev.minutes >= goal && up ? up : goal }
 }
+
+export interface Snapshot {
+  read: Record<string, number> // mastery 0..1 per reading stage id
+  tech: number // technique exercises that are solid
+}
+
+/** One line on what got better since an earlier snapshot, or null when nothing did. */
+export function improved(prev: Snapshot | undefined, cur: Snapshot, names: Record<string, string>): string | null {
+  if (!prev) return null
+  let best: { id: string; was: number; now: number } | undefined
+  for (const [id, now] of Object.entries(cur.read)) {
+    const was = prev.read[id] ?? 0
+    if (now - was >= 0.1 && (!best || now - was > best.now - best.was)) best = { id, was, now }
+  }
+  if (best) return `${names[best.id] ?? best.id}: ${Math.round(best.was * 100)}% to ${Math.round(best.now * 100)}%`
+  const t = cur.tech - prev.tech
+  return t > 0 ? `${t} more technique ${t === 1 ? 'exercise' : 'exercises'} solid` : null
+}

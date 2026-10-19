@@ -42,3 +42,24 @@ describe('last week', () => {
     expect(lastWeek(days, 90, wed)).toEqual({ minutes: 80, played: 3, suggest: 90 })
   })
 })
+
+import { improved } from './week'
+
+describe('most improved', () => {
+  const names = { a: 'Treble landmarks', b: 'Bass staff' }
+  it('is null without an earlier snapshot or any gain', () => {
+    expect(improved(undefined, { read: { a: 0.5 }, tech: 3 }, names)).toBeNull()
+    expect(improved({ read: { a: 0.5 }, tech: 3 }, { read: { a: 0.5 }, tech: 3 }, names)).toBeNull()
+  })
+  it('names the reading stage that gained the most', () => {
+    const r = improved({ read: { a: 0.2, b: 0.5 }, tech: 3 }, { read: { a: 0.6, b: 0.55 }, tech: 3 }, names)
+    expect(r).toBe('Treble landmarks: 20% to 60%')
+  })
+  it('counts technique exercises that became solid', () => {
+    expect(improved({ read: {}, tech: 3 }, { read: {}, tech: 5 }, names)).toBe('2 more technique exercises solid')
+    expect(improved({ read: {}, tech: 3 }, { read: {}, tech: 4 }, names)).toBe('1 more technique exercise solid')
+  })
+  it('prefers a gain of at least ten points in reading over a single exercise', () => {
+    expect(improved({ read: { a: 0.2 }, tech: 3 }, { read: { a: 0.5 }, tech: 4 }, names)).toBe('Treble landmarks: 20% to 50%')
+  })
+})

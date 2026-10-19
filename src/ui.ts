@@ -430,7 +430,7 @@ export interface TodayData {
   goal: number
   planMin: 5 | 10 | 20
   done: string[] // steps finished today
-  recap?: { minutes: number; played: number; suggest: number } // last week, shown on Mondays
+  recap?: { minutes: number; played: number; suggest: number; better?: string } // last week, shown early in the week
 }
 
 const weekBlock = (w: TodayData['week'], goal: number) => `
@@ -461,7 +461,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .join('')
   el.innerHTML = `
     ${head('Today', `<div class="seg" role="radiogroup" aria-label="Plan length">${[5, 10, 20].map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
-    ${d.recap ? `<details class="tcard recap"><summary>Last week: ${d.recap.minutes} min on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}</summary>${d.recap.suggest !== d.goal ? `<p>You met your goal.</p><button class="btn" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : `<p>Goal this week: ${d.goal} min.</p>`}</details>` : ''}
+    ${d.recap ? `<details class="tcard recap"><summary>Last week: ${d.recap.minutes} min on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}</summary>${d.recap.better ? `<p>Most improved: ${esc(d.recap.better)}.</p>` : ''}${d.recap.suggest !== d.goal ? `<p>You met your goal.</p><button class="btn" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : `<p>Goal this week: ${d.goal} min.</p>`}</details>` : ''}
     <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal)}</section>
     <div class="plan">${rows}</div>`
 }

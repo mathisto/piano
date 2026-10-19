@@ -28,7 +28,7 @@ import { calibrate, writtenTargets } from './touch'
 import { LEVELS, autoLevel, notesPerBar, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
-import { dayKey, lastWeek, weekOf } from './week'
+import { dayKey, improved, lastWeek, weekOf } from './week'
 import { $, CAL_NOTES, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
@@ -148,6 +148,13 @@ async function showToday() {
   const ex = exercise(nr.recipe.opts, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
+  // one snapshot a week lets the recap say what got better; the recap shows on Monday and Tuesday
+  const week = weekOf(days).days
+  const snap = { read: Object.fromEntries(rows.map((r) => [r.stage.id, r.pct])), tech: SYLLABUS.filter((r) => stateOf(ts, r.id, dayNum()) === 'solid').length }
+  if (!(await store.getSnap(week[0].key))) await store.putSnap(week[0].key, snap)
+  const lw = [1, 2].includes(new Date().getDay()) ? lastWeek(days, settings.goal) : null
+  const prevKey = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 7 - ((new Date().getDay() + 6) % 7)))
+  const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   todayView($('#today'), {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
     read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
@@ -160,7 +167,7 @@ async function showToday() {
     goal: settings.goal,
     planMin: settings.planMin,
     done,
-    recap: new Date().getDay() === 1 ? lastWeek(days, settings.goal) ?? undefined : undefined,
+    recap: recap ?? undefined,
   })
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
     settings.planMin = Number(r.value) as 5 | 10 | 20
