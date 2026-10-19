@@ -196,9 +196,9 @@ const keyAt = (song: Song, bar: number) => {
   return x
 }
 
-function instances(n: Note, song: Song, qls: number[]): Inst[] {
+function instances(n: Note, song: Song, qls: number[], only?: Clef): Inst[] {
   const b = song.bars[n.bar]
-  const clef = clefFor(n.p, n.h)
+  const clef = only ?? clefFor(n.p, n.h) // a one-staff layout writes every note on it
   const q0 = n.qb ?? ((n.t - b.t0) / Math.max(b.t1 - b.t0, 1e-6)) * qls[n.bar]
   const base = { n, clef, tup: false, tiePrev: false, tieNext: false, cont: false, grace: false }
   if (n.grace) return [{ ...base, bar: n.bar, q: q0, v: 0.125, grace: true, t: n.t }]
@@ -282,8 +282,11 @@ export function analyze(song: Song, o: { read?: boolean; hide?: (n: Note) => boo
   const read = !!o.read
   const qls = song.bars.map(barQ)
   const used = new Set(song.notes.map((n) => clefFor(n.p, n.h)))
-  const solo = read && used.size === 1
-  const clefs: Clef[] = solo ? [[...used][0]] : ['treble', 'bass']
+  // a one-hand song (a single melody, an import with one track) gets one big staff instead of a grand staff half empty
+  const share = (c: Clef) => song.notes.filter((n) => clefFor(n.p, n.h) === c).length / Math.max(1, song.notes.length)
+  const lead: Clef = share('treble') >= share('bass') ? 'treble' : 'bass'
+  const solo = (read && used.size === 1) || (!read && song.notes.length >= 8 && share(lead) >= 0.97)
+  const clefs: Clef[] = solo ? [read ? [...used][0] : lead] : ['treble', 'bass']
   const withRests = !read && song.artic !== 'staccato'
   const bars: BarA[] = song.bars.map((b, i) => ({
     i,
@@ -303,7 +306,7 @@ export function analyze(song: Song, o: { read?: boolean; hide?: (n: Note) => boo
     tuplets: [],
   }))
   const per: Inst[][] = bars.map(() => [])
-  for (const n of song.notes) if (!o.hide?.(n)) for (const x of instances(n, song, qls)) if (per[x.bar]) per[x.bar].push(x)
+  for (const n of song.notes) if (!o.hide?.(n)) for (const x of instances(n, song, qls, solo ? clefs[0] : undefined)) if (per[x.bar]) per[x.bar].push(x)
 
   for (const B of bars) {
     const nominal = (B.n * 4) / B.den
