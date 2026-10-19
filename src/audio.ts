@@ -72,16 +72,20 @@ export function unlock() {
   void preload()
 }
 
+/** A woodblock metronome click: a deeper tock on the first beat, a higher tick on the rest. It skips the piano's master bus, which sits low. */
 export function click(accent: boolean) {
   const c = ready()
   const o = c.createOscillator()
   const g = c.createGain()
-  o.frequency.value = accent ? 1568 : 1046
-  g.gain.setValueAtTime(0.4, c.currentTime)
-  g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.06)
-  o.connect(g).connect(master!)
+  o.type = 'triangle'
+  const f = accent ? 900 : 1500
+  o.frequency.setValueAtTime(f * 1.6, c.currentTime)
+  o.frequency.exponentialRampToValueAtTime(f, c.currentTime + 0.012)
+  g.gain.setValueAtTime(Math.min(1, settings.volume + 0.2) * (accent ? 1 : 0.75), c.currentTime)
+  g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.07)
+  o.connect(g).connect(c.destination)
   o.start()
-  o.stop(c.currentTime + 0.08)
+  o.stop(c.currentTime + 0.09)
 }
 
 function sampleVoice(c: AudioContext, p: number, vel: number): Voice | undefined {
