@@ -447,6 +447,46 @@ function cycle() {
   save()
 }
 
+// Staff size: pinch, trackpad pinch, plus and minus, or the buttons. Smaller shows more bars, and a second line once two fit.
+const ZOOM = { min: 0.25, max: 1.8, step: 1.15 }
+let zoomFrame = 0
+function setZoom(z: number) {
+  const v = Math.round(Math.min(ZOOM.max, Math.max(ZOOM.min, z)) * 50) / 50
+  if (v === settings.zoom) return
+  settings.zoom = v
+  cancelAnimationFrame(zoomFrame)
+  zoomFrame = requestAnimationFrame(() => {
+    save()
+    staff.render()
+  })
+}
+{
+  const host = $('#staff')
+  const pts = new Map<number, { x: number; y: number }>()
+  let from = { d: 0, z: 1 }
+  const spread = () => {
+    const [a, b] = [...pts.values()]
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
+  host.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pts.size === 2) from = { d: spread(), z: settings.zoom }
+  })
+  host.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pts.size === 2 && from.d > 20) setZoom(from.z * (spread() / from.d)) // fingers apart: bigger notes, together: more bars
+  })
+  for (const ev of ['pointerup', 'pointercancel'] as const) host.addEventListener(ev, (e) => pts.delete(e.pointerId))
+  host.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return // a trackpad pinch arrives as ctrl + wheel
+    e.preventDefault()
+    setZoom(settings.zoom * Math.exp(-e.deltaY / 200))
+  }, { passive: false })
+  $('#zoomOut').onclick = () => setZoom(settings.zoom / ZOOM.step)
+  $('#zoomIn').onclick = () => setZoom(settings.zoom * ZOOM.step)
+}
+
 /** One step by keyboard: down and up walk through falling only, both with the pane resized, and sheet only. */
 function nudge(dir: 1 | -1) {
   const v = settings.view
@@ -1188,6 +1228,8 @@ addEventListener('keydown', (e) => {
   } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
     e.preventDefault()
     game.toggle()
+  } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current && game.mode !== 'read') {
+    setZoom(settings.zoom * (e.key === '-' ? 1 / ZOOM.step : ZOOM.step))
   } else if (e.key === 'v' && current && game.mode !== 'read') {
     const order = ['sheet', 'both', 'falling'] as const
     setView(order[(order.indexOf(settings.view) + 1) % 3])

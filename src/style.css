@@ -782,7 +782,27 @@ body.reading .hud small {
   min-height: 0;
   overflow: hidden;
 }
-#staff svg {
+#staff {
+  touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
+}
+.zoomc {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.zoomc:hover,
+.zoomc:focus-within {
+  opacity: 1;
+}
+#play.drill .zoomc {
+  display: none;
+}
+#staff > svg {
   position: absolute;
   inset: 0;
   width: 100%;

@@ -47,7 +47,7 @@ export function skeleton(app: HTMLElement) {
   <dialog id="credits" class="sheet" aria-label="Credits"></dialog>
   <dialog id="help" class="sheet" aria-label="Shortcuts">
     <header><h2>Shortcuts</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
+    <div class="body"><div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
     <p class="fine">Hearing every note twice? Turn Local Control off on the keyboard. No keyboard: <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p></div>
   </dialog>
   <main id="main" style="display:grid;min-height:0">
@@ -57,7 +57,7 @@ export function skeleton(app: HTMLElement) {
     <section id="technique" class="view" aria-label="Technique"></section>
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
-      <div id="staff"></div>
+      <div id="staff"><div class="zoomc" role="group" aria-label="Staff size"><button class="btn icon sm" id="zoomOut" aria-label="Smaller staff, more bars">${icon('minus')}</button><button class="btn icon sm" id="zoomIn" aria-label="Larger staff, fewer bars">${icon('plus')}</button></div></div>
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
