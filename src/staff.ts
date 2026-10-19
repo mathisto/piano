@@ -88,7 +88,7 @@ export class Staff {
     this.lastT = t
     const L = this.L
     const key = `${this.game.view}|${this.game.mode}|${song.id}`
-    const out = !L || (L.follow ? bar !== L.from : bar < L.from || bar >= L.to)
+    const out = !!L && (L.follow ? bar !== L.from : bar < L.from || bar >= L.to)
     if (this.dirty || back || out || key !== this.cfgKey) {
       this.cfgKey = key
       this.build(bar)
@@ -143,7 +143,8 @@ export class Staff {
   private build(bar: number) {
     const { song, mode } = this.game
     const r = this.host.getBoundingClientRect()
-    if (!r.width || !r.height) return
+    this.dirty = false
+    if (!r.width || !r.height) return // hidden: the resize observer calls render() when it shows
     const read = mode === 'read'
     const hands = this.game.hands
     const key = `${song.id}|${read}|${hands.R}|${hands.L}`
@@ -152,8 +153,8 @@ export class Staff {
       this.anKey = key
     }
     const cfg: Cfg = { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height } }
+    if (this.an.pages.size > 6) this.an.pages.clear() // one entry per window size seen
     this.L = layout(this.an, windowFor(this.an, bar, cfg), cfg)
-    this.dirty = false
     this.paint(this.L)
   }
 

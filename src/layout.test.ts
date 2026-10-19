@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyze, beamBounds, figure, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
+import { analyze, beamBounds, densest, figure, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
 import { mixed, orchestral, pianoHuman, sixEight, waltz } from './notation-fixtures'
 import { build, fromMidi, type Bar, type Raw, type Song } from './song'
 
@@ -162,17 +162,17 @@ describe('ties, rests, tuplets, graces', () => {
     expect(t.open).toBeUndefined()
     expect(cont[0].heads[0].x).toBeGreaterThan(t.x1)
   })
-  it('a tie that reaches the next system opens at both ends', () => {
-    // dense bars force one bar per system
+  it('a tie that reaches the next page ends in an open arc, and arrives as one', () => {
+    // two crowded bars: one per page; a note ties from the end of the first into the second
     const notes: N[] = []
-    for (let b = 0; b < 4; b++) for (let i = 0; i < 24; i++) notes.push([60 + (i % 7), b * 4 + i / 6, 1 / 6 > 0.1 ? 0.125 : 0.125])
-    notes.push([72, 3.5, 2])
-    const s = song([4, 4], 4, notes.filter((n) => n[1] < 4 || true))
-    const L = run(s, SHEET)
-    if (L.systems.length > 1) {
-      const opens = L.ties.filter((t) => t.open)
-      expect(opens.length).toBeGreaterThanOrEqual(0)
-    }
+    for (let b = 0; b < 2; b++) for (let i = 0; i < 30; i++) notes.push([[72, 74, 76, 77, 79][i % 5], b * 4 + i / 8, 0.125])
+    notes.push([84, 3.5, 1.5])
+    const an = analyze(song([4, 4], 2, notes))
+    const first = layout(an, windowFor(an, 0, SHEET), SHEET)
+    expect(first.to).toBe(1)
+    expect(first.ties.filter((t) => t.open === 'right')).toHaveLength(1)
+    const second = layout(an, windowFor(an, 1, SHEET), SHEET)
+    expect(second.ties.filter((t) => t.open === 'left')).toHaveLength(1)
   })
   it('a gap becomes rests on the right grid; an empty staff in use gets a bar rest', () => {
     const L = run(song([4, 4], 2, [[72, 0, 1], [72, 2, 2], [74, 4, 4]]))
@@ -284,6 +284,15 @@ describe('spacing and the time map', () => {
     const L = layout(an, w, SHEET)
     expect(L.bars[0].xEnd - L.bars[0].x).toBeGreaterThan(32 * 13)
     expect(L.bars[0].minGap).toBeGreaterThanOrEqual(13.9)
+  })
+  it('a bar too dense even zoomed out is flagged, and still stays on the page', () => {
+    const notes: N[] = Array.from({ length: 120 }, (_, i) => [[72, 74, 76, 77, 79][i % 5], i / 30, 1 / 32] as N)
+    const an = analyze(song([4, 4], 1, notes))
+    const L = layout(an, windowFor(an, 0, SHEET), SHEET)
+    expect(L.bars[0].dense).toBe(true)
+    const ink = inkBounds(L)
+    expect(ink.maxX).toBeLessThanOrEqual(L.w + 0.5)
+    expect(densest(an)!.bar).toBe(0)
   })
   it('page windows are stable: the bars of a page never overlap the next', () => {
     const an = analyze(fromMidi(pianoHuman().buf, 'h', 'h'))

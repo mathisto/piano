@@ -1195,7 +1195,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
       b.numY = Math.min(top - 16, lo - 5)
       if (b.numY < top - 16) k.lo = Math.min(k.lo, b.numY - 9)
     }
-    s.pad = Math.max(0, 2 - k.lo)
+    s.pad = Math.max(0, 4 - k.lo)
     s.h = vbH + s.pad + Math.max(0, k.hi - (vbH - 2))
   })
   const content = L.systems.reduce((n, s) => n + s.h, 0) + GAP * (L.systems.length - 1)
