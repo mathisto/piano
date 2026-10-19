@@ -19,14 +19,14 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - [x] Settings: six rows plus Advanced, no paragraphs; Max effects tier deleted; Hold folded into Strictness; chord names always on; Import and Clear added; shortcuts moved to a `?` dialog.
 - [x] Play screen: HUD cut to score and combo with captions over the numbers; legend shown once; "Tap Play" on touch; top bar fades; `M`; coarse-pointer sizing.
 - [x] Navigation and page templates: Today and Progress added, Touch folded away, one page head, trimmed Songs and Read tables, themed selects.
-- [ ] Second critique pass (`impeccable` re-review is running); apply its polish list.
-- [ ] DESIGN.md: document the grammar (tokens, components, page templates, copy rules, the new pages, target pips, dynamics). A documenter pass is owed.
+- [x] Second critique pass: 29/40 (from 26); zen layout bug, bar-fade band, one page measure, Today plan list, Technique form, Progress cells, copy cuts, miss decay all fixed. Projected 32-33 once polished further.
+- [x] DESIGN.md and sidecar rewritten from the shipped build: grammar, components, page templates, play states, rules, known debt.
 - [ ] Perform and Learn as a choice on a start sheet instead of a bar switch.
 - [ ] A start sheet per song: mode, tempo, hands, split, tracks (see Phase F).
 - [ ] Auto-hide bar reclaims its space without a layout jump (today it only fades; `M` reclaims).
 - [ ] Today: use the empty lower half for the generated plan (Phase E), not decoration.
-- [ ] Design debt carried over: hard offset shadows on the primary button and slam text, the Learn `✓` glyph, colour-only hit marks on the staff, radius scale of four near-duplicates.
-- [ ] Update PRODUCT.md (iOS is no longer out of scope; five tabs; iPad is the main screen).
+- [ ] Design debt carried over (full list in DESIGN.md, Known quirks): the Learn `✓` glyph, colour-only hit marks on the staff, hand hues reused for grades, Georgia italic dynamics, no portrait layout, literal values that are not tokens, the bar fade keeps its 56px band, zen is keyboard-only (no touch toggle).
+- [x] PRODUCT.md platform facts updated (iPad app, iPad is the main screen). Five-tab navigation still to be described there.
 
 ## Phase E: progression and practice model (after the design pass)
 
@@ -47,9 +47,13 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 ## Phase F: content and import quality (research under way)
 
 - [ ] `docs/research/public-domain-sources.md`: sources, licences, a graded 40-piece list, a fetch-and-manifest pipeline (agent running).
-- [ ] `docs/research/midi-import-audit.md`: why a fan MIDI of Aerith's Theme rendered as clutter; root causes and a fix plan (agent running). Needs the original file from the owner, or an in-app import report.
-- [ ] Import report and per-track selection (drums, pads, bass) at import time.
-- [ ] Quantization with tuplet detection, voice separation, a simplify control.
+- [x] Research: `docs/research/midi-import-audit.md` (the staff is not a notation engine: no quantization, voices, rests, ties, tuplets; tracks merged into two hands; plus real importer bugs: pad track labelled right hand, program change splitting a piano into two tracks, pickup bar shifting barlines, wrong enharmonic, key estimate dominated by long notes). Original Aerith file still needed; the snippet to recover it is in section 10 of the audit.
+- [x] Research: `docs/research/public-domain-sources.md` (Mutopia as MIDI, OpenScore Lieder as MusicXML, IMSLP manual only; 40-piece graded list; fetch script outline).
+- [ ] F0 (0.5-1 day, first): `inspectMidi` import report per song from the stored bytes (tracks, density, overlaps, drums, pickup, key margin) and a Share original MIDI button.
+- [ ] F1 (2-3 days): track and channel selection with sensible defaults (skip drums, pads, tiny tracks), hand rule rewrite, program-change siblings merged; non-destructive options stored with the song.
+- [ ] F2 (4-6 days): notation layer in the importer: tick-based quantization with tuplet detection, chord clustering, written values clipped to the voice, tied segments across barlines, pickup detection, onset-weighted key estimate, windowed spelling.
+- [ ] F3 (5-7 days): staff upgrades: pure layout function with tests, rests, ties, tuplet brackets, two voices, 8va, meter-aware beaming, rhythmic spacing, a too-dense fallback.
+- [ ] F4 (2-3 days, high value for a beginner): Simplify per song: full, two hands, melody and bass, melody only.
 - [ ] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
 - [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
 - [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence.
