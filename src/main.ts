@@ -22,7 +22,8 @@ import { nameChord } from './chord'
 import { thumb } from './thumb'
 import { calibrate } from './touch'
 import { exercise, type Opts } from './technique'
-import { $, CAL_NOTES, techniqueView, touchView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { weekOf, dayKey } from './week'
+import { $, CAL_NOTES, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -66,7 +67,7 @@ const lens = new Map<string, { bars: number; len: number }>()
 
 const thumbs = new Map<string, string>(STARTERS.map((st) => [st.spec.id, thumb(fromSpec(st.spec))]))
 
-async function showLibrary(err = '') {
+async function libraryData() {
   const [stored, prog] = await Promise.all([store.listSongs(), store.allProgress()])
   for (const s of stored) {
     if (!lens.has(s.id)) {
@@ -82,14 +83,20 @@ async function showLibrary(err = '') {
   const starts = starterRows(STARTERS, starters, prog, thumbs)
   const mine = userRows(stored, prog, lens, thumbs)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
-  const all = [...starts, ...mine]
-  const last = all.filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
+  const last = [...starts, ...mine].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
+  return { starts, mine, last }
+}
+
+async function showLibrary(err = '') {
+  const { starts, mine, last } = await libraryData()
   last.cont = true
   library($('#library'), starts, mine, err)
 }
 
-function view(name: 'library' | 'read' | 'technique' | 'touch' | 'play') {
-  for (const v of ['library', 'read', 'technique', 'touch', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
+const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
+
+function view(name: (typeof SECTIONS)[number]) {
+  for (const v of SECTIONS) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'
   $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
@@ -97,18 +104,63 @@ function view(name: 'library' | 'read' | 'technique' | 'touch' | 'play') {
   if (name !== 'play') $('#title').textContent = ''
 }
 
-async function showSection(name: 'songs' | 'read' | 'technique' | 'touch') {
+type Section = 'today' | 'songs' | 'read' | 'technique' | 'progress'
+
+async function showSection(name: Section, err = '') {
+  await flushPractice()
   ;($(`input[name=nav][value=${name}]`) as HTMLInputElement).checked = true
   view(name === 'songs' ? 'library' : name)
-  if (name === 'songs') await showLibrary()
+  if (name === 'today') await showToday()
+  else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
   else if (name === 'technique') showTechnique()
-  else await showTouch()
+  else await showProgress()
 }
+
+async function stageRows(): Promise<StageRow[]> {
+  drillStats = await store.getDrill()
+  const rec = nextStage(drillStats)
+  return STAGES.map((stage) => {
+    const m = mastery(stage, drillStats)
+    const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
+    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === rec }
+  })
+}
+
+async function showToday() {
+  const [{ last }, rows, days] = await Promise.all([libraryData(), stageRows(), store.getPractice()])
+  const next = rows.find((r) => r.next)!
+  const ex = exercise(settings.tech, settings.edges)
+  todayView($('#today'), {
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb },
+    read: { id: next.stage.id, name: next.stage.name, pct: next.pct, line: next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
+    tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
+    week: weekOf(days),
+    goal: settings.goal,
+  })
+}
+
+async function showProgress() {
+  const [stages, days, log] = await Promise.all([stageRows(), store.getPractice(), store.getTouch()])
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log })
+  $('#pGoal').addEventListener('change', (e) => {
+    settings.goal = Number((e.target as HTMLSelectElement).value)
+    save()
+    void showProgress()
+  })
+}
+
+$('#today').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
+  if (!b) return
+  if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
+  else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
+  else void openSong(exercise(settings.tech, settings.edges), 'perform')
+})
 
 function showTechnique() {
   const el = $('#technique')
-  techniqueView(el, settings.tech)
+  techniqueView(el, settings.tech, touchCal, calMsg)
   const pick = <K extends keyof Opts>(id: string, key: K, parse: (v: string) => Opts[K]) =>
     ($(id, el) as HTMLSelectElement).addEventListener('change', (e) => {
       settings.tech[key] = parse((e.target as HTMLSelectElement).value)
@@ -120,16 +172,6 @@ function showTechnique() {
   pick('#tDyn', 'dyn', (v) => v as Opts['dyn'])
   pick('#tBpm', 'bpm', Number)
   $('#tStart', el).onclick = () => void openSong(exercise(settings.tech, settings.edges), 'perform')
-}
-
-// ---------------------------------------------------------------- touch page and calibration
-
-let touchCal: TouchCal | null = null
-let calGot: number[][] = [[], [], []]
-
-async function showTouch() {
-  touchView($('#touch'), await store.getTouch(), touchCal)
-  const el = $('#touch')
   const on = (sel: string, f: () => void) => {
     const b = el.querySelector<HTMLButtonElement>(sel)
     if (b) b.onclick = f
@@ -137,23 +179,30 @@ async function showTouch() {
   on('#calStart', () => {
     touchCal = { step: 0, got: 0 }
     calGot = [[], [], []]
-    void showTouch()
+    calMsg = ''
+    showTechnique()
   })
   on('#calCancel', () => {
     touchCal = null
-    void showTouch()
+    showTechnique()
   })
   on('#calReset', () => {
     settings.edges = undefined
     save()
-    touchCal = null
-    void showTouch()
+    calMsg = ''
+    showTechnique()
   })
 }
 
+// ---------------------------------------------------------------- touch calibration
+
+let touchCal: TouchCal | null = null
+let calGot: number[][] = [[], [], []]
+let calMsg = ''
+
 /** A note-on from a real keyboard while calibrating; returns true when it was consumed. */
 function calNote(vel: number) {
-  if (!touchCal || !$('#touch').classList.contains('on')) return false // only while the Touch page is open
+  if (!touchCal || !$('#technique').classList.contains('on')) return false // only while the Technique page is open
   const c = touchCal
   calGot[c.step].push(Math.max(1, Math.round(vel * 127)))
   c.got = calGot[c.step].length
@@ -165,30 +214,16 @@ function calNote(vel: number) {
         settings.edges = e
         save()
       }
+      calMsg = e ? 'Saved. Soft, medium and hard now follow your own playing.' : 'The three levels were too close together. Play soft very gently and hard firmly, then try again.'
       touchCal = null
-      void showTouch().then(() => {
-        const p = document.createElement('p')
-        p.className = 'note'
-        p.setAttribute('role', 'status')
-        p.textContent = e ? 'Saved. Your soft, medium and hard now follow your own playing.' : 'The three levels were too close together to tell apart. Play the soft ones very gently and the hard ones firmly, then try again.'
-        $('#touch .next-strip').after(p)
-      })
-      return true
     }
   }
-  void showTouch()
+  showTechnique()
   return true
 }
 
 async function showRead() {
-  drillStats = await store.getDrill()
-  const rec = nextStage(drillStats)
-  const rows: StageRow[] = STAGES.map((stage) => {
-    const m = mastery(stage, drillStats)
-    const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
-    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === rec }
-  })
-  readView($('#read'), rows, reviewPool(drillStats).length >= 3)
+  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3)
 }
 
 async function ensureStage() {
@@ -266,6 +301,7 @@ async function openSong(song: Song, mode: Mode) {
 }
 
 function leave() {
+  void flushPractice()
   document.body.classList.remove('hush', 'zen')
   const wasDrill = !!drill
   const techSong = current?.song.id.startsWith('tech:')
@@ -312,8 +348,25 @@ function syncMode() {
 
 let last = { score: -1, combo: -1, count: 0 }
 
+// Time spent playing, per local day. It only goes up, so it can measure effort without shaming anyone.
+let sessionSec = 0
+let lastFrame = 0
+
+async function flushPractice() {
+  const sec = Math.round(sessionSec)
+  if (sec < 1) return
+  sessionSec = 0
+  await store.addPractice(dayKey(), sec)
+}
+
 function frame() {
-  game.frame(performance.now())
+  const now = performance.now()
+  if (current && (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting') && !document.hidden) {
+    sessionSec += Math.min(0.25, (now - lastFrame) / 1000)
+    if (sessionSec >= 20) void flushPractice()
+  }
+  lastFrame = now
+  game.frame(now)
   staff.frame()
   dock.frame()
   const j = game.judge
@@ -884,9 +937,9 @@ function closeDrawer() {
 
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
 $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
-$('#brand').onclick = () => (current ? leave() : void showSection('songs'))
+$('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = leave
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read' | 'technique' | 'touch')
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
   if (!b) return
@@ -981,7 +1034,7 @@ async function importFiles(files: FileList | File[]) {
       errs.push(`${f.name}: ${(err as Error).message || 'could not read this MIDI file.'}`)
     }
   }
-  if (!current) await showLibrary(errs.join(' '))
+  if (!current) await showSection('songs', errs.join(' '))
 }
 
 $('#library').addEventListener('change', (e) => {
@@ -990,19 +1043,19 @@ $('#library').addEventListener('change', (e) => {
 })
 addEventListener('dragover', (e) => {
   e.preventDefault()
-  document.querySelector('#drop')?.classList.add('over')
+  document.querySelector('#library')?.classList.add('over')
 })
-addEventListener('dragleave', () => document.querySelector('#drop')?.classList.remove('over'))
+addEventListener('dragleave', () => document.querySelector('#library')?.classList.remove('over'))
 addEventListener('drop', (e) => {
   e.preventDefault()
-  document.querySelector('#drop')?.classList.remove('over')
+  document.querySelector('#library')?.classList.remove('over')
   if (e.dataTransfer?.files.length) void importFiles(e.dataTransfer.files)
 })
 
 // ---------------------------------------------------------------- boot
 
 void (async () => {
-  await showLibrary()
+  await showSection('today')
   updateChip()
   try {
     const p = await navigator.permissions?.query({ name: 'midi' as PermissionName })

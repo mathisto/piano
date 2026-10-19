@@ -18,10 +18,11 @@ export function skeleton(app: HTMLElement) {
   <header class="bar">
     <button class="brand" id="brand" aria-label="piano — back to songs">piano</button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
-      <label><input type="radio" name="nav" value="songs" checked><span>Songs</span></label>
-      <label><input type="radio" name="nav" value="read"><span>Read music</span></label>
+      <label><input type="radio" name="nav" value="today" checked><span>Today</span></label>
+      <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>
+      <label><input type="radio" name="nav" value="read"><span>Read</span></label>
       <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
-      <label><input type="radio" name="nav" value="touch"><span>Touch</span></label>
+      <label><input type="radio" name="nav" value="progress"><span>Progress</span></label>
     </div>
     <div class="song-title" id="title"></div>
     <button class="btn" id="stagesBtn" hidden>All stages</button>
@@ -50,10 +51,11 @@ export function skeleton(app: HTMLElement) {
     <form method="dialog"><button class="btn">Close</button></form>
   </dialog>
   <main id="main" style="display:grid;min-height:0">
-    <section id="library" class="view on" aria-label="Songs"></section>
-    <section id="read" class="view" aria-label="Read music"></section>
+    <section id="today" class="view on" aria-label="Today"></section>
+    <section id="library" class="view" aria-label="Songs"></section>
+    <section id="read" class="view" aria-label="Read"></section>
     <section id="technique" class="view" aria-label="Technique"></section>
-    <section id="touch" class="view" aria-label="Touch"></section>
+    <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
       <div id="staff"></div>
       <div id="stage">
@@ -122,20 +124,19 @@ function table(caption: string, rows: Row[], empty: string) {
           (r) => `<tr class="open" data-open="${r.id}">
         <td class="thumb">${r.thumb}</td>
         <td class="name">${esc(r.title)}${r.cont ? ` <span class="tag">${r.prog?.last ? 'Continue' : 'Start here'}</span>` : ''}<small>${esc(r.sub)}</small></td>
-        <td class="num">${r.bars || '—'}</td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
         ${best ? `<td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
-          <button class="btn${r.cont ? ' primary' : ''}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}Learn</button>
+          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}Learn</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
           ${r.user ? `<button class="btn icon ghost" data-del="${r.id}" aria-label="Remove ${esc(r.title)}" title="Remove">${icon('x')}</button>` : ''}
         </div></td></tr>`,
         )
         .join('')
-    : `<tr><td colspan="7" class="empty">${empty}</td></tr>`
+    : `<tr><td colspan="6" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col style="width:156px"><col><col style="width:80px"><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:270px"></colgroup>
-    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Bars</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+    <colgroup><col style="width:156px"><col><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:270px"></colgroup>
+    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
     <tbody>${body}</tbody></table>`
 }
 
@@ -145,19 +146,15 @@ export function gradeColor(g: string) {
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
+const head = (title: string, actions = '', lede = '') =>
+  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
+
 export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
   el.innerHTML = `
-    <div class="lib-head">
-      <h1>Songs</h1>
-      <p>Pick a piece, or add your own MIDI or MusicXML file. Files stay in this browser. Nothing is uploaded.</p>
-    </div>
-    <div class="drop" id="drop">
-      <label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>
-      <span>MIDI (.mid) or MusicXML (.musicxml, .mxl). Or drop them anywhere on this page.</span>
-      <span class="err" role="alert">${esc(err)}</span>
-    </div>
+    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
+    <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
-    ${table('Your files', mine, 'Nothing yet. Public-domain scores: Mutopia Project, OpenScore, or export MIDI or MusicXML from MuseScore.')}`
+    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }
 
 // ---------- results ----------
@@ -252,14 +249,6 @@ export interface StageRow {
   next: boolean
 }
 
-const names = (s: Stage) => {
-  if (s.notes) return s.notes
-  const n = (p: number) => noteName(p)
-  if (s.size === 2) return 'Seconds to fifths'
-  if (s.size === 3) return 'Root-position triads'
-  return s.pool.length <= 3 ? s.pool.map(n).join(' · ') : `${n(Math.min(...s.pool))} to ${n(Math.max(...s.pool))}`
-}
-
 const GROUPS: [string, (id: string) => boolean][] = [
   ['Treble clef', (id) => id.startsWith('t-')],
   ['Bass clef', (id) => id.startsWith('b-')],
@@ -272,83 +261,102 @@ const meter = (pct: number, solid: boolean, label: string) =>
   `<div class="meter${solid ? ' solid' : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><i style="width:${Math.round(pct * 100)}%"></i></div>`
 
 export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) {
-  const next = rows.find((r) => r.next)!
   let group = ''
+  const timed = rows.some((r) => r.rt) // no column of dashes before the first card
   const body = rows
     .map((r) => {
       const g = GROUPS.find(([, f]) => f(r.stage.id))![0]
-      const head = g !== group ? `<tr class="band"><th colspan="5" scope="colgroup">${g}</th></tr>` : ''
+      const band = g !== group ? `<tr class="band"><th colspan="${timed ? 4 : 3}" scope="colgroup">${g}</th></tr>` : ''
       group = g
       const pct = Math.round(r.pct * 100)
-      return `${head}<tr>
+      return `${band}<tr>
         <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag">Next</span>' : ''}<small>${esc(r.stage.blurb)}</small></td>
-        <td>${esc(names(r.stage))}</td>
-        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>
-          <small style="color:var(--ink-3)">${r.solid ? 'Solid' : r.seen ? `${r.seen} of ${r.total} notes seen` : 'Not started'}</small></td>
-        <td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : '—'}</td>
-        <td class="acts"><div class="row-actions"><button class="btn" data-stage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">Practice</button></div></td></tr>`
+        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>${r.solid ? '<small style="color:var(--ink-3)">Solid</small>' : r.seen ? `<small style="color:var(--ink-3)">${r.seen} of ${r.total} seen</small>` : ''}</td>
+        ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`
     })
     .join('')
   el.innerHTML = `
-    <div class="lib-head">
-      <h1>Read music</h1>
-      <p>Short drills that train your eyes. Notes appear on the staff and the song waits for you to play them. The falling notes are hidden, so the staff is all you have.</p>
-    </div>
-    <div class="next-strip">
-      <span>Next up: <b>${esc(next.stage.name)}</b>. ${esc(next.stage.blurb)}</span>
-      <span class="row-actions">
-        ${canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}
-        <button class="btn primary" data-stage="${next.stage.id}">${icon('play')}Start</button>
-      </span>
-    </div>
-    <table class="songs stages"><caption>Stages</caption>
-      <colgroup><col><col style="width:190px"><col style="width:250px"><col style="width:130px"><col style="width:130px"></colgroup>
-      <thead><tr><th scope="col">Stage</th><th scope="col">Notes</th><th scope="col">Mastery</th><th scope="col" class="num">Median time</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+    ${head('Read', canReview ? `<button class="btn" data-review="1">Review weak notes</button>` : '', 'Play what you see. The song waits for you.')}
+    <table class="songs stages"><caption class="sr-only">Stages</caption>
+      <colgroup><col><col style="width:250px">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
+      <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`
 }
 
 const opt = (v: string | number, label: string, cur: string | number) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${label}</option>`
 
-export function techniqueView(el: HTMLElement, o: Opts) {
-  const e = settings.edges ?? DEFAULT_EDGES
-  const sel = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
-  el.innerHTML = `
-    <div class="lib-head">
-      <h1>Technique</h1>
-      <p>Scales, arpeggios and five-finger patterns with a goal for how hard to play each note, on top of timing and holding. The target for every note shows on the falling bar and the staff.</p>
-    </div>
-    <div class="tech-form">
-      ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
-      ${sel('tKey', 'Key', Object.keys(KEYS).map(Number).sort((a, b) => KEYS[a] - KEYS[b]).map((pc) => opt(pc, ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'][pc] + ' major', o.tonic)).join(''))}
-      ${sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both, an octave apart']].map(([v, l]) => opt(v, l, o.hands)).join(''))}
-      ${sel('tDyn', 'Touch', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join(''))}
-      ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} beats a minute`, o.bpm)).join(''))}
-    </div>
-    <div class="next-strip">
-      <span>Soft is 1 to <b>${e.soft}</b>, medium <b>${e.soft + 1}</b> to <b>${e.hard - 1}</b>, hard <b>${e.hard}</b> and up${settings.edges ? ' (your calibration)' : '. Set your own on the Touch page'}. The on-screen and computer keys cannot be graded for touch.</span>
-      <span class="row-actions"><button class="btn primary" id="tStart">${icon('play')}Start</button></span>
-    </div>`
-}
-
 export interface TouchCal {
   step: 0 | 1 | 2 // soft, medium, hard
   got: number // notes played in this step
-  msg?: string // outcome of the last run
 }
 
 export const CAL_STEPS = ['soft', 'medium', 'hard'] as const
 export const CAL_NOTES = 10
 
-export function touchView(el: HTMLElement, log: TouchEntry[], cal: TouchCal | null) {
+/** The player's soft, medium and hard edges, and the ten-notes-each calibration that sets them. */
+function touchStrip(cal: TouchCal | null, msg: string) {
   const e = settings.edges ?? DEFAULT_EDGES
-  const bands = `Soft up to ${e.soft} · Medium ${e.soft + 1} to ${e.hard - 1} · Hard ${e.hard} and up`
-  const strip = cal
-    ? `<span>Play <b>${CAL_NOTES} ${CAL_STEPS[cal.step]}</b> notes on your keyboard, step ${cal.step + 1} of 3: <b>${cal.got} of ${CAL_NOTES}</b></span>
+  const inner = cal
+    ? `<span>Play <b>${CAL_NOTES} ${CAL_STEPS[cal.step]}</b> notes: <b>${cal.got} of ${CAL_NOTES}</b></span>
        <span class="row-actions"><button class="btn" id="calCancel">Cancel</button></span>`
-    : `<span>Your bands: <b>${bands}</b> (${settings.edges ? 'calibrated' : 'default'}).</span>
-       <span class="row-actions">${settings.edges ? '<button class="btn" id="calReset">Use defaults</button>' : ''}<button class="btn primary" id="calStart">${icon('play')}Calibrate</button></span>`
-  const runs = log.filter((r) => r.id !== 'calibration')
+    : `<span>Touch: soft to <b>${e.soft}</b> · medium <b>${e.soft + 1}</b> to <b>${e.hard - 1}</b> · hard <b>${e.hard}</b> up${settings.edges ? '' : ' · default'}</span>
+       <span class="row-actions">${settings.edges ? '<button class="btn ghost" id="calReset">Use defaults</button>' : ''}<button class="btn" id="calStart">Calibrate</button></span>`
+  return `<div class="strip" role="status">${inner}</div>${msg ? `<p class="note" role="status">${esc(msg)}</p>` : ''}`
+}
+
+export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, msg = '') {
+  const sel = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
+  el.innerHTML = `
+    ${head('Technique', '<button class="btn primary" id="tStart">' + icon('play') + 'Start</button>')}
+    <div class="tech-form">
+      ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
+      ${sel('tKey', 'Key', Object.keys(KEYS).map(Number).sort((a, b) => KEYS[a] - KEYS[b]).map((pc) => opt(pc, ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'][pc] + ' major', o.tonic)).join(''))}
+      ${sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both, an octave apart']].map(([v, l]) => opt(v, l, o.hands)).join(''))}
+      ${sel('tDyn', 'Touch', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join(''))}
+      ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} bpm`, o.bpm)).join(''))}
+    </div>
+    ${touchStrip(cal, msg)}`
+}
+
+export interface TodayData {
+  last: { id: string; title: string; sub: string; thumb: string }
+  read: { id: string; name: string; pct: number; line: string }
+  tech: string
+  week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
+  goal: number
+}
+
+const weekBlock = (w: TodayData['week'], goal: number) => `
+  <div class="week" role="img" aria-label="${w.days.filter((d) => d.played).length} days practised this week, ${w.minutes} of ${goal} minutes">
+    ${w.days.map((d) => `<span class="day${d.played ? ' on' : ''}${d.today ? ' today' : ''}"><i></i>${d.label}</span>`).join('')}
+  </div>
+  <div class="goal"><div class="meter${w.minutes >= goal ? ' solid' : ''}"><i style="width:${Math.min(100, Math.round((w.minutes / goal) * 100))}%"></i></div><span><b>${w.minutes}</b> of ${goal} min</span></div>`
+
+export function todayView(el: HTMLElement, d: TodayData) {
+  const card = (kicker: string, body: string, action: string) => `<section class="tcard"><small class="label">${kicker}</small>${body}<div class="tact">${action}</div></section>`
+  el.innerHTML = `
+    ${head('Today')}
+    <div class="tgrid">
+      ${card('Continue', `<div class="tmain"><div class="tthumb thumb">${d.last.thumb}</div><div><b>${esc(d.last.title)}</b><span>${esc(d.last.sub)}</span></div></div>`, `<button class="btn primary" data-today="continue" data-id="${d.last.id}">${icon('play')}Continue</button>`)}
+      ${card('Read', `<div class="tmain"><div><b>${esc(d.read.name)}</b><span>${esc(d.read.line)}</span></div></div><div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, `<button class="btn" data-today="read" data-id="${d.read.id}">Practice</button>`)}
+      ${card('Technique', `<div class="tmain"><div><b>${esc(d.tech)}</b></div></div>`, `<button class="btn" data-today="tech">Start</button>`)}
+      <section class="tcard span"><small class="label">This week</small>${weekBlock(d.week, d.goal)}</section>
+    </div>`
+}
+
+export interface ProgressData {
+  week: TodayData['week']
+  goal: number
+  stages: StageRow[]
+  log: TouchEntry[]
+}
+
+export function progressView(el: HTMLElement, d: ProgressData) {
+  const solid = d.stages.filter((r) => r.solid).length
+  const runs = d.log.filter((r) => r.id !== 'calibration')
   const pts = runs.slice(-30)
+  const e = settings.edges ?? DEFAULT_EDGES
   const X = (i: number) => 8 + (pts.length > 1 ? (i / (pts.length - 1)) * 584 : 292)
   const Y = (v: number) => 146 - (v / 127) * 140
   const spark = pts.length
@@ -357,26 +365,22 @@ export function touchView(el: HTMLElement, log: TouchEntry[], cal: TouchCal | nu
         <polyline points="${pts.map((r, i) => `${X(i)},${Y(r.mean)}`).join(' ')}"/>${pts.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r.mean)}" r="3.5"/>`).join('')}</svg>`
     : ''
   const rows = runs
-    .slice(-12)
+    .slice(-8)
     .reverse()
-    .map((r) => {
-      const hand = r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : '—'
-      return `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode)}</small></td><td class="num">${r.n}</td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${hand}</td></tr>`
-    })
+    .map((r) => `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode)}</small></td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : ''}</td></tr>`)
     .join('')
   el.innerHTML = `
-    <div class="lib-head">
-      <h1>Touch</h1>
-      <p>How hard you strike the keys, from 1 to 127, kept from every song you play on a real keyboard. The on-screen and computer keys do not send a strength.</p>
-    </div>
-    <div class="next-strip" role="status">${strip}</div>
-    ${cal?.msg ? `<p class="note" role="status">${esc(cal.msg)}</p>` : ''}
-    ${spark ? `<h2 class="sec">Average touch, last ${pts.length} sessions</h2>${spark}` : ''}
-    ${
-      rows
-        ? `<table class="songs"><caption>Sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Notes</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>`
-        : '<p class="note">Nothing yet. Finish a song with a keyboard connected and its touch shows up here.</p>'
-    }`
+    ${head('Progress')}
+    <h2 class="sec">This week</h2>
+    <div class="tcard wide">${weekBlock(d.week, d.goal)}
+      <label class="field inline"><span>Weekly goal</span><select id="pGoal">${[30, 60, 90, 120, 180].map((m) => opt(m, `${m} min`, d.goal)).join('')}</select></label></div>
+    <h2 class="sec">Reading</h2>
+    <p class="note">${solid} of ${d.stages.length} stages solid.</p>
+    <table class="songs stages"><caption class="sr-only">Reading stages</caption><tbody>${d.stages
+      .map((r) => `<tr><td class="name">${esc(r.stage.name)}</td><td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${Math.round(r.pct * 100)}%</b></div></td></tr>`)
+      .join('')}</tbody></table>
+    <h2 class="sec">Touch</h2>
+    ${spark ? `${spark}<table class="songs"><caption class="sr-only">Recent sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="note">Finish a song on a real keyboard and its touch shows up here.</p>'}`
 }
 
 export interface DrillSummary {
