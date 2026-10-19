@@ -8,6 +8,7 @@ import type { Progress, Stored, TouchEntry } from './store'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
+import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { DYNS, KEYS, PATTERNS, type Opts } from './technique'
 
@@ -44,6 +45,7 @@ export function skeleton(app: HTMLElement) {
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
+  <dialog id="tracks" aria-label="Tracks"></dialog>
   <dialog id="help" aria-label="Shortcuts">
     <h2>Shortcuts</h2>
     <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
@@ -88,6 +90,7 @@ export interface Row {
   user: boolean
   thumb: string
   cont?: boolean // the one row to carry the lamp: where to go next
+  tracks?: boolean // a multi-track MIDI file whose tracks can be chosen
 }
 
 export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>, thumbs: Map<string, string>): Row[] {
@@ -103,11 +106,12 @@ export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, 
   }))
 }
 
-export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number }>, thumbs: Map<string, string>): Row[] {
+export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>, thumbs: Map<string, string>): Row[] {
   return stored.map((s) => ({
     id: s.id,
     title: s.title,
-    sub: new Date(s.added).toLocaleDateString(),
+    sub: new Date(s.added).toLocaleDateString() + ((lens.get(s.id)?.tracks?.all ?? 0) > 1 ? ` · ${lens.get(s.id)!.tracks!.used} of ${lens.get(s.id)!.tracks!.all} tracks` : ''),
+    tracks: (lens.get(s.id)?.tracks?.all ?? 0) > 1,
     bars: lens.get(s.id)?.bars ?? 0,
     len: lens.get(s.id)?.len ?? 0,
     prog: prog.get(s.id),
@@ -129,6 +133,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
+          ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Choose tracks of ${esc(r.title)}">Tracks</button>` : ''}
           ${r.user ? `<button class="btn icon ghost" data-del="${r.id}" aria-label="Remove ${esc(r.title)}" title="Remove">${icon('x')}</button>` : ''}
         </div></td></tr>`,
         )
@@ -155,6 +160,25 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
     ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
+}
+
+// ---------- choosing the tracks of a MIDI file ----------
+
+export function tracksDialog(title: string, r: Report, pick: Selection, noteName: (p: number) => string) {
+  const used = r.tracks.filter((t) => pick.tracks.includes(t.index))
+  const busy = density(used, r.bars)
+  const hand = (t: TrackInfo): string => pick.hands[t.index] ?? 'auto'
+  return `
+    <h2>${esc(title)}</h2>
+    <p class="fine" id="tkSum" role="status">${used.length} of ${r.tracks.length} tracks, up to ${busy} notes in a bar${busy > COMFORT ? '. Crowded: try fewer tracks.' : ''}</p>
+    <div class="tklist">${r.tracks
+      .map(
+        (t) => `<div class="tkrow${t.percussion ? ' perc' : ''}">
+        <label class="switch"><input type="checkbox" data-tk="${t.index}"${pick.tracks.includes(t.index) ? ' checked' : ''}><i></i><span><b>${esc(t.name)}</b><small>${esc(t.program)}${t.percussion ? ', drums' : ''} · ${t.notes} notes · ${noteName(t.lo)} to ${noteName(t.hi)}</small></span></label>
+        <select data-tkh="${t.index}" aria-label="Hand for ${esc(t.name)}"><option value="auto"${hand(t) === 'auto' ? ' selected' : ''}>Hand: by pitch</option><option value="R"${hand(t) === 'R' ? ' selected' : ''}>Right hand</option><option value="L"${hand(t) === 'L' ? ' selected' : ''}>Left hand</option></select></div>`,
+      )
+      .join('')}</div>
+    <div class="row-actions"><button class="btn ghost" id="tkAuto">Pick for me</button><button class="btn" id="tkCancel">Cancel</button><button class="btn primary" id="tkApply">Use these</button></div>`
 }
 
 // ---------- results ----------

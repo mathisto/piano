@@ -20,10 +20,11 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
+import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate } from './touch'
 import { exercise, type Opts } from './technique'
 import { weekOf, dayKey } from './week'
-import { $, CAL_NOTES, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, tracksDialog, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -63,7 +64,7 @@ let drillStats: Stats = {}
 
 // ---------------------------------------------------------------- views
 
-const lens = new Map<string, { bars: number; len: number }>()
+const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
 const thumbs = new Map<string, string>(STARTERS.map((st) => [st.spec.id, thumb(fromSpec(st.spec))]))
 
@@ -73,7 +74,12 @@ async function libraryData() {
     if (!lens.has(s.id)) {
       try {
         const song = await store.toSong(s, settings.split)
-        lens.set(s.id, { bars: song.bars.length, len: song.end })
+        let tracks
+        if (s.kind !== 'xml') {
+          const r = inspectMidi(s.bytes)
+          tracks = { all: r.tracks.filter((t) => !t.percussion).length, used: (s.pick ?? autoSelect(r)).tracks.length }
+        }
+        lens.set(s.id, { bars: song.bars.length, len: song.end, tracks })
         thumbs.set(s.id, thumb(song))
       } catch {
         lens.set(s.id, { bars: 0, len: 0 })
@@ -1017,11 +1023,56 @@ $('#library').addEventListener('click', async (e) => {
   if (!b) return
   if (b.dataset.play) {
     return void openById(b.dataset.play, b.dataset.mode as Mode)
+  } else if (b.dataset.tracks) {
+    void openTracks(b.dataset.tracks)
   } else if (b.dataset.del) {
     await store.removeSong(b.dataset.del)
     void showLibrary()
   }
 })
+
+/** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */
+async function openTracks(id: string) {
+  const s = (await store.listSongs()).find((x) => x.id === id)
+  if (!s) return
+  const r = inspectMidi(s.bytes)
+  let pick = s.pick ?? autoSelect(r)
+  const dlg = $('#tracks') as HTMLDialogElement
+  const draw = () => {
+    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName)
+    dlg.querySelectorAll<HTMLInputElement>('input[data-tk]').forEach((c) => {
+      c.onchange = () => {
+        const i = Number(c.dataset.tk)
+        pick = { ...pick, tracks: c.checked ? [...pick.tracks, i] : pick.tracks.filter((x) => x !== i) }
+        draw()
+      }
+    })
+    dlg.querySelectorAll<HTMLSelectElement>('select[data-tkh]').forEach((sel) => {
+      sel.onchange = () => {
+        const i = Number(sel.dataset.tkh)
+        const hands = { ...pick.hands }
+        if (sel.value === 'auto') delete hands[i]
+        else hands[i] = sel.value as 'R' | 'L'
+        pick = { ...pick, hands }
+      }
+    })
+    $('#tkAuto', dlg).onclick = () => {
+      pick = autoSelect(r)
+      draw()
+    }
+    $('#tkCancel', dlg).onclick = () => dlg.close()
+    $('#tkApply', dlg).onclick = async () => {
+      if (!pick.tracks.length) return
+      await store.setPick(id, pick)
+      lens.delete(id)
+      thumbs.delete(id)
+      dlg.close()
+      void showLibrary()
+    }
+  }
+  draw()
+  dlg.showModal()
+}
 
 async function openById(id: string, mode: Mode) {
   const i = STARTERS.findIndex((s) => s.spec.id === id)

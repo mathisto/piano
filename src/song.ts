@@ -1,4 +1,5 @@
 import { Midi } from '@tonejs/midi'
+import type { Selection } from './midi-tracks'
 
 export type Hand = 'R' | 'L'
 
@@ -145,13 +146,13 @@ export function estimateFifths(raw: { p: number; d: number }[]): number {
   return best.f
 }
 
-export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60): Song {
+export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection): Song {
   const midi = new Midi(buf)
   const raw: Raw[] = []
   midi.tracks.forEach((tr, track) => {
-    if (tr.instrument.percussion) return
+    if (pick ? !pick.tracks.includes(track) : tr.instrument.percussion) return
     for (const n of tr.notes) {
-      raw.push({ t: n.time, d: Math.max(n.duration, 0.03), p: n.midi, v: n.velocity, track })
+      raw.push({ t: n.time, d: Math.max(n.duration, 0.03), p: n.midi, v: n.velocity, track, h: pick?.hands[track] })
     }
   })
   if (!raw.length) throw new Error('No notes found in this file.')
