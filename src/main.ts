@@ -111,7 +111,6 @@ function view(name: (typeof SECTIONS)[number]) {
   for (const v of SECTIONS) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'
   $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
-  $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#hud').hidden = name !== 'play'
   if (name !== 'play') $('#title').textContent = ''
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
@@ -407,11 +406,16 @@ function leave() {
 /** Show the panes the view asks for: staff only, both, or falling notes only. */
 function applyLayout() {
   const v = game.view
+  const p = $('#play')
   $('#staff').hidden = v === 'falling'
-  $('#play').classList.toggle('v-sheet', v === 'sheet')
-  $('#play').classList.toggle('v-falling', v === 'falling')
-  $('#viewSeg').hidden = !current || game.mode === 'read'
-  ;($(`input[name=view][value=${settings.view}]`) as HTMLInputElement).checked = true
+  p.classList.toggle('v-sheet', v === 'sheet')
+  p.classList.toggle('v-falling', v === 'falling')
+  p.style.setProperty('--pa', `${settings.pane * 100}fr`)
+  p.style.setProperty('--pb', `${(1 - settings.pane) * 100}fr`)
+  const sp = $('#split')
+  sp.hidden = !current || game.mode === 'read'
+  sp.setAttribute('aria-valuenow', String(Math.round((v === 'falling' ? 0 : v === 'sheet' ? 1 : settings.pane) * 100)))
+  sp.setAttribute('aria-valuetext', v === 'both' ? 'Sheet music and falling notes' : v === 'sheet' ? 'Sheet music only' : 'Falling notes only')
 }
 
 function setView(v: 'both' | 'sheet' | 'falling') {
@@ -420,6 +424,58 @@ function setView(v: 'both' | 'sheet' | 'falling') {
   applyLayout()
   staff.render()
   highway.layout() // the stage changed size: the resize observer follows, this makes it immediate
+}
+
+// The divider between the staff and the falling notes: drag it, and an end of the track shows one pane alone.
+const PANE = { min: 0.26, max: 0.72, def: 0.4, falling: 0.17, sheet: 0.8 }
+const dragFrom = { top: 0, total: 1, y: 0, moved: false }
+
+/** Place the divider at `p`, the staff's share of the room: between the stops both panes show, past them one pane. */
+function setPane(p: number) {
+  const v = p < PANE.falling ? 'falling' : p > PANE.sheet ? 'sheet' : 'both'
+  if (v === 'both') settings.pane = Math.min(PANE.max, Math.max(PANE.min, p))
+  if (v !== settings.view) setView(v)
+  else applyLayout()
+}
+
+/** One step by keyboard: down and up walk through falling only, both with the pane resized, and sheet only. */
+function nudge(dir: 1 | -1) {
+  const v = settings.view
+  if (v === 'falling') return dir > 0 ? setPane(PANE.def) : undefined
+  if (v === 'sheet') return dir < 0 ? setPane(PANE.def) : undefined
+  const p = settings.pane + dir * 0.06
+  setPane(p < PANE.min ? 0 : p > PANE.max ? 1 : p)
+  save()
+}
+
+{
+  const sp = $('#split')
+  sp.onpointerdown = (e) => {
+    sp.setPointerCapture(e.pointerId)
+    sp.classList.add('drag')
+    const top = ($('#staff').hidden ? sp : $('#staff')).getBoundingClientRect().top
+    const h = sp.offsetHeight
+    Object.assign(dragFrom, { top: top + h / 2, total: $('#stage').getBoundingClientRect().bottom - top - h, y: e.clientY, moved: false })
+  }
+  sp.onpointermove = (e) => {
+    if (!sp.hasPointerCapture(e.pointerId)) return
+    if (Math.abs(e.clientY - dragFrom.y) > 4) dragFrom.moved = true
+    if (dragFrom.moved) setPane((e.clientY - dragFrom.top) / dragFrom.total)
+  }
+  sp.onpointerup = sp.onpointercancel = () => {
+    sp.classList.remove('drag')
+    if (!dragFrom.moved && settings.view !== 'both') setPane(PANE.def) // a tap on a collapsed edge brings the other pane back
+    save()
+  }
+  sp.ondblclick = () => {
+    setPane(PANE.def)
+    save()
+  }
+  sp.onkeydown = (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+    e.preventDefault()
+    nudge(e.key === 'ArrowDown' ? 1 : -1)
+  }
 }
 
 function syncMode() {
@@ -1100,8 +1156,6 @@ function chooseMode(mode: Mode) {
 }
 
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) r.onchange = () => chooseMode(r.value as Mode)
-
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=view]')) r.onchange = () => setView(r.value as 'both' | 'sheet' | 'falling')
 
 addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement

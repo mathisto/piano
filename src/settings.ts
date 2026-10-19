@@ -15,7 +15,8 @@ export interface Settings {
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
   strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
-  view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
+  view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
+  pane: number // the staff's share of the room when both show, 0..1
   offset: number // ms, from calibration
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
@@ -38,6 +39,7 @@ const DEFAULTS: Settings = {
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
   full: false,
   view: 'both',
+  pane: 0.4,
   offset: 0,
   split: 60,
   device: '',
