@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "ios": "npm run build && cap sync ios && cap open ios",
-    "ios:sync": "npm run build && cap sync ios"
+    "ios:sync": "npm run build && cap sync ios",
+    "library:fetch": "node scripts/fetch-library.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",

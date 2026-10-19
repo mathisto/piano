@@ -1,0 +1,409 @@
+{
+ "allow": [
+  "Public Domain",
+  "CC0-1.0",
+  "CC-BY-4.0",
+  "CC-BY-3.0",
+  "CC-BY-2.5",
+  "CC-BY-SA-4.0",
+  "CC-BY-SA-3.0",
+  "CC-BY-SA-2.5"
+ ],
+ "pieces": [
+  {
+   "src": "mutopia",
+   "id": "mutopia-75",
+   "piece": 75,
+   "level": "Beginner",
+   "title": "Minuet in G, BWV Anh. 114",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "fd87a6673e18104047842a1c858d2c9d8eb9ad845d7a8fa46e3664b17642cb75"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1613",
+   "piece": 1613,
+   "level": "Beginner",
+   "title": "Minuet in C minor, BWV Anh. 121",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "197d23ad4db1d3d6bb1963d3898e1cb0a4419d8078fbd34f9e9a1210357f1485"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1612",
+   "piece": 1612,
+   "level": "Beginner",
+   "title": "Minuet in A minor, BWV Anh. 120",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "0946fa8ab89a3340e53edacb213bbc3e21e45522057b062614ccdfc8e99ffc66"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-79",
+   "piece": 79,
+   "level": "Beginner",
+   "title": "Musette in D, BWV Anh. 126",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "3b03c3939b767a0d46b77eba058d6decc0f191bfb1aa81a1a3bafc9c49098275"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-202",
+   "piece": 202,
+   "level": "Elementary",
+   "title": "La Candeur, Op. 100 No. 1",
+   "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
+   "licence": "Public Domain",
+   "sha256": "ad185dbf3cb7e3e187cbe6e38c5ead706cf375b9d441f7191429027436b2a8e4"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-2146",
+   "piece": 2146,
+   "level": "Elementary",
+   "title": "Melodic Study, Op. 840 No. 1",
+   "composer": "Carl Czerny (1791–1857)",
+   "licence": "Public Domain",
+   "sha256": "6ee0bf432211a3e3372ea67266a255d99b0cf9db5ad35ba6dd2787e06b087f14"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-354",
+   "piece": 354,
+   "level": "Elementary",
+   "title": "Of Foreign Lands and People, Op. 15 No. 1",
+   "composer": "Robert Schumann (1810–1856)",
+   "licence": "Public Domain",
+   "sha256": "e58e708afe8b31c634a0e9f3354a4ed94670e929d82926f7ff49dea3ebe146c2"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-2032",
+   "piece": 2032,
+   "level": "Elementary",
+   "title": "Morning Prayer, Op. 39 No. 1",
+   "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
+   "licence": "Public Domain",
+   "sha256": "7ec37d25e8ea12d0b2053a5916140f7d03b4cdf1357c01171fd8a3c1d8c6e50f"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-214",
+   "piece": 214,
+   "level": "Elementary",
+   "title": "Innocence, Op. 100 No. 5",
+   "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
+   "licence": "Public Domain",
+   "sha256": "39768b50abb623d24986b0e3993518ca92a6f1340d6154fc092f218cb6b97fee"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-218",
+   "piece": 218,
+   "level": "Elementary",
+   "title": "La Pastorale, Op. 100 No. 3",
+   "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
+   "licence": "Public Domain",
+   "sha256": "192500ee12358537bf92811064ee4ad0b680c78302d5762175a3c32fe573a577"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-232",
+   "piece": 232,
+   "level": "Elementary",
+   "title": "Sonatina in C, Op. 20 No. 1: Allegro",
+   "composer": "Friedrich Kuhlau (1786–1832)",
+   "licence": "Public Domain",
+   "sha256": "d105169497a3bf92ee134c65c78eef1e5e7192fa53f2e9fedd4115681fa5a692"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1806",
+   "piece": 1806,
+   "level": "Elementary",
+   "title": "March of the Wooden Soldiers, Op. 39 No. 5",
+   "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
+   "licence": "Public Domain",
+   "sha256": "a9717d793785c3c702d85e20f99a81de60faedd29fc4e7dcb240fbc99a9b0d2b"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-221",
+   "piece": 221,
+   "level": "Elementary",
+   "title": "Tendre Fleur, Op. 100 No. 10",
+   "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
+   "licence": "Public Domain",
+   "sha256": "58dd9eec57bfcb7fb8a924530e8f6c1e1599a02fc10cc4f79ae6d1ef6e2a0c85"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-203",
+   "piece": 203,
+   "level": "Elementary",
+   "title": "L'Arabesque, Op. 100 No. 2",
+   "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
+   "licence": "Public Domain",
+   "sha256": "9b689a9b3f178e7bb2b5899d0559e223e9d8de7081d83fc087760ac2b4d378e1"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-2080",
+   "piece": 2080,
+   "level": "Elementary",
+   "title": "Old French Song, Op. 39 No. 16",
+   "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
+   "licence": "Public Domain",
+   "sha256": "112c3b61dab55f58bc44d9f3522ef21b3479ffa1953097783ff8c4f10e40175d"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-647",
+   "piece": 647,
+   "level": "Elementary",
+   "title": "Melodie, Op. 68 No. 1",
+   "composer": "Robert Schumann (1810–1856)",
+   "licence": "CC-BY-SA-2.5",
+   "sha256": "f05a2e1f1fa397f4617d13d6b7bf679550ad9ae8032ed8c6b0f8446d519f5419"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-470",
+   "piece": 470,
+   "level": "Elementary",
+   "title": "Prelude in A major, Op. 28 No. 7",
+   "composer": "Frédéric Chopin (1810–1849)",
+   "licence": "Public Domain",
+   "sha256": "6eed7f2185afd852f01d695e50db84cdb4c8742de1a26294dc3202569346ef36"
+  },
+  {
+   "src": "openscore-lieder",
+   "id": "lieder-lc5701612",
+   "path": "scores/Brahms,_Johannes/5_Lieder,_Op.49/4_Wiegenlied/lc5701612.mxl",
+   "dropParts": [
+    "P1"
+   ],
+   "level": "Elementary",
+   "title": "Wiegenlied (Lullaby), Op. 49 No. 4: piano part",
+   "composer": "Johannes Brahms (1833–1897)",
+   "licence": "CC0-1.0",
+   "sha256": "5867b883ba1d159f234a3764a0f3f467afdd78cf6ee4698bca17d52d3a4f65db"
+  },
+  {
+   "src": "openscore-lieder",
+   "id": "lieder-lc5004731",
+   "path": "scores/Schubert,_Franz/Die_schöne_Müllerin,_D.795/01_Das_Wandern/lc5004731.mxl",
+   "dropParts": [
+    "P1"
+   ],
+   "level": "Elementary",
+   "title": "Das Wandern, D. 795 No. 1: piano part",
+   "composer": "Franz Schubert (1797–1828)",
+   "licence": "CC0-1.0",
+   "sha256": "380d5fe74a98c456292565d9be8f51877fa0b34a424ebdd11471cd7f2f6001b2"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-998",
+   "piece": 998,
+   "level": "Intermediate",
+   "title": "Sonata Facile, K. 545: First movement",
+   "composer": "Wolfgang Amadeus Mozart (1756–1791)",
+   "licence": "CC-BY-SA-3.0",
+   "sha256": "54e510ba1e5865aeedc4e96bf70b83c93ecddf5b66660033ef98a5a8204ab02d"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-67",
+   "piece": 67,
+   "level": "Intermediate",
+   "title": "Invention No. 4 in D minor, BWV 775",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "5ecc06eb04d56ea40bd4db64bfd49ac9bff523e46d134912fa5bd07aea1db1c7"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-61",
+   "piece": 61,
+   "level": "Intermediate",
+   "title": "Invention No. 8 in F major, BWV 779",
+   "composer": "J. S. Bach (1685–1750)",
+   "licence": "Public Domain",
+   "sha256": "07238719180171f76283756405ee43a0319226e869283bf29affb9e4c360e6f8"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-37",
+   "piece": 37,
+   "level": "Intermediate",
+   "title": "Gymnopédie No. 1",
+   "composer": "Erik Satie (1866–1925)",
+   "licence": "Public Domain",
+   "sha256": "09ce7337b4bf42ba12e1aa64b4c7dc7fcfa6455f1070cb12f8880a755df97384"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-2035",
+   "piece": 2035,
+   "level": "Intermediate",
+   "title": "Gnossienne No. 1",
+   "composer": "Erik Satie (1866–1925)",
+   "licence": "CC-BY-SA-4.0",
+   "sha256": "f49fc6c6653295e09350d64479d09b4c31091aa5dade81f2494383ab7e71708a"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-469",
+   "piece": 469,
+   "level": "Intermediate",
+   "title": "Prelude in B minor, Op. 28 No. 6",
+   "composer": "Frédéric Chopin (1810–1849)",
+   "licence": "Public Domain",
+   "sha256": "b9328cbeaa149c49eab925794e94f3b95f579a41e4d9c781c953aad0b940bf63"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-468",
+   "piece": 468,
+   "level": "Intermediate",
+   "title": "Prelude in E minor, Op. 28 No. 4",
+   "composer": "Frédéric Chopin (1810–1849)",
+   "licence": "Public Domain",
+   "sha256": "c1d7e05aa4e6e2baeec2e9108402a969c16d5df302b82fd66d110634697f2e3b"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-504",
+   "piece": 504,
+   "level": "Intermediate",
+   "title": "Träumerei, Op. 15 No. 7",
+   "composer": "Robert Schumann (1810–1856)",
+   "licence": "Public Domain",
+   "sha256": "6e0045d5783ff28dedcf05813074fe407ca3846e5e2a7246f2793ac5614e4851"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-931",
+   "piece": 931,
+   "level": "Intermediate",
+   "title": "Für Elise, WoO 59",
+   "composer": "Ludwig van Beethoven (1770–1827)",
+   "licence": "Public Domain",
+   "sha256": "1c12c21c7bbf4cf163896732672648a69d497636059837abd153c71abe50215a"
+  },
+  {
+   "src": "openscore-lieder",
+   "id": "lieder-lc4976849",
+   "path": "scores/Schumann,_Robert/Dichterliebe,_Op.48/03_Die_Rose,_die_Lilie/lc4976849.mxl",
+   "dropParts": [
+    "P1"
+   ],
+   "level": "Intermediate",
+   "title": "Die Rose, die Lilie, Op. 48 No. 3: piano part",
+   "composer": "Robert Schumann (1810–1856)",
+   "licence": "CC0-1.0",
+   "sha256": "c9fba958731ac7d5c72aa1b26eae62cc30f4dca4f9959e67ccf4551eecf110e8"
+  },
+  {
+   "src": "openscore-lieder",
+   "id": "lieder-lc6917116",
+   "path": "scores/Schumann,_Robert/Myrthen,_Op.25/14_Hochländisches_Wiegenlied/lc6917116.mxl",
+   "dropParts": [
+    "P1"
+   ],
+   "level": "Intermediate",
+   "title": "Hochländisches Wiegenlied, Op. 25 No. 14: piano part",
+   "composer": "Robert Schumann (1810–1856)",
+   "licence": "CC0-1.0",
+   "sha256": "aa5f378c2cd152e147ce158de2688da7bd6fef08bb2789d4b44526bd28e53624"
+  },
+  {
+   "src": "openscore-lieder",
+   "id": "lieder-lc6180725",
+   "path": "scores/Schubert,_Franz/_/An_die_Musik,_D.547/lc6180725.mxl",
+   "dropParts": [
+    "P1"
+   ],
+   "level": "Intermediate",
+   "title": "An die Musik, D. 547: piano part",
+   "composer": "Franz Schubert (1797–1828)",
+   "licence": "CC0-1.0",
+   "sha256": "4c7b0331cb2785ccbd0779be5396bb2faafef2e8a47f8e0aec96e0cb8ccd4984"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-263",
+   "piece": 263,
+   "level": "Intermediate",
+   "title": "The Entertainer",
+   "composer": "Scott Joplin (1868–1917)",
+   "licence": "Public Domain",
+   "sha256": "33e4e81ee64ffb2edf90d1c6a1ddee7276507296bfb915c2bb775231a467f066"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1540",
+   "piece": 1540,
+   "level": "Intermediate",
+   "title": "Elite Syncopations",
+   "composer": "Scott Joplin (1868–1917)",
+   "licence": "Public Domain",
+   "sha256": "28e41b9b3d0afd3de70c0de56dba9c34e4ff05b21a14939f0fdf0b181d856fc9"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1888",
+   "piece": 1888,
+   "level": "Intermediate",
+   "title": "In the Hall of the Mountain King, Op. 46 No. 4",
+   "composer": "Edvard Grieg (1843–1907)",
+   "licence": "Public Domain",
+   "sha256": "0c256a809b5af1faef81b6aad6106088a71d76b12435d5f0775d4ceee60c917e"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1777",
+   "piece": 1777,
+   "level": "Intermediate",
+   "title": "Première Arabesque",
+   "composer": "Claude Debussy (1862–1918)",
+   "licence": "Public Domain",
+   "sha256": "6732dc10799ec0af47d19d9095562d0671864a750129e0279901def169a34757"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-1778",
+   "piece": 1778,
+   "level": "Intermediate",
+   "title": "Clair de lune (Suite bergamasque)",
+   "composer": "Claude Debussy (1862–1918)",
+   "licence": "Public Domain",
+   "sha256": "4eee9a1546ffde1ff74cb9824ba0e57cbc821185a15185bfea9faed97820bf8c"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-471",
+   "piece": 471,
+   "level": "Intermediate",
+   "title": "Prelude in D-flat major, Op. 28 No. 15 (Raindrop)",
+   "composer": "Frédéric Chopin (1810–1849)",
+   "licence": "Public Domain",
+   "sha256": "bb9532e59bee378a42f0c53b64bf223ba4d6e261e00c1e2efb3ed8e023833bd9"
+  },
+  {
+   "src": "mutopia",
+   "id": "mutopia-463",
+   "piece": 463,
+   "level": "Intermediate",
+   "title": "Bethena",
+   "composer": "Scott Joplin (1868–1917)",
+   "licence": "Public Domain",
+   "sha256": "7e4c0b5a9402f112b90a8bf39558bc781f1909e9a023878f850456b9eda3390f"
+  }
+ ]
+}
