@@ -1,3 +1,4 @@
+import { PIANO, instrument, type Instrument } from './instruments'
 import { settings } from './settings'
 
 let ctx: AudioContext | undefined
@@ -6,6 +7,7 @@ let master: GainNode | undefined
 interface Voice {
   g: GainNode
   end: (when: number) => void
+  release: number // damper time on key-up
 }
 const voices = new Map<number, Voice>() // by pitch, oldest first
 
@@ -21,49 +23,51 @@ function ready(): AudioContext {
   return ctx
 }
 
-// ---- sampled grand piano: Salamander V3, one recording every third semitone, pitched to fit ----
+// ---- sampled instruments (instruments.ts): one recording every third semitone, pitched to fit ----
 
-const NAMES: [string, number][] = [['C', 0], ['Ds', 3], ['Fs', 6], ['A', 9]]
-export const ROOTS: { name: string; midi: number }[] = [
-  { name: 'A0', midi: 21 },
-  ...[1, 2, 3, 4, 5, 6, 7].flatMap((o) => NAMES.map(([n, pc]) => ({ name: `${n}${o}`, midi: 12 * (o + 1) + pc }))),
-  { name: 'C8', midi: 108 },
-]
+export const ROOTS = PIANO.roots
 
 /** The recording closest to a pitch, and the playback rate that bends it there. */
-export function pickSample(p: number): { name: string; rate: number } {
-  const r = ROOTS.reduce((a, b) => (Math.abs(b.midi - p) < Math.abs(a.midi - p) ? b : a))
-  return { name: r.name, rate: 2 ** ((p - r.midi) / 12) }
+export function pickSample(p: number, inst: Instrument = PIANO): { name: string; rate: number; loop?: [number, number] } {
+  const r = inst.roots.reduce((a, b) => (Math.abs(b.midi - p) < Math.abs(a.midi - p) ? b : a))
+  return { name: r.name, rate: 2 ** ((p - r.midi) / 12), loop: r.loop }
 }
 
-const buffers = new Map<string, AudioBuffer>()
-export const piano = { state: 'idle' as 'idle' | 'loading' | 'ready' | 'failed' }
-let loading: Promise<void> | undefined
+type State = 'idle' | 'loading' | 'ready' | 'failed'
+const buffers = new Map<string, AudioBuffer>() // by "folder/name"
+const states = new Map<string, State>()
+const loading = new Map<string, Promise<void>>()
+export const loadState = (id: string): State => states.get(id) ?? 'idle'
 
-/** Fetch and decode the piano (about 2 MB). Until it lands, the simple synth covers. */
-export function preload(): Promise<void> {
-  if (settings.instrument !== 'piano') return Promise.resolve()
-  loading ??= (async () => {
-    piano.state = 'loading'
-    const c = ready()
-    const base = `${import.meta.env.BASE_URL}samples/salamander/`
-    let ok = 0
-    await Promise.all(
-      ROOTS.map(async (r) => {
-        try {
-          const res = await fetch(`${base}${r.name}.mp3`)
-          if (!res.ok) throw new Error(String(res.status))
-          buffers.set(r.name, await c.decodeAudioData(await res.arrayBuffer()))
-          ok++
-        } catch {
-          /* a missing sample falls back to its neighbour's synth voice */
-        }
-      }),
-    )
-    piano.state = ok === ROOTS.length ? 'ready' : ok ? 'ready' : 'failed'
-    if (!ok) loading = undefined // let a later try fetch again
-  })()
-  return loading
+/** Fetch and decode an instrument (the piano is about 2 MB, the rest under 500 KB), only when it is wanted. Until it lands, the simple synth covers; a failed load leaves the synth in charge. */
+export function preload(id = settings.instrument): Promise<void> {
+  const inst = instrument(id)
+  if (!inst.base) return Promise.resolve()
+  let p = loading.get(inst.id)
+  if (!p) {
+    p = (async () => {
+      states.set(inst.id, 'loading')
+      const c = ready()
+      const base = `${import.meta.env.BASE_URL}samples/${inst.base}/`
+      let ok = 0
+      await Promise.all(
+        inst.roots.map(async (r) => {
+          try {
+            const res = await fetch(`${base}${r.name}.mp3`)
+            if (!res.ok) throw new Error(String(res.status))
+            buffers.set(`${inst.base}/${r.name}`, await c.decodeAudioData(await res.arrayBuffer()))
+            ok++
+          } catch {
+            /* a missing sample falls back to the synth for that note */
+          }
+        }),
+      )
+      states.set(inst.id, ok ? 'ready' : 'failed')
+      if (!ok) loading.delete(inst.id) // let a later try fetch again
+    })()
+    loading.set(inst.id, p)
+  }
+  return p
 }
 
 /** Call from a user gesture so the browser lets us make sound. */
@@ -88,28 +92,34 @@ export function click(accent: boolean) {
   o.stop(c.currentTime + 0.09)
 }
 
-function sampleVoice(c: AudioContext, p: number, vel: number): Voice | undefined {
-  const s = pickSample(p)
-  const buf = buffers.get(s.name)
+function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number): Voice | undefined {
+  const s = pickSample(p, inst)
+  const buf = buffers.get(`${inst.base}/${s.name}`)
   if (!buf) return undefined
   const src = c.createBufferSource()
   src.buffer = buf
   src.playbackRate.value = s.rate
+  if (s.loop) {
+    src.loop = true
+    ;[src.loopStart, src.loopEnd] = s.loop
+    src.stop(c.currentTime + 30) // ponytail: a note nobody releases stops after 30 s instead of droning on
+  }
+  const k = inst.dyn
   const lp = c.createBiquadFilter() // soft hits are darker, hard hits brighter
   lp.type = 'lowpass'
-  lp.frequency.value = 2500 + 12000 * vel
+  lp.frequency.value = 2500 + 12000 * (1 - k + k * vel)
   const g = c.createGain()
-  g.gain.value = 0.12 + 0.88 * vel ** 1.6
+  g.gain.value = inst.gain * (1 - k + k * (0.12 + 0.88 * vel ** 1.6))
   src.connect(lp).connect(g).connect(master!)
   src.start()
   src.onended = () => {
     if (voices.get(p)?.g === g) voices.delete(p)
     g.disconnect()
   }
-  return { g, end: (t) => src.stop(t) }
+  return { g, end: (t) => src.stop(t), release: inst.release }
 }
 
-// ponytail: two-partial synth, kept as the fallback while the piano loads and as a second instrument choice.
+// ponytail: two-partial synth, kept as the fallback while a sampled instrument loads and as an instrument choice of its own.
 function synthVoice(c: AudioContext, p: number, vel: number): Voice {
   const f = 440 * 2 ** ((p - 69) / 12)
   const g = c.createGain()
@@ -138,7 +148,7 @@ function synthVoice(c: AudioContext, p: number, vel: number): Voice {
   }
   a.stop(c.currentTime + decay + 0.05)
   b.stop(c.currentTime + decay + 0.05)
-  return { g, end: (t) => (a.stop(t), b.stop(t)) }
+  return { g, end: (t) => (a.stop(t), b.stop(t)), release: 0.3 }
 }
 
 export function noteOn(p: number, vel: number, force = false) {
@@ -146,8 +156,9 @@ export function noteOn(p: number, vel: number, force = false) {
   const c = ready()
   noteOff(p, true)
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
-  void preload()
-  const v = (settings.instrument === 'piano' ? sampleVoice(c, p, vel) : undefined) ?? synthVoice(c, p, vel)
+  const inst = instrument(settings.instrument)
+  void preload(inst.id)
+  const v = sampleVoice(c, inst, p, vel) ?? synthVoice(c, p, vel)
   voices.set(p, v)
 }
 
@@ -157,9 +168,9 @@ export function noteOff(p: number, hard = false) {
   const t = ctx.currentTime
   v.g.gain.cancelScheduledValues(t)
   v.g.gain.setValueAtTime(v.g.gain.value, t)
-  v.g.gain.exponentialRampToValueAtTime(0.0005, t + (hard ? 0.02 : 0.3)) // the damper
+  v.g.gain.exponentialRampToValueAtTime(0.0005, t + (hard ? 0.02 : v.release)) // the damper
   try {
-    v.end(t + (hard ? 0.03 : 0.35))
+    v.end(t + (hard ? 0.03 : v.release + 0.05))
   } catch {
     /* already stopped */
   }

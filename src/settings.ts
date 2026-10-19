@@ -1,9 +1,10 @@
+import { instrumentId } from './instruments'
 import type { Opts } from './technique'
 export interface Settings {
   fx: 0 | 1 | 2 // effects: off, calm, arcade
   fall: number // seconds of look-ahead on the highway
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
-  instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
+  instrument: string // an id from instruments.ts: grand piano (default), other sampled instruments, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
@@ -52,6 +53,7 @@ function load(): Settings {
     if (saved.fx > 2) saved.fx = 2 // the Max tier is gone
     if (!saved.strict && saved.hold) saved.strict = saved.hold === 'off' ? 'easy' : saved.hold === 'strict' ? 'strict' : 'standard'
     delete saved.hold
+    saved.instrument = instrumentId(saved.instrument)
     delete saved.chord
     return { ...DEFAULTS, ...saved }
   } catch {

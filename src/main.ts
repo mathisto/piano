@@ -995,9 +995,9 @@ function openDrawer() {
     if (highway) highway.layout()
   }, 'change')
   on('#sInst', (el) => {
-    settings.instrument = el.value as 'piano' | 'synth'
+    settings.instrument = el.value
     save()
-    if (settings.instrument === 'piano') void audio.preload().then(openDrawer) // shows the failure line if the samples did not load
+    void audio.preload().then(openDrawer) // shows the failure line if the samples did not load
   }, 'change')
   on('#sVol', (el) => {
     settings.volume = Number(el.value)
