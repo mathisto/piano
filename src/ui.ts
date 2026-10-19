@@ -140,7 +140,7 @@ function table(caption: string, rows: Row[], empty: string) {
         </div></td></tr>`,
         )
         .join('')
-    : `<tr><td colspan="6" class="empty">${empty}</td></tr>`
+    : `<tr><td colspan="${best ? 5 : 4}" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
     <colgroup><col style="width:156px"><col><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:320px"></colgroup>
     <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>

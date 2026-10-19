@@ -490,9 +490,8 @@ input[type='range']::-moz-range-thumb {
   gap: 8px;
 }
 .err {
-  margin: 0 0 12px;
+  margin: 0 0 24px;
   color: var(--bad);
-  min-height: 0;
 }
 .err:empty {
   display: none;
