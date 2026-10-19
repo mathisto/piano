@@ -514,16 +514,16 @@ export class Staff {
   }
 
   /** The grade as a word above the note, for staff-only view where there is no highway to show it. */
-  grade(noteId: number, grade: string, off: number) {
+  grade(noteId: number, grade: string | null, off: number, touch?: string) {
     const p = this.byId.get(noteId)
     if (!p?.head) return
     const staffTop = p.dy + this.base[this.clefs[0]] - 4 * S - 12
     // clear of the highest ink on the page (beams, stems, ledger lines), but inside the view
     const ink = (this.svg.querySelector('.notes') as SVGGraphicsElement | null)?.getBBox().y ?? staffTop
     const y = Math.max(16, Math.min(staffTop, ink - 10))
-    const word = grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : 'Good'
-    const arrow = grade === 'perfect' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
-    const t = el('text', { class: 'gr', 'data-g': grade, x: Number(p.head.getAttribute('x')), y }, this.svg, word + arrow)
+    const word = grade ? (grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : 'Good') : ''
+    const arrow = !grade || grade === 'perfect' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
+    const t = el('text', { class: 'gr', 'data-g': grade ?? (touch === 'touch ✓' ? 'perfect' : 'good'), x: Number(p.head.getAttribute('x')), y }, this.svg, [word + arrow, touch].filter(Boolean).join(' · '))
     t.setAttribute('aria-hidden', 'true')
     t.addEventListener('animationend', () => t.remove())
   }

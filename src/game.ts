@@ -1,6 +1,6 @@
 import * as audio from './audio'
 import { velStats, type TouchStats } from './touch'
-import { Judge, type Ev, type Grade, type HoldGrade } from './judge'
+import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
 import { barAt, type Note, type Song } from './song'
 
@@ -15,6 +15,7 @@ export interface Result {
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
+  touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
   holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
   offs: number[]
@@ -25,8 +26,8 @@ export interface Result {
 }
 
 export type GameEvent =
-  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number }
-  | { type: 'ok'; note: Note; rt: number; clean: boolean } // rt: ms the song waited on this card (0 if you were ahead)
+  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade }
+  | { type: 'ok'; note: Note; rt: number; clean: boolean; vel?: VelGrade } // rt: ms the song waited on this card (0 if you were ahead)
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'milestone'; combo: number }
@@ -291,6 +292,7 @@ export class Game {
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
+      touchPct: j.touchPct,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
@@ -313,13 +315,13 @@ export class Game {
       if (e.k === 'hit') {
         const note = this.song.notes[e.i]
         this.offs.push(e.off)
-        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult })
+        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel })
         if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
-        this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean })
+        this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel })
       } else if (e.k === 'hold') {
         this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
       } else if (e.k === 'miss') {

@@ -11,7 +11,7 @@ import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
-import { multiplier, type Grade } from './judge'
+import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
@@ -329,14 +329,19 @@ function frame() {
 
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
 
-function popup(grade: Grade, off: number, p: number, noteId: number) {
+const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
+
+/** `grade` is null in wait mode, where only the touch has a verdict. */
+function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?: VelGrade) {
   if (game.view === 'sheet') {
-    if (grade !== 'miss') staff.grade(noteId, grade, off) // the grade, as a word on the staff
+    if (grade !== 'miss') staff.grade(noteId, grade, off, vel && TOUCH[vel]) // the grade, as a word on the staff
     return
   }
   const el = $('#judge')
-  el.dataset.g = grade
-  el.innerHTML = `${WORDS[grade]}<small>${grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'}</small>`
+  el.dataset.g = grade ?? (vel === 'ok' ? 'perfect' : 'good')
+  const timing = grade === null || grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'
+  const touch = vel ? TOUCH[vel] : ''
+  el.innerHTML = `${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
   const x = Math.min(highway.W - 90, Math.max(90, highway.center(p)))
   el.style.left = `${x}px`
   el.style.top = `${highway.recY - 96}px`
@@ -400,12 +405,13 @@ game.on((e: GameEvent) => {
       highway.hit(e.note.p, e.grade, e.note.h)
       staff.ghostHit(e.note.p, e.note.id, e.grade)
       staff.mark(e.note.id, `hit-${e.grade}`)
-      popup(e.grade, e.off, e.note.p, e.note.id)
+      popup(e.grade, e.off, e.note.p, e.note.id, e.vel)
       break
     case 'ok':
       highway.hit(e.note.p, 'ok', e.note.h)
       staff.ghostHit(e.note.p, e.note.id, 'great')
       staff.mark(e.note.id, 'hit-ok')
+      if (e.vel) popup(null, 0, e.note.p, e.note.id, e.vel)
       if (drill) drillOk(e.note.id, e.rt, e.clean)
       break
     case 'hold':
