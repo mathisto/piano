@@ -708,6 +708,7 @@ export interface LRest {
   x: number
   y: number
   v: number
+  tup: boolean
   whole: boolean // a whole-bar rest
   bar: number
   q: number
@@ -1087,10 +1088,10 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
         for (const B of bs) {
           const j = B.i - sy.from
           const two = B.two[clef]
-          if (B.barRest[clef] && !an.read) L.rests.push({ sys: si, clef, x: (bl[j] + bl[j + 1]) / 2, y: base[clef] - 3 * S, v: B.ql, whole: true, bar: B.i, q: 0 })
+          if (B.barRest[clef] && !an.read) L.rests.push({ sys: si, clef, x: (bl[j] + bl[j + 1]) / 2, y: base[clef] - 3 * S, v: B.ql, tup: false, whole: true, bar: B.i, q: 0 })
           for (const r of B.rests.filter((x) => x.clef === clef)) {
             const y = figure(r.v, r.tup).head === 0 ? base[clef] - 3 * S : base[clef] - 2 * S
-            L.rests.push({ sys: si, clef, x: X[j][B.cols.findIndex((k) => near(k.q, r.q, 0.011))], y: y - (two ? 1.5 * S : 0), v: r.v, whole: false, bar: B.i, q: r.q })
+            L.rests.push({ sys: si, clef, x: X[j][B.cols.findIndex((k) => near(k.q, r.q, 0.011))], y: y - (two ? 1.5 * S : 0), v: r.v, tup: r.tup, whole: false, bar: B.i, q: r.q })
           }
         }
       }
@@ -1226,4 +1227,14 @@ export function inkBounds(L: Layout) {
   for (const t of L.tuplets) (pt(t.sys, t.x1, t.y - 8), pt(t.sys, t.x2, t.y + 8))
   for (const o of L.ottavas) (pt(o.sys, o.x1, o.y - 8), pt(o.sys, o.x2, o.y + 8))
   return { minX, maxX, minY, maxY }
+}
+
+/** The bar that needs the most room at full gaps: for a Simplify prompt. */
+export function densest(an: Analysis): { bar: number; columns: number; units: number } | undefined {
+  let best: { bar: number; columns: number; units: number } | undefined
+  for (const B of an.bars) {
+    const units = widthOf(an, B.i, B.i + 1, 0, 1)
+    if (!best || units > best.units) best = { bar: B.i, columns: B.cols.filter((c) => !c.virtual).length, units }
+  }
+  return best
 }
