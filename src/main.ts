@@ -131,10 +131,12 @@ async function showToday() {
   const [{ last }, rows, days] = await Promise.all([libraryData(), stageRows(), store.getPractice()])
   const next = rows.find((r) => r.next)!
   const ex = exercise(settings.tech, settings.edges)
+  const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   todayView($('#today'), {
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
     read: { id: next.stage.id, name: next.stage.name, pct: next.pct, line: next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
+    fix: worst && last.bars ? { id: last.id, title: last.title, ...worst } : undefined,
     week: weekOf(days),
     goal: settings.goal,
   })
@@ -154,17 +156,30 @@ $('#today').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
   if (!b) return
   if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
+  else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
   else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
   else void openSong(exercise(settings.tech, settings.edges), 'perform')
 })
 
+/** Open a piece in Learn with two worst bars looped at a lower tempo. */
+async function fixBars(id: string, a: number, b: number) {
+  await openById(id, 'learn')
+  if (!current || current.song.id !== id) return
+  const bars = current.song.bars
+  game.setRate(0.7)
+  game.setLoop({ a: bars[a].t0, b: bars[b].t1 })
+  syncMode()
+  onPhase()
+}
+
 function showTechnique() {
   const el = $('#technique')
-  techniqueView(el, settings.tech, touchCal, calMsg)
+  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)))
   const pick = <K extends keyof Opts>(id: string, key: K, parse: (v: string) => Opts[K]) =>
     ($(id, el) as HTMLSelectElement).addEventListener('change', (e) => {
       settings.tech[key] = parse((e.target as HTMLSelectElement).value)
       save()
+      el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
     })
   pick('#tPattern', 'pattern', (v) => v as Opts['pattern'])
   pick('#tKey', 'tonic', Number)
@@ -512,7 +527,7 @@ function wake() {
   clearTimeout(idle)
   if (current && game.phase !== 'ready' && game.phase !== 'paused' && game.phase !== 'done') idle = window.setTimeout(() => document.body.classList.add('hush'), 2500)
 }
-for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, wake, { passive: true })
+for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, wake, { passive: true }) // only opacity changes, so waking costs no layout
 
 function say(msg: string) {
   $('#live').textContent = msg
@@ -637,7 +652,7 @@ async function drillDone() {
 
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
 
-function worstBars(heat: number[]): { a: number; b: number } | null {
+function worstBars(heat: number[], bars = game.song.bars.length): { a: number; b: number } | null {
   let best = 0
   let at = -1
   for (let i = 0; i < heat.length; i++) {
@@ -648,7 +663,7 @@ function worstBars(heat: number[]): { a: number; b: number } | null {
     }
   }
   if (at < 0) return null
-  return { a: at, b: Math.min(game.song.bars.length - 1, at + 1) }
+  return { a: at, b: Math.min(bars - 1, at + 1) }
 }
 
 async function onDone(r: Result) {

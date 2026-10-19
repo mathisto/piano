@@ -1,103 +1,87 @@
-# Roadmap and known gaps
+# Roadmap
 
-v1 (Perform, Learn, MIDI import, staff strip) is built. This file tracks what is next and what is known to be rough.
+Where the work stands, in the order it will be done. The reasoning is in `docs/STRATEGY.md`; the evidence is in `docs/research/`. Legend: [x] shipped and checked, [~] partly, [ ] not started.
 
-## v2
+## Shipped
 
-Done:
-- [x] Sight-reading drills ("Read music"): 13 stages from treble landmarks through bass, both clefs, intervals and triads. Falling notes and key names hidden by default; the song waits; per-card first-try accuracy and response time feed a weighted deck and a mastery meter per stage.
-- [x] MusicXML import (.musicxml and compressed .mxl): exact pitch spelling via the file's key, real rhythm, ties merged, hands from the two staves, tempo changes, pickup measures. Plain partwise scores only (see gaps).
+- Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), Staff / Both / Falling views, count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
+- Read: 17 sight-reading stages from landmarks to triads, sharps, flats, keys of G and F, weighted deck, mastery meters.
+- Technique: five-finger, scale and arpeggio in seven keys, either or both hands, with soft/medium/hard, crescendo, decrescendo and accent targets (pips on the falling bar, dynamics on the staff, a touch verdict per note).
+- Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
+- Content: MIDI and MusicXML (.musicxml, .mxl) import, eight starter pieces, sampled grand piano (Salamander, CC BY 3.0).
+- Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and touch history; six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
+- Deploy: static site at piano.mattkelly.io; iPad app via Capacitor with a CoreMIDI plugin (developer install, expires every 7 days).
 
-- [x] View modes: Staff (two systems of bars, turns a system at a time), Both, Falling. Switch in the top bar or press V. Click or touch the on-screen keys to play them, with sound.
+## Phase D: design pass (in progress, branch `design/overhaul`)
 
-Still to do:
-- [x] Accidentals and keys in the drills: Sharps, Flats, Key of G, Key of F (stats keep F sharp and G flat apart).
-- [ ] More keys (D, B flat, minor keys), accidentals in the bass clef and in chords, then rhythm reading (a card stream you play in time, not waiting).
-- [ ] A reading-ahead mode: the next bar stays hidden until the current one ends, to train eye-hand span.
-- [ ] Full score view for imported MusicXML (more bars, rests, beams, ties, repeat signs). The staff strip still shows two bars with rhythm drawn simply.
-- [x] Sampled grand piano (Salamander V3, CC BY 3.0, bundled in public/samples, loaded when first wanted) with a simple-synth fallback and an instrument choice in Settings.
-- [ ] More instruments: General MIDI sounds from a soundfont (check each pack's licence), electric piano, organ. `src/audio.ts` has one voice factory per instrument; add another and a Settings option.
-- [ ] Note names that fade as mastery grows (today: a plain on/off toggle in Settings and in the drill dock).
+- [x] Research: learning science, products and UX patterns, independent UI critique (`docs/research/`).
+- [x] Decision record (`docs/STRATEGY.md`).
+- [x] Settings: six rows plus Advanced, no paragraphs; Max effects tier deleted; Hold folded into Strictness; chord names always on; Import and Clear added; shortcuts moved to a `?` dialog.
+- [x] Play screen: HUD cut to score and combo with captions over the numbers; legend shown once; "Tap Play" on touch; top bar fades; `M`; coarse-pointer sizing.
+- [x] Navigation and page templates: Today and Progress added, Touch folded away, one page head, trimmed Songs and Read tables, themed selects.
+- [ ] Second critique pass (`impeccable` re-review is running); apply its polish list.
+- [ ] DESIGN.md: document the grammar (tokens, components, page templates, copy rules, the new pages, target pips, dynamics). A documenter pass is owed.
+- [ ] Perform and Learn as a choice on a start sheet instead of a bar switch.
+- [ ] A start sheet per song: mode, tempo, hands, split, tracks (see Phase F).
+- [ ] Auto-hide bar reclaims its space without a layout jump (today it only fades; `M` reclaims).
+- [ ] Today: use the empty lower half for the generated plan (Phase E), not decoration.
+- [ ] Design debt carried over: hard offset shadows on the primary button and slam text, the Learn `✓` glyph, colour-only hit marks on the staff, radius scale of four near-duplicates.
+- [ ] Update PRODUCT.md (iOS is no longer out of scope; five tabs; iPad is the main screen).
 
-## Known gaps in v1
+## Phase E: progression and practice model (after the design pass)
 
-- Staff clips ledger lines below about C2 and above about C7 (needs 8va/15ma marks or a taller strip).
-- No beams, rests, ties, tuplets or dynamics on the staff. Durations are rounded to the nearest standard value.
-- Hands for single-track MIDI are split at one pitch (settings). No per-note override.
-- Key signature from the file is trusted when present; a wrong "C major" default in a transposed file is not corrected.
-- Timing windows (45 / 80 / 125 ms) and scoring weights are tuned by feel, not by testing with real players.
-- Bluetooth MIDI adds jitter that calibration cannot remove, only offset.
-- Web MIDI needs Chrome, Edge or Firefox on a computer. Safari and iOS have none.
-- Cloudflare injects a Web Analytics beacon at the edge for the zone. The app itself sends nothing; exclude `piano.mattkelly.io` in the dashboard if that matters.
+Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 
-## Known gaps in MusicXML import
+- [ ] Error-targeted loop after every run: the two worst bars, 2 to 4 bars of context, one tap to loop at a lower tempo; count clean passes in a row per bar.
+- [ ] Automatic tempo ramp (Melodics-style Auto BPM): +5% after three clean passes, -10% after two failed.
+- [ ] After a clean Learn pass with Wait on, suggest the exit ramp: wait, 50%, 75%, full speed.
+- [ ] Review scheduling: Leitner boxes (1, 2, 4, 8, 16 days) per Read card and per exercise; states New, Learning, Solid, Due; a miss drops one box.
+- [ ] Today plan generator: warm-up (last exercise, about 2 minutes), reading (due cards first), piece (its worst bars); 5, 10 or 20 minute chips; skip anywhere.
+- [ ] Effort and skill kept apart: days and minutes only rise; mastery can fall to Due.
+- [ ] Weekly summary on Monday (minutes, the measure that improved most, a suggested goal).
+- [ ] Fading feedback: judgement words and the note-name training wheels fade as mastery grows in Learn and Technique; mastery is graded on unaided runs.
+- [ ] Reading stages: cap isolated note-name drills at the landmark stages; add short melodic fragments in key, then rhythm reading (a card stream played in time) and a reading-ahead mode.
+- [ ] Technique breadth in syllabus order: five-finger, C G D F scales hands separate, contrary motion, arpeggios, remaining keys, minor keys; evenness, melody over accompaniment, staccato and legato by hold length; mastery per exercise with the Read meter.
+- [ ] Touch: per-pitch-region velocity, "play as written" for MIDI with dynamics, evenness before absolute level.
 
-- Repeats, voltas and da capo are ignored: the score plays straight through once.
-- Grace notes and unpitched percussion are skipped. Transposing instruments are not transposed. Dynamics do not set velocity.
-- Time-wise scores are rejected (export partwise). Multi-part scores use the stated staff for the hand; single-staff parts split at middle C.
+## Phase F: content and import quality (research under way)
 
-## Content
+- [ ] `docs/research/public-domain-sources.md`: sources, licences, a graded 40-piece list, a fetch-and-manifest pipeline (agent running).
+- [ ] `docs/research/midi-import-audit.md`: why a fan MIDI of Aerith's Theme rendered as clutter; root causes and a fix plan (agent running). Needs the original file from the owner, or an in-app import report.
+- [ ] Import report and per-track selection (drums, pads, bass) at import time.
+- [ ] Quantization with tuplet detection, voice separation, a simplify control.
+- [ ] A curated public-domain library built from Mutopia and OpenScore with licence metadata, shown in Songs.
+- [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
+- [ ] More instruments (General MIDI soundfont, electric piano, organ); check each pack's licence.
 
-- Starter pieces are public-domain compositions with arrangements written for this project. Copyrighted pieces (game music, pop) are never committed. Users import their own MIDI; it stays in their browser.
+## iPad app (developer mode, one person)
 
-## Design debt (from the finish review and DESIGN.md)
+Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoNative.swift`, and `src/native-midi.ts` faking `navigator.requestMIDIAccess`. Bundle id `io.mattkelly.piano`, free Personal Team: reinstall every 7 days with the same bundle id, never delete the app (that wipes its songs and progress). Last installed 19 Oct 2026 with ghost notes, hold scoring, count-in and the first Technique page; it does not yet have Touch, the design pass or anything after.
 
-- [ ] Primary button uses a hard offset shadow (`0 2px 0`), and the combo slam and count-in use hard `text-shadow` offsets. Replace with soft depth or drop.
-- [ ] Learn-mode results show a `✓` text glyph as the grade; draw it as an icon.
-- [ ] Staff-hit marks are colour-only on the staff itself (only the miss has a shape); the results legend carries word and shape.
-- [ ] Radius scale has four near-duplicates (4/6/8/10px); collapse to two.
-- [ ] No third review pass after the last two fixes (bass stem direction, histogram labels); they were checked in captures by the builder only.
+- [x] Capacitor project, CoreMIDI plugin, JS shim, playback audio session, wake lock, landscape, safe areas, share-sheet export.
+- [ ] Check on the iPad: FP-10 over USB (timing, use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files, Stage Manager resize, the sound of the piano samples, the count-in click.
+- [ ] Rebuild and reinstall after the design pass.
+- Limits: 60 Hz cap in the web view; storage is separate from the website; Bluetooth MIDI pairing reportedly crashes on iPadOS 27.0, so use USB.
 
-## iPad app (developer mode, for one person)
+## Known gaps
 
-The iPad app is the web build in a Capacitor web view (`ios/`), plus one native piece: `ios/App/App/PianoNative.swift` reads MIDI through CoreMIDI and `src/native-midi.ts` fakes `navigator.requestMIDIAccess` over it, so `src/midi.ts` is unchanged. Researched 2026-10-18: native SwiftUI rewrite is about 125-150 h, the wrapper is about a day; JavaScriptCore with a native UI is the later path if the wrapper is not enough.
+Play and staff:
+- Staff clips ledger lines below about C2 and above about C7 (needs 8va marks).
+- No tuplets or dynamics from the file on the staff; durations round to the nearest standard value.
+- Hands for single-track MIDI split at one pitch, no per-note override.
+- Timing windows (45, 80, 125 ms) and scoring weights are tuned by feel.
+- Bluetooth MIDI adds jitter that calibration cannot remove.
+- Web MIDI needs Chrome, Edge or Firefox on a computer; the iPad app has its own path.
+- Cloudflare injects a Web Analytics beacon at the edge; the app sends nothing itself.
+- Hold scoring: no tint for a too-long hold, no "hold to advance" in Learn.
 
-Run it: `npm run ios` (builds the web app, syncs, opens Xcode); pick the iPad; Run. Bundle id `io.mattkelly.piano`, team `TC8XUVBATG` (free Personal Team: the install expires after 7 days; run again from Xcode with the same bundle id, and do not delete the app, which would wipe its songs and progress).
+MusicXML import:
+- Repeats, voltas and da capo ignored; grace notes and unpitched percussion skipped; transposing instruments not transposed; dynamics do not set velocity; time-wise scores rejected.
 
-- [x] Capacitor 8 project, CoreMIDI plugin, JS shim (tested in a desktop browser against a faked plugin), playback audio session, screen kept awake, landscape, safe areas, share-sheet export, hash without `crypto.subtle`.
-- [ ] Run on the iPad and check: FP-10 over USB (notes, timing; use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files (`.mid`, `.musicxml`, `.mxl`), Stage Manager resize.
-- [ ] Known limits: web view is capped at 60 Hz; the app starts with its own empty storage (not shared with the website); Bluetooth MIDI pairing screen reportedly crashes on iPadOS 27.0, so pair in another app or use USB.
+Evidence:
+- Key velocity feedback has no controlled evidence behind it; treat the Touch features as measurement, not proven pedagogy.
+- The learning-science report took some details from search summaries; each such citation is marked in its bibliography. ABRSM and RCM syllabus pages were unreachable, so keys and order came from third-party charts.
 
-## Next: input fidelity and touch (designed 2026-10-18, not built)
+## Content and licences
 
-Ideas from the first real session on the iPad with the FP-10. Everything below needs the same plumbing first: note-off, pedal and velocity must reach `Game` and `Judge` with their timestamps (today `midi.ts` forwards note-offs and velocity, but `Judge` grades onsets only and ignores releases, and CC64 pedal is only counted in the monitor).
-
-### Phase A: see and hold (about 6-8 h)
-
-- [x] **Ghost note on the staff.** When a key goes down, draw a translucent hollow notehead (dashed outline, Ink-2, not a hand or judgement colour) at the pitch pressed, at the staff x of the moment you pressed it, spelled by the song's key (with an accidental sign). Because it sits at your real press time, its distance from the written note is your timing error, early or late, made visible.
-  - Hit: the ghost snaps to the written note and flashes its grade colour (Perfect lime, Great mint, Good orange) with the same glow and streak-scaled sparkle as the key; Great/Good keep their persistent shape.
-  - Miss (note passed unplayed): the written note does a short downward 'thud' and settles red with the existing miss triangle.
-  - Wrong note (nothing written there): the ghost turns red with an X, wobbles once, fades.
-  - Effects level scales it (Off: colour only; Calm: no motion; Arcade/Max: sparkle and thud). Reduced motion caps at Calm. Optional soft thud sound, off by default.
-  - Open: ghost colour (proposal: Ink-2 outline so it is clearly 'not the score'); whether a held ghost should stretch into a duration bar (ties to hold scoring).
-- [x] **Held-chord readout**, bottom right of the stage, above the keyboard, never over the falling lanes. Names what is held right now: pitch-class set matched against triads, sevenths, sus, dim, aug, power fifths, with inversions and slash bass ('C/E', 'G7', 'Dm'); two notes show the interval ('C and G: fifth'); one note shows its name. Spelled by the key. Settings switch, default on. Pure function of held pitches: easy to unit test.
-- [x] **Hold scoring** (note length and release timing), shipped: `Judge.release`, `Hold` setting Off/Lenient/Strict (Perform only), CC64 pedal, red remainder on the highway, red outline on the staff head, Hold % on results. Not built yet: a too-long tint on the next note, and Learn 'hold to advance' (below).
-  - Judge records each hit note's release time (note-off matched by pitch). Target release is the written end (the quantized note value in the staff, else the file's duration), capped at the next onset of the same hand so legato and rests are not punished.
-  - Grades per note: held (released within about 120 ms or 15% of the length, whichever is larger), short (released early), long (held into the next note). Held full value keeps the note's points; short or long scales its points down (floor 50%). A broken hold does not break the combo. Results show a Hold % next to Accuracy.
-  - Sustain pedal (CC64): while the pedal is down, an early release is not penalised. Needs CC64 parsing in `midi.ts`.
-  - Strictness setting: Off, Lenient (default in Perform), Strict. Learn keeps it Off unless switched on.
-  - Visual: the lit lane bar drains as you hold; an early release leaves a red remainder; a too-long hold tints the next note.
-  - Optional Learn mode 'hold to advance': the wait does not release until the note's length has been held.
-  - Open: how harsh the penalty feels for a beginner, and whether a long hold should score at all with the pedal down.
-
-### Phase B: velocity statistics (about 5-6 h)
-
-- [x] Capture velocity (0-127) on every graded press and keep it on the result: mean, spread, per-hand, bands, histogram (`touch.ts`). Not built: per-pitch region.
-- [x] (shipped as a session log, last 300, `touch:log`; histogram and L/R balance on the results card; Touch page with sparkline and table; in the JSON export) Lifetime statistics in IndexedDB (same pattern as the drill stats: moving averages, per song and per exercise), a Touch page with session history and trend, and a velocity histogram plus left-versus-right balance on the results card. Include in the JSON export.
-- [x] **Personal calibration** (Touch page: ten soft, medium, hard; edges halfway between the means; refused if the levels are within 12 of each other; `settings.edges`). Velocity depends on the keyboard's touch setting and the player. A short exercise (ten soft, ten medium, ten loud notes) sets the player's own bands; defaults until then: soft 1-45, medium 46-85, hard 86-127, or the six dynamics pp to ff.
-- [ ] Optional 'play as written' for MIDI files that carry dynamics: compare your velocity to the file's, relative to your calibrated range.
-
-### Phase C: technique exercises (about 10-14 h)
-
-- [x] (slice 1 shipped: `technique.ts`, five-finger, scale, arpeggio in seven keys, either or both hands, tempo; timing, hold and touch all graded) A **Technique** page next to Songs and Read music: generated scales, arpeggios and five-finger patterns with targets for timing (existing), hold (Phase A) and velocity (Phase B).
-- [x] (shipped: pips on the falling bar, p/mf/f, cresc./dim. and accent marks on the staff, verdict word 'touch ✓ / too soft / too hard' in the popups and results 'touch in range %') Targets drawn on the note itself: soft, medium, hard as a coloured band or glow height on the falling bar and a dynamic mark on the staff; the judgement says 'soft ✓' or 'too hard'.
-- [~] Exercise kinds (steady, crescendo, decrescendo and accent are built; still open: evenness (every note within a tight band of your own mean); melody over accompaniment (right hand louder than left); staccato and legato by hold length).
-- [ ] Mastery and progress per exercise with the same meter used in Read music. (Not built: nothing is remembered per exercise yet except the Touch log.)
-- Design debt: DESIGN.md does not yet describe the target pips, dynamic marks or the Touch and Technique pages; a documenter pass is owed.
-
-### Cross-cutting
-
-- Event pipeline: carry `{ on, pitch, velocity, ts }` plus pedal into `Game.press/release` and `Judge.release`; keep `Judge` pure so it stays testable.
-- Timing honesty: release timestamps go through the same calibration offset as onsets; Bluetooth jitter will blur short holds, so USB is recommended for Strict hold scoring.
-- iPad: everything above works in the Capacitor app because MIDI arrives through the same shim (the native plugin already forwards note-offs and velocity; it already forwards controller messages, so CC64 needs no native change).
-- Tests first for the pure parts: chord naming, hold grading, velocity banding.
+Starter pieces are public-domain compositions with arrangements written for this project. Copyrighted pieces (game music, pop) are never committed; users import their own files and they stay in the browser. Piano samples: Salamander Grand Piano, CC BY 3.0, credited in Settings.

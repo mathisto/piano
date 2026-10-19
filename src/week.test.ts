@@ -11,7 +11,7 @@ describe('week', () => {
   it('lays out Monday to Sunday around the given day, with practised seconds', () => {
     const w = weekOf({ '2026-10-19': 600, '2026-10-21': 90, '2026-10-26': 5000 }, wed)
     expect(w.days.map((d) => d.key)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'])
-    expect(w.days.map((d) => d.label)).toEqual(['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+    expect(w.days.map((d) => d.label)).toEqual(['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])
     expect(w.days.map((d) => d.played)).toEqual([true, false, true, false, false, false, false])
     expect(w.minutes).toBe(11) // next week's seconds do not count
     expect(w.days[2].today).toBe(true)

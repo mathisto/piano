@@ -189,7 +189,7 @@ table.songs caption,
 .hud small {
   grid-column: 1 / -1;
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: 12px;
 }
 .hud b {
   font: 800 italic 30px/1 var(--display);
@@ -619,10 +619,7 @@ table.songs tr.band th {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 18px;
-  margin-bottom: 32px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-3);
+  grid-template-columns: none;
   color: var(--ink-2);
 }
 .strip b {
@@ -630,13 +627,36 @@ table.songs tr.band th {
 }
 .tech-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
   gap: 16px;
-  max-width: 1100px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+.tprev {
+  margin-bottom: 20px;
+}
+.tprev svg {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+.bands {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  max-width: 560px;
+}
+.bands span {
+  padding: 8px 12px;
+  border-radius: var(--r-1);
+  background: var(--panel-2);
+  color: var(--ink-2);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 h2.sec {
-  margin: 8px 0 0;
+  margin: 28px 0 12px;
   font: 800 italic 22px/1 var(--display);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -771,6 +791,12 @@ body.reading .hud small {
 }
 #staff .head.miss {
   fill: var(--bad);
+  animation: missfade 1.2s 0.8s forwards; /* red decays to the quiet ink; the triangle stays */
+}
+@keyframes missfade {
+  to {
+    fill: var(--ink-3);
+  }
 }
 #staff .head.short {
   stroke: var(--bad);
@@ -1580,12 +1606,15 @@ dialog#help .btn {
 }
 
 /* ---------- play focus: the top bar fades once the song runs, H hides the extras ---------- */
-.bar {
-  transition: opacity 0.35s var(--ease);
-}
-body.hush .bar {
+body.hush .bar > * {
   opacity: 0;
   pointer-events: none;
+}
+.bar > * {
+  transition: opacity 0.35s var(--ease);
+}
+body.zen #app {
+  grid-template-rows: minmax(0, 1fr);
 }
 body.zen .bar,
 body.zen #dock .aids {
@@ -1593,12 +1622,6 @@ body.zen #dock .aids {
 }
 
 /* ---------- today and progress ---------- */
-.tgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  max-width: 1100px;
-}
 .tcard {
   display: grid;
   align-content: start;
@@ -1607,9 +1630,6 @@ body.zen #dock .aids {
   border: 1px solid var(--edge);
   border-radius: var(--r-3);
   background: var(--panel);
-}
-.tcard.wide {
-  max-width: 640px;
 }
 .tcard.span {
   grid-column: 1 / -1;
@@ -1623,20 +1643,6 @@ body.zen #dock .aids {
 .tcard .label {
   color: var(--ink-3);
 }
-.tmain {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.tmain b {
-  display: block;
-  font: 800 italic 24px/1.1 var(--display);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-.tmain span {
-  color: var(--ink-2);
-}
 .tthumb {
   flex: none;
   width: 120px;
@@ -1647,9 +1653,6 @@ body.zen #dock .aids {
   height: auto;
   background: var(--ground);
   border-radius: var(--r-1);
-}
-.tact {
-  margin-top: auto;
 }
 .week {
   display: flex;
@@ -1699,4 +1702,88 @@ body.zen #dock .aids {
 }
 .field.inline select {
   width: auto;
+  justify-self: start;
+}
+
+/* ---------- today: the plan is a list of rows in the same grammar as Songs ---------- */
+.plan {
+  display: grid;
+}
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 4px;
+  border-top: 1px solid var(--line);
+}
+.prow:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.pwho {
+  flex: 1;
+  min-width: 0;
+}
+.pwho b {
+  display: block;
+  font-size: 18px;
+  font-weight: 650;
+}
+.pwho span {
+  color: var(--ink-3);
+  font-size: 15px;
+}
+.prow .mrow {
+  width: 260px;
+}
+.pact {
+  flex: none;
+}
+.tcard.span {
+  margin-bottom: 24px;
+}
+
+/* ---------- progress: reading as a strip of stage cells, grouped by clef ---------- */
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 28px;
+}
+.crow {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+.cell {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 40px;
+  border-radius: var(--r-1);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.cell b {
+  position: absolute;
+  inset: auto 0 0;
+  background: var(--ink-2);
+}
+.cell.solid b {
+  background: var(--ink);
+}
+
+/* ---------- one measure for every page ---------- */
+#today > *,
+#library > *,
+#read > *,
+#technique > *,
+#progress > * {
+  width: min(100%, 1100px);
+  justify-self: center;
+}
+
+.tcard.strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }

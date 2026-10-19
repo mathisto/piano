@@ -4,15 +4,15 @@
 
 ## Platform
 
-web
+web, plus an iPad app (Capacitor web view with a CoreMIDI plugin, developer install). The iPad in landscape is the main screen.
 
 ## Stack
 
-Vite + TypeScript + PixiJS (WebGL highway). Fully static build, no backend. Target browser is desktop Chrome on macOS (Web MIDI); Firefox 108+ and Chromium also work. Safari and iOS have no Web MIDI and are out of scope.
+Vite + TypeScript + PixiJS (WebGL highway). Fully static build, no backend. Desktop Chrome on macOS is the web target (Web MIDI); Firefox 108+ and Chromium also work. Safari and iOS have no Web MIDI, so the iPad uses the native app.
 
 ## Users
 
-Primary: Matt, an adult beginner with a Roland FP-10 (USB MIDI to a Mac, Chrome), still learning treble clef and not yet fluent in bass clef. Practices at the keyboard, screen mirrored to an iPad via Sidecar/AirPlay. Secondary: anyone with a MIDI keyboard who finds the public site. Design for Matt's learning first; nothing may break for strangers (first-run, no-MIDI-device state, bring-your-own files).
+Primary: Matt, an adult beginner with a Roland FP-10 (USB MIDI to a Mac, Chrome), still learning treble clef and not yet fluent in bass clef. Practices at the keyboard, on the iPad (USB to the FP-10) or the Mac. Secondary: anyone with a MIDI keyboard who finds the public site. Design for Matt's learning first; nothing may break for strangers (first-run, no-MIDI-device state, bring-your-own files).
 
 ## Product Purpose
 
