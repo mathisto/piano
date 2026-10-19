@@ -1,5 +1,6 @@
 import * as audio from './audio'
 import { Pace } from './pace'
+import { Quiet } from './quiet'
 import { velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -70,6 +71,7 @@ export class Game {
   offs: number[] = []
   showNotes = false // reading drills hide the falling notes and key names unless asked
   showNames = false
+  hidePlayed = false // Learn: notes leave the staff as they are played, so you must read ahead
   private listeners: ((e: GameEvent) => void)[] = []
   private anchorPerf = 0
   private anchorT = 0
@@ -80,6 +82,8 @@ export class Game {
   private lastPerf = 0
   private wrongMark = 0
   readonly pace = new Pace()
+  readonly quiet = new Quiet() // goes quiet on judgement words once the playing is clean
+  known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
   autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
 
   /** Which panes to show. Reading drills always need the staff. */
@@ -131,6 +135,7 @@ export class Game {
   restart() {
     this.endPass()
     this.pace.reset()
+    this.quiet.reset()
     this.offs = []
     this.held.clear()
     this.seek(this.lead().from)
@@ -333,21 +338,25 @@ export class Game {
       if (e.k === 'hit') {
         const note = this.song.notes[e.i]
         this.offs.push(e.off)
+        this.quiet.note((e.grade === 'perfect' || e.grade === 'great') && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel })
         if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
+        this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel })
       } else if (e.k === 'hold') {
         this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
+        this.quiet.note(false)
         this.bump(note.bar, 1)
         this.emit({ type: 'miss', note })
       } else {
         this.bump(this.phase === 'waiting' ? this.stallBar : barAt(this.song.bars, Math.max(0, this.t)), 0.5)
+        this.quiet.note(false)
         this.emit({ type: 'wrong', p: e.p })
       }
     }

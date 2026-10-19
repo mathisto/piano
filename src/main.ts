@@ -11,6 +11,7 @@ import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { nextStep } from './pace'
+import { knownPitches } from './quiet'
 import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
@@ -313,6 +314,7 @@ function screenKeys(canvas: HTMLCanvasElement) {
 
 async function openSong(song: Song, mode: Mode) {
   game.endPass()
+  game.known = knownPitches(await store.getDrill())
   view('play')
   void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
   await ensureStage()
@@ -436,6 +438,8 @@ const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high
 
 /** `grade` is null in wait mode, where only the touch has a verdict. */
 function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?: VelGrade) {
+  const fine = (grade === null || grade === 'perfect' || grade === 'great') && vel !== 'low' && vel !== 'high'
+  if (fine && game.mode !== 'perform' && game.quiet.hushed) return // clean playing needs no praise; slips still speak
   if (game.view === 'sheet') {
     if (grade !== 'miss') staff.grade(noteId, grade, off, vel && TOUCH[vel]) // the grade, as a word on the staff
     return
@@ -927,6 +931,10 @@ function openDrawer() {
   })
   on('#sNames', (el) => {
     settings.names = el.checked
+    save()
+  }, 'change')
+  on('#sFade', (el) => {
+    settings.fade = el.checked
     save()
   }, 'change')
   on('#sFull', (el) => {

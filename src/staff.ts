@@ -72,6 +72,7 @@ export class Staff {
   private count = 4 // bars per system
   private sys = 1 // systems on the page: 1, or 2 in a tall sheet view (current + next)
   private total = GRAND.h // viewBox height
+  private curtain?: SVGRectElement
   private yPad = 0 // centres a short page vertically in sheet view
   private w = 0
   private x0 = 0
@@ -194,6 +195,12 @@ export class Staff {
     const t = Math.min(Math.max(this.game.t, bars[this.bar0].t0), bars[last].t1)
     const { x, dy } = this.posAt(t)
     const cx = Math.min(x, this.x1) - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
+    const notes = this.svg.querySelector('.notes')
+    if (this.game.hidePlayed && this.curtain && notes) {
+      this.curtain.setAttribute('x', String(cx))
+      this.curtain.setAttribute('width', String(Math.max(0, this.w - cx)))
+      notes.setAttribute('clip-path', 'url(#ahead)')
+    } else notes?.removeAttribute('clip-path')
     this.cursor.setAttribute('x1', String(cx))
     this.cursor.setAttribute('x2', String(cx))
     const top = this.base[this.clefs[0]] - 4 * S
@@ -288,6 +295,9 @@ export class Staff {
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
     this.notes()
     this.dynamics()
+    // a curtain behind the cursor: with Hide played on, notes vanish as you play them, which trains reading ahead
+    const clip = el('clipPath', { id: 'ahead' }, svg)
+    this.curtain = el('rect', { x: 0, y: 0, width: this.w, height: total }, clip) as SVGRectElement
   }
 
   /** Technique exercises: the dynamic to aim for. Words go between the staves at the left of the system, accents sit on the notes. */

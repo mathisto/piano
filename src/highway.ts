@@ -357,7 +357,7 @@ export class Highway {
         ng.roundRect(x - 3, yt - 3, w + 6, y2 - yt + 6, 7).stroke({ width: 2.5, color: C.lamp, alpha: pulse })
         need.add(n.p)
       }
-      if (names && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
+      if (names && !(g.mode !== 'read' && settings.fade && g.known.has(n.p)) && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
         const s = this.label(noteName(n.p, n.flat ? -2 : g.song.fifths).replace(/\d/, ''), left ? col : C.ground, Math.min(18, w * 0.62))
         s.position.set(x + w / 2, y2 - 16)
         s.alpha = a

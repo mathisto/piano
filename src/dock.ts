@@ -58,6 +58,7 @@ export class Dock {
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
         </div>
         <label class="switch" data-modes="learn"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
         <span class="dock-fill"></span>
         <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
@@ -83,6 +84,7 @@ export class Dock {
       this.sync()
     }))
     this.wait.onchange = () => game.setWait(this.wait.checked)
+    q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#autoTempo').onchange = (e) => (game.autoTempo = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
@@ -108,6 +110,8 @@ export class Dock {
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait
+    ;(this.host.querySelector('#autoTempo') as HTMLInputElement).checked = g.autoTempo
+    ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
     for (const h of ['R', 'L'] as const) {
       const r = this.host.querySelector<HTMLInputElement>(`input[name=hand${h}][value=${g.hands[h]}]`)
       if (r) r.checked = true
