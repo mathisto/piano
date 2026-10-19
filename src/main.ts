@@ -5,7 +5,6 @@ import '@fontsource-variable/hanken-grotesk'
 import './style.css'
 
 import * as audio from './audio'
-import { piano } from './audio'
 import { Dock } from './dock'
 import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -38,7 +37,6 @@ let dock!: Dock
 let current: { song: Song; heat: number[] } | undefined
 let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
-let midiMsg = ''
 let played = false
 let noteTimer = 0
 let note = ''
@@ -400,7 +398,7 @@ let chordTimer = 0
 /** The readout of what is held now; it lingers a moment after the last key comes up. */
 function chordUpdate() {
   const el = $('#chord')
-  const c = settings.chord ? nameChord([...game.held.keys()], game.song.fifths) : null
+  const c = nameChord([...game.held.keys()], game.song.fifths)
   clearTimeout(chordTimer)
   if (c) {
     $('b', el).textContent = c.name
@@ -723,8 +721,7 @@ async function connectMidi() {
     })
     chooseInput(settings.device)
     midiState = 'ok'
-  } catch (e) {
-    midiMsg = (e as Error).message
+  } catch {
     midiState = midiSupported ? 'blocked' : 'unsupported'
   }
   updateChip()
@@ -764,18 +761,21 @@ let monTimer = 0
 
 function openDrawer() {
   const d = $('#drawer')
-  drawer(d, inputs(), midiState === 'ok' ? (inputs().length ? `${inputs().length} connected.` : 'Connected to the browser, but no keyboard is plugged in.') : midiMsg || 'Not connected yet. Use the Connect button.')
+  const open = d.querySelector('details')?.open
+  drawer(d, inputs())
+  if (open) d.querySelector('details')!.open = true
   const wasOpen = !d.hidden
   d.hidden = false
   $('#main').inert = true // the drawer holds focus; the keyboard still plays
   if (!wasOpen) $('#drawerTitle', d).focus()
   const mon = $('#sMon', d)
-  const tick = () => (mon.textContent = monitor.n ? `${monitor.n} messages received. Last: ${monitor.text}.` : 'Nothing received yet. Press a key on your keyboard.')
+  const tick = () => (mon.textContent = monitor.n ? `Last: ${monitor.text}` : '')
   tick()
   clearInterval(monTimer)
   monTimer = window.setInterval(tick, 250)
   $('#settingsBtn').setAttribute('aria-expanded', 'true')
-  const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => $<HTMLInputElement>(id, d).addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
+  const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => d.querySelector<HTMLInputElement>(id)?.addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
+  const radios = (name: string, fn: (v: string) => void) => d.querySelectorAll<HTMLInputElement>(`input[name=${name}]`).forEach((r) => (r.onchange = () => fn(r.value)))
   on('#sDevice', (el) => {
     settings.device = el.value
     chooseInput(el.value)
@@ -787,15 +787,21 @@ function openDrawer() {
     save()
   })
   $('#sCal', d).onclick = () => void startCalibration()
-  d.querySelectorAll<HTMLInputElement>('input[name=fx]').forEach((r) => (r.onchange = () => {
-    settings.fx = Number(r.value) as 0 | 1 | 2 | 3
+  radios('fx', (v) => {
+    settings.fx = Number(v) as 0 | 1 | 2
     save()
-  }))
-  d.querySelectorAll<HTMLInputElement>('input[name=hold]').forEach((r) => (r.onchange = () => {
-    settings.hold = r.value as typeof settings.hold
-    game.judge.cfg.hold = game.mode === 'perform' ? settings.hold : 'off'
+  })
+  radios('strict', (v) => {
+    settings.strict = v as typeof settings.strict
+    game.judge.cfg = game.cfg()
     save()
-  }))
+  })
+  radios('sound', (v) => {
+    settings.sound = v === 'device'
+    save()
+    if (settings.sound) audio.unlock() // also starts loading the piano
+    openDrawer()
+  })
   on('#sFall', (el) => {
     settings.fall = 6.5 - Number(el.value)
     save()
@@ -803,11 +809,6 @@ function openDrawer() {
   on('#sNames', (el) => {
     settings.names = el.checked
     save()
-  }, 'change')
-  on('#sChord', (el) => {
-    settings.chord = el.checked
-    save()
-    chordUpdate()
   }, 'change')
   on('#sFull', (el) => {
     settings.full = el.checked
@@ -817,16 +818,7 @@ function openDrawer() {
   on('#sInst', (el) => {
     settings.instrument = el.value as 'piano' | 'synth'
     save()
-    const note = $('#sInstNote', d)
-    if (settings.instrument === 'piano') {
-      note.textContent = piano.state === 'ready' ? '' : 'Loading the piano sounds (about 2 MB)…'
-      void audio.preload().then(() => (note.textContent = piano.state === 'failed' ? 'The piano sounds did not load, so the simple synth plays instead. Reload to try again.' : ''))
-    } else note.textContent = ''
-  }, 'change')
-  on('#sSound', (el) => {
-    settings.sound = el.checked
-    save()
-    if (el.checked) audio.unlock() // also starts loading the piano
+    if (settings.instrument === 'piano') void audio.preload().then(openDrawer) // shows the failure line if the samples did not load
   }, 'change')
   on('#sVol', (el) => {
     settings.volume = Number(el.value)
@@ -837,6 +829,7 @@ function openDrawer() {
     save()
     lens.clear()
   }, 'change')
+  $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
     const text = await store.exportAll()
     const file = new File([text], 'piano-progress.json', { type: 'application/json' })
@@ -849,6 +842,23 @@ function openDrawer() {
     a.download = file.name
     a.click()
     URL.revokeObjectURL(a.href)
+  }
+  const file = $<HTMLInputElement>('#sFile', d)
+  $('#sImport', d).onclick = () => file.click()
+  file.onchange = async () => {
+    const f = file.files?.[0]
+    if (!f) return
+    try {
+      await store.importAll(await f.text())
+      location.reload()
+    } catch (e) {
+      say((e as Error).message)
+    }
+  }
+  $('#sClear', d).onclick = async () => {
+    if (!confirm('Delete your songs, progress and settings from this browser?')) return
+    await store.clearAll()
+    location.reload()
   }
 }
 
@@ -893,7 +903,12 @@ addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement
   const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return
-  if (e.key === 'Escape') {
+  if ((e.target as HTMLElement).closest('dialog')) return
+  if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
+  else if (e.key === 'n') {
+    settings.names = !settings.names
+    save()
+  } else if (e.key === 'Escape') {
     if (!closeDrawer() && current) leave()
   } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
     e.preventDefault()

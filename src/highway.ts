@@ -98,7 +98,7 @@ export class Highway {
   }
 
   /** The effects level, capped to Calm while the OS asks for reduced motion. */
-  private effects(): 0 | 1 | 2 | 3 {
+  private effects(): 0 | 1 | 2 {
     return reducedMotion && reducedMotion.matches ? (Math.min(settings.fx, 1) as 0 | 1) : settings.fx
   }
 
@@ -176,7 +176,7 @@ export class Highway {
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
     this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
-    if (fx >= 2) this.burst(k.x + k.w / 2, this.H, color, fx === 3 ? 18 : 9)
+    if (fx >= 2) this.burst(k.x + k.w / 2, this.H, color, 9)
   }
 
   /** The key under a point on the canvas (black keys sit on top), if it is over the keyboard. */

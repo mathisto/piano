@@ -31,6 +31,7 @@ export interface Cfg {
   wait: boolean
   strict: boolean // wrong notes break the combo
   hold?: Hold // grade how long keys are held; absent = off
+  ease?: number // scales the timing windows: above 1 is more forgiving; absent = 1
 }
 
 const PENDING = 0
@@ -129,7 +130,7 @@ export class Judge {
 
   /** `t` is song time, already corrected for the calibration offset. */
   press(p: number, t: number, vel = 0): Ev[] {
-    const w = (WIN.good * this.cfg.rate) / 1000
+    const w = (WIN.good * (this.cfg.ease ?? 1) * this.cfg.rate) / 1000
     let best = -1
     let bestD = Infinity
     for (let i = this.first; i < this.notes.length; i++) {
@@ -156,7 +157,7 @@ export class Judge {
     if (this.cfg.wait) return [{ k: 'ok', i: best, vel: vg }]
 
     const off = ((t - this.notes[best].t) / this.cfg.rate) * 1000
-    const a = Math.abs(off)
+    const a = Math.abs(off) / (this.cfg.ease ?? 1)
     const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : 'good'
     const mult = multiplier(this.combo)
     this.pts[best] = POINTS[grade] * mult
@@ -216,7 +217,7 @@ export class Judge {
   /** Mark notes that slid past their window. No-op while waiting: the clock stalls instead. */
   tick(t: number): Ev[] {
     if (this.cfg.wait) return []
-    const w = (WIN.good * this.cfg.rate) / 1000
+    const w = (WIN.good * (this.cfg.ease ?? 1) * this.cfg.rate) / 1000
     const out: Ev[] = []
     for (let i = this.first; i < this.notes.length; i++) {
       if (this.notes[i].t + w >= t) break

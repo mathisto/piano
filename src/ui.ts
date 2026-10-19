@@ -49,6 +49,12 @@ export function skeleton(app: HTMLElement) {
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
+  <dialog id="help" aria-label="Shortcuts">
+    <h2>Shortcuts</h2>
+    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
+    <p class="fine">No keyboard: <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p>
+    <form method="dialog"><button class="btn">Close</button></form>
+  </dialog>
   <main id="main" style="display:grid;min-height:0">
     <section id="library" class="view on" aria-label="Songs"></section>
     <section id="read" class="view" aria-label="Read music"></section>
@@ -207,56 +213,37 @@ export function results(r: Result, worst: { a: number; b: number } | null) {
 
 // ---------- settings ----------
 
-export function drawer(el: HTMLElement, inputs: Input[], status: string) {
-  const split = settings.split
+export function drawer(el: HTMLElement, inputs: Input[]) {
+  const seg = (name: string, label: string, opts: [string, string][], cur: string) =>
+    `<div class="srow"><span>${label}</span><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}"${cur === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div></div>`
+  const device = settings.sound
   el.innerHTML = `
   <h2 id="drawerTitle" tabindex="-1">Settings</h2>
-  <fieldset><legend>Look and feel</legend>
-    <div class="field"><span>Effects</span>
-      <div class="seg" role="radiogroup" aria-label="Effects">${['Off', 'Calm', 'Arcade', 'Max'].map((n, i) => `<label><input type="radio" name="fx" value="${i}"${settings.fx === i ? ' checked' : ''}><span>${n}</span></label>`).join('')}</div></div>
-    <label class="field"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
-    <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names on keys and notes</label>
-    <label class="switch"><input id="sChord" type="checkbox"${settings.chord ? ' checked' : ''}><i></i>Name the chord I am holding</label>
-    <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>Show all 88 keys</label>
-  </fieldset>
-  <fieldset><legend>Sound</legend>
-    <label class="switch"><input id="sSound" type="checkbox"${settings.sound ? ' checked' : ''}><i></i>Play through the browser</label>
-    <label class="field"><span>Instrument</span>
-      <select id="sInst"><option value="piano"${settings.instrument === 'piano' ? ' selected' : ''}>Grand piano (samples)</option><option value="synth"${settings.instrument === 'synth' ? ' selected' : ''}>Simple synth</option></select></label>
-    <p id="sInstNote" role="status">${piano.state === 'loading' ? 'Loading the piano sounds (about 2 MB)…' : piano.state === 'failed' ? 'The piano sounds did not load, so the simple synth plays instead. Reload to try again.' : ''}</p>
-    <label class="field"><span>Volume</span><input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}"></label>
-    <p>Piano samples: Salamander Grand Piano by Alexander Holm, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</p>
-    <p>Off by default: your keyboard's own speakers play. The Listen hand, the on-screen keys and the computer keys always sound through the browser. If you turn this on and hear every note twice, set Local Control to Off on the keyboard or turn it down.</p>
-  </fieldset>
-  <fieldset><legend>Timing</legend>
-    <div class="field"><span>Hold the keys</span>
-      <div class="seg" role="radiogroup" aria-label="Hold the keys">${(['off', 'lenient', 'strict'] as const).map((v) => `<label><input type="radio" name="hold" value="${v}"${settings.hold === v ? ' checked' : ''}><span>${v[0].toUpperCase() + v.slice(1)}</span></label>`).join('')}</div></div>
-    <p>Perform mode takes points back when you let go well before the written length. Lenient allows a generous margin; Strict also marks keys held too long. The sustain pedal excuses early release. Learn and Read modes never check.</p>
-    <label class="field"><span>Input delay (ms)</span><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}"></label>
-    <p>Positive means your notes arrive late (display lag, Bluetooth). Calibrate by playing along to a click, or nudge by hand.</p>
-    <button class="btn" id="sCal">Calibrate…</button>
-  </fieldset>
-  <fieldset><legend>Keyboard</legend>
-    <label class="field"><span>MIDI input</span>
-      <select id="sDevice"><option value="">All connected keyboards</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select></label>
-    <p id="sStatus">${esc(status)}</p>
-    <p id="sMon" role="status" style="color:var(--ink)"></p>
-    <details ${inputs.length ? '' : 'open'}><summary>Keyboard not detected?</summary>
-      <p>Check that it is switched on (many keyboards power off after a while), that the USB cable carries data (some only charge), and that it is not paired over Bluetooth only. Then unplug and replug it, or reload this page.</p></details>
-    <details><summary>No keyboard? Use the computer keys</summary>
-      <p><kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> are the white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> the black ones, <kbd>Z</kbd>/<kbd>X</kbd> shift the octave. You can also click or touch the on-screen keys.</p></details>
-  </fieldset>
-  <fieldset><legend>Hands</legend>
-    <label class="field"><span>Split point for single-track files</span>
-      <select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === split ? ' selected' : ''}>${noteName(p)}${p === 60 ? ' (middle C)' : ''} and up is the right hand</option>`).join('')}</select></label>
-  </fieldset>
-  <fieldset><legend>Shortcuts</legend>
-    <div class="sc"><kbd>Space</kbd><span>Play / pause</span><kbd>V</kbd><span>Cycle the view: staff, both, falling</span><kbd>Esc</kbd><span>Close, or back to songs</span><kbd>[</kbd><span>Slower (Learn)</span><kbd>]</kbd><span>Faster (Learn)</span></div>
-  </fieldset>
-  <fieldset><legend>Your data</legend>
-    <p>Songs and progress live only in this browser.</p>
-    <button class="btn" id="sExport">Export progress (JSON)</button>
-  </fieldset>`
+  ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm'], ['2', 'Arcade']], String(settings.fx))}
+  ${seg('sound', 'Sound', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard')}
+  ${
+    device
+      ? `<label class="srow"><span>Instrument</span><select id="sInst"><option value="piano"${settings.instrument === 'piano' ? ' selected' : ''}>Grand piano</option><option value="synth"${settings.instrument === 'synth' ? ' selected' : ''}>Synth</option></select></label>
+  <label class="srow"><span>Volume</span><input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}"></label>
+  <p class="fine" role="status">${piano.state === 'failed' ? 'Piano failed to load. Using the synth. ' : ''}Hearing every note twice? Turn Local Control off on the keyboard.</p>`
+      : ''
+  }
+  ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
+  <div class="srow"><span>Keyboard</span>${
+    inputs.length > 1
+      ? `<select id="sDevice"><option value="">All</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
+      : `<b>${inputs.length ? esc(inputs[0].name) : 'None found'}</b>`
+  }</div>
+  <p id="sMon" class="fine" role="status"></p>
+  <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
+  <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><button class="btn sm" id="sClear">Clear</button><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>
+  <details><summary>Advanced</summary>
+    <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
+    <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
+    <label class="srow"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
+    <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
+  </details>
+  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. <button class="link" id="sHelp">Shortcuts</button></p>`
 }
 
 // ---------- reading drills ----------

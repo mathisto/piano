@@ -1,15 +1,14 @@
 import type { Opts } from './technique'
 export interface Settings {
-  fx: 0 | 1 | 2 | 3 // effects: off, calm, arcade, max
+  fx: 0 | 1 | 2 // effects: off, calm, arcade
   fall: number // seconds of look-ahead on the highway
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
   instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
-  chord: boolean // name the chord you are holding
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
-  hold: 'off' | 'lenient' | 'strict' // how closely to grade holding a key for the written length (Perform only)
+  strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
   offset: number // ms, from calibration
@@ -26,8 +25,7 @@ const DEFAULTS: Settings = {
   instrument: 'piano',
   volume: 0.7,
   names: true,
-  chord: true,
-  hold: 'lenient',
+  strict: 'standard',
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
   full: false,
   view: 'both',
@@ -43,6 +41,10 @@ function load(): Settings {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
     if (saved.staff === false && !saved.view) saved.view = 'falling' // from the old "Show the staff" switch
     delete saved.staff
+    if (saved.fx > 2) saved.fx = 2 // the Max tier is gone
+    if (!saved.strict && saved.hold) saved.strict = saved.hold === 'off' ? 'easy' : saved.hold === 'strict' ? 'strict' : 'standard'
+    delete saved.hold
+    delete saved.chord
     return { ...DEFAULTS, ...saved }
   } catch {
     return { ...DEFAULTS }

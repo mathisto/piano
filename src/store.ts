@@ -118,6 +118,21 @@ export async function exportAll() {
   return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
+/** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
+export async function importAll(text: string) {
+  const d = JSON.parse(text)
+  if (d?.version !== 1) throw new Error('Not a piano export.')
+  for (const [id, p] of Object.entries(d.progress ?? {})) await set(`prog:${id}`, p)
+  if (d.reading) await set('drill:stats', d.reading)
+  if (d.touch) await set('touch:log', d.touch)
+  if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
+}
+
+export async function clearAll() {
+  for (const k of await keys()) if (/^(song|prog|drill|touch):/.test(String(k))) await del(k)
+  localStorage.removeItem('piano.settings')
+}
+
 export async function getDrill(): Promise<Stats> {
   return (await get<Stats>('drill:stats')) ?? {}
 }

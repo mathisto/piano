@@ -103,7 +103,6 @@ svg.i.solid {
 .grp > .cap,
 table.songs th,
 table.songs caption,
-.drawer legend,
 .tag {
   font: 700 13px/1 var(--ui);
   letter-spacing: 0.1em;
@@ -1353,8 +1352,16 @@ kbd {
     opacity: 0;
   }
 }
+.drawer {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.drawer .switch {
+  display: flex;
+}
 .drawer h2 {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   font: 800 italic 28px/1 var(--display);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1362,20 +1369,12 @@ kbd {
 .drawer h2:focus {
   outline: none;
 }
-.drawer fieldset,
 .drawer details {
-  border: 0;
   border-top: 1px solid var(--line);
-  margin: 0;
-  padding: 16px 0;
+  margin-top: 12px;
+  padding: 14px 0 4px;
   display: grid;
-  gap: 12px;
-}
-.drawer legend {
-  float: left;
-  width: 100%;
-  padding: 0 0 10px;
-  color: var(--ink-3);
+  gap: 4px;
 }
 .drawer summary {
   cursor: pointer;
@@ -1392,11 +1391,6 @@ kbd {
 }
 .drawer details[open] > summary::before {
   content: '−';
-}
-.drawer fieldset > details {
-  border-top: 0;
-  padding: 0;
-  gap: 8px;
 }
 .drawer a {
   color: var(--ink);
@@ -1415,6 +1409,74 @@ kbd {
   border-radius: var(--r-2);
   padding: 0 10px;
   width: 100%;
+}
+
+.srow {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--control);
+}
+.srow > span {
+  color: var(--ink-2);
+}
+.srow > b {
+  font-weight: 650;
+}
+.srow .seg {
+  justify-self: start;
+}
+.inl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.inl input[type='number'] {
+  width: 5.5rem;
+}
+.drawer .fine {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.drawer .foot {
+  margin-top: 8px;
+}
+button.link {
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+dialog#help {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  padding: 24px 28px;
+  max-width: 420px;
+}
+dialog#help::backdrop {
+  background: rgba(5, 6, 13, 0.7);
+}
+dialog#help h2 {
+  margin: 0 0 14px;
+  font: 800 italic 28px/1 var(--display);
+  text-transform: uppercase;
+}
+dialog#help .btn {
+  margin-top: 16px;
+}
+@media (hover: none) {
+  .drawer .foot .link {
+    display: none;
+  }
 }
 .field {
   display: grid;
