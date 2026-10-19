@@ -18,3 +18,13 @@ export function weekOf(days: Record<string, number>, d = new Date()): { days: We
   })
   return { days: out, minutes: Math.floor(sec / 60) }
 }
+
+const GOALS = [30, 60, 90, 120, 180]
+
+/** Last week's totals and a goal to suggest: one step up after meeting the goal, otherwise unchanged. */
+export function lastWeek(days: Record<string, number>, goal: number, d = new Date()): { minutes: number; played: number; suggest: number } | null {
+  const prev = weekOf(days, new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7))
+  if (!prev.minutes) return null
+  const up = GOALS.find((g) => g > goal)
+  return { minutes: prev.minutes, played: prev.days.filter((x) => x.played).length, suggest: prev.minutes >= goal && up ? up : goal }
+}

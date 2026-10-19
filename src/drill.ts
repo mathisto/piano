@@ -56,6 +56,8 @@ export interface NoteStat {
   n: number // times seen
   clean: number // moving average of first-try correct, 0..1
   rt: number // moving average response time in ms
+  box?: number // review box, 0..4
+  due?: number // local day number when it is next due
 }
 export type Stats = Record<string, NoteStat>
 
@@ -66,12 +68,20 @@ const key = (c: Card) =>
   `${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches[0]}${c.flat ? ':b' : ''}${c.fifths ? `:f${c.fifths}` : ''}`
 export const cardKey = key
 
-export function record(stats: Stats, k: string, clean: boolean, rt: number): Stats {
+/** Days until a card is due again, by review box: a clean answer moves it up a box, a miss down one. */
+export const INTERVALS = [1, 2, 4, 8, 16]
+
+/** Whole local days since the epoch, so "today" does not move at UTC midnight. */
+export const dayNum = (d = new Date()) => Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000)
+
+export function record(stats: Stats, k: string, clean: boolean, rt: number, day = dayNum()): Stats {
   const s = stats[k]
   const c = clean ? 1 : 0
+  const box = Math.min(INTERVALS.length - 1, Math.max(0, (s?.box ?? 0) + (clean ? 1 : -1)))
+  const sched = { box, due: day + INTERVALS[box] }
   stats[k] = s
-    ? { n: s.n + 1, clean: s.clean + A * (c - s.clean), rt: s.rt + A * (rt - s.rt) }
-    : { n: 1, clean: c, rt }
+    ? { n: s.n + 1, clean: s.clean + A * (c - s.clean), rt: s.rt + A * (rt - s.rt), ...sched }
+    : { n: 1, clean: c, rt, ...sched }
   return stats
 }
 
@@ -94,10 +104,10 @@ export function cards(stage: Stage): Card[] {
 }
 
 /** How much the player needs this card: unseen and shaky cards are dealt more often. */
-export function weight(stats: Stats, c: Card, goalMs: number): number {
+export function weight(stats: Stats, c: Card, goalMs: number, today = dayNum()): number {
   const s = stats[key(c)]
   if (!s) return 4
-  return 1 + 4 * (1 - s.clean) + Math.min(2, s.rt / goalMs) + (s.n < 3 ? 1.5 : 0)
+  return 1 + 4 * (1 - s.clean) + Math.min(2, s.rt / goalMs) + (s.n < 3 ? 1.5 : 0) + (s.due !== undefined && s.due <= today ? 2 : 0)
 }
 
 /** A deck of `n` cards, weighted toward weak ones, never the same card twice in a row. */
@@ -118,6 +128,23 @@ export function deck(pool: Card[], stats: Stats, goalMs: number, n: number, rnd:
     out.push(pick)
   }
   return out
+}
+
+/** Cards of a stage that have been seen and are due for review. */
+export function dueCards(stage: Stage, stats: Stats, today = dayNum()): number {
+  return cards(stage).filter((c) => {
+    const s = stats[key(c)]
+    return s?.due !== undefined && s.due <= today
+  }).length
+}
+
+/** What to read next: the earliest stage with cards due, else the first stage not yet solid. */
+export function focus(stats: Stats, today = dayNum()): { stage: Stage; reason: 'due' | 'next'; due: number } {
+  for (const stage of STAGES) {
+    const due = dueCards(stage, stats, today)
+    if (due) return { stage, reason: 'due', due }
+  }
+  return { stage: nextStage(stats), reason: 'next', due: 0 }
 }
 
 export interface Mastery {

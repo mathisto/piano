@@ -135,6 +135,16 @@ export async function addPractice(day: string, sec: number) {
   await set('practice:days', d)
 }
 
+/** Plan steps finished on a local day, so Today can tick them off. */
+export async function getPlan(day: string): Promise<string[]> {
+  return (await get<string[]>(`plan:${day}`)) ?? []
+}
+
+export async function markPlan(day: string, step: string) {
+  const d = await getPlan(day)
+  if (!d.includes(step)) await set(`plan:${day}`, [...d, step])
+}
+
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
   return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), settings: localStorage.getItem('piano.settings') }, null, 1)
@@ -152,7 +162,7 @@ export async function importAll(text: string) {
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 

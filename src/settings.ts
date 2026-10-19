@@ -6,6 +6,7 @@ export interface Settings {
   instrument: 'piano' | 'synth' // sampled grand piano, or the small built-in synth
   volume: number
   names: boolean // note names on keys and notes
+  planMin: 5 | 10 | 20 // how long a Today plan should take
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
@@ -27,6 +28,7 @@ const DEFAULTS: Settings = {
   volume: 0.7,
   names: true,
   strict: 'standard',
+  planMin: 10,
   goal: 60,
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
   full: false,

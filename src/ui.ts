@@ -272,6 +272,7 @@ export interface StageRow {
   total: number
   rt: number // mean response time of seen cards, ms (0 = none yet)
   next: boolean
+  due: number // seen cards whose review is due
 }
 
 const GROUPS: [string, (id: string) => boolean][] = [
@@ -295,7 +296,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
       group = g
       const pct = Math.round(r.pct * 100)
       return `${band}<tr>
-        <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag">Next</span>' : ''}<small>${esc(r.stage.blurb)}</small></td>
+        <td class="name">${esc(r.stage.name)}${r.due ? ' <span class="tag">Due</span>' : r.next ? ' <span class="tag">Next</span>' : ''}<small>${esc(r.stage.blurb)}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>${r.solid ? '<small style="color:var(--ink-3)">Solid</small>' : r.seen ? `<small style="color:var(--ink-3)">${r.seen} of ${r.total} seen</small>` : ''}</td>
         ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
         <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`
@@ -351,8 +352,12 @@ export interface TodayData {
   read: { id: string; name: string; pct: number; line: string }
   tech: string
   fix?: { id: string; title: string; a: number; b: number } // the worst bars of the piece played last
+  review?: { name: string; id: string; line: string } // a second reading stage, for the longest plan
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
   goal: number
+  planMin: 5 | 10 | 20
+  done: string[] // steps finished today
+  recap?: { minutes: number; played: number; suggest: number } // last week, shown on Mondays
 }
 
 const weekBlock = (w: TodayData['week'], goal: number) => `
@@ -363,18 +368,29 @@ const weekBlock = (w: TodayData['week'], goal: number) => `
 
 /** The day as a short list in practice order; nothing is locked and each row stands alone. */
 export function todayView(el: HTMLElement, d: TodayData) {
-  const row = (lead: string, title: string, sub: string, action: string, mid = '') =>
-    `<div class="prow">${lead}<div class="pwho"><b>${esc(title)}</b><span>${esc(sub)}</span></div>${mid}<div class="pact">${action}</div></div>`
-  const rows = [
-    row('', d.tech, 'Warm-up', `<button class="btn primary" data-today="tech">${icon('play')}Start</button>`),
-    row('', d.read.name, d.read.line, `<button class="btn" data-today="read" data-id="${d.read.id}">Practice</button>`, `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`),
-    row(`<div class="tthumb thumb">${d.last.thumb}</div>`, d.last.title, d.last.sub, `<button class="btn" data-today="continue" data-id="${d.last.id}">${d.last.first ? 'Start' : 'Continue'}</button>`),
-    ...(d.fix ? [row('', `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, 'Slow loop at 70%', `<button class="btn" data-today="fix" data-id="${d.fix.id}" data-a="${d.fix.a}" data-b="${d.fix.b}">${icon('loop')}Loop</button>`)] : []),
+  type R = { key: string; lead?: string; title: string; sub: string; mid?: string; act: (cls: string) => string }
+  const all: R[] = [
+    { key: 'warm', title: d.tech, sub: 'Warm-up', act: (c) => `<button class="btn${c}" data-today="tech">${icon('play')}Start</button>` },
+    { key: 'read', title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${d.read.id}">Practice</button>` },
+    { key: 'piece', lead: `<div class="tthumb thumb">${d.last.thumb}</div>`, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${d.last.id}">${d.last.first ? 'Start' : 'Continue'}</button>` },
+    ...(d.fix ? [{ key: 'fix', title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${d.fix!.id}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
+    ...(d.review ? [{ key: 'review', title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${d.review!.id}">Practice</button>` }] : []),
   ]
+  const keep: Record<number, string[]> = { 5: ['warm', 'read'], 10: ['warm', 'read', 'piece'], 20: ['warm', 'read', 'piece', 'fix', 'review'] }
+  const plan = all.filter((r) => keep[d.planMin].includes(r.key))
+  const first = plan.find((r) => !d.done.includes(r.key))
+  const rows = plan
+    .map((r) => {
+      const done = d.done.includes(r.key)
+      const cls = r === first ? ' primary' : done ? ' ghost' : ''
+      return `<div class="prow${done ? ' done' : ''}">${r.lead ?? ''}<div class="pwho"><b>${done ? icon('check') : ''}${esc(r.title)}</b><span>${esc(r.sub)}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
+    })
+    .join('')
   el.innerHTML = `
-    ${head('Today')}
+    ${head('Today', `<div class="seg" role="radiogroup" aria-label="Plan length">${[5, 10, 20].map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
+    ${d.recap ? `<details class="tcard recap"><summary>Last week: ${d.recap.minutes} min on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}</summary>${d.recap.suggest !== d.goal ? `<p>You met your goal.</p><button class="btn" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : `<p>Goal this week: ${d.goal} min.</p>`}</details>` : ''}
     <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal)}</section>
-    <div class="plan">${rows.join('')}</div>`
+    <div class="plan">${rows}</div>`
 }
 
 export interface ProgressData {

@@ -99,3 +99,57 @@ describe('drill', () => {
     expect(s.notes.at(-1)).toMatchObject({ bar: 1 })
   })
 })
+
+import { dayNum, dueCards, focus, INTERVALS, record as rec, weight as w, STAGES as ST, cards as cs, cardKey as ck } from './drill'
+
+describe('review schedule', () => {
+  it('moves a card up a box on a clean answer and down one on a miss', () => {
+    const st: Stats = {}
+    rec(st, 'k', true, 1000, 10)
+    expect(st.k).toMatchObject({ box: 1, due: 10 + INTERVALS[1] })
+    rec(st, 'k', true, 1000, 12)
+    expect(st.k).toMatchObject({ box: 2, due: 12 + INTERVALS[2] })
+    rec(st, 'k', false, 3000, 14)
+    expect(st.k).toMatchObject({ box: 1, due: 14 + INTERVALS[1] })
+    rec(st, 'k', false, 3000, 15)
+    rec(st, 'k', false, 3000, 15)
+    expect(st.k.box).toBe(0)
+  })
+
+  it('caps at the last interval', () => {
+    const st: Stats = {}
+    for (let i = 0; i < 9; i++) rec(st, 'k', true, 900, 0)
+    expect(st.k.box).toBe(INTERVALS.length - 1)
+  })
+
+  it('counts cards due today, never ones not yet seen', () => {
+    const stage = ST[0]
+    const st: Stats = {}
+    for (const c of cs(stage)) rec(st, ck(c), true, 900, 0)
+    expect(dueCards(stage, st, 0)).toBe(0)
+    expect(dueCards(stage, st, INTERVALS[1])).toBe(cs(stage).length)
+    expect(dueCards(ST[5], st, 99)).toBe(0) // bass cards were never seen
+  })
+
+  it('deals due cards more often', () => {
+    const stage = ST[0]
+    const c = cs(stage)[0]
+    const st: Stats = {}
+    rec(st, ck(c), true, 900, 0)
+    for (let i = 0; i < 6; i++) rec(st, ck(c), true, 900, 0)
+    const fresh = w(st, c, stage.goalMs, 0)
+    expect(w(st, c, stage.goalMs, 400)).toBeGreaterThan(fresh)
+  })
+
+  it('points the plan at due review before new material', () => {
+    const st: Stats = {}
+    for (const stage of ST.slice(0, 2)) for (const c of cs(stage)) for (let i = 0; i < 12; i++) rec(st, ck(c), true, 1000, 0)
+    expect(focus(st, 0).reason).toBe('next')
+    expect(focus(st, 100)).toMatchObject({ reason: 'due', stage: ST[0] })
+  })
+
+  it('numbers local days', () => {
+    expect(dayNum(new Date(2026, 9, 19, 23, 59))).toBe(dayNum(new Date(2026, 9, 19, 0, 1)))
+    expect(dayNum(new Date(2026, 9, 20))).toBe(dayNum(new Date(2026, 9, 19)) + 1)
+  })
+})

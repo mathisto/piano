@@ -32,13 +32,13 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 
 Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 
-- [ ] Error-targeted loop after every run: the two worst bars, 2 to 4 bars of context, one tap to loop at a lower tempo; count clean passes in a row per bar.
-- [ ] Automatic tempo ramp (Melodics-style Auto BPM): +5% after three clean passes, -10% after two failed.
-- [ ] After a clean Learn pass with Wait on, suggest the exit ramp: wait, 50%, 75%, full speed.
-- [ ] Review scheduling: Leitner boxes (1, 2, 4, 8, 16 days) per Read card and per exercise; states New, Learning, Solid, Due; a miss drops one box.
-- [ ] Today plan generator: warm-up (last exercise, about 2 minutes), reading (due cards first), piece (its worst bars); 5, 10 or 20 minute chips; skip anywhere.
+- [x] Error-targeted loop after every run: the results card offers the next step (loop the two worst bars at 70%, or lose the wait, or climb the tempo ladder). Clean passes are counted per loop pass, not per bar.
+- [x] Automatic tempo ramp in Learn loops (switch in the dock): +5% after three clean passes, -10% after two messy ones (`pace.ts`).
+- [x] Exit ramp suggested after a clean pass: lose the wait, then 50%, 75%, full tempo.
+- [~] Review scheduling: Leitner boxes (1, 2, 4, 8, 16 days) per Read card, due cards dealt more often, Due tag on Read, Today points at due review first. Not yet per exercise.
+- [x] Today plan: warm-up, reading (due first), piece, the worst-bars loop and a second review, by 5, 10 or 20 minutes; steps tick off through the day; every row stands alone.
 - [ ] Effort and skill kept apart: days and minutes only rise; mastery can fall to Due.
-- [ ] Weekly summary on Monday (minutes, the measure that improved most, a suggested goal).
+- [x] Monday recap of last week (minutes, days) with a goal suggestion after a met goal. The 'measure that improved most' is not built.
 - [ ] Fading feedback: judgement words and the note-name training wheels fade as mastery grows in Learn and Technique; mastery is graded on unaided runs.
 - [ ] Reading stages: cap isolated note-name drills at the landmark stages; add short melodic fragments in key, then rhythm reading (a card stream played in time) and a reading-ahead mode.
 - [ ] Technique breadth in syllabus order: five-finger, C G D F scales hands separate, contrary motion, arpeggios, remaining keys, minor keys; evenness, melody over accompaniment, staccato and legato by hold length; mastery per exercise with the Read meter.

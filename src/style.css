@@ -1840,3 +1840,24 @@ body.zen #dock .aids {
   justify-content: space-between;
   gap: 16px;
 }
+
+.prow.done .pwho b {
+  color: var(--ink-2);
+}
+.prow .pwho b svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -3px;
+}
+.recap {
+  margin-bottom: 16px;
+}
+.recap summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.recap p {
+  margin: 8px 0;
+  color: var(--ink-2);
+}

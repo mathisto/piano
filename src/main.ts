@@ -6,7 +6,7 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
-import { BPM, STAGES, cardKey, cards, deck, deckSong, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
+import { BPM, STAGES, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
@@ -24,7 +24,7 @@ import { thumb } from './thumb'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate } from './touch'
 import { exercise, type Opts } from './technique'
-import { weekOf, dayKey } from './week'
+import { dayKey, lastWeek, weekOf } from './week'
 import { $, CAL_NOTES, tracksDialog, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
@@ -126,27 +126,37 @@ async function showSection(name: Section, err = '') {
 
 async function stageRows(): Promise<StageRow[]> {
   drillStats = await store.getDrill()
-  const rec = nextStage(drillStats)
+  const f = focus(drillStats)
   return STAGES.map((stage) => {
     const m = mastery(stage, drillStats)
     const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
-    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === rec }
+    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === f.stage, due: dueCards(stage, drillStats) }
   })
 }
 
 async function showToday() {
-  const [{ last }, rows, days] = await Promise.all([libraryData(), stageRows(), store.getPractice()])
+  const [{ last }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
   const next = rows.find((r) => r.next)!
   const ex = exercise(settings.tech, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
+  const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
   todayView($('#today'), {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, thumb: last.thumb, first: !last.prog?.last },
-    read: { id: next.stage.id, name: next.stage.name, pct: next.pct, line: next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
+    read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
     fix: worst && last.bars ? { id: last.id, title: last.title, ...worst } : undefined,
+    review: second ? { id: second.stage.id, name: `Review ${second.stage.name.toLowerCase()}`, line: `${second.due} ${second.due === 1 ? 'card' : 'cards'} due` } : undefined,
     week: weekOf(days),
     goal: settings.goal,
+    planMin: settings.planMin,
+    done,
+    recap: new Date().getDay() === 1 ? lastWeek(days, settings.goal) ?? undefined : undefined,
   })
+  $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
+    settings.planMin = Number(r.value) as 5 | 10 | 20
+    save()
+    void showToday()
+  }))
 }
 
 async function showProgress() {
@@ -160,6 +170,12 @@ async function showProgress() {
 }
 
 $('#today').addEventListener('click', (e) => {
+  const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')
+  if (g) {
+    settings.goal = Number(g.dataset.goal)
+    save()
+    return void showToday()
+  }
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
   if (!b) return
   if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
@@ -640,6 +656,8 @@ function drillOk(noteId: number, rt: number, clean: boolean) {
 async function drillDone() {
   const d = drill!
   await store.saveDrill(drillStats)
+  const done = await store.getPlan(dayKey())
+  void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats) : undefined
   const nxt = nextStage(drillStats)
@@ -688,6 +706,7 @@ async function onDone(r: Result) {
     r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
   )
   current.heat = prog.heat
+  void store.markPlan(dayKey(), current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
