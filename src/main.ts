@@ -338,8 +338,9 @@ async function openSong(song: Song, mode: Mode) {
 }
 
 function leave() {
+  if (document.body.classList.contains('zen')) zen()
   void flushPractice()
-  document.body.classList.remove('hush', 'zen')
+  document.body.classList.remove('hush')
   const wasDrill = !!drill
   const techSong = current?.song.id.startsWith('tech:')
   if (drill) void store.saveDrill(drillStats)
@@ -1005,6 +1006,16 @@ $('#read').addEventListener('click', (e) => {
   } else if (b.dataset.review) void startDrill('review')
 })
 
+/** Hide the top bar and the dock's extras so the staff and keyboard have the screen; the dock button brings them back. */
+function zen() {
+  const on = document.body.classList.toggle('zen')
+  document.querySelector('#zen')?.setAttribute('aria-pressed', String(on))
+  highway?.layout()
+}
+addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('#zen')) zen()
+})
+
 function chooseMode(mode: Mode) {
   game.endPass()
   game.setMode(mode)
@@ -1024,10 +1035,8 @@ addEventListener('keydown', (e) => {
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return
   if ((e.target as HTMLElement).closest('dialog')) return
   if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
-  else if (e.key === 'm' && current) {
-    document.body.classList.toggle('zen')
-    highway?.layout()
-  } else if (e.key === 'n') {
+  else if (e.key === 'm' && current) zen()
+  else if (e.key === 'n') {
     settings.names = !settings.names
     save()
   } else if (e.key === 'Escape') {

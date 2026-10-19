@@ -35,6 +35,7 @@ export class Dock {
       <div class="dock-row">
         <button class="btn primary big" id="go"></button>
         <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
+        <button class="btn icon ghost" id="zen" aria-label="Hide controls" aria-pressed="false" title="Hide controls (M)">${icon('focus')}</button>
         <div class="scrub" id="scrub" data-modes="perform learn">
           <svg viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="loop" hidden></div>
