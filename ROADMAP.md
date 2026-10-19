@@ -21,7 +21,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - [x] Navigation and page templates: Today and Progress added, Touch folded away, one page head, trimmed Songs and Read tables, themed selects.
 - [x] Second critique pass: 29/40 (from 26); zen layout bug, bar-fade band, one page measure, Today plan list, Technique form, Progress cells, copy cuts, miss decay all fixed. Projected 32-33 once polished further.
 - [x] DESIGN.md and sidecar rewritten from the shipped build: grammar, components, page templates, play states, rules, known debt.
-- [ ] Perform and Learn as a choice on a start sheet instead of a bar switch.
+- [x] Perform and Learn are chosen on the start card; the bar switch only shows while paused.
 - [x] Start card per song: Perform or Learn, how much of the notes to show (Simplify, only when it would change something), credit line for library pieces; tempo and hands live in the dock, tracks and split in the song's Options.
 - [x] Decided: the bar only fades while playing, because reclaiming its 56px mid-song would shift the falling notes; the dock's focus button (and `M`) hide the bar and extras on purpose, on touch too.
 - [x] Today shows the generated plan (see Phase E).
@@ -48,13 +48,13 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 
 - [x] Research: `docs/research/midi-import-audit.md` (the staff is not a notation engine: no quantization, voices, rests, ties, tuplets; tracks merged into two hands; plus real importer bugs: pad track labelled right hand, program change splitting a piano into two tracks, pickup bar shifting barlines, wrong enharmonic, key estimate dominated by long notes). Original Aerith file still needed; the snippet to recover it is in section 10 of the audit.
 - [x] Research: `docs/research/public-domain-sources.md` (Mutopia as MIDI, OpenScore Lieder as MusicXML, IMSLP manual only; 40-piece graded list; fetch script outline).
-- [~] F0/F1 first slice shipped 19 Oct: `src/midi-tracks.ts` (`inspectMidi`, `autoSelect`), a Tracks button on every multi-track MIDI row with a live crowding count, hands pinnable per track, track names recovered from empty heading tracks. The owner's ff7aerith.mid (13 instrument tracks, 5,082 notes, up to 35 a bar) now opens as oboe plus harp, 1,373 notes, at most 10 a bar. Still open here: sibling tracks split by a mid-file program change, the pad rule for the two-track hand split, a Share original MIDI button, a fuller import report (overlap, drums by note number, pickup, key margin). Original F0 text: `inspectMidi` import report per song from the stored bytes (tracks, density, overlaps, drums, pickup, key margin) and a Share original MIDI button.
+- [x] F0/F1: `src/midi-tracks.ts` (`inspectMidi`, `autoSelect`), an Options dialog per imported file (facts: notes, bars, length, key, drums; the track list with in-use tracks first and a hand per track; share the original file; remove), track names recovered from empty heading tracks. The owner's ff7aerith.mid (13 tracks, 5,082 notes, up to 35 a bar) opens as oboe plus harp, 1,373 notes, at most 10 a bar. Not built because it was not reproduced in a real file: sibling tracks split by a program change, a pad rule for the two-track hand split.
 - [x] F1: track selection with a default that picks a lead and an accompaniment from crowded orchestral files and keeps whole piano scores; hands pinnable per track; single-track hand split follows the nearer line near the split pitch. Not reproduced in a real file, so not built: sibling tracks split by a program change.
 - [x] F2: `src/quantize.ts` notation layer in the importer (ticks and quarters; chord clusters; per-hand grid over 16th, triplet 8th and 32nd by Viterbi; pickup detection; graces flagged; written value clipped to the voice and barline; ties; voice 2 for held notes; onset-weighted key estimate with `Song.keys`; windowed spelling). Open: a lone triplet quarter figure over two beats is written as sixteenths; no beat tracking for files without a tempo map; one-rule voice split; ornaments flagged, not a user option.
 - [x] F3: `src/layout.ts` pure layout with tests (columns, voices, rests, ties across barlines, tuplet brackets, grace notes, 8va and 15ma brackets, meter-aware beaming, key and time signatures where they change, pickup widths, rhythmic spacing as a monotone time-to-x map so the cursor still sweeps evenly) and a thin SVG painter in `staff.ts`; sheet view picks bars per system by width and shows a calm 'Dense: simplify' hint. Open: stems of two-voice bars and wide chords run long, tuplet brackets never sit inside the group, a bar wider than a system is zoomed out and squeezed instead of wrapped, mid-bar tempo changes leave the cursor up to a third of a beat off, the painter is covered by browser checks only.
 - [x] F4: Simplify per song (full, two hands, melody and bass, melody only) with an automatic level for busy arrangements, set on the start card and remembered per song.
 - [x] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
-- [ ] Full score view for MusicXML (more bars, rests, beams, ties, repeats).
+- [x] Full notation for MusicXML and MIDI: rests, ties, beams per meter, tuplets, graces, 8va, key and time changes, repeats and endings expanded, up to four bars a system in sheet view.
 - [x] More instruments: electric piano, church organ, harp, strings, music box from MuseScore_General (MIT, rendered from FluidR3), about 1.5 MB, loaded only when chosen, credited in Credits (`docs/sounds.md`, `src/instruments.ts`). Unverified: tone and loop seams were checked by decoding, never by ear.
 
 ## iPad app (developer mode, one person)
@@ -63,7 +63,7 @@ Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoN
 
 - [x] Capacitor project, CoreMIDI plugin, JS shim, playback audio session, wake lock, landscape, safe areas, share-sheet export.
 - [ ] Check on the iPad: FP-10 over USB (timing, use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files, Stage Manager resize, the sound of the piano samples, the count-in click.
-- [ ] Rebuild and reinstall after the design pass.
+- [x] Rebuilt and reinstalled 19 Oct 2026 after the sounds and polish merges; rebuild once more after the final review (a 7-day profile).
 - Limits: 60 Hz cap in the web view; storage is separate from the website; Bluetooth MIDI pairing reportedly crashes on iPadOS 27.0, so use USB.
 
 ## Known gaps
