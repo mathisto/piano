@@ -449,6 +449,8 @@ Each component: anatomy, then states. All interactive states share the 2px Lamp 
 - **Do** differentiate hands by hue, fill style (solid vs. tinted with a lighter outline) and lane edge.
 - **Do** reserve Lamp (#ffc83d) for the verb and the now-markers, and use the 2px/2px Lamp focus ring everywhere.
 - **Do** draw control borders in Edge (#5a6196) and keep Line for hairlines.
+- **Do** use Ink 2, not Ink 3, for text read mid-song (HUD captions, bar numbers, dock labels, scrub labels): Ink 3 is 5.9:1 and Apple asks 7:1 for small dark-mode text. Ink 3 stays for icons, grabbers and menus read at arm's length.
+- **Do** keep the staff at print size (staff space about 1.9 mm); the divider's 26% minimum guards it.
 - **Do** build controls from `--control` and the four radii (4, 8, 12, pill) so touch sizing follows.
 - **Do** start every non-play page with the page head and the 1100px measure.
 - **Do** write plan, song and stage rows in the same row grammar.

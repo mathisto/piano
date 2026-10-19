@@ -18,7 +18,7 @@ function ready(): AudioContext {
     master = ctx.createGain()
     master.connect(ctx.destination)
   }
-  if (ctx.state === 'suspended') void ctx.resume()
+  if (ctx.state !== 'running') void ctx.resume() // iOS reports `interrupted` after a call, Siri or lock, and needs this too
   master!.gain.value = settings.volume * 0.5
   return ctx
 }

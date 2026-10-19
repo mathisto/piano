@@ -414,6 +414,7 @@ function applyLayout() {
   p.style.setProperty('--pb', `${(1 - settings.pane) * 100}fr`)
   const sp = $('#split')
   sp.hidden = !current || game.mode === 'read'
+  sp.classList.toggle('edge', v !== 'both')
   sp.setAttribute('aria-valuenow', String(Math.round((v === 'falling' ? 0 : v === 'sheet' ? 1 : settings.pane) * 100)))
   sp.setAttribute('aria-valuetext', v === 'both' ? 'Sheet music and falling notes' : v === 'sheet' ? 'Sheet music only' : 'Falling notes only')
 }
@@ -436,6 +437,13 @@ function setPane(p: number) {
   if (v === 'both') settings.pane = Math.min(PANE.max, Math.max(PANE.min, p))
   if (v !== settings.view) setView(v)
   else applyLayout()
+}
+
+/** A tap or Enter walks both, staff only, falling notes only: the way to resize without dragging. */
+function cycle() {
+  const v = settings.view
+  setPane(v === 'both' ? 1 : v === 'sheet' ? 0 : PANE.def)
+  save()
 }
 
 /** One step by keyboard: down and up walk through falling only, both with the pane resized, and sheet only. */
@@ -462,19 +470,17 @@ function nudge(dir: 1 | -1) {
     if (Math.abs(e.clientY - dragFrom.y) > 4) dragFrom.moved = true
     if (dragFrom.moved) setPane((e.clientY - dragFrom.top) / dragFrom.total)
   }
-  sp.onpointerup = sp.onpointercancel = () => {
+  sp.onpointercancel = () => sp.classList.remove('drag')
+  sp.onpointerup = () => {
     sp.classList.remove('drag')
-    if (!dragFrom.moved && settings.view !== 'both') setPane(PANE.def) // a tap on a collapsed edge brings the other pane back
-    save()
-  }
-  sp.ondblclick = () => {
-    setPane(PANE.def)
-    save()
+    if (dragFrom.moved) save()
+    else cycle()
   }
   sp.onkeydown = (e) => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+    if (e.key === 'Enter' || e.key === ' ') cycle()
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') nudge(e.key === 'ArrowDown' ? 1 : -1)
+    else return
     e.preventDefault()
-    nudge(e.key === 'ArrowDown' ? 1 : -1)
   }
 }
 
