@@ -16,6 +16,8 @@ export interface Stage {
   flat?: boolean // black keys are written as flats (default: sharps)
   fifths?: number // key signature the whole set is read in (default: none)
   notes?: string // how the pool is described on the Read page, when a range says too little
+  scale?: number[] // melody stages: fragments of four notes walked through this scale
+  need?: number // sightings of a card before it counts as mastered (default 12)
 }
 
 const T = (lo: number, hi: number) => whites(lo, hi)
@@ -41,12 +43,17 @@ export const STAGES: Stage[] = [
   { id: 'flats', name: 'Flats', blurb: 'The same black keys, written as flats.', pool: chroma(60, 72), size: 1, goalMs: 3000, flat: true, notes: 'C4 to C5, with flats' },
   { id: 'keys-g', name: 'Key of G', blurb: 'One sharp in the key signature: every F is F sharp, with no sign beside the note.', pool: major(67), size: 1, goalMs: 3000, fifths: 1, notes: 'G major scale' },
   { id: 'keys-f', name: 'Key of F', blurb: 'One flat in the key signature: every B is B flat, with no sign beside the note.', pool: major(65), size: 1, goalMs: 3000, fifths: -1, notes: 'F major scale' },
+  { id: 'tune-c', name: 'Four-note tunes', blurb: 'Runs, turns and a skip in C: read the shape of the line, not each letter.', pool: [], scale: whites(60, 69), size: 1, goalMs: 3000, need: 6, notes: 'C4 to A4, four notes at a time' },
+  { id: 'tune-g', name: 'Tunes in G', blurb: 'The same shapes with one sharp in the key.', pool: [], scale: major(67), size: 1, goalMs: 3500, fifths: 1, need: 6, notes: 'G major, four notes at a time' },
+  { id: 'tune-f', name: 'Tunes in F', blurb: 'The same shapes with one flat in the key.', pool: [], scale: major(65), size: 1, goalMs: 3500, fifths: -1, need: 6, notes: 'F major, four notes at a time' },
+  { id: 'tune-b', name: 'Bass tunes', blurb: 'Four-note lines under the left hand.', pool: [], scale: whites(43, 53), size: 1, goalMs: 3500, hand: 'L', need: 6, notes: 'G2 to F3, four notes at a time' },
   { id: 'ints', name: 'Intervals', blurb: 'Two notes at once: seconds to fifths, treble clef.', pool: T(60, 74), size: 2, goalMs: 4000 },
   { id: 'triads', name: 'Triads', blurb: 'Three notes stacked in thirds, treble clef.', pool: T(60, 71), size: 3, goalMs: 5000 },
 ]
 
 export interface Card {
-  pitches: number[] // ascending
+  pitches: number[] // ascending, or in playing order when `seq`
+  seq?: boolean // a melodic fragment: one note per beat instead of one chord
   hand: Hand
   flat?: boolean // spelled as a flat
   fifths?: number // read in this key
@@ -65,7 +72,9 @@ const A = 0.3
 const NEED = 12 // sightings before a card can count as mastered: about two sets on a small stage
 // A card is the same skill wherever it is dealt, but F sharp and G flat are different reading, as are keys.
 const key = (c: Card) =>
-  `${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches[0]}${c.flat ? ':b' : ''}${c.fifths ? `:f${c.fifths}` : ''}`
+  c.seq
+    ? `s${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches.join('-')}${c.fifths ? `:f${c.fifths}` : ''}`
+    : `${c.pitches.length}:${clefFor(c.pitches[0], c.hand)}:${c.pitches[0]}${c.flat ? ':b' : ''}${c.fifths ? `:f${c.fifths}` : ''}`
 export const cardKey = key
 
 /** Days until a card is due again, by review box: a clean answer moves it up a box, a miss down one. */
@@ -88,7 +97,20 @@ export function record(stats: Stats, k: string, clean: boolean, rt: number, day 
 const handOf = (p: number): Hand => (p >= 60 ? 'R' : 'L')
 
 /** Every card a stage can deal. Intervals and triads stack diatonic steps on a white-key root. */
+// Shapes of four notes as steps through a scale: runs, turns, a skip, a broken chord.
+const SHAPES = [[0, 1, 2, 3], [3, 2, 1, 0], [0, 2, 1, 2], [2, 1, 0, 1], [0, 1, 0, 2], [0, 2, 4, 2], [4, 3, 1, 2], [0, 0, 1, 2]]
+
 export function cards(stage: Stage): Card[] {
+  if (stage.scale) {
+    const out: Card[] = []
+    const sc = stage.scale
+    for (let i = 0; i < sc.length; i++)
+      for (const sh of SHAPES) {
+        const idx = sh.map((s) => i + s)
+        if (idx.every((x) => x < sc.length)) out.push({ pitches: idx.map((x) => sc[x]), seq: true, hand: stage.hand ?? handOf(sc[i]), fifths: stage.fifths })
+      }
+    return out
+  }
   if (stage.size === 1) return stage.pool.map((p) => ({ pitches: [p], hand: stage.hand ?? handOf(p), flat: stage.flat && isBlack(p) ? true : undefined, fifths: stage.fifths }))
   const ws = whites(stage.pool[0], stage.pool[stage.pool.length - 1] + 12)
   const out: Card[] = []
@@ -167,9 +189,10 @@ export function mastery(stage: Stage, stats: Stats): Mastery {
     }
     seen++
     const speed = Math.min(1, stage.goalMs / Math.max(s.rt, 1))
-    const got = Math.min(1, s.n / NEED) * s.clean * speed
+    const need = stage.need ?? NEED
+    const got = Math.min(1, s.n / need) * s.clean * speed
     sum += got
-    if (s.n < NEED || s.clean < 0.85 || s.rt > stage.goalMs) solid = false
+    if (s.n < need || s.clean < 0.85 || s.rt > stage.goalMs) solid = false
   }
   return { pct: all.length ? sum / all.length : 0, solid, seen, total: all.length }
 }
@@ -205,11 +228,30 @@ export function weakest(stats: Stats, n = 3): { name: string; clean: number; rt:
 
 export const BPM = 60
 
-/** A drill session as a song: one card per beat, four to a bar, read in wait mode. */
+/** Where each note of a deck sits: a chord card on one beat, a melodic fragment on consecutive beats. */
+export function layout(d: Card[]): { beat: number; card: number; p: number; c: Card }[] {
+  const out: { beat: number; card: number; p: number; c: Card }[] = []
+  let beat = 0
+  d.forEach((c, card) => {
+    c.pitches.forEach((p, k) => out.push({ beat: c.seq ? beat + k : beat, card, p, c }))
+    beat += c.seq ? c.pitches.length : 1
+  })
+  return out
+}
+
+/** A drill session as a song: one card per beat (a fragment takes four), four beats to a bar, read in wait mode. */
 export function deckSong(id: string, title: string, d: Card[], fifths = 0): Song {
   const q = 60 / BPM
-  const raw: Raw[] = []
-  d.forEach((c, i) => c.pitches.forEach((p) => raw.push({ t: i * q, d: q * 0.9, p, v: 0.7, track: 0, h: c.hand, flat: c.flat })))
-  const bars: Bar[] = Array.from({ length: Math.ceil(d.length / 4) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
+  const lay = layout(d)
+  const total = lay.length ? Math.max(...lay.map((x) => x.beat)) + 1 : 0
+  const raw: Raw[] = lay.map((x) => ({ t: x.beat * q, d: q * 0.9, p: x.p, v: 0.7, track: 0, h: x.c.hand, flat: x.c.flat }))
+  const bars: Bar[] = Array.from({ length: Math.ceil(total / 4) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
   return build(id, title, raw, bars, fifths)
+}
+
+/** The card each note of a deckSong belongs to, in the song's own note order. */
+export function noteCards(d: Card[], song: Song): number[] {
+  const q = 60 / BPM
+  const at = new Map(layout(d).map((x) => [`${x.beat}:${x.p}`, x.card]))
+  return song.notes.map((n) => at.get(`${Math.round(n.t / q)}:${n.p}`) ?? 0)
 }

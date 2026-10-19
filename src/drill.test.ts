@@ -48,8 +48,8 @@ describe('drill', () => {
       const cs = cards(st)
       expect(cs.length, st.id).toBeGreaterThan(0)
       for (const c of cs) {
-        expect(c.pitches).toHaveLength(st.size)
-        expect([...c.pitches].sort((a, b) => a - b)).toEqual(c.pitches)
+        expect(c.pitches).toHaveLength(c.seq ? 4 : st.size)
+        if (!c.seq) expect([...c.pitches].sort((a, b) => a - b)).toEqual(c.pitches) // a fragment is in playing order
       }
     }
     // triads are thirds on white keys: C E G, D F A
@@ -151,5 +151,42 @@ describe('review schedule', () => {
   it('numbers local days', () => {
     expect(dayNum(new Date(2026, 9, 19, 23, 59))).toBe(dayNum(new Date(2026, 9, 19, 0, 1)))
     expect(dayNum(new Date(2026, 9, 20))).toBe(dayNum(new Date(2026, 9, 19)) + 1)
+  })
+})
+
+import { layout, noteCards } from './drill'
+
+describe('melody stages', () => {
+  const tune = STAGES.find((s) => s.id === 'tune-c')!
+
+  it('deals four-note fragments, each a card of its own', () => {
+    const all = cards(tune)
+    expect(all.length).toBeGreaterThan(20)
+    expect(all.every((c) => c.seq && c.pitches.length === 4)).toBe(true)
+    expect(new Set(all.map(cardKey)).size).toBe(all.length)
+  })
+
+  it('keeps every fragment inside the scale and in the key', () => {
+    const g = STAGES.find((s) => s.id === 'tune-g')!
+    expect(cards(g).every((c) => c.fifths === 1 && c.pitches.every((p) => [67, 69, 71, 72, 74, 76, 78, 79].includes(p) || p > 60))).toBe(true)
+  })
+
+  it('lays a fragment on consecutive beats and a chord card on one', () => {
+    const d = [cards(tune)[0], cards(STAGES.find((s) => s.id === 'triads')!)[0]]
+    const l = layout(d)
+    expect(l.filter((x) => x.card === 0).map((x) => x.beat)).toEqual([0, 1, 2, 3])
+    expect(l.filter((x) => x.card === 1).map((x) => x.beat)).toEqual([4, 4, 4])
+  })
+
+  it('maps song notes back to their cards', () => {
+    const d = [cards(tune)[0], cards(tune)[1]]
+    const song = deckSong('x', 't', d)
+    expect(noteCards(d, song)).toEqual([0, 0, 0, 0, 1, 1, 1, 1])
+  })
+
+  it('needs fewer sightings per fragment than a single note to count as mastered', () => {
+    const st: Stats = {}
+    for (const c of cards(tune)) for (let i = 0; i < 6; i++) record(st, cardKey(c), true, 1500)
+    expect(mastery(tune, st).solid).toBe(true)
   })
 })

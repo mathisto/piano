@@ -281,6 +281,7 @@ const GROUPS: [string, (id: string) => boolean][] = [
   ['Bass clef', (id) => id.startsWith('b-')],
   ['Both clefs', (id) => id === 'grand'],
   ['Accidentals and keys', (id) => id === 'sharps' || id === 'flats' || id.startsWith('keys-')],
+  ['Melodies', (id) => id.startsWith('tune-')],
   ['Chords', (id) => id === 'ints' || id === 'triads'],
 ]
 

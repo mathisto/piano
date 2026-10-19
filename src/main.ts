@@ -6,7 +6,7 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
-import { BPM, STAGES, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
+import { STAGES, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
@@ -611,11 +611,10 @@ async function startDrill(which: Stage | 'review') {
   const stage = which === 'review' ? undefined : which
   const pool = stage ? cards(stage) : reviewPool(drillStats)
   const goal = stage ? stage.goalMs : 3000
-  const d = deck(pool, drillStats, goal, 24)
+  const d = deck(pool, drillStats, goal, stage?.scale ? 10 : 24) // a fragment takes four beats
   const title = stage ? stage.name : 'Weak notes review'
   const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d, stage?.fifths ?? 0)
-  const q = 60 / BPM
-  const noteCard = song.notes.map((n) => Math.round(n.t / q))
+  const noteCard = noteCards(d, song)
   drill = {
     stage: which,
     title,

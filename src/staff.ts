@@ -223,7 +223,14 @@ export class Staff {
     const r = this.host.getBoundingClientRect()
     if (!r.width || !r.height) return
     this.pickLayout()
-    this.pad = this.game.mode === 'read' ? 30 : 14 // drills: room left of a note for its accidental
+    // drills: room left of a note for its accidental, only when some note in the set has one
+    const song0 = this.game.song
+    const ka0 = keyAcc(song0.fifths)
+    const signs = song0.notes.some((n) => {
+      const sp = spell(n.p, n.flat ? -2 : song0.fifths)
+      return sp.acc !== ka0[sp.letter]
+    })
+    this.pad = this.game.mode === 'read' && signs ? 30 : 14
     const { clefs, base } = this
     const top = base[clefs[0]] - 4 * S // y of the first staff's top line
     const bottom = base[clefs[clefs.length - 1]] // y of the last staff's bottom line
