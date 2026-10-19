@@ -1,3 +1,4 @@
+import './native-midi' // first: it must exist before midi.ts reads requestMIDIAccess
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
 import '@fontsource-variable/hanken-grotesk'
@@ -706,10 +707,15 @@ function openDrawer() {
     lens.clear()
   }, 'change')
   $('#sExport', d).onclick = async () => {
-    const blob = new Blob([await store.exportAll()], { type: 'application/json' })
+    const text = await store.exportAll()
+    const file = new File([text], 'piano-progress.json', { type: 'application/json' })
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'piano progress' }).catch(() => {}) // the iPad app has no downloads folder: use the share sheet
+      return
+    }
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'piano-progress.json'
+    a.href = URL.createObjectURL(file)
+    a.download = file.name
     a.click()
     URL.revokeObjectURL(a.href)
   }

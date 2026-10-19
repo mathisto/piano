@@ -47,3 +47,13 @@ Still to do:
 - [ ] Staff-hit marks are colour-only on the staff itself (only the miss has a shape); the results legend carries word and shape.
 - [ ] Radius scale has four near-duplicates (4/6/8/10px); collapse to two.
 - [ ] No third review pass after the last two fixes (bass stem direction, histogram labels); they were checked in captures by the builder only.
+
+## iPad app (developer mode, for one person)
+
+The iPad app is the web build in a Capacitor web view (`ios/`), plus one native piece: `ios/App/App/PianoNative.swift` reads MIDI through CoreMIDI and `src/native-midi.ts` fakes `navigator.requestMIDIAccess` over it, so `src/midi.ts` is unchanged. Researched 2026-10-18: native SwiftUI rewrite is about 125-150 h, the wrapper is about a day; JavaScriptCore with a native UI is the later path if the wrapper is not enough.
+
+Run it: `npm run ios` (builds the web app, syncs, opens Xcode); pick the iPad; Run. Bundle id `io.mattkelly.piano`, team `TC8XUVBATG` (free Personal Team: the install expires after 7 days; run again from Xcode with the same bundle id, and do not delete the app, which would wipe its songs and progress).
+
+- [x] Capacitor 8 project, CoreMIDI plugin, JS shim (tested in a desktop browser against a faked plugin), playback audio session, screen kept awake, landscape, safe areas, share-sheet export, hash without `crypto.subtle`.
+- [ ] Run on the iPad and check: FP-10 over USB (notes, timing; use Calibrate), sound with the silent switch, saved songs surviving a relaunch, file import from Files (`.mid`, `.musicxml`, `.mxl`), Stage Manager resize.
+- [ ] Known limits: web view is capped at 60 Hz; the app starts with its own empty storage (not shared with the website); Bluetooth MIDI pairing screen reportedly crashes on iPadOS 27.0, so pair in another app or use USB.

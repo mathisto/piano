@@ -131,6 +131,8 @@ table.songs caption,
   display: grid;
   grid-template-rows: 56px minmax(0, 1fr);
   height: 100dvh;
+  /* zero in a desktop browser; the iPad's home bar and rounded corners in the app */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* ---------- top bar ---------- */

@@ -19,8 +19,18 @@ export interface Progress {
 }
 
 export async function hash(bytes: ArrayBuffer): Promise<string> {
-  const d = await crypto.subtle.digest('SHA-1', bytes)
-  return [...new Uint8Array(d).slice(0, 6)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  if (globalThis.crypto?.subtle) {
+    const d = await crypto.subtle.digest('SHA-1', bytes)
+    return [...new Uint8Array(d).slice(0, 6)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  // some web views are not a secure context: FNV-1a twice, enough to tell two files apart
+  let a = 0x811c9dc5
+  let b = 0x01000193
+  for (const x of new Uint8Array(bytes)) {
+    a = Math.imul(a ^ x, 16777619) >>> 0
+    b = Math.imul(b + x, 2246822519) >>> 0
+  }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0').slice(0, 4)
 }
 
 export async function addFile(file: File): Promise<Stored> {

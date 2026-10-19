@@ -11,6 +11,7 @@ const voices = new Map<number, Voice>() // by pitch, oldest first
 
 function ready(): AudioContext {
   if (!ctx) {
+    ;(navigator as unknown as { audioSession?: { type: string } }).audioSession?.type && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = 'playback') // iOS: not muted by the silent switch
     ctx = new AudioContext({ latencyHint: 'interactive' })
     master = ctx.createGain()
     master.connect(ctx.destination)
