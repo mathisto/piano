@@ -1,3 +1,4 @@
+import { served } from './net'
 // The curated library: public/library/manifest.json (built by scripts/fetch-library.mjs) and the credit text it must carry.
 
 export interface LibraryEntry {
@@ -32,7 +33,7 @@ export const libraryUrl = (file: string, base: string = document.baseURI) => new
 export async function loadManifest(fetchFn: typeof fetch = fetch, base?: string): Promise<LibraryEntry[]> {
   try {
     const r = await fetchFn(libraryUrl('manifest.json', base))
-    if (!r.ok) return []
+    if (!served(r)) return []
     const list: unknown = await r.json()
     return Array.isArray(list) ? list.filter(valid) : []
   } catch {

@@ -56,3 +56,11 @@ describe('credits', () => {
     expect(await loadManifest((async () => Promise.reject(new Error('offline'))) as unknown as typeof fetch, 'http://h/')).toEqual([])
   })
 })
+
+describe('loadManifest inside the iPad app', () => {
+  it('accepts a bundled file that reports status 0', async () => {
+    const entry = { id: 'a', title: 'A', composer: 'B', licence: 'Public Domain', file: 'a.mid', level: 'easy', format: 'midi' }
+    const fake = (async () => ({ ok: false, status: 0, json: async () => [entry] })) as unknown as typeof fetch
+    expect(await loadManifest(fake, 'capacitor://localhost/')).toHaveLength(1)
+  })
+})
