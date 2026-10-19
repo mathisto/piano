@@ -1,4 +1,5 @@
-import { piano } from './audio'
+import { loadState } from './audio'
+import { INSTRUMENTS, instrument } from './instruments'
 import type { Result } from './game'
 import type { Next } from './pace'
 import { creditBlock, licenceName, type LibraryEntry } from './credits'
@@ -276,9 +277,9 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   ${seg('sound', 'Sound', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard')}
   ${
     device
-      ? `<label class="srow"><span>Instrument</span><select id="sInst"><option value="piano"${settings.instrument === 'piano' ? ' selected' : ''}>Grand piano</option><option value="synth"${settings.instrument === 'synth' ? ' selected' : ''}>Synth</option></select></label>
+      ? `<label class="srow"><span>Instrument</span><select id="sInst">${INSTRUMENTS.map((i) => `<option value="${i.id}"${settings.instrument === i.id ? ' selected' : ''}>${i.label}</option>`).join('')}</select></label>
   <label class="srow"><span>Volume</span><input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}"></label>
-  ${piano.state === 'failed' ? '<p class="fine" role="status">Piano failed to load. Using the synth.</p>' : ''}`
+  ${loadState(settings.instrument) === 'failed' ? `<p class="fine" role="status">${instrument(settings.instrument).label} failed to load. Using the synth.</p>` : ''}`
       : ''
   }
   ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
@@ -298,7 +299,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="srow"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
+  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. Other instruments: <a href="https://musescore.org/en/handbook/3/soundfonts-and-sfz-files" target="_blank" rel="noopener">MuseScore_General</a>, MIT, Frank Wen and S. Christian Collins. <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
 }
 
 // ---------- reading drills ----------
