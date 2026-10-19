@@ -17,7 +17,7 @@ from scipy.io import wavfile
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / 'public/samples/salamander'
 URL = 'https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/master/Samples/{}v{}.flac'
-SR = 44100
+SR = 48000  # the recordings' own rate: a 44.1 kHz MP3 made the iPad's decoder crash on one file (Fs5, medium layer) when it resampled
 LAYERS = [4, 9, 14]  # of 16: velocities about 30, 70 and 110
 TARGET_DB = [-33.0, -26.0, -22.0]  # RMS of the first second, the layers' loudness steps
 NAMES = {0: 'C', 3: 'Ds', 6: 'Fs', 9: 'A'}
@@ -75,7 +75,7 @@ def main():
                 x = np.clip(x, -0.98, 0.98)
                 w = tmp / f'{n}-{li}.wav'
                 wavfile.write(w, SR, (x * 32767).astype(np.int16))
-                subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(w), '-b:a', f'{KBPS}k', '-ac', '1', str(OUT / f'{n}-{li}.mp3')], check=True)
+                subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(w), '-b:a', f'{KBPS}k', '-ac', '1', '-ar', str(SR), str(OUT / f'{n}-{li}.mp3')], check=True)
     for old in OUT.glob('*.mp3'):
         if '-' not in old.stem:
             old.unlink()  # the single-layer set this replaces

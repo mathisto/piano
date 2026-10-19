@@ -85,7 +85,7 @@ export function preload(id = settings.instrument): Promise<void> {
       const mid = inst.layers ? Math.floor(inst.layers / 2) : undefined
       const layer = async (k?: number) => {
         let n = 0
-        for (let i = 0; i < inst.roots.length; i += 4) n += (await Promise.all(inst.roots.slice(i, i + 4).map((r) => get(r, k)))).reduce<number>((a, b) => a + b, 0) // four at a time: all at once ran the iPad's web view out of memory
+        for (let i = 0; i < inst.roots.length; i += 4) n += (await Promise.all(inst.roots.slice(i, i + 4).map((r) => get(r, k)))).reduce<number>((a, b) => a + b, 0) // four at a time
         return n
       }
       const ok = await layer(mid)
