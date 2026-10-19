@@ -41,6 +41,7 @@ export type GameEvent =
   | { type: 'auto'; note: Note }
   | { type: 'phase'; phase: Phase }
   | { type: 'loop'; clean: boolean }
+  | { type: 'short' } // a key came up before its note had been held long enough to move on
   | { type: 'tempo'; rate: number } // the pace followed the player
   | { type: 'pass'; heat: number[] } // a stretch of practice ended; commit its trouble spots
   | { type: 'done'; result: Result }
@@ -72,6 +73,8 @@ export class Game {
   offs: number[] = []
   showNotes = false // reading drills hide the falling notes and key names unless asked
   showNames = false
+  holdAdvance = false // Learn: after the notes are struck the song waits until they have been held for their written length
+  private hold?: { idx: number[]; until: number }
   hidePlayed = false // Learn: notes leave the staff as they are played, so you must read ahead
   private listeners: ((e: GameEvent) => void)[] = []
   private anchorPerf = 0
@@ -173,6 +176,7 @@ export class Game {
 
   private setPhase(p: Phase, force = false) {
     if (this.phase === p && !force) return
+    if (p !== 'waiting') this.hold = undefined
     this.phase = p
     this.emit({ type: 'phase', phase: p })
   }
@@ -257,6 +261,11 @@ export class Game {
     if (this.running()) this.t = this.anchorT + dt
     for (const [p, until] of this.autoUntil) if (until < perf) this.autoUntil.delete(p)
     if (!this.running() && this.phase !== 'waiting') return
+    if (this.hold && perf >= this.hold.until) {
+      this.hold = undefined
+      this.anchor(perf)
+      this.setPhase('playing')
+    }
 
     const lead = this.lead()
     const spb = this.song.spb
@@ -375,6 +384,12 @@ export class Game {
     this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel))
     if (this.phase === 'waiting') {
       if (!this.judge.required(this.t).length) {
+        if (this.holdAdvance && this.mode === 'learn') {
+          const idx = this.judge.cluster(this.t)
+          const d = Math.max(0, ...idx.map((i) => this.song.notes[i].d))
+          this.hold = { idx, until: performance.now() + Math.min(4000, ((d * 0.8) / this.rate) * 1000) }
+          return
+        }
         if (this.lastPerf - this.stallAt > 2500) this.bump(this.stallBar, 1)
         this.anchor(performance.now())
         this.setPhase('playing')
@@ -386,6 +401,11 @@ export class Game {
     this.held.delete(p)
     if (settings.sound || virtual) audio.noteOff(p)
     this.emit({ type: 'release', p })
+    if (this.hold && performance.now() < this.hold.until && this.hold.idx.some((i) => this.song.notes[i].p === p)) {
+      this.judge.reopen(this.hold.idx)
+      this.hold = undefined
+      this.emit({ type: 'short' })
+    }
     if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
   }
 

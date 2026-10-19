@@ -214,3 +214,17 @@ describe('strictness windows', () => {
     expect(at(1.3, 140)).toMatchObject({ k: 'hit', grade: 'good' })
   })
 })
+
+describe('reopening notes', () => {
+  it('puts struck notes back to pending so the song waits for them again', () => {
+    const j = mk([n(0, 1, 60), n(1, 1, 64), n(2, 3, 67)], { wait: true })
+    j.press(60, 1)
+    j.press(64, 1)
+    expect(j.cluster(1)).toEqual([0, 1])
+    expect(j.required(1)).toEqual([])
+    j.reopen([0, 1])
+    expect(j.required(1)).toEqual([0, 1])
+    expect(j.hits).toBe(0)
+    expect(j.press(60, 1)[0]).toMatchObject({ k: 'ok', i: 0 })
+  })
+})

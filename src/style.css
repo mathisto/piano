@@ -802,6 +802,11 @@ body.reading .hud small {
     fill: var(--ink-3);
   }
 }
+#staff .head.over {
+  stroke: var(--good);
+  stroke-width: 1.4px;
+  paint-order: stroke;
+}
 #staff .head.short {
   stroke: var(--bad);
   stroke-width: 1.4px;

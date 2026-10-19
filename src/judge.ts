@@ -233,6 +233,28 @@ export class Judge {
     return out
   }
 
+  /** Notes struck at this moment (within one chord's spread of `t`). */
+  cluster(t: number): number[] {
+    const out: number[] = []
+    for (let i = 0; i < this.notes.length; i++) {
+      if (this.notes[i].t > t + CLUSTER) break
+      if (this.st[i] === HIT && this.notes[i].t >= t - CLUSTER) out.push(i)
+    }
+    return out
+  }
+
+  /** Take back hits so the notes are asked for again (a key let go too soon in Learn's hold-to-advance). */
+  reopen(idx: number[]) {
+    for (const i of idx) {
+      if (this.st[i] !== HIT) continue
+      this.st[i] = PENDING
+      this.hits--
+      this.vel[i] = 0
+      this.down.delete(this.notes[i].p)
+      this.first = Math.min(this.first, i)
+    }
+  }
+
   /** Pending notes the clock must wait for at song time `t` (wait mode). */
   required(t: number): number[] {
     const out: number[] = []

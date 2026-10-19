@@ -59,6 +59,7 @@ export class Dock {
         </div>
         <label class="switch" data-modes="learn"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
         <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
+        <label class="switch" data-modes="learn"><input type="checkbox" id="holdAdvance"><i></i>Hold to move on</label>
         <span class="dock-fill"></span>
         <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
       </div>`
@@ -84,6 +85,7 @@ export class Dock {
       this.sync()
     }))
     this.wait.onchange = () => game.setWait(this.wait.checked)
+    q<HTMLInputElement>('#holdAdvance').onchange = (e) => (game.holdAdvance = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#autoTempo').onchange = (e) => (game.autoTempo = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
@@ -112,6 +114,7 @@ export class Dock {
     this.wait.checked = g.wait
     ;(this.host.querySelector('#autoTempo') as HTMLInputElement).checked = g.autoTempo
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
+    ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
     for (const h of ['R', 'L'] as const) {
       const r = this.host.querySelector<HTMLInputElement>(`input[name=hand${h}][value=${g.hands[h]}]`)
       if (r) r.checked = true

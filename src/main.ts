@@ -553,6 +553,7 @@ game.on((e: GameEvent) => {
       break
     case 'hold':
       if (e.grade === 'short') staff.cut(e.note.id)
+      else if (e.grade === 'long') staff.over(e.note.id)
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
@@ -564,6 +565,9 @@ game.on((e: GameEvent) => {
       break
     case 'milestone':
       slam(e.combo)
+      break
+    case 'short':
+      flash('Hold it a little longer')
       break
     case 'tempo':
       dock.sync()

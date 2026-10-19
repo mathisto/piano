@@ -585,6 +585,11 @@ export class Staff {
     this.byId.get(noteId)?.head?.classList.add('short')
   }
 
+  /** A key held past its written end: an orange outline, the counterpart of the red one for letting go early. */
+  over(noteId: number) {
+    this.byId.get(noteId)?.head?.classList.add('over')
+  }
+
   mark(noteId: number, cls: string) {
     const p = this.byId.get(noteId)
     if (!p) return
