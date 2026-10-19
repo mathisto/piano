@@ -1898,3 +1898,48 @@ body.zen #dock .aids {
   cursor: pointer;
   color: var(--ink-3);
 }
+
+.libgrp {
+  margin: 0 0 8px;
+}
+.libgrp summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font: 800 italic 20px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.libgrp summary span {
+  color: var(--ink-3);
+  font-style: normal;
+}
+dialog#credits {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-3);
+  padding: 22px 26px;
+  width: min(720px, 94vw);
+  max-height: 86vh;
+  overflow: auto;
+}
+dialog#credits::backdrop {
+  background: rgba(5, 6, 13, 0.7);
+}
+dialog#credits h2 {
+  margin: 0 0 6px;
+  font: 800 italic 28px/1 var(--display);
+  text-transform: uppercase;
+}
+.credlist pre {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  white-space: pre-wrap;
+  font: 14px/1.45 var(--ui);
+  color: var(--ink-2);
+}
+.credlist pre::first-line {
+  color: var(--ink);
+  font-weight: 700;
+}

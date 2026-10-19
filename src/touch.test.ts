@@ -47,3 +47,39 @@ describe('calibrate', () => {
     expect(calibrate([], [60], [100])).toBeNull()
   })
 })
+
+import { writtenTargets } from './touch'
+import type { Note } from './song'
+
+describe('registers', () => {
+  it('reports the average strike by low, middle and high keys', () => {
+    const s = velStats([
+      { v: 40, h: 'L', p: 48 },
+      { v: 50, h: 'L', p: 50 },
+      { v: 70, h: 'R', p: 64 },
+      { v: 90, h: 'R', p: 80 },
+    ])
+    expect(s.regions.low).toEqual({ n: 2, mean: 45 })
+    expect(s.regions.mid).toEqual({ n: 1, mean: 70 })
+    expect(s.regions.high).toEqual({ n: 1, mean: 90 })
+  })
+})
+
+describe('play as written', () => {
+  const note = (id: number, v: number): Note => ({ id, t: id, d: 0.5, p: 60, v, h: 'R', bar: 0, beats: 1 })
+  it('leaves a file with flat dynamics alone', () => {
+    expect(writtenTargets([note(0, 0.7), note(1, 0.7), note(2, 0.71)])).toBeNull()
+  })
+  it('maps the loudest and softest written notes onto the player\'s own soft and hard', () => {
+    const w = writtenTargets([note(0, 0.3), note(1, 0.6), note(2, 0.9)], { soft: 40, hard: 90 })!
+    const mid = (i: number) => (w[i][0] + w[i][1]) / 2
+    expect(mid(0)).toBeLessThan(mid(1))
+    expect(mid(1)).toBeLessThan(mid(2))
+    expect(mid(0)).toBeLessThan(40) // the softest is inside soft
+    expect(mid(2)).toBeGreaterThan(90) // the loudest is inside hard
+    for (const [lo, hi] of w) {
+      expect(lo).toBeGreaterThanOrEqual(1)
+      expect(hi).toBeLessThanOrEqual(127)
+    }
+  })
+})

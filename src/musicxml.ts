@@ -92,12 +92,65 @@ export async function xmlText(buf: ArrayBuffer): Promise<string> {
 const STEP: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
 
 interface Ev {
+  v?: number // velocity from the last dynamics mark, 0..1
   m: number
   q: number // quarter notes from the start of its measure
   dq: number
   p: number
   track: number
   h?: Hand
+}
+
+const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
+
+/** The order measures are played in, expanding repeat signs and first and second endings. */
+export function playOrder(part: El): number[] {
+  const ms = kids(part, 'measure')
+  const info = ms.map((meas) => {
+    const bars = kids(meas, 'barline')
+    const rep = (loc: string, dir: string) => bars.some((b) => (b.a.location ?? 'right') === loc && kids(b, 'repeat').some((r) => r.a.direction === dir))
+    const ends = bars.flatMap((b) => kids(b, 'ending'))
+    return {
+      forward: rep('left', 'forward'),
+      backward: rep('right', 'backward'),
+      times: Number(bars.flatMap((b) => kids(b, 'repeat')).find((r) => r.a.direction === 'backward')?.a.times) || 2,
+      start: ends.find((e) => e.a.type === 'start')?.a.number,
+      stop: ends.some((e) => e.a.type === 'stop' || e.a.type === 'discontinue'),
+    }
+  })
+  // which ending numbers each measure belongs to, from a start mark to its stop
+  const ending: (number[] | undefined)[] = []
+  let cur: number[] | undefined
+  info.forEach((m, i) => {
+    if (m.start) cur = m.start.split(/[,\s]+/).map(Number).filter(Boolean)
+    ending[i] = cur
+    if (m.stop) cur = undefined
+  })
+  const order: number[] = []
+  let from = 0
+  let pass = 1
+  for (let i = 0; i < ms.length && order.length < 5000; ) {
+    if (info[i].forward && i !== from) {
+      from = i
+      pass = 1
+    }
+    if (ending[i] && !ending[i]!.includes(pass)) {
+      i++
+      continue
+    }
+    order.push(i)
+    if (info[i].backward && pass < info[i].times) {
+      pass++
+      i = from
+    } else {
+      if (info[i].backward) {
+        from = i + 1
+        pass = 1
+      }
+      i++
+    }
+  }
+  return order
 }
 
 export function fromMusicXml(xml: string, title: string, id: string): Song {
@@ -118,6 +171,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     let div = 1
     let staves = 1
     const open = new Map<string, Ev>() // tied notes still sounding, across barlines
+    let curV = 0.7 // velocity from the last dynamics mark
     kids(part, 'measure').forEach((meas, m) => {
       for (const a of kids(meas, 'attributes')) {
         div = num(a, 'divisions') ?? div
@@ -156,9 +210,11 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
             if (!ties.includes('start')) open.delete(key)
             continue
           }
-          const ev: Ev = { m, q: s / div, dq: dur / div, p, track, h: staves >= 2 ? (staff === 1 ? 'R' : 'L') : undefined }
+          const ev: Ev = { m, q: s / div, dq: dur / div, p, track, v: curV, h: staves >= 2 ? (staff === 1 ? 'R' : 'L') : undefined }
           evs.push(ev)
           if (ties.includes('start')) open.set(key, ev)
+        } else if (e.n === 'direction') {
+          for (const dt of kids(e, 'direction-type')) for (const d of kids(dt, 'dynamics')) if (d.c[0] && d.c[0].n in DYN) curV = DYN[d.c[0].n]
         } else if (e.n === 'backup') cur -= num(e, 'duration') ?? 0
         else if (e.n === 'forward') {
           cur += num(e, 'duration') ?? 0
@@ -173,7 +229,27 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     })
   })
 
-  const measures = Math.max(...parts.map((p) => kids(p, 'measure').length))
+  // repeats: play the measures in order, so a repeated bar is a bar again in the song
+  const order = playOrder(parts[0])
+  if (order.some((o, i) => o !== i)) {
+    const at = new Map<number, number[]>()
+    order.forEach((o, k) => at.set(o, [...(at.get(o) ?? []), k]))
+    const moved = evs.flatMap((ev) => (at.get(ev.m) ?? []).map((k) => ({ ...ev, m: k })))
+    evs.length = 0
+    evs.push(...moved)
+    const pick = <T,>(a: T[]) => order.map((o) => a[o])
+    const q2 = pick(maxQ)
+    const i2 = pick(implicit)
+    const s2 = pick(sig)
+    maxQ.length = implicit.length = sig.length = 0
+    maxQ.push(...q2)
+    implicit.push(...i2)
+    sig.push(...s2)
+    const tmoved = tempos.flatMap((t) => (at.get(t.m) ?? []).map((k) => ({ ...t, m: k })))
+    tempos.length = 0
+    tempos.push(...tmoved)
+  }
+  const measures = Math.max(order.length, ...parts.slice(1).map((p) => kids(p, 'measure').length))
   let cs = { n: 4, den: 4 }
   const bars: Bar[] = []
   const mq: number[] = [0] // quarter position of each measure start
@@ -205,7 +281,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
 
   const raw: Raw[] = evs.map((e) => {
     const t = secAt(mq[e.m] + e.q)
-    return { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: 0.7, track: e.track, h: e.h }
+    return { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: e.v ?? 0.7, track: e.track, h: e.h }
   })
   if (!raw.length) throw new Error('No notes found in this score.')
   return build(id, title, raw, bars, fifths ?? estimateFifths(raw))

@@ -119,3 +119,43 @@ function cat(...xs: Uint8Array[]): Uint8Array {
   }
   return out
 }
+
+describe('musicxml repeats and dynamics', () => {
+  const wrap = (measures: string) => `<?xml version="1.0"?><score-partwise><part-list><score-part id="P1"/></part-list><part id="P1">${measures}</part></score-partwise>`
+  const head = '<attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><metronome><per-minute>60</per-minute></metronome></direction-type><sound tempo="60"/></direction>'
+  const m = (n: number, step: string, o: { first?: boolean; left?: string; right?: string } = {}) =>
+    `<measure number="${n}">${o.first ? head : ''}${o.left ? `<barline location="left">${o.left}</barline>` : ''}<note><pitch><step>${step}</step><octave>4</octave></pitch><duration>4</duration></note>${o.right ? `<barline location="right">${o.right}</barline>` : ''}</measure>`
+  const FWD = '<repeat direction="forward"/>'
+  const BACK = '<repeat direction="backward"/>'
+
+  it('plays a repeated section twice', () => {
+    const s = fromMusicXml(wrap(m(1, 'C', { first: true, left: FWD }) + m(2, 'D', { right: BACK }) + m(3, 'E')), 't', 'id')
+    expect(s.notes.map((n) => n.p)).toEqual([60, 62, 60, 62, 64])
+    expect(s.bars).toHaveLength(5)
+    expect(s.notes.map((n) => n.t)).toEqual([0, 4, 8, 12, 16])
+  })
+
+  it('goes back to the start for a backward repeat with no forward sign', () => {
+    const s = fromMusicXml(wrap(m(1, 'C', { first: true }) + m(2, 'D', { right: BACK }) + m(3, 'E')), 't', 'id')
+    expect(s.notes.map((n) => n.p)).toEqual([60, 62, 60, 62, 64])
+  })
+
+  it('a first and second ending are each played on their own pass', () => {
+    const x = wrap(
+      m(1, 'C', { first: true }) +
+        m(2, 'D', { left: '<ending number="1" type="start"/>', right: `<ending number="1" type="stop"/>${BACK}` }) +
+        m(3, 'E', { left: '<ending number="2" type="start"/>', right: '<ending number="2" type="stop"/>' }) +
+        m(4, 'F'),
+    )
+    expect(fromMusicXml(x, 't', 'id').notes.map((n) => n.p)).toEqual([60, 62, 60, 64, 65])
+  })
+
+  it('reads dynamics marks into note velocity', () => {
+    const x = wrap(
+      '<measure number="1"><attributes><divisions>1</divisions></attributes><direction><direction-type><dynamics><p/></dynamics></direction-type></direction><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration></note><direction><direction-type><dynamics><ff/></dynamics></direction-type></direction><note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration></note></measure>',
+    )
+    const [a, b] = fromMusicXml(x, 't', 'id').notes
+    expect(a.v).toBeLessThan(0.4)
+    expect(b.v).toBeGreaterThan(0.85)
+  })
+})

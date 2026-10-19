@@ -22,12 +22,13 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
+import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { autoSelect, inspectMidi } from './midi-tracks'
-import { calibrate } from './touch'
+import { calibrate, writtenTargets } from './touch'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, type Opts } from './technique'
 import { dayKey, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, tracksDialog, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -39,7 +40,8 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 let highway!: Highway
 let staff!: Staff
 let dock!: Dock
-let current: { song: Song; heat: number[] } | undefined
+let current: { song: Song; heat: number[]; credit?: string } | undefined
+let libEntries: LibraryEntry[] = []
 let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
 let played = false
@@ -91,14 +93,15 @@ async function libraryData() {
   const starts = starterRows(STARTERS, starters, prog, thumbs)
   const mine = userRows(stored, prog, lens, thumbs)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
-  const last = [...starts, ...mine].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
+  const libRows: Row[] = libEntries.map((e) => ({ id: `lib:${e.id}`, title: e.title, sub: `${e.composer} · ${e.level}`, bars: 0, len: 0, prog: prog.get(`lib:${e.id}`), user: false, thumb: '' }))
+  const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
   return { starts, mine, last }
 }
 
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err)
+  library($('#library'), starts, mine, err, libEntries)
 }
 
 const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
@@ -337,6 +340,10 @@ function screenKeys(canvas: HTMLCanvasElement) {
 
 async function openSong(song: Song, mode: Mode) {
   game.endPass()
+  if (settings.asWritten && !song.dyn && mode !== 'read') {
+    const w = writtenTargets(song.notes, settings.edges)
+    if (w) song.notes.forEach((n, i) => (n.want = w[i]))
+  }
   game.known = knownPitches(await store.getDrill())
   view('play')
   void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
@@ -611,7 +618,7 @@ function onPhase() {
       ? `<b>${esc(drill.title)}</b>${start}`
       : calibrating
         ? `<b>Play middle C on every beat</b>${start}`
-        : `<b>${esc(current.song.title)}</b>${sheet}${start}${legend}`
+        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${start}${legend}`
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
   }
   wake()
@@ -956,6 +963,10 @@ function openDrawer() {
     settings.names = el.checked
     save()
   }, 'change')
+  on('#sWritten', (el) => {
+    settings.asWritten = el.checked
+    save()
+  }, 'change')
   on('#sFade', (el) => {
     settings.fade = el.checked
     save()
@@ -979,6 +990,7 @@ function openDrawer() {
     save()
     lens.clear()
   }, 'change')
+  $('#sCredits', d).onclick = openCredits
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
     const text = await store.exportAll()
@@ -1095,6 +1107,9 @@ $('#library').addEventListener('click', async (e) => {
   const t = e.target as HTMLElement
   const b = t.closest('button')
   const row = t.closest<HTMLElement>('tr[data-open]')
+  const lib = t.closest<HTMLElement>('tr[data-lib]')
+  if (!b && lib) return void openLibrary(lib.dataset.lib!, 'learn')
+  if (b?.dataset.libplay) return void openLibrary(b.dataset.libplay, b.dataset.mode as Mode)
   if (!b && row) return void openById(row.dataset.open!, 'learn') // the whole row opens Learn
   if (!b) return
   if (b.dataset.play) {
@@ -1106,6 +1121,29 @@ $('#library').addEventListener('click', async (e) => {
     void showLibrary()
   }
 })
+
+/** Fetch a piece from the open library, then play it like any imported file, with its credit on the start card. */
+async function openLibrary(id: string, mode: Mode) {
+  const e = libEntries.find((x) => x.id === id)
+  if (!e) return
+  try {
+    const r = await fetch(libraryUrl(e.file))
+    if (!r.ok) throw new Error(`${e.title} could not be loaded.`)
+    const song = await store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
+    await openSong(song, mode)
+    if (current) current.credit = creditLine(e)
+    onPhase()
+  } catch (err) {
+    void showSection('songs', (err as Error).message)
+  }
+}
+
+function openCredits() {
+  const d = $('#credits') as HTMLDialogElement
+  d.innerHTML = creditsDialog(libEntries)
+  d.showModal()
+  d.scrollTop = 0
+}
 
 /** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */
 async function openTracks(id: string) {
@@ -1151,6 +1189,7 @@ async function openTracks(id: string) {
 }
 
 async function openById(id: string, mode: Mode) {
+  if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
   const i = STARTERS.findIndex((s) => s.spec.id === id)
   if (i >= 0) return void openSong(starters[i], mode)
   const row = (await store.listSongs()).find((s) => s.id === id)
@@ -1197,6 +1236,7 @@ addEventListener('drop', (e) => {
 // ---------------------------------------------------------------- boot
 
 void (async () => {
+  libEntries = await loadManifest()
   await showSection('today')
   updateChip()
   try {

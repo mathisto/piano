@@ -97,9 +97,9 @@ export class Judge {
   }
 
   /** Velocities of the notes struck so far, for the touch statistics. */
-  samples(): { v: number; h: Hand }[] {
-    const out: { v: number; h: Hand }[] = []
-    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h }))
+  samples(): { v: number; h: Hand; p: number }[] {
+    const out: { v: number; h: Hand; p: number }[] = []
+    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h, p: this.notes[i].p }))
     return out
   }
 

@@ -1,6 +1,7 @@
 import { piano } from './audio'
 import type { Result } from './game'
 import type { Next } from './pace'
+import { creditBlock, licenceName, type LibraryEntry } from './credits'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
@@ -47,6 +48,7 @@ export function skeleton(app: HTMLElement) {
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
   <dialog id="tracks" aria-label="Tracks"></dialog>
+  <dialog id="credits" aria-label="Credits"></dialog>
   <dialog id="help" aria-label="Shortcuts">
     <h2>Shortcuts</h2>
     <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
@@ -155,11 +157,38 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
+const LEVELS = ['Beginner', 'Elementary', 'Intermediate']
+
+/** The open library, grouped by level; each group folds away. Nothing here is committed copyrighted music: see Credits. */
+function libraryTable(lib: LibraryEntry[]) {
+  if (!lib.length) return ''
+  const groups = LEVELS.map((lv) => [lv, lib.filter((e) => e.level === lv)] as const).filter(([, es]) => es.length)
+  return `<h2 class="sec">Open library</h2>${groups
+    .map(
+      ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
+      <table class="songs"><caption class="sr-only">${lv}</caption><tbody>${es
+        .map(
+          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="acts"><div class="row-actions">
+            <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
+            <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
+        )
+        .join('')}</tbody></table></details>`,
+    )
+    .join('')}`
+}
+
+export function creditsDialog(lib: LibraryEntry[]) {
+  return `<h2>Credits</h2><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence.</p>
+    <div class="credlist">${lib.map((e) => `<pre>${esc(creditBlock(e))}</pre>`).join('')}</div>
+    <div class="row-actions"><form method="dialog"><button class="btn">Close</button></form></div>`
+}
+
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = []) {
   el.innerHTML = `
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
+    ${libraryTable(lib)}
     ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }
 
@@ -190,9 +219,11 @@ export function touchBlock(t: TouchStats) {
   const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
   const x = 6 + (t.mean / 128) * 384
   const hand = t.hands.R.n && t.hands.L.n ? ` · right hand ${Math.round(t.hands.R.mean)}, left ${Math.round(t.hands.L.mean)}` : ''
+  const regs = (['low', 'mid', 'high'] as const).filter((r) => t.regions[r].n >= 4)
+  const where = regs.length >= 2 ? ` · ${regs.map((r) => `${r === 'mid' ? 'middle' : r} keys ${Math.round(t.regions[r].mean)}`).join(', ')}` : ''
   return `<div>
     <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Key velocity, soft to hard, average ${Math.round(t.mean)}">${bars}<line class="mid" x1="${x}" x2="${x}" y1="0" y2="62"/><text x="6" y="80">soft</text><text x="390" y="80" text-anchor="end">hard</text></svg>
-    <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}.</div></div>`
+    <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
 }
 
 export function results(r: Result, next: Next | null) {
@@ -257,10 +288,11 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}><i></i>Fade names I know</label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
+    <label class="switch"><input id="sWritten" type="checkbox"${settings.asWritten ? ' checked' : ''}><i></i>Play the file's dynamics</label>
     <label class="srow"><span>Fall speed</span><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. <button class="link" id="sHelp">Shortcuts</button></p>`
+  <p class="fine foot">Piano: Salamander Grand Piano, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
 }
 
 // ---------- reading drills ----------
