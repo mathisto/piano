@@ -190,8 +190,8 @@ export class Staff {
       const mine = L.bars.filter((b) => b.sys === si)
       for (const b of mine) {
         for (const clef of clefs) el('line', { x1: b.x, x2: b.x, y1: dy + base[clef] - 4 * S, y2: dy + base[clef] }, bl)
-        el('text', { x: b.x + 4, y: dy + top - 16, class: 'barno' }, bl, String(b.i + 1))
-        if (b.dense) el('text', { x: b.x + 6 + String(b.i + 1).length * 8, y: dy + top - 16, class: 'barno dense' }, bl, 'Dense: simplify')
+        el('text', { x: b.x + 4, y: b.numY + dy, class: 'barno' }, bl, String(b.i + 1))
+        if (b.dense) el('text', { x: b.x + 6 + String(b.i + 1).length * 8, y: b.numY + dy, class: 'barno dense' }, bl, 'Dense: simplify')
       }
       const last = mine[mine.length - 1]
       if (last) {
@@ -267,7 +267,7 @@ export class Staff {
     for (const l of c.ledgers) el('line', { class: 'ledger', x1: l.x1, x2: l.x2, y1: l.y + dy, y2: l.y + dy }, g)
     if (c.stem) {
       el('line', { class: 'stem', x1: c.stem.x, x2: c.stem.x, y1: c.stem.y1 + dy, y2: c.stem.y2 + dy }, g)
-      if (small) el('line', { class: 'stem', x1: c.stem.x - 4.5, x2: c.stem.x + 4.5, y1: c.stem.y2 + dy + 9, y2: c.stem.y2 + dy + 3 }, g) // the slash
+      if (c.slash) el('line', { class: 'stem', x1: c.stem.x - 4.5, x2: c.stem.x + 4.5, y1: c.stem.y2 + dy + 10, y2: c.stem.y2 + dy + 4 }, g) // the slash
     }
     if (c.flag) el('text', { class: `smufl${small ? ' small' : ''}`, x: c.flag.x, y: c.flag.y + dy }, g, String.fromCharCode(c.flag.glyph))
     for (const h of c.heads) {

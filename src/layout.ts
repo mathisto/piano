@@ -353,16 +353,25 @@ export function analyze(song: Song, o: { read?: boolean; hide?: (n: Note) => boo
       // silences in the upper voice; a short one after a note is articulation, so the note takes it
       let pos = 0
       let prev: Chord | undefined
-      const gap = (g0: number, g: number) => {
+      const gap = (g0: number, g: number, next?: Chord) => {
         if (prev && g <= 0.26 && !prev.tup && isStd(prev.v + g, false)) {
           prev.v += g
           prev.fig = figure(prev.v)
-        } else if (withRests) for (const r of restPieces(g0, g)) B.rests.push({ clef, bar: B.i, q: r.q, v: r.v, tup: r.tup })
+        } else if (withRests) {
+          if (!prev?.tup && !next?.tup) {
+            // a silence outside a triplet is written on the eighth-of-a-quarter grid: an off-grid edge is the player's, not the composer's
+            const a = Math.round(g0 * 8) / 8
+            const e = Math.round((g0 + g) * 8) / 8
+            g0 = a
+            g = e - a
+          }
+          for (const r of restPieces(g0, g)) B.rests.push({ clef, bar: B.i, q: r.q, v: r.v, tup: r.tup })
+        }
       }
       if (!l1.length) B.barRest[clef] = true
       else {
         for (const c of l1) {
-          if (c.q > pos + 0.04) gap(pos, c.q - pos)
+          if (c.q > pos + 0.04) gap(pos, c.q - pos, c)
           pos = Math.max(pos, c.q + c.v)
           prev = c
         }
@@ -696,6 +705,7 @@ export interface LChord {
   accs: { x: number; y: number; glyph: 'sharp' | 'flat' | 'natural'; grace: boolean }[]
   dots: { x: number; y: number }[]
   beamed: boolean
+  slash?: boolean // acciaccatura
 }
 export interface LBeam {
   sys: number
@@ -760,6 +770,7 @@ export interface LBar {
   sys: number
   x: number // its left barline
   xEnd: number
+  numY: number // baseline of its bar number
   xNext: number // where its time ends: the next bar's first column
   minGap: number // the closest two columns in this bar
   dense: boolean // still too tight to read after squeezing
@@ -851,7 +862,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
       const real = B.cols.map((c, i) => ({ c, x: X[j][i] })).filter((k) => !k.c.virtual)
       const gaps = real.slice(1).map((k, i) => k.x - real[i].x)
       const minGap = gaps.length ? Math.min(...gaps) : Infinity
-      L.bars.push({ i: B.i, sys: si, x: bl[j], xEnd: bl[j + 1], xNext: E[j], minGap, dense: dense && minGap < 10.5, cols: B.cols.map((c, i) => ({ q: c.q, x: X[j][i] })) })
+      L.bars.push({ i: B.i, sys: si, x: bl[j], numY: top - 16, xEnd: bl[j + 1], xNext: E[j], minGap, dense: dense && minGap < 10.5, cols: B.cols.map((c, i) => ({ q: c.q, x: X[j][i] })) })
     })
 
     // clefs, key signature, time signature
@@ -1058,7 +1069,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
               let e = k
               while (e + 1 < mem.length && flags[e + 1] > r) e++
               if (e > k) row(xs[k], xs[e], r)
-              else row(xs[k] + (k === 0 ? 0 : -7), xs[k] + (k === 0 ? 7 : 0), r) // a stub, toward the neighbour
+              else row(xs[k] + (k === 0 ? 0 : -6), xs[k] + (k === 0 ? 6 : 0), r) // a stub, toward the neighbour
               k = e + 1
             }
           }
@@ -1075,12 +1086,23 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
           mark(si, tip, tip + (lc.up ? 28 : -28))
         }
       }
-      for (const lc of glcs) {
-        const st = stemsOf.get(lc)!
-        const tip = yTop(lc) - 2.4 * S
-        lc.stem = { x: st.x, y1: st.yRoot, y2: tip }
-        lc.flag = { x: st.x - 0.2, y: tip, glyph: 0xe240 }
-        mark(si, tip - 2, yLow(lc) + 4)
+      // graces: a flagged stem and a slash for one, a thin beam and a slash on the first stem for a run
+      const runs = new Map<string, LChord[]>()
+      for (const lc of glcs) runs.set(`${lc.bar}|${lc.q}`, [...(runs.get(`${lc.bar}|${lc.q}`) ?? []), lc])
+      for (const run of runs.values()) {
+        const tips = run.map((lc) => yTop(lc) - 2.4 * S)
+        const line = Math.min(...tips)
+        run.forEach((lc) => {
+          const st = stemsOf.get(lc)!
+          lc.stem = { x: st.x, y1: st.yRoot, y2: run.length > 1 ? line : tips[run.indexOf(lc)] }
+          mark(si, lc.stem.y2 - 2, yLow(lc) + 4)
+        })
+        run[0].slash = true
+        if (run.length > 1) {
+          const xa = stemsOf.get(run[0])!.x
+          const xb = stemsOf.get(run[run.length - 1])!.x
+          beamRows.push({ sys: si, rows: [{ x1: xa, y1: line, x2: xb + 1.3, y2: line, y3: line + 2.6, y4: line + 2.6 }], chords: run })
+        } else run[0].flag = { x: stemsOf.get(run[0])!.x - 0.2, y: tips[0], glyph: 0xe240 }
       }
 
       // rests, only in a staff that has notes on this page
@@ -1167,6 +1189,12 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
   // ---- the page: system heights and the viewBox ----
   L.systems.forEach((s, si) => {
     const k = ink[si] ?? { lo: top, hi: bottom }
+    for (const b of L.bars.filter((x) => x.sys === si)) {
+      // a bar number sits at a fixed height above the staff, and rises only where notes reach into it
+      const lo = inkTop(L, beamRows, b.sys, b.x, b.x + 26)
+      b.numY = Math.min(top - 16, lo - 5)
+      if (b.numY < top - 16) k.lo = Math.min(k.lo, b.numY - 9)
+    }
     s.pad = Math.max(0, 2 - k.lo)
     s.h = vbH + s.pad + Math.max(0, k.hi - (vbH - 2))
   })
@@ -1237,4 +1265,20 @@ export function densest(an: Analysis): { bar: number; columns: number; units: nu
     if (!best || units > best.units) best = { bar: B.i, columns: B.cols.filter((c) => !c.virtual).length, units }
   }
   return best
+}
+
+/** The highest ink within an x range of a system: what a bar number has to clear. */
+function inkTop(L: Layout, beams: LBeam[], sys: number, xa: number, xb: number) {
+  let y = Infinity
+  for (const c of L.chords) {
+    if (c.sys !== sys || c.x + 14 < xa || c.x - 12 > xb) continue
+    for (const h of c.heads) y = Math.min(y, h.y - 6)
+    for (const l of c.ledgers) y = Math.min(y, l.y - 1)
+    for (const a of c.accs) y = Math.min(y, a.y - 8)
+    if (c.stem && c.stem.x >= xa - 2 && c.stem.x <= xb) y = Math.min(y, c.stem.y1, c.stem.y2)
+  }
+  for (const b of beams) if (b.sys === sys) for (const r of b.rows) if (r.x2 >= xa && r.x1 <= xb) y = Math.min(y, r.y1, r.y2, r.y3, r.y4)
+  for (const t of L.tuplets) if (t.sys === sys && t.x2 >= xa && t.x1 <= xb) y = Math.min(y, t.y - 8)
+  for (const o of L.ottavas) if (o.sys === sys && o.x2 >= xa && o.x1 <= xb) y = Math.min(y, o.y - 9)
+  return y
 }
