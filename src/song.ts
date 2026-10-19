@@ -1,5 +1,7 @@
 import { Midi } from '@tonejs/midi'
 import type { Selection } from './midi-tracks'
+import { notate, quantize } from './quantize'
+import { spellWindow } from './spell'
 
 export type Hand = 'R' | 'L'
 
@@ -14,6 +16,16 @@ export interface Note {
   beats: number // duration in quarter notes
   flat?: boolean // a black key the source wants written as a flat (drills); otherwise spelled by the key
   want?: [number, number] // key velocity range (1..127) this note is meant to be played in; technique exercises set it
+  // Notation layer. t, d, beats and bar above stay the performance; these say how to write it. All quarter notes.
+  qb?: number // quantized onset from the start of its bar
+  qd?: number // written length, snapped to a standard or tuplet value; clipped to the next onset in its voice and to the barline
+  qrest?: number // tied note: quarters left to write after the barline; tiedSegments() cuts them per bar
+  tuplet?: { num: number; den: number } // {3,2}: written as a triplet, so qd and qb are sounding quarters
+  tieNext?: boolean // the written value runs past the barline; the playing note is still one note
+  tiePrev?: boolean // set on the continuation pieces tiedSegments() returns, never on a Note
+  voice?: 1 | 2 // 2 is a long note held under a moving line in the same hand
+  grace?: boolean // an ornament shorter than a 32nd: draw small, don't give it a beat (qb is the note it leads into)
+  acc?: 1 | -1 // accidental to write a black key with, chosen from its neighbours; spell(p, fifths, acc)
 }
 
 export interface Bar {
@@ -22,6 +34,7 @@ export interface Bar {
   t1: number
   n: number // time signature numerator
   den: number
+  ql?: number // length in quarters when it is not n*4/den: a pickup bar
 }
 
 export interface Song {
@@ -35,6 +48,7 @@ export interface Song {
   hi: number
   spb: number // seconds per quarter note, first bar
   artic?: 'legato' | 'staccato' // technique exercises: how long to hold each note
+  keys?: { bar: number; fifths: number }[] // key changes estimated from the notes, first at bar 0; fifths is the best single key
   dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
 }
 
@@ -47,10 +61,15 @@ export interface Raw {
   h?: Hand // set when the source already knows the hand
   flat?: boolean
   want?: [number, number]
+  // Clean sources give their rhythm (quarters from the start); a MIDI import gives the quantized onset. Else it is read from t and d.
+  q?: number
+  dq?: number
+  grace?: boolean
+  acc?: 1 | -1
 }
 
 /** Hands: two tracks -> lower mean pitch is left; anything else splits at `split`. */
-function assignHands(raw: Raw[], split: number): Hand[] {
+export function assignHands(raw: Raw[], split: number): Hand[] {
   const tracks = [...new Set(raw.map((r) => r.track))]
   let base: Hand[]
   if (tracks.length === 2) {
@@ -75,6 +94,10 @@ export function barAt(bars: Bar[], t: number): number {
   return lo
 }
 
+/** A rhythm written as 0.3333 is a third of a quarter. */
+const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 0.01 ? Math.round(x * 24) / 24 : x)
+const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
+
 export function build(
   id: string,
   title: string,
@@ -84,14 +107,23 @@ export function build(
   split = 60,
 ): Song {
   const hands = assignHands(raw, split)
+  let acc = 0
+  const bq = bars.map((b) => ({ q0: (acc += barQ(b)) - barQ(b), ql: barQ(b) }))
+  // rhythm: as given, else read off the clock inside the bar (clean sources: drills, exercises)
+  const rhythm = raw.map((r, k) => {
+    if (r.q !== undefined) return { q: onLattice(r.q), dq: r.dq ?? r.d, hand: hands[k], grace: r.grace }
+    const i = barAt(bars, r.t + 1e-6)
+    const qs = (bars[i].t1 - bars[i].t0) / barQ(bars[i])
+    return { q: bq[i].q0 + Math.round(((r.t - bars[i].t0) / qs) * 24) / 24, dq: r.d / qs, hand: hands[k] }
+  })
+  const written = notate(rhythm, bq)
   const notes: Note[] = raw
-    .map((r, k) => ({ r, h: hands[k] }))
+    .map((r, k) => ({ r, h: hands[k], w: written[k] }))
     .sort((a, b) => a.r.t - b.r.t || a.r.p - b.r.p)
-    .map(({ r, h }, id) => {
-      const bar = barAt(bars, r.t + 1e-6)
-      const b = bars[bar]
-      const q = (b.t1 - b.t0) / ((b.n * 4) / b.den)
-      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, bar, beats: r.d / q, flat: r.flat, want: r.want }
+    .map(({ r, h, w }, id) => {
+      const b = bars[w.bar]
+      const q = (b.t1 - b.t0) / barQ(b)
+      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...w, ...(r.acc && { acc: r.acc }) }
     })
   const last = notes.reduce((m, n) => Math.max(m, n.t + n.d), 0)
   const b0 = bars[0]
@@ -104,7 +136,7 @@ export function build(
     fifths,
     lo: notes.reduce((m, n) => Math.min(m, n.p), 127),
     hi: notes.reduce((m, n) => Math.max(m, n.p), 0),
-    spb: (b0.t1 - b0.t0) / ((b0.n * 4) / b0.den),
+    spb: (b0.t1 - b0.t0) / barQ(b0),
   }
 }
 
@@ -118,12 +150,12 @@ function keyToFifths(key: string, scale: string): number {
   return scale === 'minor' ? maj - 3 : maj
 }
 
-/** Krumhansl-Schmuckler over pitch-class durations; returns fifths of the best major/minor key. */
-export function estimateFifths(raw: { p: number; d: number }[]): number {
-  const maj = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
-  const min = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
-  const h = new Array(12).fill(0)
-  for (const r of raw) h[r.p % 12] += r.d
+const KS_MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
+const KS_MIN = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
+const MAJ_FIFTHS = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5] // tonic pc -> fifths of the major key
+
+/** Krumhansl-Schmuckler over a pitch-class histogram; the best major/minor key as fifths, with its correlation. */
+function ks(h: number[]): { f: number; s: number } {
   const corr = (prof: number[], tonic: number) => {
     const xs = h.map((_, i) => h[(i + tonic) % 12])
     const mx = xs.reduce((a, b) => a + b, 0) / 12
@@ -137,51 +169,90 @@ export function estimateFifths(raw: { p: number; d: number }[]): number {
     return num / Math.sqrt(dx * dp || 1)
   }
   let best = { s: -2, f: 0 }
-  const majFifths = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5] // tonic pc -> fifths of major key
   for (let pc = 0; pc < 12; pc++) {
-    const a = corr(maj, pc)
-    if (a > best.s) best = { s: a, f: majFifths[pc] }
-    const b = corr(min, pc)
-    if (b > best.s) best = { s: b, f: majFifths[(pc + 3) % 12] }
+    const a = corr(KS_MAJ, pc)
+    if (a > best.s) best = { s: a, f: MAJ_FIFTHS[pc] }
+    const b = corr(KS_MIN, pc)
+    if (b > best.s) best = { s: b, f: MAJ_FIFTHS[(pc + 3) % 12] }
   }
-  return best.f
+  return best
+}
+
+/** An onset counts once, a long note a little more (capped at a quarter note's worth), so a held pedal tone cannot outvote the tune. */
+const keyWeight = (len: number) => 1 + Math.min(len, 1)
+
+export function estimateFifths(raw: { p: number; d: number; dq?: number }[]): number {
+  const h = new Array(12).fill(0)
+  for (const r of raw) h[r.p % 12] += keyWeight(r.dq ?? r.d)
+  return ks(h).f
+}
+
+/** The key per stretch of bars: best key of a sliding window, with stretches under four bars folded into their neighbour. */
+export function estimateKeys(notes: Note[], nbars: number, win = 8): { bar: number; fifths: number }[] {
+  const per = Array.from({ length: nbars }, () => new Array(12).fill(0))
+  for (const n of notes) per[n.bar][n.p % 12] += keyWeight(n.qd ?? n.beats)
+  const f = per.map((_, b) => {
+    const h = new Array(12).fill(0)
+    for (let i = Math.max(0, b - win / 2); i < Math.min(nbars, b + win / 2); i++) per[i].forEach((v, k) => (h[k] += v))
+    return h.some((v) => v) ? ks(h).f : NaN
+  })
+  const runs: { bar: number; fifths: number }[] = []
+  f.forEach((x, b) => {
+    const fifths = Number.isNaN(x) ? (runs[runs.length - 1]?.fifths ?? 0) : x
+    if (!runs.length || runs[runs.length - 1].fifths !== fifths) runs.push({ bar: b, fifths })
+  })
+  for (let again = true; again; ) {
+    const i = runs.findIndex((r, j) => runs.length > 1 && (runs[j + 1]?.bar ?? nbars) - r.bar < 4)
+    again = i >= 0
+    if (again) runs.splice(i, 1)
+    for (let j = runs.length - 1; j > 0; j--) if (runs[j].fifths === runs[j - 1].fifths) runs.splice(j, 1)
+  }
+  runs[0].bar = 0
+  return runs
 }
 
 export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection): Song {
   const midi = new Midi(buf)
   const raw: Raw[] = []
+  const ticks: { tick: number; dtick: number }[] = []
   midi.tracks.forEach((tr, track) => {
     if (pick ? !pick.tracks.includes(track) : tr.instrument.percussion) return
     for (const n of tr.notes) {
       raw.push({ t: n.time, d: Math.max(n.duration, 0.03), p: n.midi, v: n.velocity, track, h: pick?.hands[track] })
+      ticks.push({ tick: n.ticks, dtick: n.durationTicks })
     }
   })
   if (!raw.length) throw new Error('No notes found in this file.')
 
   const ppq = midi.header.ppq
-  const sigs = midi.header.timeSignatures.length
-    ? midi.header.timeSignatures
-    : [{ ticks: 0, timeSignature: [4, 4] }]
-  const endTick = midi.header.secondsToTicks(Math.max(...raw.map((r) => r.t + r.d)))
-  const bars: Bar[] = []
-  let tick = 0
-  let si = 0
-  while (tick <= endTick && bars.length < 5000) {
-    while (si + 1 < sigs.length && sigs[si + 1].ticks <= tick) si++
-    const [n, den] = sigs[si].timeSignature
-    const len = Math.round((n * 4 * ppq) / den)
-    bars.push({
-      i: bars.length,
-      t0: midi.header.ticksToSeconds(tick),
-      t1: midi.header.ticksToSeconds(tick + len),
-      n,
-      den,
-    })
-    tick += len
-  }
+  const hands = assignHands(raw, split)
+  const z = quantize(
+    ticks.map((k, i) => ({ ...k, p: raw[i].p, hand: hands[i] })),
+    {
+      ppq,
+      sigs: midi.header.timeSignatures.map((s) => ({ tick: s.ticks, n: s.timeSignature[0], den: s.timeSignature[1] })),
+      tempos: midi.header.tempos.map((t) => ({ tick: t.ticks, bpm: t.bpm })),
+    },
+  )
+  const bars: Bar[] = z.bars.map((b, i) => ({
+    i,
+    t0: midi.header.ticksToSeconds(b.tick),
+    t1: midi.header.ticksToSeconds(b.tick + b.len),
+    n: b.n,
+    den: b.den,
+    ...(i === 0 && z.pickup && { ql: z.pickup }),
+  }))
   const ks = midi.header.keySignatures[0]
-  const fifths = ks?.key ? keyToFifths(ks.key, ks.scale) : estimateFifths(raw)
-  return build(id, title, raw, bars, fifths, split)
+  raw.forEach((r, i) => Object.assign(r, { q: z.q[i], dq: z.dq[i], grace: z.grace[i] }))
+  const fifths = ks?.key ? keyToFifths(ks.key, ks.scale) : estimateFifths(raw.filter((r) => !r.grace))
+  const acc = spellWindow(raw.map((r) => r.p), z.q, fifths)
+  raw.forEach((r, i) => (r.acc = acc[i]))
+  const song = build(id, title, raw, bars, fifths, split)
+  if (!ks?.key) {
+    const keys = estimateKeys(song.notes, bars.length)
+    if (keys.length > 1) song.keys = keys
+  }
+  return song
 }
 
 // ---- tiny text format for the starter songs: "C4:1 E4+G4:2 R:1" (name[+name]:beats) ----
@@ -217,7 +288,7 @@ export function fromSpec(s: Spec): Song {
       if (!(len > 0)) throw new Error(`bad token: ${tok}`)
       if (names !== 'R') {
         for (const nm of names.split('+')) {
-          raw.push({ t: beat * q, d: len * q * 0.95, p: parseName(nm), v: 0.7, track })
+          raw.push({ t: beat * q, d: len * q * 0.95, p: parseName(nm), v: 0.7, track, q: beat, dq: len })
         }
       }
       beat += len
