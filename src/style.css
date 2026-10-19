@@ -463,7 +463,8 @@ input[type='range']::-moz-range-thumb {
   display: grid;
 }
 #library,
-#read {
+#read,
+#touch {
   overflow: auto;
   align-content: start;
   padding: 32px clamp(16px, 6vw, 96px) 64px;
@@ -629,6 +630,33 @@ table.songs tr.band th {
 }
 .next-strip b {
   color: var(--ink);
+}
+h2.sec {
+  margin: 8px 0 0;
+  font: 800 italic 22px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+p.note {
+  margin: 8px 0 24px;
+  color: var(--ink-2);
+}
+.hist.spark {
+  max-width: 640px;
+  height: 160px;
+  margin-top: 8px;
+}
+.hist.spark polyline {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+}
+.hist.spark circle {
+  fill: var(--ink);
+}
+.hist.spark .mid {
+  stroke: var(--ink-3);
+  stroke-width: 1;
 }
 table.stages td {
   padding-top: 8px;

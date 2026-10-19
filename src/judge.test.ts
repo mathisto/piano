@@ -154,3 +154,22 @@ describe('holds', () => {
     expect(run('strict')).toMatchObject({ grade: 'short' })
   })
 })
+
+describe('velocity', () => {
+  it('keeps the velocity of each struck note on the 0..127 scale and skips unknown ones', () => {
+    const j = mk([n(0, 1, 60), n(1, 2, 62), n(2, 3, 64)])
+    j.press(60, 1, 0.5)
+    j.press(62, 2) // from the screen keys: no real velocity
+    j.press(64, 3, 1)
+    expect(j.samples()).toEqual([
+      { v: 64, h: 'R' },
+      { v: 127, h: 'R' },
+    ])
+  })
+
+  it('keeps wait-mode hits too', () => {
+    const j = mk([n(0, 1, 60)], { wait: true })
+    j.press(60, 0.9, 0.25)
+    expect(j.samples()).toEqual([{ v: 32, h: 'R' }])
+  })
+})

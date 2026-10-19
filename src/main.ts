@@ -12,7 +12,7 @@ import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { multiplier, type Grade } from './judge'
-import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard } from './midi'
+import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
 import { fromSpec, type Song } from './song'
@@ -21,7 +21,8 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
-import { $, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { calibrate } from './touch'
+import { $, CAL_NOTES, touchView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -87,8 +88,8 @@ async function showLibrary(err = '') {
   library($('#library'), starts, mine, err)
 }
 
-function view(name: 'library' | 'read' | 'play') {
-  for (const v of ['library', 'read', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
+function view(name: 'library' | 'read' | 'touch' | 'play') {
+  for (const v of ['library', 'read', 'touch', 'play'] as const) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'
   $('#modeSeg').hidden = name !== 'play' || game.mode === 'read'
   $('#viewSeg').hidden = name !== 'play' || game.mode === 'read'
@@ -96,11 +97,70 @@ function view(name: 'library' | 'read' | 'play') {
   if (name !== 'play') $('#title').textContent = ''
 }
 
-async function showSection(name: 'songs' | 'read') {
+async function showSection(name: 'songs' | 'read' | 'touch') {
   ;($(`input[name=nav][value=${name}]`) as HTMLInputElement).checked = true
-  view(name === 'songs' ? 'library' : 'read')
+  view(name === 'songs' ? 'library' : name)
   if (name === 'songs') await showLibrary()
-  else await showRead()
+  else if (name === 'read') await showRead()
+  else await showTouch()
+}
+
+// ---------------------------------------------------------------- touch page and calibration
+
+let touchCal: TouchCal | null = null
+let calGot: number[][] = [[], [], []]
+
+async function showTouch() {
+  touchView($('#touch'), await store.getTouch(), touchCal)
+  const el = $('#touch')
+  const on = (sel: string, f: () => void) => {
+    const b = el.querySelector<HTMLButtonElement>(sel)
+    if (b) b.onclick = f
+  }
+  on('#calStart', () => {
+    touchCal = { step: 0, got: 0 }
+    calGot = [[], [], []]
+    void showTouch()
+  })
+  on('#calCancel', () => {
+    touchCal = null
+    void showTouch()
+  })
+  on('#calReset', () => {
+    settings.edges = undefined
+    save()
+    touchCal = null
+    void showTouch()
+  })
+}
+
+/** A note-on from a real keyboard while calibrating; returns true when it was consumed. */
+function calNote(vel: number) {
+  if (!touchCal || !$('#touch').classList.contains('on')) return false // only while the Touch page is open
+  const c = touchCal
+  calGot[c.step].push(Math.max(1, Math.round(vel * 127)))
+  c.got = calGot[c.step].length
+  if (c.got >= CAL_NOTES) {
+    if (c.step < 2) touchCal = { step: (c.step + 1) as 1 | 2, got: 0 }
+    else {
+      const e = calibrate(calGot[0], calGot[1], calGot[2])
+      if (e) {
+        settings.edges = e
+        save()
+      }
+      touchCal = null
+      void showTouch().then(() => {
+        const p = document.createElement('p')
+        p.className = 'note'
+        p.setAttribute('role', 'status')
+        p.textContent = e ? 'Saved. Your soft, medium and hard now follow your own playing.' : 'The three levels were too close together to tell apart. Play the soft ones very gently and the hard ones firmly, then try again.'
+        $('#touch .next-strip').after(p)
+      })
+      return true
+    }
+  }
+  void showTouch()
+  return true
 }
 
 async function showRead() {
@@ -517,6 +577,10 @@ async function onDone(r: Result) {
   )
   current.heat = prog.heat
   dock.setSong(current.song, prog.heat)
+  if (r.touch.n >= 4) {
+    const { n, mean, sd, hands, bands } = r.touch
+    void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
+  }
   const worst = worstBars(r.heat)
   const res = $('#res')
   res.innerHTML = results(r, worst)
@@ -654,16 +718,18 @@ function chipFlash(p: number) {
   }, 450)
 }
 
-onMidi((m) => {
+const fromKeyboard = (m: MidiMsg) => {
   if (m.on) {
     chipFlash(m.p)
     if (!played) {
       played = true
       updateBanner()
     }
+    if (!m.virtual && calNote(m.v)) return
     game.press(m.p, m.v, m.ts, m.virtual)
   } else game.release(m.p, m.ts, m.virtual)
-})
+}
+onMidi(fromKeyboard)
 onPedal((d) => game.sustain(d))
 typingKeyboard()
 
@@ -776,7 +842,7 @@ $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDra
 $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
 $('#brand').onclick = () => (current ? leave() : void showSection('songs'))
 $('#stagesBtn').onclick = leave
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read')
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as 'songs' | 'read' | 'touch')
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
   if (!b) return
@@ -898,5 +964,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { game, icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
+  ;(window as unknown as Record<string, unknown>).__piano = { game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
 }

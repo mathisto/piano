@@ -82,9 +82,9 @@ Ideas from the first real session on the iPad with the FP-10. Everything below n
 
 ### Phase B: velocity statistics (about 5-6 h)
 
-- [ ] Capture velocity (0-127) on every graded press and keep it on the result: per-note, mean, spread, per-hand, per-pitch region.
-- [ ] Lifetime statistics in IndexedDB (same pattern as the drill stats: moving averages, per song and per exercise), a Touch page with session history and trend, and a velocity histogram plus left-versus-right balance on the results card. Include in the JSON export.
-- [ ] **Personal calibration.** Velocity depends on the keyboard's touch setting and the player. A short exercise (ten soft, ten medium, ten loud notes) sets the player's own bands; defaults until then: soft 1-45, medium 46-85, hard 86-127, or the six dynamics pp to ff.
+- [x] Capture velocity (0-127) on every graded press and keep it on the result: mean, spread, per-hand, bands, histogram (`touch.ts`). Not built: per-pitch region.
+- [x] (shipped as a session log, last 300, `touch:log`; histogram and L/R balance on the results card; Touch page with sparkline and table; in the JSON export) Lifetime statistics in IndexedDB (same pattern as the drill stats: moving averages, per song and per exercise), a Touch page with session history and trend, and a velocity histogram plus left-versus-right balance on the results card. Include in the JSON export.
+- [x] **Personal calibration** (Touch page: ten soft, medium, hard; edges halfway between the means; refused if the levels are within 12 of each other; `settings.edges`). Velocity depends on the keyboard's touch setting and the player. A short exercise (ten soft, ten medium, ten loud notes) sets the player's own bands; defaults until then: soft 1-45, medium 46-85, hard 86-127, or the six dynamics pp to ff.
 - [ ] Optional 'play as written' for MIDI files that carry dynamics: compare your velocity to the file's, relative to your calibrated range.
 
 ### Phase C: technique exercises (about 10-14 h)
