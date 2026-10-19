@@ -27,6 +27,8 @@ export type GameEvent =
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'milestone'; combo: number }
+  | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
+  | { type: 'release'; p: number }
   | { type: 'auto'; note: Note }
   | { type: 'phase'; phase: Phase }
   | { type: 'loop' }
@@ -316,8 +318,10 @@ export class Game {
   press(p: number, vel: number, ts: number, virtual = false) {
     this.held.set(p, vel)
     if (settings.sound || virtual) audio.noteOn(p, vel, true) // the screen and computer keys have no speaker of their own
-    if (!this.running() && this.phase !== 'waiting') return
-    const t = this.tAt(ts) - ((settings.offset / 1000) * this.rate)
+    const live = this.running() || this.phase === 'waiting'
+    const t = live ? this.tAt(ts) - (settings.offset / 1000) * this.rate : this.t
+    this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
+    if (!live) return
     this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t))
     if (this.phase === 'waiting') {
       if (!this.judge.required(this.t).length) {
@@ -331,5 +335,6 @@ export class Game {
   release(p: number, virtual = false) {
     this.held.delete(p)
     if (settings.sound || virtual) audio.noteOff(p)
+    this.emit({ type: 'release', p })
   }
 }
