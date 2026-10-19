@@ -41,6 +41,8 @@ export class Judge {
   st = new Int8Array(0)
   grade: (Grade | undefined)[] = []
   off = new Float32Array(0)
+  holdGrade: (HoldGrade | undefined)[] = [] // per note, once its key has come up
+  holdAt = new Float32Array(0) // song time of that release
   private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
   private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
   holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
@@ -68,6 +70,8 @@ export class Judge {
     this.grade = new Array(this.notes.length).fill(undefined)
     this.off = new Float32Array(this.notes.length)
     this.pts = new Float32Array(this.notes.length)
+    this.holdAt = new Float32Array(this.notes.length)
+    this.holdGrade = new Array(this.notes.length).fill(undefined)
     this.down.clear()
     this.holds = { held: 0, short: 0, long: 0 }
     this.total = 0
@@ -169,6 +173,8 @@ export class Judge {
     }
     this.score -= this.pts[i] * (1 - f)
     this.holds[grade]++
+    this.holdGrade[i] = grade
+    this.holdAt[i] = t
     return [{ k: 'hold', i, grade, f }]
   }
 

@@ -12,7 +12,7 @@ import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { multiplier, type Grade } from './judge'
-import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, typingKeyboard } from './midi'
+import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
 import { fromSpec, type Song } from './song'
@@ -138,7 +138,7 @@ function screenKeys(canvas: HTMLCanvasElement) {
     const p = down.get(id)
     if (p === undefined) return
     down.delete(id)
-    if (![...down.values()].includes(p)) game.release(p, true)
+    if (![...down.values()].includes(p)) game.release(p, performance.now(), true)
   }
   canvas.addEventListener('pointerdown', (e) => {
     const k = at(e)
@@ -347,6 +347,9 @@ game.on((e: GameEvent) => {
       staff.ghostHit(e.note.p, e.note.id, 'great')
       staff.mark(e.note.id, 'hit-ok')
       if (drill) drillOk(e.note.id, e.rt, e.clean)
+      break
+    case 'hold':
+      if (e.grade === 'short') staff.cut(e.note.id)
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
@@ -659,8 +662,9 @@ onMidi((m) => {
       updateBanner()
     }
     game.press(m.p, m.v, m.ts, m.virtual)
-  } else game.release(m.p, m.virtual)
+  } else game.release(m.p, m.ts, m.virtual)
 })
+onPedal((d) => game.sustain(d))
 typingKeyboard()
 
 // ---------------------------------------------------------------- drawer
@@ -694,6 +698,11 @@ function openDrawer() {
   $('#sCal', d).onclick = () => void startCalibration()
   d.querySelectorAll<HTMLInputElement>('input[name=fx]').forEach((r) => (r.onchange = () => {
     settings.fx = Number(r.value) as 0 | 1 | 2 | 3
+    save()
+  }))
+  d.querySelectorAll<HTMLInputElement>('input[name=hold]').forEach((r) => (r.onchange = () => {
+    settings.hold = r.value as typeof settings.hold
+    game.judge.cfg.hold = game.mode === 'perform' ? settings.hold : 'off'
     save()
   }))
   on('#sFall', (el) => {

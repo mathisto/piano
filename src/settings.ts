@@ -6,6 +6,7 @@ export interface Settings {
   volume: number
   names: boolean // note names on keys and notes
   chord: boolean // name the chord you are holding
+  hold: 'off' | 'lenient' | 'strict' // how closely to grade holding a key for the written length (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only
   offset: number // ms, from calibration
@@ -23,6 +24,7 @@ const DEFAULTS: Settings = {
   volume: 0.7,
   names: true,
   chord: true,
+  hold: 'lenient',
   full: false,
   view: 'both',
   offset: 0,

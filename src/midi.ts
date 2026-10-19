@@ -20,12 +20,17 @@ export const monitor = { n: 0, text: '' }
 
 let access: MIDIAccess | undefined
 let handler: Handler = () => {}
+let pedalHandler: (down: boolean) => void = () => {}
 let want = ''
 
 export const midiSupported = typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator
 
 export function onMidi(h: Handler) {
   handler = h
+}
+
+export function onPedal(h: (down: boolean) => void) {
+  pedalHandler = h
 }
 
 export function inputs(): Input[] {
@@ -56,6 +61,7 @@ function msg(e: MIDIMessageEvent) {
     handler({ on: false, p: d[1], v: 0, ts })
   } else if (s === 0xb0 || s === 0xe0 || s === 0xc0) {
     monitor.n++
+    if (s === 0xb0 && d[1] === 64) pedalHandler(d[2] >= 64)
     monitor.text = s === 0xb0 ? `controller ${d[1]} = ${d[2]}` : s === 0xc0 ? 'program change' : 'pitch bend'
   }
 }

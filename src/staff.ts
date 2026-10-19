@@ -535,6 +535,11 @@ export class Staff {
   }
 
   /** Ignite a note on the staff: it flares in its grade colour, then settles back to ink. */
+  /** A note whose key came up early gets a red outline; a note held through gets nothing. */
+  cut(noteId: number) {
+    this.byId.get(noteId)?.head?.classList.add('short')
+  }
+
   mark(noteId: number, cls: string) {
     const p = this.byId.get(noteId)
     if (!p) return

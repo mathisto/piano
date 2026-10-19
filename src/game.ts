@@ -1,5 +1,5 @@
 import * as audio from './audio'
-import { Judge, type Ev, type Grade } from './judge'
+import { Judge, type Ev, type Grade, type HoldGrade } from './judge'
 import { settings } from './settings'
 import { barAt, type Note, type Song } from './song'
 
@@ -13,6 +13,7 @@ export interface Result {
   grade: string
   counts: Record<Grade, number>
   maxCombo: number
+  holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
   offs: number[]
   heat: number[]
@@ -29,6 +30,7 @@ export type GameEvent =
   | { type: 'milestone'; combo: number }
   | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
   | { type: 'release'; p: number }
+  | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
   | { type: 'auto'; note: Note }
   | { type: 'phase'; phase: Phase }
   | { type: 'loop' }
@@ -53,6 +55,7 @@ export class Game {
   hands: Record<'R' | 'L', HandMode> = { R: 'play', L: 'play' }
   loop: { a: number; b: number } | null = null
   judge!: Judge
+  pedal = false // sustain pedal is down
   held = new Map<number, number>() // pitches the player holds -> velocity
   autoUntil = new Map<number, number>() // pitches the app is playing for you -> perf ms
   heat: number[] = []
@@ -110,7 +113,7 @@ export class Game {
     this.hands[n.h] === 'play' && n.t >= this.t - 0.05 && (!this.loop || (n.t >= this.loop.a && n.t < this.loop.b))
 
   private cfg() {
-    return { rate: this.rate, wait: this.wait, strict: this.mode === 'perform' }
+    return { rate: this.rate, wait: this.wait, strict: this.mode === 'perform', hold: this.mode === 'perform' ? settings.hold : 'off' }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -275,6 +278,7 @@ export class Game {
       grade: letter(j.accuracy),
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
+      holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
       heat: this.heat.slice(),
@@ -303,6 +307,8 @@ export class Game {
         this.wrongMark = this.judge.wrong
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean })
+      } else if (e.k === 'hold') {
+        this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
         this.bump(note.bar, 1)
@@ -332,9 +338,14 @@ export class Game {
     }
   }
 
-  release(p: number, virtual = false) {
+  release(p: number, ts: number, virtual = false) {
     this.held.delete(p)
     if (settings.sound || virtual) audio.noteOff(p)
     this.emit({ type: 'release', p })
+    if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
+  }
+
+  sustain(down: boolean) {
+    this.pedal = down
   }
 }

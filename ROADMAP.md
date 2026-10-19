@@ -71,7 +71,7 @@ Ideas from the first real session on the iPad with the FP-10. Everything below n
   - Effects level scales it (Off: colour only; Calm: no motion; Arcade/Max: sparkle and thud). Reduced motion caps at Calm. Optional soft thud sound, off by default.
   - Open: ghost colour (proposal: Ink-2 outline so it is clearly 'not the score'); whether a held ghost should stretch into a duration bar (ties to hold scoring).
 - [x] **Held-chord readout**, bottom right of the stage, above the keyboard, never over the falling lanes. Names what is held right now: pitch-class set matched against triads, sevenths, sus, dim, aug, power fifths, with inversions and slash bass ('C/E', 'G7', 'Dm'); two notes show the interval ('C and G: fifth'); one note shows its name. Spelled by the key. Settings switch, default on. Pure function of held pitches: easy to unit test.
-- [ ] **Hold scoring** (note length and release timing). Today only onsets are graded.
+- [x] **Hold scoring** (note length and release timing), shipped: `Judge.release`, `Hold` setting Off/Lenient/Strict (Perform only), CC64 pedal, red remainder on the highway, red outline on the staff head, Hold % on results. Not built yet: a too-long tint on the next note, and Learn 'hold to advance' (below).
   - Judge records each hit note's release time (note-off matched by pitch). Target release is the written end (the quantized note value in the staff, else the file's duration), capped at the next onset of the same hand so legato and rests are not punished.
   - Grades per note: held (released within about 120 ms or 15% of the length, whichever is larger), short (released early), long (held into the next note). Held full value keeps the note's points; short or long scales its points down (floor 50%). A broken hold does not break the combo. Results show a Hold % next to Accuracy.
   - Sustain pedal (CC64): while the pedal is down, an early release is not penalised. Needs CC64 parsing in `midi.ts`.
@@ -98,5 +98,5 @@ Ideas from the first real session on the iPad with the FP-10. Everything below n
 
 - Event pipeline: carry `{ on, pitch, velocity, ts }` plus pedal into `Game.press/release` and `Judge.release`; keep `Judge` pure so it stays testable.
 - Timing honesty: release timestamps go through the same calibration offset as onsets; Bluetooth jitter will blur short holds, so USB is recommended for Strict hold scoring.
-- iPad: everything above works in the Capacitor app because MIDI arrives through the same shim (the native plugin already forwards note-offs and velocity; it drops controller messages today, so CC64 needs a one-line change in `PianoNative.swift`).
+- iPad: everything above works in the Capacitor app because MIDI arrives through the same shim (the native plugin already forwards note-offs and velocity; it already forwards controller messages, so CC64 needs no native change).
 - Tests first for the pure parts: chord naming, hold grading, velocity banding.
