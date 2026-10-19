@@ -180,8 +180,9 @@ export class Staff {
     const i = Math.min(Math.max(0, b.i - this.bar0), this.count * this.sys - 1)
     const frac = Math.min(1, Math.max(0, (t - b.t0) / (b.t1 - b.t0)))
     const col = i % this.count
+    const span = this.game.mode === 'read' ? this.bw - this.pad * 2 : this.bw // drills keep their margins: cards wait, nothing sweeps
     return {
-      x: this.x0 + col * this.bw + this.pad + frac * (this.bw - this.pad * 2),
+      x: this.x0 + col * this.bw + this.pad + frac * span,
       dy: this.yPad + Math.floor(i / this.count) * (this.vbH + GAP),
     }
   }
@@ -191,7 +192,7 @@ export class Staff {
     const last = Math.min(this.bar0 + this.count * this.sys, bars.length) - 1
     const t = Math.min(Math.max(this.game.t, bars[this.bar0].t0), bars[last].t1)
     const { x, dy } = this.posAt(t)
-    const cx = x - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
+    const cx = Math.min(x, this.x1) - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
     this.cursor.setAttribute('x1', String(cx))
     this.cursor.setAttribute('x2', String(cx))
     const top = this.base[this.clefs[0]] - 4 * S
@@ -237,6 +238,9 @@ export class Staff {
     this.x0 = 14 + 40 + Math.abs(fifths) * 9 + (first ? 26 : 8)
     this.x1 = this.w - 10
     this.bw = (this.x1 - this.x0) / this.count
+    // Time maps straight onto the page. Half a beat of air at each end of a bar makes the step from the
+    // last beat to the next bar's first beat the same as any other, so the cursor never lurches at a barline.
+    if (this.game.mode !== 'read') this.pad = this.bw / (2 * song.bars[this.bar0].n)
 
     for (let sy = 0; sy < this.sys; sy++) {
       const from = this.bar0 + sy * this.count

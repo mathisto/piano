@@ -121,9 +121,22 @@ export class Game {
     this.endPass()
     this.offs = []
     this.held.clear()
-    this.seek(this.loop ? this.loop.a - this.song.spb * 2 : this.mode === 'perform' ? -COUNT_IN * this.song.spb : -LEAD)
+    this.seek(this.lead().from)
     this.rescore()
     this.setPhase('ready', true)
+  }
+
+  /** The count-in: four beats before the song, two before a loop, none in Read (the card waits for you). */
+  private lead(): { from: number; to: number } {
+    const spb = this.song.spb
+    if (this.loop) return { from: this.loop.a - 2 * spb, to: this.loop.a }
+    return this.mode === 'read' ? { from: -LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
+  }
+
+  /** Beats of count-in left, 4 down to 1, or 0 when not counting. */
+  get count() {
+    const { to } = this.lead()
+    return this.running() && this.t < to ? Math.min(COUNT_IN, Math.max(1, Math.ceil((to - this.t) / this.song.spb - 1e-6))) : 0
   }
 
   /** Re-score after a setting change without leaving the song. */
@@ -185,7 +198,7 @@ export class Game {
     if (this.phase === 'ready' || this.phase === 'paused') {
       this.lastPerf = performance.now()
       this.anchor(this.lastPerf)
-      this.setPhase(this.t < 0 && this.mode === 'perform' ? 'countin' : 'playing')
+      this.setPhase(this.t < this.lead().to ? 'countin' : 'playing')
     } else {
       this.setPhase('paused')
     }
@@ -213,7 +226,7 @@ export class Game {
 
   setLoop(l: { a: number; b: number } | null) {
     this.loop = l
-    if (l) this.seek(l.a - this.song.spb * 2)
+    if (l) this.seek(this.lead().from)
     this.rescore()
     if (this.phase === 'waiting') this.setPhase('playing')
   }
@@ -226,13 +239,10 @@ export class Game {
     for (const [p, until] of this.autoUntil) if (until < perf) this.autoUntil.delete(p)
     if (!this.running() && this.phase !== 'waiting') return
 
-    if (this.phase === 'countin') {
-      while (this.nextClick * this.song.spb <= this.t && this.nextClick < 0) {
-        audio.click(this.nextClick === -COUNT_IN)
-        this.nextClick++
-      }
-      if (this.t >= 0) this.setPhase('playing')
-    }
+    const lead = this.lead()
+    const spb = this.song.spb
+    while (this.nextClick * spb <= this.t && this.nextClick * spb < lead.to - 1e-6) audio.click(this.nextClick++ * spb <= lead.from + 1e-6)
+    if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
 
     // listen-hand notes play themselves
     while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
@@ -260,7 +270,7 @@ export class Game {
       }
       if (this.loop && this.t >= this.loop.b) {
         this.endPass()
-        this.seek(this.loop.a - this.song.spb * 2)
+        this.seek(this.lead().from)
         this.rescore()
         this.emit({ type: 'loop' })
         return

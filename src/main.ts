@@ -255,7 +255,7 @@ function frame() {
     if (j.wrong !== last.slip) $('#hSlip').textContent = String(j.wrong)
     last = { ...last, clr, slip: j.wrong }
   }
-  const n = game.phase === 'countin' ? Math.min(4, Math.max(1, Math.ceil(-game.t / game.song.spb - 1e-6))) : 0
+  const n = game.count
   if (n !== last.count) {
     last.count = n
     const c = $('#count')
