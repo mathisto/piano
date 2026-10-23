@@ -7,3 +7,4 @@ dist
 .impeccable/build
 *.local
 .impeccable/critique-shots
+art/*.png

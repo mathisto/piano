@@ -9,7 +9,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - Technique: five-finger, scale and arpeggio in seven keys, either or both hands, with soft/medium/hard, crescendo, decrescendo and accent targets (pips on the falling bar, dynamics on the staff, a touch verdict per note).
 - Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
 - Content: MIDI and MusicXML (.musicxml, .mxl) import, eight starter pieces, sampled grand piano (Salamander, CC BY 3.0).
-- Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and technique cells you can tap to practise, and touch history; Songs with thumbnails and lengths for the open library too; six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
+- Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and technique cells you can tap to practise, and touch history; Songs with covers, thumbnails and lengths for the open library too (46 ChatGPT-made covers in `public/art/`, see `docs/art/covers.md`); six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
 - Deploy: static site at pianoforte.mattkelly.io; iPad app via Capacitor with a CoreMIDI plugin (developer install, expires every 7 days).
 
 ## Phase D: design pass (in progress, branch `design/overhaul`)

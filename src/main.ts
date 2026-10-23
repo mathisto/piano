@@ -30,7 +30,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -119,7 +119,7 @@ async function fillLibrary() {
       libMeta.set(e.id, { thumb: thumb(song), len: song.end })
       const row = document.querySelector(`#library tr[data-lib="${e.id}"]`)
       if (row) {
-        row.querySelector('.thumb')!.innerHTML = libMeta.get(e.id)!.thumb
+        row.querySelector('.thumb')!.insertAdjacentHTML('beforeend', libMeta.get(e.id)!.thumb)
         row.querySelector('.len')!.textContent = mmss(song.end)
       }
     } catch { /* a piece that will not parse still opens and reports its own error */ }
@@ -819,7 +819,7 @@ function onPhase() {
       ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}`
+        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}`
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return
       const { base, credit } = current
