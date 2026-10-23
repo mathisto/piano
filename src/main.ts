@@ -30,7 +30,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -103,7 +103,35 @@ async function libraryData() {
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err, libEntries, await store.allProgress())
+  library($('#library'), starts, mine, err, libEntries, await store.allProgress(), libMeta)
+  void fillLibrary()
+}
+
+/** Thumbnails and lengths of the open library: the files are tiny, so they are read once, four at a time, after the page shows. */
+const libMeta = new Map<string, { thumb: string; len: number }>()
+async function fillLibrary() {
+  const todo = libEntries.filter((e) => !libMeta.has(e.id))
+  const next = async (): Promise<void> => {
+    const e = todo.shift()
+    if (!e) return
+    try {
+      const song = await libSong(e)
+      libMeta.set(e.id, { thumb: thumb(song), len: song.end })
+      const row = document.querySelector(`#library tr[data-lib="${e.id}"]`)
+      if (row) {
+        row.querySelector('.thumb')!.innerHTML = libMeta.get(e.id)!.thumb
+        row.querySelector('.len')!.textContent = mmss(song.end)
+      }
+    } catch { /* a piece that will not parse still opens and reports its own error */ }
+    return next()
+  }
+  await Promise.all([next(), next(), next(), next()])
+}
+
+async function libSong(e: LibraryEntry) {
+  const r = await fetch(libraryUrl(e.file))
+  if (!served(r)) throw new Error(`${e.title} could not be loaded.`)
+  return store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
 }
 
 const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
@@ -186,6 +214,12 @@ async function showProgress() {
     void showProgress()
   })
 }
+
+$('#progress').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button.cell')
+  if (b?.dataset.stage) void startDrill(stageById(b.dataset.stage)!)
+  else if (b?.dataset.recipe) void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.recipe) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
+})
 
 $('#today').addEventListener('click', (e) => {
   const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')
@@ -448,7 +482,7 @@ function cycle() {
 }
 
 // Staff size: pinch, trackpad pinch, plus and minus, or the buttons. Smaller shows more bars, and a second line once two fit.
-const ZOOM = { min: 0.25, max: 1.8, step: 1.15 }
+const ZOOM = { min: 0.26, max: 1.8, step: 1.15 }
 let zoomFrame = 0
 function setZoom(z: number) {
   const v = Math.round(Math.min(ZOOM.max, Math.max(ZOOM.min, z)) * 50) / 50
@@ -468,16 +502,31 @@ function setZoom(z: number) {
     const [a, b] = [...pts.values()]
     return Math.hypot(a.x - b.x, a.y - b.y)
   }
+  let tap = { t: 0, x: 0, y: 0 } // the last single tap, for a double tap that puts the size back to 1
+  let moved = false
+  let down = { x: 0, y: 0 }
   host.addEventListener('pointerdown', (e) => {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    down = { x: e.clientX, y: e.clientY }
+    moved = pts.size > 1
     if (pts.size === 2) from = { d: spread(), z: settings.zoom }
   })
   host.addEventListener('pointermove', (e) => {
     if (!pts.has(e.pointerId)) return
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (pts.size === 2 && from.d > 20) setZoom(from.z * (spread() / from.d)) // fingers apart: bigger notes, together: more bars
+    else if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) moved = true
   })
-  for (const ev of ['pointerup', 'pointercancel'] as const) host.addEventListener(ev, (e) => pts.delete(e.pointerId))
+  host.addEventListener('pointerup', (e) => {
+    const alone = pts.size === 1 && !moved && !(e.target as HTMLElement).closest('.zoomc, .barno')
+    pts.delete(e.pointerId)
+    if (!alone) return (tap.t = 0)
+    if (e.timeStamp - tap.t < 320 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 30) {
+      tap.t = 0
+      setZoom(1)
+    } else tap = { t: e.timeStamp, x: e.clientX, y: e.clientY }
+  })
+  host.addEventListener('pointercancel', (e) => pts.delete(e.pointerId))
   host.addEventListener('wheel', (e) => {
     if (!e.ctrlKey && !e.metaKey) return // a trackpad pinch arrives as ctrl + wheel
     e.preventDefault()
@@ -485,6 +534,36 @@ function setZoom(z: number) {
   }, { passive: false })
   $('#zoomOut').onclick = () => setZoom(settings.zoom / ZOOM.step)
   $('#zoomIn').onclick = () => setZoom(settings.zoom * ZOOM.step)
+  // the whole piece in view; pressed again, back to the normal size
+  $('#zoomFit').onclick = () => {
+    const f = staff.fit(ZOOM.min, 1)
+    setZoom(settings.zoom === f ? 1 : f)
+  }
+  // the buttons can be dragged by their grip to wherever they are out of the way
+  const box = $('#staff .zoomc')
+  const place = ([x, y]: [number, number]) => {
+    box.style.setProperty('--zx', String(x))
+    box.style.setProperty('--zy', String(y))
+  }
+  place(settings.zpos)
+  const grip = $('#zoomGrip')
+  grip.onpointerdown = (e) => {
+    grip.setPointerCapture(e.pointerId)
+    box.classList.add('drag')
+    const b = box.getBoundingClientRect()
+    const off = { x: e.clientX - b.left, y: e.clientY - b.top }
+    grip.onpointermove = (m) => {
+      const h = host.getBoundingClientRect()
+      const f = (v: number, size: number, span: number) => Math.min(1, Math.max(0, span > 0 ? (v - 8) / (span - 16 - size) : 1))
+      settings.zpos = [f(m.clientX - off.x - h.left, b.width, h.width), f(m.clientY - off.y - h.top, b.height, h.height)]
+      place(settings.zpos)
+    }
+    grip.onpointerup = grip.onpointercancel = () => {
+      grip.onpointermove = grip.onpointerup = grip.onpointercancel = null
+      box.classList.remove('drag')
+      save()
+    }
+  }
 }
 
 /** One step by keyboard: down and up walk through falling only, both with the pane resized, and sheet only. */
@@ -989,6 +1068,7 @@ function updateChip() {
   chip.classList.toggle('ok', list.length > 0)
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
   $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
+  $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
 }
 
 async function connectMidi() {
@@ -1267,10 +1347,7 @@ async function openLibrary(id: string, mode: Mode) {
   const e = libEntries.find((x) => x.id === id)
   if (!e) return
   try {
-    const r = await fetch(libraryUrl(e.file))
-    if (!served(r)) throw new Error(`${e.title} could not be loaded.`)
-    const song = await store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
-    await openSong(song, mode)
+    await openSong(await libSong(e), mode)
     if (current) current.credit = creditLine(e)
     onPhase()
   } catch (err) {

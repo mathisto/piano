@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyze, beamBounds, densest, figure, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
+import { analyze, beamBounds, densest, figure, fitZoom, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
 import { mixed, orchestral, pianoHuman, sixEight, waltz } from './notation-fixtures'
 import { build, fromMidi, type Bar, type Raw, type Song } from './song'
 
@@ -347,6 +347,22 @@ describe('zoom: the player sizes the staff', () => {
   it('never draws the staff too small to read, however far it is zoomed out', () => {
     const w = win({ view: 'both', px: { w: 1180, h: 130 }, zoom: 0.25 })
     expect(w.nominal).toBeLessThanOrEqual(130 + 1) // under one pixel per viewBox unit would be smaller than that
+  })
+})
+
+describe('fit the whole piece', () => {
+  const s = song([4, 4], 16, Array.from({ length: 16 * 4 }, (_, i) => [60 + (i % 5), i, 1] as N))
+  const an = analyze(s)
+  const cfg: Cfg = { view: 'sheet', px: { w: 1180, h: 560 } }
+  const shown = (zoom: number) => windowFor(an, 0, { ...cfg, zoom }).to
+  it('is the biggest size that still shows every bar', () => {
+    const z = fitZoom(an, cfg, 0.26, 1)
+    expect(shown(z)).toBe(16)
+    expect(z === 1 || shown(z + 0.02) < 16).toBe(true)
+  })
+  it('stops at the smallest size when the piece cannot fit', () => {
+    const long = analyze(song([4, 4], 400, Array.from({ length: 1600 }, (_, i) => [60 + (i % 5), i, 1] as N)))
+    expect(fitZoom(long, cfg, 0.26, 1)).toBe(0.26)
   })
 })
 

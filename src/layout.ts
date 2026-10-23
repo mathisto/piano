@@ -711,6 +711,19 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
   return { from: bar, to: bar + count, systems: [{ from: bar, to: bar + count }], z: 1, nominal: vbH, follow: true }
 }
 
+/** The largest staff size, in steps of 0.02 between `lo` and `hi`, at which the whole piece shows from its first bar; `lo` when none does. */
+export function fitZoom(an: Analysis, cfg: Cfg, lo: number, hi: number): number {
+  const all = (k: number) => windowFor(an, 0, { ...cfg, zoom: k / 50 }).to >= an.bars.length
+  let a = Math.round(lo * 50)
+  let b = Math.round(hi * 50)
+  while (a < b) {
+    const m = (a + b + 1) >> 1
+    if (all(m)) a = m
+    else b = m - 1
+  }
+  return a / 50
+}
+
 // ---- placed glyphs ----
 
 export interface Head {

@@ -4,7 +4,7 @@
 
 ## Platform
 
-web, plus an iPad app (Capacitor web view with a CoreMIDI plugin, developer install). The iPad in landscape is the main screen.
+web, plus an iPad app (Capacitor web view with a CoreMIDI plugin, developer install). The iPad is the main screen, landscape or portrait on the music stand; narrow windows (split view) reflow rather than being refused.
 
 ## Stack
 

@@ -257,7 +257,7 @@ The iPad in landscape is the main screen, a desktop browser the second. The play
 - Heavy italic condensed display type for what is announced; a quiet grotesk for what is read.
 - Glow is a state signal on the staff and stage only. No hard offset shadows, no hard text-shadows.
 - Every page shares one measure and one head; plan rows, song rows and stage rows are one grammar.
-- Touch first: `pointer: coarse` raises controls to 44px. Below 1024px wide a full-screen notice still replaces the app.
+- Touch first: `pointer: coarse` raises controls to 44px. The app has no minimum width: portrait and split-view windows reflow (see Responsive).
 - Copy is label, value, nothing else.
 - One dialog grammar (`dialog.sheet`), one tag style, one disclosure marker.
 
@@ -283,7 +283,7 @@ A navy-ink night palette with one amber lamp, two hand hues, and a four-step jud
 - **Line** (#262b55): hairlines, row dividers, meter track, scrubber border.
 - **Line Strong** (#3a4180): the selected / track surface: selected segment, switch track, table-head rule.
 - **Edge** (#5a6196): every control and card border, slider track (3:1 against Panel). Line stays hairline-only.
-- **Scrim** (rgba 9,11,23 at .82): ready card, results overlay, chord readout. **Shade** (rgba 0,0,0 at .6): the soft shadow under stage words.
+- **Scrim** (rgba 9,11,23 at .82): ready card, results overlay, chord readout. **Shade** (rgba 0,0,0 at .6): the soft shadow under stage words. Named tokens for the other translucent values, all in `:root`: `--scrim-hi` (the start card), `--backdrop` (behind a dialog), `--drop` (shadow under a raised surface), `--wash` (row hover), `--loop` (the A-B span), `--lamp-glow`, `--great-ring`, `--L-fill`.
 - **Ink** (#ecebf5), **Ink Soft** (#a9acd0), **Ink Faint** (#8a8fbd): primary, secondary, and caption/label text. Ink Faint is the floor for text on Panel.
 - Stage-only (palette.ts mirrors the CSS custom properties): lane tints #161b42 / #0b0e25 alternate per white key, octave and bar grid #4a528f, receptor #fff3d6, key white #e7e6f1, key black #15182e, muted key names and unlit receptor lamps #5b5f8a.
 
@@ -351,7 +351,7 @@ Piano Forte, PF for short: a P and an F built from rounded blocks, as if two not
 
 ### Staff zoom
 
-Two ghost icon buttons (minus, plus) in the bottom-right corner of the staff at 55% opacity, full on hover or focus; they are the single-pointer alternative to the two-finger pinch on the staff. Zooming out draws the staff smaller, so up to eight bars share a line, and a second (then third) line appears as soon as it fits in the pane; zooming in goes back to fewer bars and one line. A floor of 10 px per staff space stops it getting too small to read in a short pane, so the second line needs a taller pane (drag the divider). In Reading drills it shows more cards ahead, packed by how many notes each holds.
+A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind a six-dot grip, at 55% opacity, full on hover, focus or while dragged; they are the single-pointer alternative to the two-finger pinch on the staff. Drag the grip to put the cluster anywhere in the staff (it stays 8px inside every edge; the place is remembered). Zooming out draws the staff smaller, so up to eight bars share a line, and a second (then third) line appears as soon as it fits in the pane; zooming in goes back to fewer bars and one line. Fit sets the biggest size at which every bar shows from the first (the smallest size when the piece is too long), and pressed again goes back to the default; a double tap or double click on the staff also resets to the default. A floor of 10 px per staff space stops it getting too small to read in a short pane, so the second line needs a taller pane (drag the divider). In Reading drills it shows more cards ahead, packed by how many notes each holds.
 
 ### Segmented control
 - Ground well, Edge border, 8px, 3px padding, 2px gap; cells 32px at 4px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
@@ -381,7 +381,7 @@ Two ghost icon buttons (minus, plus) in the bottom-right corner of the staff at 
 - 10px Line track, pill, Ink Soft fill (Ink when solid), min fill 4px, `role="meter"` with min, max, now, label. Sits in `.mrow` beside a right-aligned bold percentage (min 3.2ch). The goal meter on week blocks is the same meter.
 
 ### Mastery cell
-- 26x40px, 4px radius, Panel Raised track, fill rises from the bottom in Ink Soft (Ink when solid). Reading cells fill to the stage percentage; technique cells fill 100% solid or due, 50% learning, 0 new, and a due cell adds a 2px inset Ink Soft outline. Cells are grouped in a `.cgrp` (6px gap): Label caption over a `.crow` (4px gap); groups wrap with 20px / 28px gaps. The group carries `role="group"` with "n of m solid"; each cell has a title with name and percent or state word.
+- 30x44px (a button: tap a reading cell to practise that stage, a technique cell to start that exercise), 4px radius, Panel Raised track, fill rises from the bottom in Ink Soft (Ink when solid). Reading cells fill to the stage percentage; technique cells fill 100% solid or due, 50% learning, 0 new, and a due cell adds a 2px inset Ink Soft outline. Cells are grouped in a `.cgrp` (6px gap): Label caption over a `.crow` (4px gap); groups wrap with 20px / 28px gaps. The group carries `role="group"` with "n of m solid"; each cell has a title and an accessible name with the stage or exercise and its percent or state word.
 
 ### Week day
 - Column of a 22px circle over a 13px 700 letter. Not practised: 2px Edge ring, Ink Faint letter. Practised: Ink fill. Today: Ink letter, Ink Soft ring if not yet practised. Row gap 10px. Followed by a goal meter and "N of M min".
@@ -572,11 +572,10 @@ Recorded from the build; none of these is a rule for new surfaces.
 - Hushed bar keeps its 56px band; the stage does not reclaim it. Only Zen reclaims it.
 - Display sizes drifted from the earlier 22/28/34/54 ramp to 22/28/30/34/40 (+54 on the ready title, 17 on the staff grade word). 30 (HUD) and 40 (h1, judge) were added ad hoc; there is no 24.
 - Learn results show a 150px stroked check icon where Perform shows the grade letter; the icon stands in for a grade and has no word beside it.
-- Staff hit marks: Perfect and the "ok" touch hit are colour only and decay to Ink Faint after 0.8s; only Great, Good and Miss leave a shape. The "ok" hit and letter grades B and D reuse hand hues (cyan, magenta) for a grade, against the Semantic Hue Rule.
+- Staff hit marks: Perfect and the "ok" touch hit are colour only and decay to Ink Faint after 0.8s; only Great, Good and Miss leave a shape. The "ok" hit still reuses the hand hues on the staff, against the Semantic Hue Rule; letter grades use the judgement spectrum only (S lime, A mint, B and C orange, D red).
 - Hold outlines on staff heads differ by hue only (orange held too long, red released early), against the Word And Shape Rule; the words exist only as the Perform "held n%" figure.
 - Georgia italic remains for the cresc. / dim. words and the 8va / 15ma text on the staff: a system serif outside the three font roles.
 - The inline file-error message is Miss Red text on chrome.
-- Under 1024px wide (iPad portrait) the narrow notice replaces the app; there is no portrait layout.
 - The drawer footer links (Credits, Shortcuts) are hidden under `hover: none`, and Credits has no other entry point, so Credits is unreachable on a touch-only iPad. Shortcuts is also keyboard-reachable (?).
-- Several values are literals, not tokens: lamp glow rgba, mint ring rgba, loop fill rgba, dialog backdrop rgba(5,6,13,.7), start-card fill rgba(9,11,23,.94) over the Scrim token, 12px/13px/14px/15px sizes in results and drill inline styles, touch-range chips and histograms, 150px/190px grade sizes.
+- Literals remaining, not tokens: 12px/13px/14px/15px sizes in results and drill inline styles, touch-range chips and histograms, 150px/190px grade sizes.
 - No hard offset shadow exists on the primary button in `src/style.css` (grep of `box-shadow` and `text-shadow` finds only soft shadows, glows and inset rings); the Soft Shade Rule holds as built.
