@@ -17,4 +17,9 @@ describe('mix: which recordings a hit blends', () => {
     expect(mix(0.9, (k) => k === 1)).toEqual([[1, 1]])
     expect(mix(0.9, () => false)).toEqual([])
   })
+  it('two recordings (soft, hard) split the strengths between them', () => {
+    expect(mix(0.1, all, 2)).toEqual([[0, 1]])
+    expect(mix(1, all, 2)).toEqual([[1, 1]])
+    expect(mix(0.54, all, 2).map(([k]) => k)).toEqual([0, 1])
+  })
 })

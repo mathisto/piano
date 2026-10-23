@@ -57,7 +57,7 @@ export function skeleton(app: HTMLElement) {
     <section id="technique" class="view" aria-label="Technique"></section>
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
-      <div id="staff"><div class="zoomc" role="group" aria-label="Staff size"><button class="btn icon sm" id="zoomOut" aria-label="Smaller staff, more bars">${icon('minus')}</button><button class="btn icon sm" id="zoomIn" aria-label="Larger staff, fewer bars">${icon('plus')}</button></div></div>
+      <div id="staff"><div class="zoomc" role="group" aria-label="Staff size"><span class="zgrip" id="zoomGrip" aria-hidden="true">${icon('grip')}</span><button class="btn icon sm" id="zoomFit" aria-label="Fit the whole piece" title="Fit the whole piece">${icon('page')}</button><button class="btn icon sm" id="zoomOut" aria-label="Smaller staff, more bars">${icon('minus')}</button><button class="btn icon sm" id="zoomIn" aria-label="Larger staff, fewer bars">${icon('plus')}</button></div></div>
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
@@ -77,7 +77,7 @@ export function skeleton(app: HTMLElement) {
 
 // ---------- library ----------
 
-const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
+export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 
 export interface Row {
   id: string
@@ -144,7 +144,7 @@ function table(caption: string, rows: Row[], empty: string) {
 }
 
 export function gradeColor(g: string) {
-  return g === 'S' ? 'var(--perfect)' : g === 'A' ? 'var(--great)' : g === 'B' ? 'var(--R)' : g === 'C' ? 'var(--good)' : 'var(--L)'
+  return g === 'S' ? 'var(--perfect)' : g === 'A' ? 'var(--great)' : g === 'B' || g === 'C' ? 'var(--good)' : 'var(--bad)' // the judgement spectrum only: the letter tells B from C
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
@@ -155,15 +155,15 @@ const head = (title: string, actions = '', lede = '') =>
 const LEVELS = ['Beginner', 'Elementary', 'Intermediate']
 
 /** The open library, grouped by level; each group folds away. Nothing here is committed copyrighted music: see Credits. */
-function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>) {
+function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>, meta: Map<string, { thumb: string; len: number }>) {
   if (!lib.length) return ''
   const groups = LEVELS.map((lv) => [lv, lib.filter((e) => e.level === lv)] as const).filter(([, es]) => es.length)
   return `<p class="label cap">Open library</p>${groups
     .map(
       ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
-      <table class="songs"><caption class="sr-only">${lv}</caption><tbody>${es
+      <table class="songs"><caption class="sr-only">${lv}</caption><colgroup><col style="width:156px"><col><col style="width:100px"><col style="width:60px"><col style="width:320px"></colgroup><tbody>${es
         .map(
-          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
+          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
         )
@@ -175,19 +175,19 @@ function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>) {
 export function creditsDialog(lib: LibraryEntry[]) {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><h3>Sounds</h3>
-    <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano, organ, harp, strings, music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
+    <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)</pre><pre>Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
     <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence.</p>
     <div class="credlist">${lib.map((e) => `<pre>${esc(creditBlock(e))}</pre>`).join('')}</div></div>
     <footer><button class="btn" data-close>Close</button></footer>`
 }
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = [], prog: Map<string, Progress> = new Map()) {
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = [], prog: Map<string, Progress> = new Map(), meta: Map<string, { thumb: string; len: number }> = new Map()) {
   el.innerHTML = `
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
     ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}
-    ${libraryTable(lib, prog)}`
+    ${libraryTable(lib, prog, meta)}`
 }
 
 // ---------- choosing the tracks of a MIDI file ----------
@@ -508,7 +508,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
     <p class="note">${solid} of ${d.stages.length} stages solid.</p>
     <div class="cells">${GROUPS.map(([g, f]) => {
       const rs = d.stages.filter((r) => f(r.stage.id))
-      return `<div class="cgrp" role="group" aria-label="${g}, ${rs.filter((r) => r.solid).length} of ${rs.length} solid"><small class="label">${g}</small><div class="crow">${rs.map((r) => `<i class="cell${r.solid ? ' solid' : ''}" title="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%" aria-hidden="true"><b style="height:${Math.round(r.pct * 100)}%"></b></i>`).join('')}</div></div>`
+      return `<div class="cgrp" role="group" aria-label="${g}, ${rs.filter((r) => r.solid).length} of ${rs.length} solid"><small class="label">${g}</small><div class="crow">${rs.map((r) => `<button class="cell${r.solid ? ' solid' : ''}" data-stage="${r.stage.id}" title="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%" aria-label="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%${r.solid ? ', solid' : ''}"><b style="height:${Math.round(r.pct * 100)}%"></b></button>`).join('')}</div></div>`
     }).join('')}</div>
     <h2 class="sec">Technique</h2>
     <p class="note">${d.tech.filter((t) => t.state === 'solid').length} of ${d.tech.length} exercises solid${d.tech.some((t) => t.state === 'due') ? `, ${d.tech.filter((t) => t.state === 'due').length} due` : ''}.</p>
@@ -516,7 +516,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
       .map((g) => {
         const ts = d.tech.filter((t) => t.group === g)
         return `<div class="cgrp" role="group" aria-label="${esc(g)}, ${ts.filter((t) => t.state === 'solid').length} of ${ts.length} solid"><small class="label">${esc(g)}</small><div class="crow">${ts
-          .map((t) => `<i class="cell${t.state === 'solid' ? ' solid' : t.state === 'due' ? ' due' : ''}" title="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}" aria-hidden="true"><b style="height:${t.state === 'solid' || t.state === 'due' ? 100 : t.state === 'learning' ? 50 : 0}%"></b></i>`)
+          .map((t) => `<button class="cell${t.state === 'solid' ? ' solid' : t.state === 'due' ? ' due' : ''}" data-recipe="${t.id}" title="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}" aria-label="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}"><b style="height:${t.state === 'solid' || t.state === 'due' ? 100 : t.state === 'learning' ? 50 : 0}%"></b></button>`)
           .join('')}</div></div>`
       })
       .join('')}</div>

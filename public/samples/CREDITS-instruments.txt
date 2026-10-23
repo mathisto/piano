@@ -1,0 +1,10 @@
+Samples shipped in this folder, and where they come from (docs/sounds.md has the details):
+
+ep/       Wurlitzer EP200 by Greg Sullivan (http://www.sullivang.net/), mapped for sfz by kinwie.
+          Creative Commons Attribution 3.0 Unported: https://creativecommons.org/licenses/by/3.0/
+          Source: https://github.com/sfzinstruments/GregSullivan.E-Pianos
+          Changed: mono, resampled to a root every third semitone, trimmed, encoded as MP3.
+harp/     Versilian Community Sample Library (VCSL), Concert Harp. CC0 1.0. https://github.com/sgossner/VCSL
+organ/    VCSL Pipe Organ, sampled by Simon Dalzell of Ivy Audio for Versilian Studios. CC0 1.0. https://github.com/sgossner/VCSL
+strings/  VSCO 2 Community Edition by Versilian Studios: section sustains (cello, viola, violin). CC0 1.0. https://github.com/sgossner/VSCO-2-CE
+musicbox/ MuseScore_General (MIT): see MuseScore_General-LICENSE.md. salamander/: see its own CREDITS.txt.

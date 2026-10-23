@@ -12,6 +12,14 @@
   --panel-3: #20254b; /* hover on panel-2 */
   --scrim: rgba(9, 11, 23, 0.82);
   --shade: rgba(0, 0, 0, 0.6); /* soft shadow under stage words */
+  --drop: rgba(0, 0, 0, 0.45); /* shadow under a raised surface: drawer, results card, dock sheet */
+  --backdrop: rgba(5, 6, 13, 0.7); /* behind a modal dialog */
+  --scrim-hi: rgba(9, 11, 23, 0.94); /* the start card over the highway: more opaque than the scrim */
+  --wash: rgba(255, 255, 255, 0.03); /* row hover */
+  --loop: rgba(236, 235, 245, 0.14); /* the A-B loop span on the scrub bar */
+  --lamp-glow: rgba(255, 200, 61, 0.7);
+  --great-ring: rgba(52, 232, 154, 0.35); /* the halo on a live keyboard dot */
+  --L-fill: rgba(255, 79, 163, 0.6); /* left-hand swatch and note body */
   /* rules and edges: --line for hairlines, --edge for control borders (3:1 on panel), --line-2 for selected and track surfaces */
   --line: #262b55;
   --line-2: #3a4180;
@@ -119,23 +127,6 @@ table.songs caption,
   font: 700 13px/1 var(--ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-#narrow {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: var(--ground);
-  place-items: center;
-  padding: 32px;
-  text-align: center;
-  font: 800 italic 34px/1.1 var(--display);
-}
-@media (max-width: 1023px) {
-  #narrow {
-    display: grid;
-  }
 }
 
 #app {
@@ -259,7 +250,7 @@ table.songs caption,
 .chip.live .dot {
   background: var(--great);
   border-color: var(--great);
-  box-shadow: 0 0 0 4px rgba(52, 232, 154, 0.35);
+  box-shadow: 0 0 0 4px var(--great-ring);
 }
 
 .btn {
@@ -536,7 +527,7 @@ table.songs tr.open {
   cursor: pointer;
 }
 table.songs tr.open:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--wash);
 }
 table.songs td.name {
   font-weight: 650;
@@ -557,6 +548,7 @@ table.songs td.acts {
   white-space: nowrap;
 }
 table.songs td.thumb {
+  width: 140px; /* held while a library thumbnail loads, so the rows do not jump */
   padding-right: 0;
   line-height: 0;
 }
@@ -709,17 +701,20 @@ table.stages td {
 #play.drill {
   grid-template-rows: minmax(0, 1fr) clamp(150px, 24vh, 230px) auto;
 }
-#play.v-sheet #ready {
-  top: auto;
-  bottom: 10px; /* the stage is only a keyboard strip here: the card shrinks to title and mode, over the keys, off the music */
-  transform: translateX(-50%);
-  padding: 10px 24px 12px;
-}
-#play.v-sheet #ready b {
-  font-size: 34px;
-}
-#play.v-sheet #ready :is(.hint, .cap, .seg ~ .seg, .legend) {
-  display: none;
+/* a short stage (the staff-only view, a portrait window with the dock under it) is only a strip of keys: the card shrinks to title and mode, over the keys, off the music */
+@container stage (max-height: 420px) {
+  #ready {
+    top: auto;
+    bottom: 10px;
+    transform: translateX(-50%);
+    padding: 10px 24px 12px;
+  }
+  #ready b {
+    font-size: 34px;
+  }
+  #ready :is(.hint, .cap, .seg ~ .seg, .legend) {
+    display: none;
+  }
 }
 #play.v-sheet .results {
   position: fixed;
@@ -786,18 +781,39 @@ body.reading .hud small {
   touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
 }
 .zoomc {
+  /* --zx and --zy (0 to 1) place the buttons anywhere in the staff, 8px in from every edge */
   position: absolute;
-  right: 10px;
-  bottom: 8px;
+  left: calc(8px + (100% - 16px) * var(--zx, 1));
+  top: calc(8px + (100% - 16px) * var(--zy, 1));
+  transform: translate(calc(var(--zx, 1) * -100%), calc(var(--zy, 1) * -100%));
   z-index: 2;
   display: flex;
+  align-items: center;
   gap: 4px;
   opacity: 0.55;
   transition: opacity 0.15s;
 }
 .zoomc:hover,
-.zoomc:focus-within {
+.zoomc:focus-within,
+.zoomc.drag {
   opacity: 1;
+}
+.zgrip {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 36px;
+  color: var(--ink-3);
+  cursor: grab;
+  touch-action: none;
+}
+.zgrip svg {
+  width: 18px;
+  height: 18px;
+}
+.zoomc.drag .zgrip {
+  cursor: grabbing;
+  color: var(--ink);
 }
 #staff > svg {
   position: absolute;
@@ -895,7 +911,7 @@ body.reading .hud small {
   stroke: var(--lamp);
   stroke-width: 1.5;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 4px rgba(255, 200, 61, 0.7));
+  filter: drop-shadow(0 0 4px var(--lamp-glow));
 }
 #staff .miss-mark {
   fill: var(--bad);
@@ -1088,6 +1104,7 @@ body.reading .hud small {
   position: relative;
   min-height: 0;
   overflow: hidden;
+  container: stage / size;
 }
 #stage canvas {
   position: absolute;
@@ -1170,7 +1187,7 @@ body.reading .hud small {
   background: var(--panel-2);
   border: 1px solid var(--edge);
   border-radius: var(--r-3);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px var(--drop);
   color: var(--ink-2);
 }
 .banner b {
@@ -1253,7 +1270,7 @@ kbd {
 }
 .legend .sw.L {
   border: 2px solid var(--L-edge);
-  background: rgba(255, 79, 163, 0.6);
+  background: var(--L-fill);
 }
 .legend .sw.lamp {
   background: var(--lamp);
@@ -1313,7 +1330,7 @@ kbd {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(236, 235, 245, 0.14);
+  background: var(--loop);
   border-left: 2px solid var(--ink);
   border-right: 2px solid var(--ink);
 }
@@ -1367,7 +1384,7 @@ kbd {
 }
 .hand.L .sw {
   border: 2px solid var(--L-edge);
-  background: rgba(255, 79, 163, 0.6);
+  background: var(--L-fill);
 }
 .dock-end {
   display: flex;
@@ -1502,7 +1519,7 @@ kbd {
   z-index: 20;
   background: var(--panel);
   border-left: 1px solid var(--edge);
-  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.45);
+  box-shadow: -18px 0 40px var(--drop);
   overflow: auto;
   padding: 20px 22px 40px;
   animation: slide 0.22s var(--ease);
@@ -1680,6 +1697,44 @@ button.link {
     padding: 0 12px;
   }
   .chip {
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 760px) {
+  .bar {
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .brand {
+    padding-right: 4px;
+  }
+  .chip {
+    padding: 0 12px;
+  }
+  #devName {
+    display: none; /* the dot says whether a keyboard is in; the name is in Settings */
+  }
+  .dock-row.aids {
+    gap: 12px;
+  }
+  .grp > .btn.sm[data-t='50'],
+  .grp > .btn.sm[data-t='75'] {
+    display: none;
+  }
+  /* the song tables lose their preview and fixed columns: the name comes first */
+  table.songs col {
+    width: auto !important;
+  }
+  table.songs col:first-child,
+  table.songs th:first-child,
+  table.songs td.thumb {
+    display: none;
+  }
+  table.songs td {
+    padding: 10px 8px;
+  }
+  .row-actions .btn {
     padding: 0 10px;
   }
 }
@@ -1885,11 +1940,21 @@ body.zen #dock .aids {
 .cell {
   position: relative;
   display: block;
-  width: 26px;
-  height: 40px;
+  width: 30px;
+  height: 44px;
+  padding: 0;
+  border: 0;
   border-radius: var(--r-1);
   background: var(--panel-2);
   overflow: hidden;
+  cursor: pointer;
+}
+.cell:hover {
+  background: var(--panel-3);
+}
+.cell:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
 }
 .cell b {
   position: absolute;
@@ -1996,7 +2061,7 @@ dialog.sheet[open] {
   flex-direction: column;
 }
 dialog.sheet::backdrop {
-  background: rgba(5, 6, 13, 0.7);
+  background: var(--backdrop);
 }
 dialog.sheet > header {
   display: flex;
@@ -2114,7 +2179,7 @@ dialog.sheet footer .grow {
   background: var(--panel-2);
   border: 1px solid var(--edge);
   border-radius: var(--r-2);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -8px 24px var(--drop);
 }
 
 .ready .cap {
@@ -2125,7 +2190,7 @@ dialog.sheet footer .grow {
   text-transform: uppercase;
 }
 .ready {
-  background: rgba(9, 11, 23, 0.94);
+  background: var(--scrim-hi);
 }
 
 .drawer .switch.sub {

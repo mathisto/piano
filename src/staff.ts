@@ -1,5 +1,5 @@
 import type { Game } from './game'
-import { analyze, densest, figure, layout, windowFor, yOf, S, type Analysis, type Cfg, type Layout, type LChord } from './layout'
+import { analyze, densest, figure, fitZoom, layout, windowFor, yOf, S, type Analysis, type Cfg, type Layout, type LChord } from './layout'
 import { settings } from './settings'
 import { BOTTOM_STEP, keyAcc, spell } from './spell'
 import { barAt } from './song'
@@ -142,6 +142,15 @@ export class Staff {
     this.cursor.setAttribute('y2', String(dy + bottom + 12))
   }
 
+  private cfg(r: DOMRect): Cfg {
+    return { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height }, zoom: settings.zoom }
+  }
+
+  /** The staff size at which the whole piece shows, between `lo` and `hi`. */
+  fit(lo: number, hi: number): number {
+    return this.an ? fitZoom(this.an, this.cfg(this.host.getBoundingClientRect()), lo, hi) : settings.zoom
+  }
+
   private build(bar: number) {
     const { song, mode } = this.game
     const r = this.host.getBoundingClientRect()
@@ -154,7 +163,7 @@ export class Staff {
       this.an = analyze(song, { read, hide: (n) => hands[n.h] === 'hide' })
       this.anKey = key
     }
-    const cfg: Cfg = { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height }, zoom: settings.zoom }
+    const cfg = this.cfg(r)
     if (this.an.pages.size > 6) this.an.pages.clear() // one entry per window size seen
     this.L = layout(this.an, windowFor(this.an, bar, cfg), cfg)
     this.paint(this.L)

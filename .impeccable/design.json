@@ -417,8 +417,8 @@
     ],
     "breakpoints": [
       {
-        "name": "narrow-notice",
-        "value": "1023px (max-width): full-screen notice"
+        "name": "narrow-window",
+        "value": "760px (max-width): keyboard chip shows only its dot, song tables drop the preview, tempo presets 50 and 75 hide"
       },
       {
         "name": "view-switch-icons",

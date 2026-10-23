@@ -26,8 +26,9 @@ describe('instrument registry', () => {
   })
   it('keeps each lazy-loaded instrument small', () => {
     for (const i of INSTRUMENTS.filter((i) => i.base && i.id !== 'piano')) {
-      const bytes = i.roots.reduce((n, r) => n + statSync(`public/samples/${i.base}/${r.name}.mp3`).size, 0)
-      expect(bytes, i.id).toBeLessThan(600_000)
+      const files = i.roots.flatMap((r) => (i.layers ? Array.from({ length: i.layers }, (_, k) => `${r.name}-${k}`) : [r.name]))
+      const bytes = files.reduce((n, f) => n + statSync(`public/samples/${i.base}/${f}.mp3`).size, 0)
+      expect(bytes, i.id).toBeLessThan(2_000_000)
     }
   })
   it('gives sustained instruments sane loops inside the file', () => {
@@ -41,15 +42,15 @@ describe('instrument registry', () => {
     }
     expect(instrument('harp').roots.every((r) => !r.loop)).toBe(true)
   })
-  it('picks across any instrument, bending at most a tritone-and-a-half, and carries the loop', () => {
+  it('picks across the range each instrument was recorded over, bending at most a tritone-and-a-half, and carries the loop', () => {
     for (const i of INSTRUMENTS.filter((i) => i.roots.length)) {
-      for (let p = 36; p <= 96; p++) expect(Math.abs(Math.log2(pickSample(p, i).rate) * 12)).toBeLessThanOrEqual(1.5)
+      for (let p = i.roots[0].midi; p <= i.roots[i.roots.length - 1].midi; p++) expect(Math.abs(Math.log2(pickSample(p, i).rate) * 12)).toBeLessThanOrEqual(1.5)
     }
     const o = instrument('organ')
     const s = pickSample(60, o)
     expect(s).toEqual({ name: 'C4', rate: 1, loop: o.roots.find((r) => r.name === 'C4')!.loop })
     expect(pickSample(60).name).toBe('C4') // the piano by default
-    expect(pickSample(21, o).name).toBe('C2') // below the range: the lowest recording, bent down
+    expect(pickSample(21, o).name).toBe('C1') // below the range: the lowest recording, bent down
     expect(pickSample(21, PIANO).name).toBe('A0')
   })
 })

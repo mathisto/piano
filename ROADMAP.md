@@ -4,12 +4,12 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 
 ## Shipped
 
-- Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), a draggable divider between the staff and the falling notes (drag to an end for one pane alone), staff zoom (pinch, trackpad pinch, - and +, or the corner buttons: smaller shows more bars, and a second line appears once two fit), count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
+- Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), a draggable divider between the staff and the falling notes (drag to an end for one pane alone), staff zoom (pinch, trackpad pinch, - and +, or the corner buttons, which can be dragged anywhere: smaller shows more bars, and a second line appears once two fit; a Fit button shows the whole piece, a double tap resets), portrait and split-view windows (no minimum width), count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
 - Read: 17 sight-reading stages from landmarks to triads, sharps, flats, keys of G and F, weighted deck, mastery meters.
 - Technique: five-finger, scale and arpeggio in seven keys, either or both hands, with soft/medium/hard, crescendo, decrescendo and accent targets (pips on the falling bar, dynamics on the staff, a touch verdict per note).
 - Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
 - Content: MIDI and MusicXML (.musicxml, .mxl) import, eight starter pieces, sampled grand piano (Salamander, CC BY 3.0).
-- Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and touch history; six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
+- Shell: five tabs (Today, Songs, Read, Technique, Progress); Today with Continue, next reading stage, last exercise and the week; Progress with the week, weekly goal, reading mastery and technique cells you can tap to practise, and touch history; Songs with thumbnails and lengths for the open library too; six-row settings in one screen; play-screen diet (score and combo only, top bar fades, `M` hides extras, touch-sized controls on coarse pointers).
 - Deploy: static site at pianoforte.mattkelly.io; iPad app via Capacitor with a CoreMIDI plugin (developer install, expires every 7 days).
 
 ## Phase D: design pass (in progress, branch `design/overhaul`)
@@ -25,7 +25,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 - [x] Start card per song: Perform or Learn, how much of the notes to show (Simplify, only when it would change something), credit line for library pieces; tempo and hands live in the dock, tracks and split in the song's Options.
 - [x] Decided: the bar only fades while playing, because reclaiming its 56px mid-song would shift the falling notes; the dock's focus button (and `M`) hide the bar and extras on purpose, on touch too.
 - [x] Today shows the generated plan (see Phase E).
-- [~] Design debt (full list in DESIGN.md, Known quirks): dynamics are now Bravura glyphs and zen has a touch button. Still open by decision: Perfect hits are colour-only on the staff (the default state needs no shape), hand hues are reused for the OK and B grades, no portrait layout under 1024px (the iPad app is landscape), some literal values are not tokens.
+- [~] Design debt (full list in DESIGN.md, Known quirks): dynamics are now Bravura glyphs and zen has a touch button; the portrait layout, token values and letter-grade hues are done. Still open by decision: Perfect hits are colour-only on the staff (the default state needs no shape), the Hold outlines and the "ok" hit reuse hues, some size literals are not tokens.
 - [x] PRODUCT.md platform facts updated (iPad app, iPad is the main screen). Five-tab navigation still to be described there.
 
 ## Phase E: progression and practice model (after the design pass)
@@ -55,7 +55,7 @@ Order follows `docs/STRATEGY.md`. Nothing locks; every plan row can be skipped.
 - [x] F4: Simplify per song (full, two hands, melody and bass, melody only) with an automatic level for busy arrangements, set on the start card and remembered per song.
 - [x] A curated open library built from Mutopia and OpenScore (public domain, CC0, CC BY, CC BY-SA accepted; owner policy 19 Oct 2026) with a manifest, a licence allowlist test, per-piece credit lines and a Credits screen; CC BY-SA files stay under their licence in `public/library/`.
 - [x] Full notation for MusicXML and MIDI: rests, ties, beams per meter, tuplets, graces, 8va, key and time changes, repeats and endings expanded, up to four bars a system in sheet view.
-- [x] More instruments: electric piano, church organ, harp, strings, music box from MuseScore_General (MIT, rendered from FluidR3), about 1.5 MB, loaded only when chosen, credited in Credits (`docs/sounds.md`, `src/instruments.ts`). Unverified: tone and loop seams were checked by decoding, never by ear.
+- [x] More instruments: electric piano (Sullivan Wurlitzer EP200, CC BY 3.0, three strengths), church organ and harp (Versilian VCSL, CC0; the harp at two strengths), strings (VSCO 2 CE section sustains, CC0), music box (MuseScore_General, MIT); about 4 MB between them, each loaded only when chosen, credited in Credits (`docs/sounds.md`, `src/instruments.ts`, `scripts/make-instruments.py`). Unverified: tone and loop seams were checked by measurement (levels, loop-seam steps), never by ear.
 
 ## iPad app (developer mode, one person)
 
