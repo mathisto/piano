@@ -1,4 +1,4 @@
-import { LOOPS } from './instrument-loops'
+import { SAMPLES } from './instrument-samples'
 
 export interface Root {
   name: string // file name without the extension
@@ -24,11 +24,13 @@ const ladder = (from: number, to: number): Root[] =>
 const PIANO_ROOTS: Root[] = [{ name: 'A0', midi: 21 }, ...ladder(1, 7), { name: 'C8', midi: 108 }]
 /** MuseScore_General renderings (scripts/make-sounds.py): every third semitone, C2 to C7. */
 const GM_ROOTS: Root[] = [...ladder(2, 6), { name: 'C7', midi: 96 }]
-const gm = (id: string, label: string, release: number, gain: number, dyn: number): Instrument => ({
+/** Recordings from the open libraries (scripts/make-instruments.py): which notes, how many strengths, where each held note loops. */
+const open = (id: string, label: string, release: number, gain: number, dyn: number): Instrument => ({
   id,
   label,
   base: id,
-  roots: GM_ROOTS.map((r, i) => (LOOPS[id] ? { ...r, loop: LOOPS[id][i] } : r)),
+  roots: SAMPLES[id].roots.map(([name, midi, a, b]): Root => ({ name, midi, ...(a === undefined ? {} : { loop: [a, b!] as [number, number] }) })),
+  layers: SAMPLES[id].layers || undefined,
   release,
   gain,
   dyn,
@@ -36,11 +38,11 @@ const gm = (id: string, label: string, release: number, gain: number, dyn: numbe
 
 export const INSTRUMENTS: Instrument[] = [
   { id: 'piano', label: 'Grand piano', base: 'salamander', roots: PIANO_ROOTS, release: 0.3, gain: 1, dyn: 0, layers: 3 },
-  gm('ep', 'Electric piano', 0.25, 1, 1),
-  gm('organ', 'Church organ', 0.12, 0.5, 0.5),
-  gm('harp', 'Harp', 0.5, 1, 1),
-  gm('strings', 'Strings', 0.45, 0.55, 0.7),
-  gm('musicbox', 'Music box', 0.8, 0.9, 0.5),
+  open('ep', 'Electric piano', 0.25, 1, 1),
+  open('organ', 'Church organ', 0.12, 0.5, 0.5),
+  open('harp', 'Harp', 0.5, 1, 1),
+  open('strings', 'Strings', 0.45, 0.55, 0.7),
+  { id: 'musicbox', label: 'Music box', base: 'musicbox', roots: GM_ROOTS, release: 0.8, gain: 0.9, dyn: 0.5 },
   { id: 'synth', label: 'Synth', roots: [], release: 0.3, gain: 1, dyn: 1 },
 ]
 

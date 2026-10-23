@@ -82,7 +82,7 @@ export function preload(id = settings.instrument): Promise<void> {
           return 0 /* a missing sample falls back to the synth for that note */
         }
       }
-      const mid = inst.layers ? Math.floor(inst.layers / 2) : undefined
+      const mid = inst.layers ? Math.floor((inst.layers - 1) / 2) : undefined
       const layer = async (k?: number) => {
         let n = 0
         for (let i = 0; i < inst.roots.length; i += 4) n += (await Promise.all(inst.roots.slice(i, i + 4).map((r) => get(r, k)))).reduce<number>((a, b) => a + b, 0) // four at a time
@@ -140,16 +140,17 @@ export function click(accent: boolean, after = 0) {
   knock.start(t)
 }
 
-/** Velocities the soft, medium and hard recordings stand for. */
-const LAYER_AT = [0.22, 0.54, 0.85]
+/** The velocities a set of recordings at different strengths stands for, soft to hard. */
+const layerAt = (n: number) => (n >= 3 ? [0.22, 0.54, 0.85] : n === 2 ? [0.3, 0.78] : [0.5])
 
 /** The recordings a hit of this strength blends, as [layer, gain]: the near ones, equal-power. */
-export function mix(vel: number, have: (k: number) => boolean): [number, number][] {
-  const ks = LAYER_AT.map((_, k) => k).filter(have)
+export function mix(vel: number, have: (k: number) => boolean, layers = 3): [number, number][] {
+  const at = layerAt(layers)
+  const ks = at.map((_, k) => k).filter(have)
   if (!ks.length) return []
-  const w = ks.map((k) => Math.max(0, 1 - Math.abs(vel - LAYER_AT[k]) / 0.33))
+  const w = ks.map((k) => Math.max(0, 1 - Math.abs(vel - at[k]) / 0.33))
   const sum = w.reduce((a, b) => a + b, 0)
-  if (sum === 0) return [[ks.reduce((a, b) => (Math.abs(vel - LAYER_AT[b]) < Math.abs(vel - LAYER_AT[a]) ? b : a)), 1]]
+  if (sum === 0) return [[ks.reduce((a, b) => (Math.abs(vel - at[b]) < Math.abs(vel - at[a]) ? b : a)), 1]]
   return ks.map((k, i): [number, number] => [k, Math.sqrt(w[i] / sum)]).filter(([, g]) => g > 0)
 }
 
@@ -157,7 +158,7 @@ function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number):
   if (!inst.roots.length) return undefined // the synth has no recordings to pick from
   const s = pickSample(p, inst)
   const key = `${inst.base}/${s.name}`
-  const parts = (inst.layers ? mix(vel, (k) => buffers.has(`${key}-${k}`)).map(([k, w]) => [buffers.get(`${key}-${k}`)!, w] as const) : buffers.has(key) ? [[buffers.get(key)!, 1] as const] : [])
+  const parts = (inst.layers ? mix(vel, (k) => buffers.has(`${key}-${k}`), inst.layers).map(([k, w]) => [buffers.get(`${key}-${k}`)!, w] as const) : buffers.has(key) ? [[buffers.get(key)!, 1] as const] : [])
   if (!parts.length) return undefined
   const k = inst.dyn
   const lp = c.createBiquadFilter() // soft hits are darker, hard hits brighter
