@@ -6,41 +6,39 @@ import '@fontsource-variable/hanken-grotesk'
 import './style.css'
 import * as audio from './audio'
 import * as lib from './catalog'
-import * as coach from './coach'
 import { creditBlock, libraryUrl } from './credits'
 import { cardKey, cards, dayNum, record, STAGES, type Stats } from './drill'
 import { type EarRun, earTap, earView, newEar, playCard, stopEar } from './ear-play'
-import type { Mode, Result } from './game'
+import type { Mode } from './game'
 import { type Ctx, nextOf, path as gradePath, type Start } from './grades'
 import { icon } from './icons'
 import { chooseInput, inputs, type MidiMsg, monitor, onMidi, onPedal, typingKeyboard } from './midi'
-import { nextStep } from './pace'
 import { type PlanMin, theoryDue } from './plan'
 import { pickPiece } from './readthrough'
 import { buildSummary, reportLink } from './report'
 import { DEFAULT_RUN } from './run'
-import { type Card as ScaleCard, CLEAN_RUNS, degreeOfPitch, type Form, keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, quizDeal, quizRecord, quizRight, type QuizStats, record as recordScale, scaleSong, STAGES as SCALE_STAGES } from './scales'
+import { type Card as ScaleCard, degreeOfPitch, type Form, keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, quizDeal, quizRecord, quizRight, type QuizStats, scaleSong, STAGES as SCALE_STAGES } from './scales'
 import { save, settings, showSetup } from './settings'
-import { fromSpec } from './song'
 import { STARTERS } from './starters'
 import * as store from './store'
 import { streak as dayStreak } from './streak'
-import { applyRun, nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
+import { nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
 import { exercise, type Opts, PATTERNS } from './technique'
 import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from './theory'
 import { thumb } from './thumb'
 import { calibrate } from './touch'
-import { $, CAL_NOTES, cardName, creditsDialog, drawer, progressView, type QuizState, results, type ScalePick, scalesView, setupDialog, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
+import { $, CAL_NOTES, creditsDialog, drawer, progressView, type QuizState, type ScalePick, scalesView, setupDialog, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, resOpen, rt, run, say, type Section, setCalibrating, setPlayed, stageById, starters, worstBars } from './app/state'
+import { current, dock, drill, drillStats, game, highway, hooks, median, mem, played, run, say, type Section, setPlayed, stageById, starters, worstBars } from './app/state'
 import { chipFlash, connectMidi, midiLine, midiState, updateBanner, updateChip } from './app/banner'
-import { flushPractice, practised, setView, setZoom, syncMode, view, zen, ZOOM } from './app/stage'
+import { flushPractice, practised, setView, setZoom, view, zen, ZOOM } from './app/stage'
 import { lens, libraryData, openTracks, shareFile, showLibrary } from './app/library'
-import { fixBars, leave, onPhase, openById, openLibrary, openSong } from './app/play'
-import { readThrough, rtDone, rtPieces } from './app/readthrough-ui'
-import { memDone, memorise } from './app/memorise-ui'
-import { drillDone, runFinish, startDrill, startRun } from './app/drill'
+import { fixBars, leave, openById, openLibrary, openSong } from './app/play'
+import { readThrough, rtPieces } from './app/readthrough-ui'
+import { memorise } from './app/memorise-ui'
+import { runFinish, startDrill, startRun } from './app/drill'
 import { showRead, stageRows } from './app/read'
+import { startCalibration } from './app/calibration'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -443,121 +441,6 @@ $('#scales').addEventListener('click', (e) => {
 
 // ---------------------------------------------------------------- Sight Run
 
-async function onDone(r: Result) {
-  if (!current) return
-  if (drill) return drillDone()
-  if (calibrating) return calibrated(r)
-  if (rt) return rtDone(r)
-  if (mem) return memDone(r)
-  const prog = await store.commit(
-    current.song.id,
-    r.heat,
-    r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
-    r.mode === 'read' || game.loop ? undefined : r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait,
-  )
-  current.heat = prog.heat
-  void store.markPlan(dayKey(), current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
-  if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
-  dock.setSong(current.song, prog.heat)
-  if (r.touch.n >= 4) {
-    const { n, mean, sd, hands, bands } = r.touch
-    void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands, keyTouch: settings.keyTouch })
-  }
-  const kind = current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'tech' : 'song'
-  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: current.song.title, acc: r.acc, even: r.even?.inside, bias: r.timing?.bias })
-  if (coach.coached(current.song.id, current.song.dyn, r.mode)) void coach.tally(current.song.id, r.even?.rating)
-  let note = ''
-  const sc = parseId(current.song.id)
-  if (sc && r.mode === 'perform') {
-    const stats = await store.getScales()
-    const ok = passed(r)
-    const before = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]?.best ?? 0
-    recordScale(stats, sc.card, sc.bpm, ok)
-    await store.saveScales(stats)
-    const s = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]
-    note = ok
-      ? s.best > before ? `Three clean runs in a row: <b>${esc(cardName(sc.card))}</b> is solid at ${sc.bpm}.` : `A clean run, ${s.streak} of ${CLEAN_RUNS} at ${sc.bpm}.`
-      : `This run did not count: ${!r.clean ? 'a missed or wrong note' : r.acc < 0.85 ? 'the timing slipped' : 'the touch was uneven'}. The count starts again.`
-  }
-  const worst = worstBars(r.heat)
-  const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
-  const res = $('#res')
-  res.innerHTML = results(r, next, note)
-  if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
-  res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(current!.song.id, 1))
-  resOpen(true)
-  res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
-  say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)
-  $('#again', res).onclick = () => game.restart()
-  $('#toLib', res).onclick = leave
-  const nextBtn = res.querySelector<HTMLButtonElement>('#next')
-  if (nextBtn && next)
-    nextBtn.onclick = () => {
-      if (next.kind === 'loop' && worst) {
-        ;($('input[name=mode][value=learn]') as HTMLInputElement).checked = true
-        game.setMode('learn')
-        game.setLoop({ a: game.song.bars[worst.a].t0, b: game.song.bars[worst.b].t1 })
-      } else if (next.kind === 'nowait') {
-        game.setWait(false)
-        game.restart()
-      } else if (next.rate) {
-        game.setRate(next.rate)
-        game.restart()
-      }
-      if (next.rate && next.kind === 'loop') game.setRate(next.rate)
-      resOpen(false)
-      syncMode()
-      onPhase()
-    }
-}
-
-async function startCalibration() {
-  closeDrawer()
-  setCalibrating({ prevOffset: settings.offset })
-  settings.offset = 0
-  const song = fromSpec({ id: 'calibration', title: 'Calibration', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
-  await openSong(song, 'perform')
-  $('#modeSeg').hidden = true
-}
-
-function calibrated(r: Result) {
-  const res = $('#res')
-  const offs = r.offs.slice().sort((a, b) => a - b)
-  const ok = offs.length >= 8
-  const med = ok ? Math.round(offs[offs.length >> 1] / 5) * 5 : 0
-  resOpen(true)
-  res.innerHTML = `<div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Calibration result">
-    <h2>${ok ? 'Calibration done' : 'Not enough notes'}</h2>
-    <p style="margin:0;color:var(--ink-2)">${
-      ok
-        ? `Your setup runs about <b style="color:var(--ink)">${Math.abs(med)} ms ${med >= 0 ? 'late' : 'early'}</b> (from ${offs.length} notes). Applying ${med} ms shifts the timing windows to match.`
-        : `Only ${offs.length} of 16 notes landed close enough. Try again and play on each beat.`
-    }</p>
-    <div class="row">${ok ? '<button class="btn primary" id="apply">Apply</button>' : ''}<button class="btn" id="retry">Try again</button><button class="btn ghost" id="cancel">Cancel</button></div>
-  </div></div>`
-  const prev = calibrating!.prevOffset
-  const end = () => {
-    setCalibrating(undefined)
-    resOpen(false)
-    leave()
-  }
-  const apply = res.querySelector<HTMLButtonElement>('#apply')
-  if (apply)
-    apply.onclick = () => {
-      settings.offset = med
-      save()
-      end()
-    }
-  $('#retry', res).onclick = () => {
-    resOpen(false)
-    game.restart()
-  }
-  $('#cancel', res).onclick = () => {
-    settings.offset = prev
-    end()
-  }
-}
-
 // ---------------------------------------------------------------- keyboard + banner
 
 const fromKeyboard = (m: MidiMsg) => {
@@ -833,7 +716,7 @@ function openSetup() {
   d.showModal()
 }
 
-Object.assign(hooks, { openDrawer, showSection, onDone })
+Object.assign(hooks, { openDrawer, closeDrawer, showSection })
 
 // ---------------------------------------------------------------- boot
 
