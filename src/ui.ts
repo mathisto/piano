@@ -14,6 +14,7 @@ import type { Starter } from './starters'
 import type { Stage, Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, type TCard, type Trainer } from './theory'
+import { earAsk, earBlock, type EarView } from './ear'
 import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
@@ -819,6 +820,7 @@ export interface TheoryRunView {
   answered?: 'ok' | 'miss'
   missed: string[]
   medianMs: number
+  ear?: EarView
 }
 
 /** The trainer list, or one card of a session, or its results. */
@@ -834,15 +836,16 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
   } else if (run.i >= run.cards.length) {
     const n = run.cards.length
     body = `<section class="tcard run" aria-label="Session results"><h2>${run.ok} of ${n} first time</h2>
-      <p class="line">Best streak <b>${run.best}</b> · median <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}</p>
+      <p class="line">Best streak <b>${run.best}</b>${run.trainer === 'rhythm' ? '' : ` · median <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card`}.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}${run.ear?.summary ? ` ${esc(run.ear.summary)}` : ''}</p>
       <div class="row-actions run-go"><button class="btn ghost" id="thMenu">All trainers</button><button class="btn primary" id="thAgain">${icon('restart')}Again</button></div></section>`
   } else {
     const c = run.cards[run.i]
     const t = TRAINERS.find((x) => x.id === run.trainer)!
     body = `<section class="tcard run" aria-label="${esc(t.name)}"><p class="fine">${esc(t.name)} · card ${run.i + 1} of ${run.cards.length}${run.streak > 1 ? ` · streak ${run.streak}` : ''}</p>
       <h2>${esc(c.prompt)}</h2>
-      ${c.steps.length > 1 ? `<p class="line">Chord <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
-      <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : 'Play it on your keyboard.'}</p>
+      ${c.steps.length > 1 ? `<p class="line">${c.play ? 'Note' : 'Chord'} <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
+      <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : c.play ? earAsk(c) : 'Play it on your keyboard.'}</p>
+      ${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
   el.innerHTML = `${head('Theory')}${body}`

@@ -1,0 +1,27 @@
+/* Ear and rhythm trainers: the replay row and the rhythm bar on a Theory card. */
+.ear-go {
+  justify-content: flex-start;
+}
+.ear-grid {
+  display: flex;
+  gap: 4px;
+}
+.ear-grid i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-1);
+  color: var(--ink-3);
+  font: 700 14px/1 var(--ui);
+  font-style: normal;
+}
+.ear-grid i:nth-child(odd):not(:first-child) {
+  margin-left: 8px; /* a beat is a pair of cells */
+}
+.ear-grid i.on {
+  background: var(--lamp);
+  border-color: var(--lamp);
+  color: var(--lamp-ink);
+}
