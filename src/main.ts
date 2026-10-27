@@ -80,7 +80,7 @@ interface Drill {
   before: number
   run?: RunCtx
 }
-// Sight Run: one setup, dealt a set of cards at a time until you finish or run out of lives.
+// Sight Run: one setup, dealt a set of cards at a time until you finish.
 interface RunCtx {
   base: RunSpec // as set up
   spec: RunSpec // as dealt: the range grows when widening is on
@@ -1306,7 +1306,7 @@ async function runSet() {
   drillHud()
 }
 
-/** One card answered: score it, count the note, end the run if the lives are gone. */
+/** One card answered: tally it and count the note. */
 function runCard(c: Card, clean: boolean, rt: number) {
   const r = run!
   r.arc = tally(r.arc, clean)

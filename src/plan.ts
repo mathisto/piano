@@ -11,9 +11,9 @@ export const PLAN_LENGTHS: PlanMin[] = [5, 10, 20, 30, 45]
 const PLANS: Record<PlanMin, [string, number][]> = {
   5: [['warm', 2], ['read', 3]],
   10: [['warm', 2], ['read', 2], ['piece', 6]],
-  20: [['warm', 4], ['theory|read', 3], ['piece', 10], ['again|fix|review', 3]],
-  30: [['warm', 3], ['scale', 3], ['read', 5], ['piece', 14], ['fix', 2], ['again|theory|path|review', 3]],
-  45: [['warm', 5], ['scale', 5], ['read', 5], ['theory|path|run', 3], ['piece', 20], ['fix', 3], ['again|review', 4]],
+  20: [['warm', 4], ['theory|read', 3], ['sight', 4], ['piece', 6], ['again|fix|review', 3]],
+  30: [['warm', 3], ['scale', 3], ['read', 5], ['sight', 4], ['piece', 10], ['fix', 2], ['again|theory|path|review', 3]],
+  45: [['warm', 5], ['scale', 5], ['read', 5], ['theory|path|run', 3], ['sight', 5], ['piece', 15], ['fix', 3], ['again|review', 4]],
 }
 
 /** The rows of a plan from the steps that exist today; minutes of a slot with nothing to offer go to the piece. */

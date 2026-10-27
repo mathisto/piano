@@ -162,10 +162,6 @@ function table(caption: string, rows: Row[], empty: string) {
     <tbody>${body}</tbody></table>`
 }
 
-export function gradeColor(g: string) {
-  return g === 'S' ? 'var(--perfect)' : g === 'A' ? 'var(--great)' : g === 'B' || g === 'C' ? 'var(--good)' : 'var(--bad)' // the judgement spectrum only: the letter tells B from C
-}
-
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const head = (title: string, actions = '', lede = '') =>

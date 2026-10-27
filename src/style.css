@@ -207,13 +207,6 @@ table.songs caption,
 #hCards {
   min-width: 4.4ch;
 }
-.hud .mult {
-  font: 800 italic 22px/1 var(--display);
-  color: var(--ink);
-  border: 1px solid var(--ink-3);
-  border-radius: var(--r-1);
-  padding: 3px 6px 2px;
-}
 
 .chip {
   display: inline-flex;
@@ -2413,11 +2406,6 @@ dialog.sheet footer .btn {
   color: var(--ink-3);
   margin: 0;
   font-size: 14px;
-}
-.bigscore {
-  margin: 0;
-  font: 800 italic 64px/1 var(--display);
-  color: var(--lamp);
 }
 .hstrip {
   display: flex;
