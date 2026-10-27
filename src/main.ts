@@ -44,7 +44,7 @@ import { breakToast } from './habit-ui'
 import { theoryDue, type PlanMin } from './plan'
 import { restTracker } from './rest'
 import { streak as dayStreak } from './streak'
-import { $, CAL_NOTES, art, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, creditsDialog, setupDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 import { LOOK, lookCard, pct, pickPiece, startRate, summaryCard, type RtPiece } from './readthrough'
 
 const app = $('#app')
@@ -162,7 +162,9 @@ type Section = 'today' | 'songs' | 'read' | 'scales' | 'theory' | 'technique' | 
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
-  ;($(`input[name=nav][value=${name}]`) as HTMLInputElement).checked = true
+  const tab = $(`input[name=nav][value=${name}]`) as HTMLInputElement
+  tab.checked = true
+  tab.parentElement!.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // a narrow window scrolls the tabs
   view(name === 'songs' ? 'library' : name)
   if (name === 'today') await showToday()
   else if (name === 'songs') await showLibrary(err)
@@ -339,12 +341,7 @@ async function showTechnique() {
     const b = el.querySelector<HTMLButtonElement>(sel)
     if (b) b.onclick = f
   }
-  click('#calStart', () => {
-    touchCal = { step: 0, got: 0 }
-    calGot = [[], [], []]
-    calMsg = ''
-    void showTechnique()
-  })
+  click('#calStart', startTouchCal)
   click('#calCancel', () => {
     touchCal = null
     void showTechnique()
@@ -362,6 +359,13 @@ async function showTechnique() {
 let touchCal: TouchCal | null = null
 let calGot: number[][] = [[], [], []]
 let calMsg = ''
+
+function startTouchCal() {
+  touchCal = { step: 0, got: 0 }
+  calGot = [[], [], []]
+  calMsg = ''
+  void showSection('technique')
+}
 
 /** A note-on from a real keyboard while calibrating; returns true when it was consumed. */
 function calNote(vel: number) {
@@ -1590,6 +1594,21 @@ function updateChip() {
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
   $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
   $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
+  const su = document.querySelector('#suMidi')
+  if (su) {
+    su.textContent = midiLine()
+    document.querySelector('#suConnect')?.toggleAttribute('hidden', list.length > 0)
+  }
+}
+
+/** The keyboard's state in words, for the Set up sheet. */
+function midiLine() {
+  const list = inputs()
+  const pick = list.find((i) => i.id === settings.device) ?? list[0]
+  if (pick) return `${pick.name}, connected`
+  if (midiState === 'unsupported') return 'No MIDI in this browser. The computer keys still play.'
+  if (midiState === 'blocked') return 'MIDI is blocked. Allow it for this site, then reload.'
+  return 'Not connected. Plug it in over USB, then Connect.'
 }
 
 async function connectMidi() {
@@ -1752,6 +1771,7 @@ function openDrawer() {
     lens.clear()
   }, 'change')
   $('#sCredits', d).onclick = () => void openCredits()
+  $('#sSetup', d).onclick = openSetup
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
     await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
@@ -1937,6 +1957,31 @@ async function openCredits() {
   d.scrollTop = 0
 }
 
+/** The first-run sheet, also Settings > Set up. Every action hands over to the flow it names; nothing here blocks. */
+function openSetup() {
+  const d = $('#setup') as HTMLDialogElement
+  try {
+    localStorage.setItem('piano.setup', '1')
+  } catch {
+    /* private mode: it may show again next time */
+  }
+  closeDrawer()
+  d.innerHTML = setupDialog(midiLine(), inputs().length > 0, settings.offset)
+  const away = (f: () => void) => () => {
+    d.close()
+    if (current) leave()
+    f()
+  }
+  $('#suConnect', d).onclick = () => void connectMidi()
+  $('#suTouch', d).onclick = away(startTouchCal)
+  $('#suDelay', d).onclick = away(() => void startCalibration())
+  $<HTMLSelectElement>('#suKeyTouch', d).onchange = (e) => {
+    settings.keyTouch = (e.target as HTMLSelectElement).value as typeof settings.keyTouch
+    save()
+  }
+  d.showModal()
+}
+
 /** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */
 async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
@@ -2075,6 +2120,8 @@ void (async () => {
   const want = location.hash.slice(1)
   const i = STARTERS.findIndex((s) => s.spec.id === want)
   if (i >= 0) void openSong(starters[i], 'perform')
+  // once, on a first launch: a returning player already has settings saved
+  else if (!localStorage.getItem('piano.setup') && !localStorage.getItem('piano.settings')) openSetup()
 })()
 
 if (import.meta.env.DEV) {

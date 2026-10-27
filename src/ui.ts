@@ -58,6 +58,7 @@ export function skeleton(app: HTMLElement) {
   </header>
   <dialog id="tracks" class="sheet" aria-label="Options"></dialog>
   <dialog id="credits" class="sheet" aria-label="Credits"></dialog>
+  <dialog id="setup" class="sheet" aria-label="Set up"></dialog>
   <dialog id="help" class="sheet" aria-label="Shortcuts">
     <header><h2>Shortcuts</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
@@ -144,8 +145,7 @@ function table(caption: string, rows: Row[], empty: string) {
         .map(
           (r) => `<tr class="open" data-open="${r.id}">
         <td class="thumb">${art(r.id)}${r.thumb}</td>
-        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}<small>${esc(r.sub)}</small></td>
-        <td class="num">${r.len ? mmss(r.len) : '—'}</td>
+        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
@@ -155,10 +155,10 @@ function table(caption: string, rows: Row[], empty: string) {
         </div></td></tr>`,
         )
         .join('')
-    : `<tr><td colspan="${best ? 5 : 4}" class="empty">${empty}</td></tr>`
+    : `<tr><td colspan="${best ? 4 : 3}" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col><col><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:320px"></colgroup>
-    <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+    <colgroup><col><col>${best ? '<col style="width:90px">' : ''}<col class="acol"></colgroup>
+    ${rows.length ? `<thead><tr><th scope="col"><span class="sr-only">Preview</span></th><th scope="col">Piece</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span class="sr-only">Actions</span></th></tr></thead>` : ''}
     <tbody>${body}</tbody></table>`
 }
 
@@ -174,11 +174,28 @@ const head = (title: string, actions = '', lede = '') =>
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }) {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><h3>Sounds</h3>
+    <div class="body"><p class="fine free">${FREE}</p><h3>Sounds</h3>
     <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)</pre><pre>Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
     <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence. Every score and its licence: <a href="${licences.app}" target="_blank" rel="noopener">pieces in the app</a>, <a href="${licences.corpus}" target="_blank" rel="noopener">the whole library</a>.</p>
     <div class="credlist">${blocks.length ? blocks.map((b) => `<pre>${esc(b)}</pre>`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
     <footer><button class="btn" data-close>Close</button></footer>`
+}
+
+export const FREE = 'Free, no subscription, no ads, no account.'
+const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evenness.'
+const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
+
+/** First run, and Settings > Set up: four checks, each one skippable; the sheet is a list, not a wizard. */
+export function setupDialog(midi: string, connected: boolean, delay: number) {
+  const e = settings.edges ?? DEFAULT_EDGES
+  return `<header><div><h2>Set up</h2><p>Four checks. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
+    <div class="body"><div class="plan">
+      <div class="prow"><div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button></div></div>
+      <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span></div><div class="pact"><button class="btn ghost" id="suTouch">Set touch range</button></div></div>
+      <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span></div><div class="pact"><button class="btn ghost" id="suDelay">Calibrate</button></div></div>
+      <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>
+    </div></div>
+    <footer><span class="fine free">${FREE}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
 }
 
 export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
@@ -264,7 +281,7 @@ export function results(r: Result, next: Next | null, note = '') {
   <div class="results"><div class="card" role="dialog" aria-label="Results">
     <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy · longest run <b>${r.maxCombo}</b> notes · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
+    <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
         ? `<div>
@@ -304,8 +321,8 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   }
   <label class="srow"><span>Count-in click</span><input id="sClick" type="range" min="0" max="1" step="0.05" value="${settings.click}" aria-label="Count-in click volume"></label>
   ${seg('coach', 'Touch coach', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach)}
-  <label class="srow"><span>Key touch</span><select id="sKeyTouch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select></label>
-  <p class="fine">Changes the loudness we read; Fixed hides evenness.</p>
+  <div class="srow"><span>Key touch</span>${keyTouchSelect('sKeyTouch')}</div>
+  <p class="fine">${KEY_TOUCH_HINT}</p>
   ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
   <div class="srow"><span>Keyboard</span>${
     inputs.length > 1
@@ -324,7 +341,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="srow"><span>Fall speed</span><span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"><small>Fast</small></span></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot"><button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
+  <p class="fine foot"><button class="link" id="sSetup">Set up</button> <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
 }
 
 // ---------- reading drills ----------
@@ -371,7 +388,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
   el.innerHTML = `
     ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
     ${tab === 'run' ? run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
-      <colgroup><col><col style="width:250px">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
+      <colgroup><col><col class="mcol">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`}`
 }
@@ -439,7 +456,7 @@ function pathBlock(path: PathRow[]) {
   if (!path.length) return ''
   const solid = path.filter((p) => p.state === 'solid').length
   const row = (p: PathRow) =>
-    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">Start</button></div></div>`
+    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">Start</button></div></div>`
   const next = path.filter((p) => p.state !== 'solid').slice(0, 5)
   const rest = path.filter((p) => !next.includes(p))
   return `<p class="label cap">Path · ${solid} of ${path.length} solid</p>
@@ -570,7 +587,7 @@ function knownStrip(stats: Stats) {
   const bars = Array.from({ length: hi - lo + 1 }, (_, i) => {
     const p = lo + i
     const m = best.get(p)
-    return `<rect x="${(i * w).toFixed(1)}" y="2" width="${(w - 1).toFixed(1)}" height="40" rx="1.5" class="${m === undefined ? 'unseen' : 'seen'}"${m === undefined ? '' : ` style="--m:${(0.15 + 0.85 * m).toFixed(2)}"`}><title>${noteName(p)}${m === undefined ? ', not met yet' : `, ${Math.round(m * 100)}%`}</title></rect>${p % 12 === 0 ? `<text x="${(i * w).toFixed(1)}" y="56">${noteName(p)}</text>` : ''}`
+    return `<rect x="${(i * w).toFixed(1)}" y="2" width="${(w - 1).toFixed(1)}" height="40" rx="1.5" class="${m === undefined ? 'unseen' : 'seen'}"${m === undefined ? '' : ` style="--m:${(0.15 + 0.85 * m).toFixed(2)}"`}><title>${noteName(p)}${m === undefined ? ', not met yet' : `, ${Math.round(m * 100)}%`}</title></rect>${p % 12 === 0 ? `<text x="${p === hi ? 600 : (i * w).toFixed(1)}"${p === hi ? ' text-anchor="end"' : ''} y="56">${noteName(p)}</text>` : ''}`
   }).join('')
   return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter is better: met often, answered cleanly and quickly. Dark outlines are notes you have not drilled yet.</p>`
 }
@@ -790,7 +807,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
       ? quizBody(quiz)
       : tab === 'stages'
       ? `<table class="songs stages"><caption class="sr-only">Scale stages</caption>
-      <colgroup><col><col style="width:250px"><col style="width:150px"></colgroup>
+      <colgroup><col><col class="mcol"><col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Solid</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${rows
         .map(
@@ -798,8 +815,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
         <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`,
         )
-        .join('')}</tbody></table>
-      <p class="fine" style="margin-top:12px">A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.</p>`
+        .join('')}</tbody></table>`
       : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
       ${field('sgForm', 'Scale', Object.entries(FORMS).map(([v, l]) => `<option value="${v}"${v === p.form ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('sgKey', 'Key', keyLabels(p.form).map((n, i) => `<option value="${i}"${i === p.tonic ? ' selected' : ''}>${n}</option>`).join(''))}
@@ -812,7 +828,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     ${shaky.length ? `<p class="fine">The ${shaky.map((h) => (h === 'R' ? 'right' : 'left')).join(' and ')}-hand fingering for this key is still to be checked against a printed book; your teacher or book wins.</p>` : ''}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
-    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
+    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
     ${body}`
 }
 
@@ -840,8 +856,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span></div>
       ${t.levels.length ? `<label class="field inline"><span class="sr-only">Level of ${esc(t.name)}</span><select data-tlevel="${t.id}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}
       <div class="pact"><button class="btn ghost" data-trainer="${t.id}">Start</button></div></div>`,
-    ).join('')}</div>
-    <p class="fine" style="margin-top:12px">Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.</p>`
+    ).join('')}</div>`
   } else if (run.i >= run.cards.length) {
     const n = run.cards.length
     body = `<section class="tcard run" aria-label="Session results"><h2>${run.ok} of ${n} first time</h2>
@@ -857,5 +872,5 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       ${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
-  el.innerHTML = `${head('Theory')}${body}`
+  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${body}`
 }
