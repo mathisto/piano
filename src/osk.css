@@ -88,3 +88,10 @@ body.zen #app {
 #app:has(#osk:not([hidden])) .banner:has(#connectBtn) {
   display: none;
 }
+/* a drill with the on-screen keys has one keyboard: the strip's own keys and lanes step aside (a MIDI keyboard shows the strip, and the keys, instead) */
+#app:has(#osk:not([hidden])) #play.drill {
+  --rows: minmax(0, 1fr) 0 auto;
+}
+#app:has(#osk:not([hidden])) #play.drill label:has(#showNotes) {
+  display: none;
+}

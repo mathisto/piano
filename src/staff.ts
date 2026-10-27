@@ -379,7 +379,7 @@ export class Staff {
     for (const d of L.dyns) this.barEls.push([barOf(d.sys, d.x), el('text', { class: 'smufl mk', x: d.x, y: d.y + dyOf(d.sys) + 5, 'text-anchor': 'middle' }, g, [...d.text].map((c) => DYN[c] ?? '').join(''))])
   }
 
-  /** Technique exercises: the dynamic to aim for. Words go between the staves at the left of the system, accents sit on the notes. */
+  /** Technique exercises: the dynamic to aim for. Words go between the staves (above a lone staff) at the left of the system, accents sit on the notes. */
   private dynamics() {
     const dyn = this.game.song.dyn
     const L = this.L
@@ -397,9 +397,10 @@ export class Staff {
     // dynamic letters are Bravura glyphs; the words are italic text
     const word = { soft: '', medium: '', hard: '', cresc: 'cresc.', decresc: 'dim.' }[dyn]
     if (!word) return
+    const lone = L.clefs.length === 1 // one staff: the mark sits above it, past the bar number, not across the middle of the staff
     for (const dy of new Set(this.all.map((p) => p.dy))) {
       const sy = L.systems.find((s) => s.dy === dy)!
-      el('text', { x: sy.x0 + 4, y: dy + mid + (word.length > 1 ? 6 : 10), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
+      el('text', { x: sy.x0 + (lone ? 30 : 4), y: dy + (lone ? L.base[L.clefs[0]] - 4 * S - 6 : mid + (word.length > 1 ? 6 : 10)), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
     }
   }
 
