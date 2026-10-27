@@ -118,15 +118,37 @@ const HAIRPIN_WORD = /(?<!\p{L})(?:(cresc)|(decresc|dim)(?:in)?)(?:u?endo|\.)?(?
 const WORD_BARS = 4 // a word with no dynamic after it reaches this far
 const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
 
-// Quarter-note bpm for a tempo word when the score gives no number.
-// ponytail: the first word wins and the beat is a quarter, so 'Nicht zu schnell' is fast and 6/8 Allegro is slow; a table per meter if it matters.
+// Quarter-note bpm for a tempo word when the score gives no number: the first word names the pace, the rest of the text bends it
+// ('Allegro ma non troppo', 'Nicht zu schnell', 'Sehr langsam'), a compound meter (6/8, 12/8) beats a dotted quarter so runs faster in quarters.
+// ponytail: the bend is a flat 12%, there is no word for 'Tempo di valse' or 'L'istesso'; a table per meter if it matters.
 const TEMPI: Record<string, number> = {
-  prestissimo: 200, presto: 176, vivace: 152, allegro: 132, allegretto: 112, moderato: 108, andantino: 92, andante: 84, adagietto: 72, adagio: 66, larghetto: 63, lento: 52, largo: 46, grave: 40,
-  schnell: 160, rasch: 144, lebhaft: 132, munter: 120, bewegt: 108, mässig: 96, mäßig: 96, massig: 96, langsam: 60,
+  prestissimo: 200, presto: 176, vivace: 152, allegro: 132, allegretto: 112, moderato: 108, andantino: 92, andante: 84, adagietto: 72, adagio: 66, larghetto: 63, lento: 52, largo: 46, grave: 40, maestoso: 80, tranquillo: 76,
+  schnell: 160, rasch: 144, geschwind: 144, lebhaft: 132, munter: 120, bewegt: 108, mässig: 96, mäßig: 96, massig: 96, gefällig: 92, gemächlich: 80, zart: 76, gemessen: 72, ruhig: 66, innig: 66, langsam: 60, getragen: 60, feierlich: 56, schleppend: 56,
+  vif: 144, modéré: 100, lent: 56, vivo: 152, animato: 120, allo: 132, // Allo. is Allegro in the Chopin Institute's editions
 }
+const WORD = (alts: string) => new RegExp(`(?<!\\p{L})(?:${alts})(?!\\p{L})`, 'iu')
 const TEMPO_RE = new RegExp(`(?<!\\p{L})(${Object.keys(TEMPI).join('|')})(?!\\p{L})`, 'iu')
+const AWAY = WORD('molto|assai|sehr|très|\\p{L}+issimo') // pushes the pace away from moderate
+const TOWARD = WORD('non\\s+(?:troppo|tanto)|ma\\s+non|nicht\\s+zu|ziemlich|etwas|moderato') // and these toward it
+const BRISK = WORD('con\\s+(?:moto|brio)|animato|agitato|mosso|appassionato')
+const BROAD = WORD('sostenuto|cantabile|retenu|soutenu')
+const TEMPO_I = WORD('tempo\\s+(?:i|primo|1)') // back to the first pace
+const bend = (bpm: number, away: boolean) => (bpm > 96 === away ? bpm * 1.12 : bpm / 1.12)
+
+/** Quarter-note bpm that a tempo word names, or undefined. */
+export function tempoWord(text: string, compound = false): number | undefined {
+  const m = TEMPO_RE.exec(text)
+  if (!m) return undefined
+  const rest = text.replace(m[0], ' ')
+  let bpm = TEMPI[m[1].toLowerCase()]
+  if (AWAY.test(rest)) bpm = bend(bpm, true)
+  else if (TOWARD.test(rest)) bpm = bend(bpm, false)
+  if (BRISK.test(rest)) bpm *= 1.08
+  if (BROAD.test(rest)) bpm /= 1.08
+  return Math.round(bpm * (compound ? 1.2 : 1))
+}
 const GRACE_S = 0.07 // a grace note sounds this long before the next one
-const UNIT: Record<string, number> ={ whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25 }
+const UNIT: Record<string, number> = { breve: 8, whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125 }
 
 // D.C., D.S., Fine, To Coda and Coda as words; <sound dacapo|dalsegno|segno|tocoda|coda|fine> say the same in machine form
 const JUMP: Record<string, RegExp> = { dc: /\bD\.\s?C\.|\bda\s+capo\b/i, ds: /\bD\.\s?S\.|\bdal\s+segno\b/i, tocoda: /\bto\s+coda\b/i, fine: /^\s*fine\.?\s*$/i, coda: /^\s*coda\s*$/i }
@@ -247,7 +269,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const implicit: boolean[] = []
   const sig: ({ n: number; den: number } | undefined)[] = []
   const tempos: { pi: number; m: number; q: number; bpm: number }[] = [] // <sound tempo> and <metronome>
-  const worded: typeof tempos = [] // Allegro, Andante ...: only when no part gives a number
+  const worded: { pi: number; m: number; q: number; text: string }[] = [] // Allegro, Andante ...: only when no part gives a number
   const keyM: (number | undefined)[] = [] // key signature stated in each measure
   const flags: string[] = []
   const W: { a: number; b: number; up: boolean; m0: number; v0: number }[] = [] // hairpins, in part quarters
@@ -364,13 +386,12 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
               }
             }
             const mt = kid(dt, 'metronome')
-            const pm = num(mt, 'per-minute')
+            const pm = parseFloat(kid(mt, 'per-minute')?.t ?? '') // '132-144' reads as 132
             if (pm && !told) tempos.push({ pi, m, q, bpm: pm * (UNIT[kid(mt, 'beat-unit')?.t.trim() ?? ''] ?? 1) * (kid(mt, 'beat-unit-dot') ? 1.5 : 1) })
             for (const w of kids(dt, 'words')) {
               const h = HAIRPIN_WORD.exec(w.t)
               if (h) said.push({ a: base + q, b: 0, up: !!h[1], m0: m, v0: curV })
-              const t = TEMPO_RE.exec(w.t)?.[1].toLowerCase()
-              if (t) worded.push({ pi, m, q, bpm: TEMPI[t] })
+              if (TEMPO_RE.test(w.t) || TEMPO_I.test(w.t)) worded.push({ pi, m, q, text: w.t })
             }
           }
         } else if (e.n === 'backup') {
@@ -430,11 +451,20 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
 
   // repeats: play the measures in order, so a repeated bar is a bar again in the song
   // numbers from the first part that has any, else tempo words; the key a measure is in, carried from the last one stated
-  const firstPart = (xs: typeof tempos) => xs.filter((x) => x.pi === Math.min(...xs.map((y) => y.pi)))
-  const tempos1 = tempos.length ? firstPart(tempos) : firstPart(worded)
+  const firstPart = <T extends { pi: number }>(xs: T[]) => xs.filter((x) => x.pi === Math.min(...xs.map((y) => y.pi)))
+  const sigAt = (m: number) => sig.slice(0, m + 1).findLast(Boolean)
+  const wordBpm = firstPart(worded).flatMap((w) => {
+    const s = sigAt(w.m)
+    const bpm = tempoWord(w.text, !!s && s.den === 8 && s.n > 3 && s.n % 3 === 0)
+    return bpm ? [{ ...w, bpm }] : TEMPO_I.test(w.text) ? [{ ...w, bpm: 0 }] : [] // 0: 'Tempo I', the first pace again
+  })
+  wordBpm.forEach((w) => (w.bpm ||= wordBpm.find((x) => x.bpm)?.bpm ?? 0))
+  const estimated = !tempos.length && wordBpm.some((w) => w.bpm)
+  const tempos1 = tempos.length ? firstPart(tempos) : wordBpm.filter((w) => w.bpm)
   tempos.length = 0
   tempos.push(...tempos1)
   if (!tempos.length) flags.push('no-tempo')
+  else if (estimated) flags.push('tempo-estimated')
   let kc = keyM.find((k) => k !== undefined)
   const keyOf = Array.from({ length: kids(parts[0], 'measure').length }, (_, m) => (kc = keyM[m] ?? kc))
   for (let m = 1; m < keyOf.length; m++) sig[m] ??= sig[m - 1] // so a jump back lands in the right meter too

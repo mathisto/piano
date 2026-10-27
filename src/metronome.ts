@@ -1,4 +1,4 @@
-import type { Bar } from './song'
+import { beatQ, type Bar } from './song'
 
 export type Metro = 'off' | 'beat' | 'eighths'
 export const METROS: Metro[] = ['off', 'beat', 'eighths']
@@ -7,8 +7,6 @@ export interface Tick {
   kind: 'down' | 'beat' | 'sub'
 }
 
-/** A beat in quarters: the denominator's note, but a dotted quarter in 6/8, 9/8 and 12/8. */
-const beatQ = (b: Bar) => (b.den === 8 && b.n % 3 === 0 && b.n > 3 ? 1.5 : 4 / b.den)
 const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
 
 /** Beats in a bar and how many seconds each lasts. The bar's own t0..t1 is the truth, so tempo changes come free. */

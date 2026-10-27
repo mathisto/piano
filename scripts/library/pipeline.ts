@@ -41,7 +41,7 @@ export interface Input {
 export const GATES = {
   fail: ['parse', 'notes', 'bars', 'pitch', 'bar-order'],
   review: ['length', 'bar-length', 'key', 'hand-share', 'hand-register', 'chord', 'span'],
-  flag: ['no-tempo', 'dc-ds', 'repeats', 'tuplets'],
+  flag: ['no-tempo', 'tempo-estimated', 'dc-ds', 'repeats', 'tuplets'],
 } as const
 
 export interface Analysis {
@@ -119,6 +119,7 @@ export function judge(s: Song, marks = '', hasTempo = true) {
   if (maxChord > 5) review.push('chord')
   if (spanP95 > 12) review.push('span')
   if (!hasTempo) flags.push('no-tempo')
+  if (s.flags?.includes('tempo-estimated')) flags.push('tempo-estimated') // a MusicXML score with only a tempo word: the bpm is the importer's guess
   if (/D\.\s?[CS]\.|\\segno|\\coda|<segno|<coda|dacapo=|dalsegno=|\bFine\b|\bCoda\b/.test(marks)) flags.push('dc-ds')
   // LilyPond's MIDI plays a repeat only under \unfoldRepeats; the MusicXML importer expands them unless it says it could not
   if ((/\\repeat\s+volta/.test(marks) && !/\\unfoldRepeats/.test(marks)) || s.flags?.includes('repeats-unexpanded')) flags.push('repeats')
@@ -172,7 +173,7 @@ export async function analyse(e: Input): Promise<Analysis> {
       marks = await xmlText(ab(e.bytes))
       s = fromMusicXml(marks, e.title, e.id)
       tracks = (marks.match(/<part id="/g) ?? []).length
-      hasTempo = /<sound[^>]*\btempo="/.test(marks)
+      hasTempo = !s.flags?.includes('no-tempo') // a <sound tempo>, a <metronome> or a tempo word (that one flagged 'tempo-estimated')
     }
     return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, fp: fingerprint(s) }
   } catch (err) {

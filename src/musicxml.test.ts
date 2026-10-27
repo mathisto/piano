@@ -247,11 +247,54 @@ describe('musicxml jumps, keys, spelling, tuplets, cues and tempo', () => {
   it('takes the tempo from a metronome mark, then a tempo word, else 100 and a flag', () => {
     const metro = `<direction><direction-type><metronome><beat-unit>half</beat-unit><per-minute>60</per-minute></metronome></direction-type></direction>`
     expect(read(meas(metro + note('C'))).bars[0].t1).toBeCloseTo(2) // 120 quarters a minute
-    expect(read(meas(words('Andante con moto') + note('C'))).bars[0].t1).toBeCloseTo((4 * 60) / 84)
+    const mm = (inner: string) => read(meas(`<direction><direction-type><metronome>${inner}</metronome></direction-type></direction>` + note('C')))
+    expect(mm('<beat-unit>quarter</beat-unit><beat-unit-dot/><per-minute>40</per-minute>').bars[0].t1).toBeCloseTo(4) // dotted quarter = 40 is 60 quarters
+    expect(mm('<beat-unit>quarter</beat-unit><per-minute>132-144</per-minute>').bars[0].t1).toBeCloseTo((4 * 60) / 132) // a range takes its first number
+    expect(scoreFlags(mm('<beat-unit>quarter</beat-unit><per-minute>60</per-minute>'))).toEqual([]) // a number is not an estimate
     expect(read(meas(words('Mässig') + note('C'))).bars[0].t1).toBeCloseTo((4 * 60) / 96)
     const none = read(meas(note('C')))
     expect(none.bars[0].t1).toBeCloseTo(2.4)
     expect(scoreFlags(none)).toEqual(['no-tempo'])
+  })
+
+  it('a tempo word is an estimate and says so; qualifiers and compound meters move it', () => {
+    const bpm = (w: string) => Math.round(240 / read(meas(words(w) + note('C'))).bars[0].t1)
+    expect(bpm('Allegro')).toBe(132)
+    expect(bpm('Allegro ma non troppo')).toBeLessThan(132)
+    expect(bpm('Allegro moderato')).toBe(bpm('Allegro ma non troppo'))
+    expect(bpm('Molto allegro')).toBeGreaterThan(132)
+    expect(bpm('Adagio ma non troppo')).toBeGreaterThan(66) // 'not too slow' is faster
+    expect(bpm('Molto adagio')).toBeLessThan(66)
+    expect(bpm('Andante con moto')).toBeGreaterThan(84)
+    expect(bpm('Nicht zu schnell')).toBeLessThan(bpm('Schnell'))
+    expect(bpm('Sehr langsam')).toBeLessThan(bpm('Langsam'))
+    expect(bpm('Etwas geschwind')).toBeLessThan(bpm('Geschwind'))
+    expect(bpm('Lent')).toBe(56)
+    expect(bpm('rit.')).toBe(100) // no tempo word
+    const six8 = read(`<measure number="1">${head(1, 6, 8)}${words('Allegro')}${note('C', 3)}</measure>`)
+    expect(six8.bars[0].t1).toBeCloseTo((3 * 60) / 158) // 132 x 1.2 rounded: the beat is a dotted quarter
+    expect(six8.spb).toBeCloseTo(six8.bars[0].t1 / 2) // the count-in clicks the dotted quarter, two to a 6/8 bar
+    expect(scoreFlags(read(meas(words('Allegro') + note('C'))))).toEqual(['tempo-estimated'])
+    expect(scoreFlags(read(meas(words('Allegro') + note('C'), note('D') + words('Adagio'))))).toEqual(['tempo-estimated'])
+    expect(scoreFlags(read(meas(words('rit.') + note('C'))))).toEqual(['no-tempo']) // a word that names no pace is not an estimate
+  })
+
+  it('mid-piece: a tempo word takes over where it is written, Tempo I brings the first back; a number beats a word', () => {
+    const s = read(meas(words('Allegro') + note('C'), words('Adagio') + note('D'), words('Tempo I') + note('E')))
+    expect(s.bars.map((b) => Math.round((b.t1 - b.t0) * 100) / 100)).toEqual([1.82, 3.64, 1.82]) // 132, 66, 132
+    const num = read(meas(words('Allegro') + note('C') + '<direction><sound tempo="60"/></direction>', words('Adagio') + note('D')))
+    expect(num.bars.map((b) => b.t1 - b.t0)).toEqual([4, 4]) // 60 from the first bar; the words are only for scores with no number
+    expect(scoreFlags(num)).toEqual([])
+  })
+
+  it('honours <sound tempo> changes between bars and inside one', () => {
+    const t = (n: number) => `<direction><sound tempo="${n}"/></direction>`
+    const s = read(meas(t(120) + note('C'), note('D') + t(60), note('E')))
+    expect(s.bars.map((b) => b.t1 - b.t0)).toEqual([2, 2, 4])
+    const mid = read(meas(t(120) + note('C', 2) + t(60) + note('D', 2)))
+    expect(mid.bars[0].t1).toBeCloseTo(1 + 2) // two quarters at 120, two at 60
+    expect(mid.notes[1].t).toBeCloseTo(1)
+    expect(scoreFlags(mid)).toEqual([])
   })
 })
 
