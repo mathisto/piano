@@ -26,7 +26,18 @@ export interface Progress {
   box?: number // spaced review: 0..4, up a box for a clean run, down one for a messy one
   due?: number // the local day number a review is next due
   days?: number[] // the last few days with a clean run: ready is two different days
+  memStage?: number // Memorise: the highest stage cleared, 0..4
+  memDay?: number // the local day number it was cleared
 }
+
+/** Memorise cleared a stage: keep the highest, and the day. */
+export const memorised = (id: string, stage: number) =>
+  serial(async () => {
+    const p = await getProgress(id)
+    if (stage < (p.memStage ?? 0)) return
+    Object.assign(p, { memStage: stage, memDay: dayNum() })
+    await set(`prog:${id}`, p)
+  })
 
 export async function hash(bytes: ArrayBuffer): Promise<string> {
   if (globalThis.crypto?.subtle) {
@@ -95,8 +106,17 @@ export async function allProgress(): Promise<Map<string, Progress>> {
   return m
 }
 
+// progress is read, changed and written back: two writers at once (a pass and Memorise) would lose one, so they queue
+let queue: Promise<unknown> = Promise.resolve()
+const serial = <T>(f: () => Promise<T>): Promise<T> => {
+  const r = queue.then(f, f)
+  queue = r.catch(() => {})
+  return r
+}
+export const commit = (...a: Parameters<typeof commitNow>) => serial(() => commitNow(...a))
+
 /** Fold one session's trouble into the long-run heat: old trouble cools as you improve. */
-export async function commit(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
+async function commitNow(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
   const p = await getProgress(id)
   const n = Math.max(p.heat.length, heat.length)
   p.heat = Array.from({ length: n }, (_, i) => (p.heat[i] ?? 0) * 0.7 + (heat[i] ?? 0))
