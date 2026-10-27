@@ -86,7 +86,10 @@ function readLy(src: string, unfoldAll = false): Rec[] {
   let p = 0
   let last = 0.25 // LilyPond's default duration is parser state, so it carries lexically, as here
   let ev: Ev[] = []
-  const vars = new Map<string, Rec>()
+  // a variable keeps the tokens it was read from: music with a \tag in it is read again under the \keepWithTag or \removeWithTag that uses it
+  const vars = new Map<string, Rec & { from: number; last: number; tagged: boolean }>()
+  const filters: { keep: boolean; tags: string[] }[] = []
+  const shown = (tags: string[]) => filters.every((f) => (f.keep ? tags.some((t) => f.tags.includes(t)) : !tags.some((t) => f.tags.includes(t))))
   const texts = new Map<string, string>() // name = "string", used as ^\name
   const scores: (Rec & { midi: boolean })[] = []
   const is = (t: string, v?: string) => T[p]?.t === t && (v === undefined || T[p].v === v)
@@ -168,9 +171,10 @@ function readLy(src: string, unfoldAll = false): Rec[] {
       return last
     }
     if (k.t === 'note') {
-      if (!k.d && is('num') && !T[p].v.includes('/')) k.d = T[p++].v // 'e 8' is e8
-      while (k.d && is('x', '*') && T[p + 1]?.t === 'num') (k.d += `*${T[p + 1].v}`), (p += 2) // 's2. * 2' is s2.*2
-      if (k.d) last = dur(k.d)
+      let d = k.d // (the tokens are read again for a \keepWithTag: never change one)
+      if (!d && is('num') && !T[p].v.includes('/')) d = T[p++].v // 'e 8' is e8
+      while (d && is('x', '*') && T[p + 1]?.t === 'num') (d += `*${T[p + 1].v}`), (p += 2) // 's2. * 2' is s2.*2
+      if (d) last = dur(d)
       if (!/^[rRs]$/.test(k.v)) ev.push({ k: 'on', at, d: last })
       return last
     }
@@ -183,7 +187,13 @@ function readLy(src: string, unfoldAll = false): Rec[] {
     if (k.t !== 'cmd') return 0
     const c = k.v
     const v = vars.get(c)
-    if (v) return put(v, at), v.len
+    if (v) {
+      const keep = [p, last]
+      if (v.tagged && filters.length) (p = v.from), (last = v.last)
+      const r = v.tagged && filters.length ? sub(() => music(0)) : v
+      if (r !== v) [p, last] = keep
+      return put(r, at), r.len
+    }
     if (texts.has(c)) return mark(at, attached(p - 2), texts.get(c)!), 0
     if (BLOCK.has(c)) return block(), 0
     switch (c) {
@@ -210,6 +220,17 @@ function readLy(src: string, unfoldAll = false): Rec[] {
       case 'mark': {
         const a = p
         return value(), mark(at, false, words(a, p)), 0
+      }
+      case 'tag':
+      case 'keepWithTag':
+      case 'removeWithTag': {
+        const t = T[p++]
+        const tags = t?.t === 'scm' ? (t.v.match(/[\w-]+/g) ?? []) : t ? [t.v] : [] // #'a, #'(a b) or a bare word
+        if (c === 'tag') return shown(tags) ? music(at) : (sub(() => music(0)), 0) // a tag that is filtered out is read for its durations and plays nothing
+        filters.push({ keep: c === 'keepWithTag', tags })
+        const len = music(at)
+        filters.pop()
+        return len
       }
       case 'tweak':
         p++
@@ -336,6 +357,12 @@ function readLy(src: string, unfoldAll = false): Rec[] {
     return 0
   }
 
+  /** name = music: read here, and kept with its place in the tokens for a read under a \\keepWithTag. */
+  const define = (name: string) => {
+    const [from, l0] = [p, last]
+    const r = sub(() => music(0))
+    vars.set(name, { ...r, from, last: l0, tagged: T.slice(from, p).some((t) => t.t === 'cmd' && (t.v === 'tag' || vars.get(t.v)?.tagged)) })
+  }
   while (p < T.length) {
     const k = T[p]
     if ((k.t === 'note' || k.t === 'str') && T[p + 1]?.t === '=') {
@@ -343,12 +370,32 @@ function readLy(src: string, unfoldAll = false): Rec[] {
       if (is('cmd', 'markup')) (p++, markup())
       else if (is('str')) texts.set(k.v, T[p++].v)
       else if (is('scm') || is('num')) p++
-      else vars.set(k.v, sub(() => music(0)))
+      else define(k.v)
       continue
     }
     p++
     if (k.t !== 'cmd') continue
-    if (k.v === 'score') scores.push(score())
+    if (k.v === 'parallelMusic' && is('scm') && T[p + 1]?.t === '{') {
+      // \parallelMusic #'(a b) { bar-a | bar-b | bar-a | bar-b }: the bars, cut at the barchecks, go to the variables in turn
+      const names = T[p++].v.match(/\w+/g) ?? []
+      const [from] = [p]
+      block()
+      const bars: Tok[][] = [[]]
+      let depth = 0
+      for (const t of T.slice(from + 1, p - 1)) {
+        depth += +(t.t === '{' || t.t === '<<') - +(t.t === '}' || t.t === '>>')
+        bars[bars.length - 1].push(t)
+        if (!depth && t.t === 'x' && t.v === '|') bars.push([])
+      }
+      const keep = p
+      names.forEach((name, i) => {
+        const from = T.length
+        T.push({ t: '{', v: '{' }, ...bars.filter((_, j) => j % names.length === i).flat(), { t: '}', v: '}' })
+        p = from
+        define(name)
+      })
+      p = keep
+    } else if (k.v === 'score') scores.push(score())
     else if (BLOCK.has(k.v)) block()
     else if (['version', 'include', 'language'].includes(k.v)) p++
   }
@@ -506,11 +553,14 @@ function score(midi: Midi, ly: string) {
   const tick = (x: number) => Math.round(x * W)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const until = Math.max(0, ...notes.map((n) => n.ticks + n.durationTicks))
-  const misses = (r: Rec) => {
+  // LilyPond's MIDI drifts a few ticks after grace notes (rounding of their time): 1/256 of a whole note, far from the next rhythm
+  const near = Array.from({ length: 2 * Math.round(W / 256) + 1 }, (_, i) => i - Math.round(W / 256))
+  const lost = (r: Rec) => {
     const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
     const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
-    return notes.filter((n) => ![-1, 0, 1].some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8)).length
+    return notes.filter((n) => !near.some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
   }
+  const misses = (r: Rec) => lost(r).length
   // LilyPond starts the music late by the length of a grace note it opens with: the reading is tried delayed as well
   const heads = [...new Set(notes.map((n) => n.ticks))].sort((a, b) => a - b).slice(0, 3)
   const delay = (x: Rec): Rec[] => {
@@ -522,17 +572,13 @@ function score(midi: Midi, ly: string) {
   const gap = (x: Rec) => Math.abs(tick(x.len) - until)
   const [r, miss = Infinity] = readLyOnce(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => Number(x[1] > lim) - Number(y[1] > lim) || (x[1] > lim ? x[1] - y[1] : gap(x[0]) - gap(y[0]) || x[1] - y[1]))[0] ?? []
   const off = r ? Math.abs(tick(r.len) - until) : Infinity // length mismatch, ticks
-  return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length }
+  return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length, lost: r ? [...new Set(lost(r).map((n) => n.ticks / W))].sort((a, b) => a - b) : [] }
 }
 
 /** The best reading of this .ly against the MIDI, for scripts/library/ly-coverage.mjs: the numbers `score` has, the first MIDI onsets (in whole notes) the reading has no note at, and the reading's length. */
 export function reading(bytes: Uint8Array, ly: string) {
-  const midi = new Midi(ab(bytes))
-  const x = score(midi, ly)
-  const W = 4 * midi.header.ppq
-  const on = new Set(x.r?.ev.flatMap((e) => (e.k === 'on' ? [Math.round(e.at * W)] : [])))
-  const missed = [...new Set(midi.tracks.flatMap((t) => t.notes.map((n) => n.ticks)))].sort((a, b) => a - b).filter((t) => ![-1, 0, 1].some((d) => on.has(t + d))).slice(0, 12).map((t) => t / W)
-  return { ok: x.ok, miss: x.miss, notes: x.notes, off: x.off, until: x.until, len: x.r && x.r.len, missed }
+  const x = score(new Midi(ab(bytes)), ly)
+  return { ok: x.ok, miss: x.miss, notes: x.notes, off: x.off, until: x.until, len: x.r && x.r.len, missed: x.lost.slice(0, 12) }
 }
 
 /** Whether this .ly's reading matches the MIDI's onsets, i.e. it is the score that plays this file (pickLy falls back to the first .ly when none is). */

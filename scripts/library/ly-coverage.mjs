@@ -14,6 +14,7 @@ const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.jso
 const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
 const only = arg('id')
 const table = {}
+const moved = [] // the catalogue has a pickup and the reader now says something else
 for (const p of cat.pieces) {
   if (p.source !== 'mutopia' || (only && p.id !== only)) continue
   const bytes = new Uint8Array(readFileSync(`${FROM}/${p.file}`))
@@ -30,7 +31,9 @@ for (const p of cat.pieces) {
   }
   const r = pickup !== undefined ? { pickup } : ly ? pickupWhy(bytes, l, matched) : { why: 'no .ly in the cache' }
   if (only) console.log(p.id, p.title, JSON.stringify(r), ly && JSON.stringify(reading(bytes, l), (k, v) => (typeof v === 'number' ? +v.toFixed(4) : v)))
+  if (p.pickup !== undefined && p.pickup !== r.pickup) moved.push(`${p.id.slice(8)} ${p.pickup} -> ${r.pickup ?? r.why}`)
   ;(table[r.why?.replace(/\d+ of \d+/, 'N of M') ?? 'pickup read'] ??= []).push(p.id.slice(8))
 }
 if (!only)
   for (const [k, v] of Object.entries(table).sort((a, b) => b[1].length - a[1].length)) console.log(String(v.length).padStart(4), k, process.argv.includes('--ids') ? v.join(' ') : '')
+if (moved.length) console.log(`published pickup not reproduced (${moved.length}):\n  ${moved.join('\n  ')}`)
