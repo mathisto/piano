@@ -22,7 +22,7 @@ import { fixBars, openById, openSong } from './play'
 import { readThrough, rtPieces } from './readthrough-ui'
 import { startDrill, startRun } from './drill'
 import { stageRows } from './read'
-import { startTheory, theoryLevels } from './theory-ui'
+import { theory } from './lazy'
 import { startScale } from './scales-ui'
 import { memorise } from './memorise-ui'
 
@@ -134,9 +134,10 @@ async function startReq(s: Start) {
   } else if (s.kind === 'read') void startDrill(stageById(s.id)!, s.fast)
   else if (s.kind === 'tech') void openSong(exercise((SYLLABUS.find((r) => r.id === s.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
   else {
-    theoryLevels[s.trainer] = s.level
+    const t = await theory()
+    t.theoryLevels[s.trainer] = s.level
     await hooks.showSection('theory')
-    await startTheory(s.trainer)
+    await t.startTheory(s.trainer)
   }
 }
 

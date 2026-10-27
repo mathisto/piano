@@ -11,6 +11,6 @@ const commit = (() => {
 
 export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit) },
-  build: { target: 'es2022', chunkSizeWarningLimit: 800 },
+  build: { target: 'es2022', chunkSizeWarningLimit: 330 },
   test: { include: ['src/**/*.test.ts'] },
 })
