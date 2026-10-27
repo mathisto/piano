@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { builtin } from './catalog'
 import { creditBlock, creditLine, type LibraryEntry } from './credits'
+import { scoreFlags } from './flags'
+import { autoSelect, inspectMidi } from './midi-tracks'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromMidi } from './song'
 
@@ -99,5 +101,35 @@ describe('songs with the voice folded into the right hand', () => {
       expect(spans[Math.floor(spans.length * 0.95)], `${m.id} right-hand reach`).toBeLessThanOrEqual(14)
       for (const ps of at.values()) expect(new Set(ps).size, `${m.id} duplicate note`).toBe(ps.length)
     }
+  })
+})
+
+describe('importer fixes on real library files', () => {
+  const midi = (f: string) => fromMidi(ab(bytes(f)), f, f)
+  it('takes every key change a MIDI file states, once each, and C before a late first key', () => {
+    expect(midi('mutopia-471.mid').keys).toEqual([{ bar: 0, fifths: -5 }, { bar: 27, fifths: 4 }, { bar: 75, fifths: -5 }]) // D flat, C sharp minor, D flat
+    expect(midi('mutopia-463.mid').keys).toEqual([{ bar: 0, fifths: 1 }, { bar: 28, fifths: -2 }, { bar: 67, fifths: 1 }, { bar: 91, fifths: -1 }, { bar: 127, fifths: 2 }, { bar: 195, fifths: 1 }])
+    const czerny = midi('mutopia-2146.mid')
+    expect(czerny.fifths).toBe(0) // its first key event is C minor at bar 17; bars 1 to 16 have no flat in them
+    expect(czerny.notes.filter((n) => n.bar < 16 && [3, 8, 10].includes(n.p % 12))).toHaveLength(0)
+    expect(scoreFlags(midi('mutopia-471.mid'))).toEqual(['irregular-tuplet', 'key-changes'])
+  })
+
+  it('writes the short notes notation software plays before a beat as grace notes, not chord tones', () => {
+    expect(midi('mutopia-2035.mid').notes.filter((n) => n.grace)).toHaveLength(100)
+  })
+
+  it('pins the hands of library MIDI files from their track names', () => {
+    for (const f of ['mutopia-1806.mid', 'mutopia-2146.mid', 'mutopia-202.mid', 'mutopia-1888.mid']) {
+      const r = inspectMidi(ab(bytes(f)))
+      expect(Object.values(autoSelect(r).hands), f).toEqual(['R', 'L'])
+    }
+    expect(autoSelect(inspectMidi(ab(bytes('mutopia-61.mid')))).hands).toEqual({}) // 'one' and 'two' say nothing
+  })
+
+  it('ends Das Wandern at its Fine after the repeat, and flags its missing tempo', async () => {
+    const s = fromMusicXml(await xmlText(ab(bytes('lieder-lc5004731.mxl'))), 'x', 'x')
+    expect(s.bars).toHaveLength(24) // bars 1 to 20, then the introduction again to the Fine
+    expect(scoreFlags(s)).toEqual(['no-tempo'])
   })
 })

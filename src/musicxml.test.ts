@@ -1,6 +1,9 @@
 import { deflateRawSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
+import { scoreFlags } from './flags'
+import { figure } from './layout'
 import { fromMusicXml, parseXml, unzip, xmlText } from './musicxml'
+import { spell } from './spell'
 
 const XML = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
@@ -47,9 +50,11 @@ describe('musicxml', () => {
     expect(g4[0].d).toBeCloseTo(1.5 * 0.96, 1) // a dotted half: 2 + 1 quarters
     expect(s.notes.find((n) => n.p === 71)?.t).toBe(0) // chord note shares the onset
     expect(s.notes.find((n) => n.p === 66)).toMatchObject({ h: 'R', bar: 1 }) // F sharp
-    expect(s.notes.filter((n) => n.h === 'L').map((n) => n.p)).toEqual([43, 50])
-    expect(s.notes.some((n) => n.p === 48)).toBe(false) // the grace note was skipped
+    expect(s.notes.filter((n) => n.h === 'L').map((n) => n.p)).toEqual([43, 48, 50])
+    expect(s.notes.find((n) => n.p === 48)).toMatchObject({ grace: true, bar: 1, qb: 0 }) // the grace note leads into the D
+    expect(s.notes.find((n) => n.p === 48)!.t).toBeLessThan(1.5)
     expect(s.notes.find((n) => n.p === 50)?.t).toBeCloseTo(1.5)
+    expect(s.notes.find((n) => n.p === 66)?.acc).toBe(1) // written F sharp
   })
 
   it('follows a tempo change', () => {
@@ -157,5 +162,94 @@ describe('musicxml repeats and dynamics', () => {
     const [a, b] = fromMusicXml(x, 't', 'id').notes
     expect(a.v).toBeLessThan(0.4)
     expect(b.v).toBeGreaterThan(0.85)
+  })
+})
+
+describe('musicxml jumps, keys, spelling, tuplets, cues and tempo', () => {
+  const wrap = (ms: string) => `<?xml version="1.0"?><score-partwise><part-list><score-part id="P1"/></part-list><part id="P1">${ms}</part></score-partwise>`
+  const head = (div = 1, beats = 4, type = 4) => `<attributes><divisions>${div}</divisions><time><beats>${beats}</beats><beat-type>${type}</beat-type></time></attributes>`
+  const note = (step: string, dur = 4, inner = '') => `<note><pitch><step>${step}</step><octave>4</octave></pitch><duration>${dur}</duration>${inner}</note>`
+  const words = (w: string, sound = '') => `<direction><direction-type><words>${w}</words></direction-type>${sound ? `<sound ${sound}/>` : ''}</direction>`
+  const sign = (s: 'segno' | 'coda') => `<direction><direction-type><${s}/></direction-type></direction>`
+  const meas = (...body: string[]) => body.map((b, i) => `<measure number="${i + 1}">${i ? '' : head()}${b}</measure>`).join('')
+  const read = (x: string) => fromMusicXml(wrap(x), 't', 'id')
+  const ps = (x: string) => read(x).notes.map((n) => n.p)
+
+  it('plays D.C. al Fine from the sound attributes', () => {
+    const s = read(meas(note('C'), note('D') + words('Fine', 'fine="yes"'), note('E'), note('F') + words('D.C. al Fine', 'dacapo="yes"')))
+    expect(s.notes.map((n) => n.p)).toEqual([60, 62, 64, 65, 60, 62])
+    expect(scoreFlags(s)).toContain('dc-ds')
+    expect(scoreFlags(s)).not.toContain('repeats-unexpanded')
+  })
+
+  it('plays D.S. al Coda from words and bare signs alone', () => {
+    expect(ps(meas(note('C'), sign('segno') + note('D'), note('E') + sign('coda'), note('F') + words('D.S. al Coda'), sign('coda') + note('G')))).toEqual([60, 62, 64, 65, 62, 64, 67])
+  })
+
+  it('skips repeats and takes the last ending on the way back', () => {
+    const x = meas(
+      '<barline location="left"><repeat direction="forward"/></barline>' + note('C'),
+      '<barline location="left"><ending number="1" type="start"/></barline>' + note('D') + '<barline location="right"><ending number="1" type="stop"/><repeat direction="backward"/></barline>',
+      '<barline location="left"><ending number="2" type="start"/></barline>' + note('E') + '<barline location="right"><ending number="2" type="stop"/></barline>',
+      note('F') + words('D.C.', 'dacapo="yes"'),
+    )
+    expect(ps(x)).toEqual([60, 62, 60, 64, 65, 60, 64, 65])
+  })
+
+  it('leaves a jump it cannot place unexpanded and says so', () => {
+    const s = read(meas(note('C'), note('D'), note('E') + words('D.S. al Fine')))
+    expect(s.notes.map((n) => n.p)).toEqual([60, 62, 64])
+    expect(scoreFlags(s)).toEqual(expect.arrayContaining(['dc-ds', 'repeats-unexpanded']))
+  })
+
+  it('ends a strophic repeat at its Fine on the last pass', () => {
+    expect(ps(meas(note('C'), note('D') + words('Fine.'), note('E') + '<barline location="right"><repeat direction="backward"/></barline>'))).toEqual([60, 62, 64, 60, 62])
+  })
+
+  it('reads key changes per measure, through a repeat', () => {
+    const k = (f: number) => `<attributes><key><fifths>${f}</fifths></key></attributes>`
+    const s = read(meas(k(0) + note('C'), k(-3) + note('E') + '<barline location="right"><repeat direction="backward"/></barline>', k(2) + note('D')))
+    expect(s.fifths).toBe(0)
+    expect(s.keys).toEqual([{ bar: 0, fifths: 0 }, { bar: 1, fifths: -3 }, { bar: 2, fifths: 0 }, { bar: 3, fifths: -3 }, { bar: 4, fifths: 2 }])
+    expect(scoreFlags(s)).toContain('key-changes')
+  })
+
+  it('keeps the written spelling: E sharp, F natural in F sharp major; a double sharp is spelled by the key and flagged', () => {
+    const p = (step: string, alter: number) => `<note><pitch><step>${step}</step><alter>${alter}</alter><octave>4</octave></pitch><duration>1</duration></note>`
+    const s = read(meas('<attributes><key><fifths>6</fifths></key></attributes>' + p('E', 1) + p('F', 0) + p('F', 2) + p('D', -1)))
+    const [eis, f, fisis, des] = s.notes
+    expect([eis.p, f.p, fisis.p, des.p]).toEqual([65, 65, 67, 61])
+    expect(spell(eis.p, 6, eis.acc)).toMatchObject({ letter: 2, acc: 1, oct: 4 }) // E sharp, not F
+    expect(spell(f.p, 6, f.acc)).toMatchObject({ letter: 3, acc: 0 }) // F natural, not E sharp
+    expect(spell(des.p, 6, des.acc)).toMatchObject({ letter: 1, acc: -1 }) // D flat, not C sharp
+    expect(fisis.acc).toBeUndefined()
+    expect(scoreFlags(s)).toContain('double-accidental')
+  })
+
+  it('takes tuplet ratios from the score: a quintuplet, and a duplet in 6/8', () => {
+    const tm = (a: number, n: number) => `<time-modification><actual-notes>${a}</actual-notes><normal-notes>${n}</normal-notes></time-modification>`
+    const quint = read(`<measure number="1">${head(20)}${Array.from({ length: 5 }, () => note('C', 4, tm(5, 4))).join('')}${note('D', 60)}</measure>`)
+    const five = quint.notes.filter((n) => n.p === 60)
+    expect(five.map((n) => n.qb)).toEqual([0, 0.2, 0.4, 0.6, 0.8])
+    expect(five.every((n) => n.tuplet?.num === 5 && n.tuplet.den === 4 && Math.abs(n.qd! - 0.2) < 1e-9)).toBe(true)
+    expect(scoreFlags(quint)).toContain('irregular-tuplet')
+    const duo = read(`<measure number="1">${head(4, 6, 8)}${note('C', 3, tm(2, 3))}${note('D', 3, tm(2, 3))}${note('E', 6)}</measure>`)
+    expect(duo.notes.slice(0, 2).map((n) => [n.qb, n.qd, n.tuplet])).toEqual([[0, 0.75, { num: 2, den: 3 }], [0.75, 0.75, { num: 2, den: 3 }]])
+    expect(figure(0.75, '2:3')).toEqual(figure(0.5)) // written as eighths under a 2
+  })
+
+  it('skips cue notes but keeps their time', () => {
+    const s = read(meas('<note><cue/><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration></note>' + note('D', 2)))
+    expect(s.notes.map((n) => [n.p, n.qb])).toEqual([[62, 2]])
+  })
+
+  it('takes the tempo from a metronome mark, then a tempo word, else 100 and a flag', () => {
+    const metro = `<direction><direction-type><metronome><beat-unit>half</beat-unit><per-minute>60</per-minute></metronome></direction-type></direction>`
+    expect(read(meas(metro + note('C'))).bars[0].t1).toBeCloseTo(2) // 120 quarters a minute
+    expect(read(meas(words('Andante con moto') + note('C'))).bars[0].t1).toBeCloseTo((4 * 60) / 84)
+    expect(read(meas(words('Mässig') + note('C'))).bars[0].t1).toBeCloseTo((4 * 60) / 96)
+    const none = read(meas(note('C')))
+    expect(none.bars[0].t1).toBeCloseTo(2.4)
+    expect(scoreFlags(none)).toEqual(['no-tempo'])
   })
 })

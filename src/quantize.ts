@@ -10,9 +10,15 @@ const TRIPLET = [8 / 3, 4 / 3, 2 / 3, 1 / 3, 1 / 6]
 export const isTripletValue = (x: number) => near(x * 6, Math.round(x * 6)) && !near(x * 4, Math.round(x * 4)) && !near(x * 2, Math.round(x * 2))
 const isTripletPos = (x: number) => near(x * 6, Math.round(x * 6)) && Math.round(x * 6) % 3 !== 0
 
-function snapDur(target: number, room: number, triplet: boolean) {
+type Tup = { num: number; den: number }
+const ODD: Tup[] = [{ num: 5, den: 4 }, { num: 7, den: 4 }]
+/** 0.2, 0.4 ... (quintuplet) or 1/7 ... (septuplet): a position or value no plain or triplet grid has. */
+const oddOf = (x: number) => ODD.find((t) => near(x * t.num * 2, Math.round(x * t.num * 2)) && !near(x * 8, Math.round(x * 8)) && !near(x * 6, Math.round(x * 6)))
+
+function snapDur(target: number, room: number, tup?: Tup) {
   const t = Math.max(target, 0.03)
-  const c = [...PLAIN, ...(triplet ? TRIPLET : [])].filter((v) => v <= room + 1e-6 && (v >= 0.25 || room < 0.25 || t >= 0.1)) // a 30 ms staccato is not a 32nd
+  const odd = tup && tup.num * 2 !== tup.den * 3 ? PLAIN.map((v) => (v * tup.den) / tup.num) : []
+  const c = [...PLAIN, ...(tup ? (odd.length ? odd : TRIPLET) : [])].filter((v) => v <= room + 1e-6 && (v >= 0.25 || room < 0.25 || t >= 0.1)) // a 30 ms staccato is not a 32nd
   return c.length ? c.reduce((b, v) => (Math.abs(Math.log(v / t)) < Math.abs(Math.log(b / t)) ? v : b)) : room
 }
 
@@ -23,6 +29,7 @@ export interface NIn {
   dq: number // performed length, quarters
   hand: Hand
   grace?: boolean
+  tuplet?: Tup // the score says so: no guessing
 }
 export interface BarQ {
   q0: number
@@ -84,8 +91,10 @@ export function notate(items: NIn[], bars: BarQ[]): NOut[] {
         const rest = Math.round((Math.min(perfEnd, next) - barEnd) * 12) / 12
         const tie = next > barEnd + 1e-6 && perfEnd - barEnd > 0.2 && rest >= 1 / 12
         const room = Math.min(next, barEnd) - c.q
-        const qd = tie ? barEnd - c.q : snapDur(Math.min(perfEnd - c.q, room), room, isTripletPos(qb) || isTripletValue(room))
-        const tuplet = isTripletPos(qb) || (!tie && isTripletValue(qd)) ? { num: 3, den: 2 } : undefined
+        const given = c.ids.map((i) => items[i].tuplet).find(Boolean)
+        const three = isTripletPos(qb) || isTripletValue(room) ? { num: 3, den: 2 } : undefined
+        const qd = tie ? barEnd - c.q : snapDur(Math.min(perfEnd - c.q, room), room, given ?? three ?? oddOf(qb) ?? oddOf(room))
+        const tuplet = given ?? (isTripletPos(qb) || (!tie && isTripletValue(qd)) ? { num: 3, den: 2 } : (oddOf(qb) ?? (tie ? undefined : oddOf(qd))))
         for (const i of c.ids) out[i] = { bar, qb, qd, voice: v, ...(tuplet && { tuplet }), ...(tie && { tieNext: true, qrest: rest }) }
       })
     }
@@ -179,6 +188,16 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
     byHand[hand].forEach((k, j, all) => (k.grace = k.dur < 0.1 && j + 1 < all.length && all[j + 1].x - k.x <= 0.5))
     clusters.push(...byHand[hand])
   }
+  // An exact file (notation software) has every onset on a lattice: plain and triplet values, quintuplets, septuplets.
+  // There, a short note off every lattice just before the next onset is a grace note as the software plays it.
+  const lattice = (x: number) => [24, 20, 28].find((L) => Math.abs(x * L - Math.round(x * L)) * (ppq / L) <= 1.5)
+  const slip = new Set<Cluster>()
+  for (const all of Object.values(byHand))
+    all.forEach((k, j) => {
+      if (!k.grace && k.dur < 0.125 && all[j + 1] && all[j + 1].x - k.x <= 0.25 && !lattice(k.x)) slip.add(k)
+    })
+  const exact = clusters.every((c) => c.grace || slip.has(c) || lattice(c.x))
+  if (exact) for (const c of slip) c.grace = true
   const live = clusters.filter((c) => !c.grace)
 
   // a pickup: the barlines that put long notes and the closing chord on the downbeat
@@ -222,9 +241,8 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
   }
   const bq = bars.map((b) => ({ q0: b.tick / ppq, ql: b.len / ppq }))
 
-  // onsets: exact files snap to the 1/24 lattice; performances pick a grid per hand and beat, following the drift
-  const lat = ppq / 24
-  if (live.every((c) => Math.abs(c.x * 24 - Math.round(c.x * 24)) * lat <= 1.5)) for (const c of live) c.q = Math.round(c.x * 24) / 24
+  // onsets: exact files snap to their lattice; performances pick a grid per hand and beat, following the drift
+  if (exact) for (const c of live) c.q = Math.round(c.x * lattice(c.x)!) / lattice(c.x)!
   else {
     const wins = new Map<number, { b: number; k: number; cs: Cluster[] }>()
     for (const c of live) {

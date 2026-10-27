@@ -63,15 +63,23 @@ export function spellWindow(pitches: number[], at: number[], fifths: number, win
   return out
 }
 
-/** `acc` forces the accidental of a black key (from spellWindow); otherwise the key signature decides, and out of key a black key follows its sign. */
-export function spell(midi: number, fifths: number, acc?: 1 | -1): Spelled {
+/**
+ * `acc` forces the accidental: a black key's from spellWindow, or any written one from a score (E sharp, F natural in F sharp major);
+ * otherwise the key signature decides, and out of key a black key follows its sign.
+ */
+export function spell(midi: number, fifths: number, acc?: -1 | 0 | 1): Spelled {
   const pc = midi % 12
   const ka = keyAcc(fifths)
-  let letter = BLACK.includes(pc) && acc ? -1 : NAT_PC.findIndex((n, i) => (((n + ka[i]) % 12) + 12) % 12 === pc)
+  const forced = acc === undefined ? -1 : NAT_PC.findIndex((n) => (n + acc + 12) % 12 === pc)
+  if (forced >= 0) {
+    const oct = (midi - acc! - NAT_PC[forced]) / 12 - 1
+    return { letter: forced, acc: acc!, oct, step: oct * 7 + forced }
+  }
+  let letter = NAT_PC.findIndex((n, i) => (((n + ka[i]) % 12) + 12) % 12 === pc)
   let a: number = letter >= 0 ? ka[letter] : 0
   if (letter < 0 && NAT_PC.includes(pc)) letter = NAT_PC.indexOf(pc) // a white key the key signature alters: natural
   else if (letter < 0) {
-    a = acc ?? (fifths >= 0 ? 1 : -1) // without context: sharps in sharp keys, flats in flat keys (chord names and drills rely on it)
+    a = fifths >= 0 ? 1 : -1 // without context: sharps in sharp keys, flats in flat keys (chord names and drills rely on it)
     letter = NAT_PC.findIndex((n) => (n + a + 12) % 12 === pc)
   }
   const oct = (midi - a - NAT_PC[letter]) / 12 - 1

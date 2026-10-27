@@ -35,16 +35,19 @@ const FIGS: [number, Fig][] = [
   [4, f(0, 0, 0)], [3.5, f(1, 2, 0)], [3, f(1, 1, 0)], [2, f(1, 0, 0)], [1.75, f(2, 2, 0)], [1.5, f(2, 1, 0)], [1, f(2, 0, 0)],
   [0.75, f(2, 1, 1)], [0.5, f(2, 0, 1)], [0.375, f(2, 1, 2)], [0.25, f(2, 0, 2)], [0.1875, f(2, 1, 3)], [0.125, f(2, 0, 3)],
 ]
-/** A value in sounding quarters as a notehead: a triplet 8th (1/3) is written as an 8th. */
-export function figure(v: number, tup = false): Fig {
-  const w = tup ? v * 1.5 : v
+/** A tuplet as written, '5:4'; '' for none; true is a triplet. */
+type Tup = boolean | string
+const ratio = (t: Tup) => (t === true ? 1.5 : t ? Number(t.split(':')[0]) / Number(t.split(':')[1]) : 1)
+/** A value in sounding quarters as a notehead: a triplet 8th (1/3) is written as an 8th, a quintuplet 16th (1/5) as a 16th. */
+export function figure(v: number, tup: Tup = false): Fig {
+  const w = v * ratio(tup)
   return FIGS.reduce((a, b) => (Math.abs(Math.log(b[0] / w)) < Math.abs(Math.log(a[0] / w)) ? b : a))[1]
 }
-const isStd = (v: number, tup: boolean) => FIGS.some(([x]) => Math.abs(x - (tup ? v * 1.5 : v)) < 0.02 * x + 1e-6)
+const isStd = (v: number, tup: Tup) => FIGS.some(([x]) => Math.abs(x - v * ratio(tup)) < 0.02 * x + 1e-6)
 const STD = FIGS.map(([x]) => x).sort((a, b) => a - b)
 
 /** A value that is not a notehead (5/2 quarters) as tied pieces that break at the beat. */
-export function splitValue(q: number, v: number, tup: boolean): { q: number; v: number }[] {
+export function splitValue(q: number, v: number, tup: Tup): { q: number; v: number }[] {
   if (tup || isStd(v, false)) return [{ q, v }]
   const out: { q: number; v: number }[] = []
   let pos = q
@@ -111,7 +114,7 @@ export interface Chord {
   bar: number
   q: number
   v: number
-  tup: boolean
+  tup: string
   grace: boolean
   cont: boolean // a tied continuation, not the played note
   notes: CNote[] // ascending by step
@@ -128,7 +131,7 @@ export interface Rest {
   bar: number
   q: number
   v: number
-  tup: boolean
+  tup: string
 }
 export interface Beam {
   clef: Clef
@@ -182,7 +185,7 @@ interface Inst {
   bar: number
   q: number
   v: number
-  tup: boolean
+  tup: string
   tiePrev: boolean
   tieNext: boolean
   cont: boolean
@@ -200,13 +203,13 @@ function instances(n: Note, song: Song, qls: number[], only?: Clef): Inst[] {
   const b = song.bars[n.bar]
   const clef = only ?? clefFor(n.p, n.h) // a one-staff layout writes every note on it
   const q0 = n.qb ?? ((n.t - b.t0) / Math.max(b.t1 - b.t0, 1e-6)) * qls[n.bar]
-  const base = { n, clef, tup: false, tiePrev: false, tieNext: false, cont: false, grace: false }
+  const base = { n, clef, tup: '', tiePrev: false, tieNext: false, cont: false, grace: false }
   if (n.grace) return [{ ...base, bar: n.bar, q: q0, v: 0.125, grace: true, t: n.t }]
   const qd = n.qd ?? Math.max(n.beats, 0.125)
   const segs = tiedSegments({ bar: n.bar, qb: q0, qd, qrest: n.qrest, tieNext: n.tieNext, voice: n.voice ?? 1 }, qls)
   const out: Inst[] = []
   segs.forEach((s, k) => {
-    const tup = !!n.tuplet && k === 0
+    const tup = n.tuplet && k === 0 ? `${n.tuplet.num}:${n.tuplet.den}` : ''
     const ps = splitValue(s.qb, s.qd, tup)
     ps.forEach((p, m) => {
       const cont = s.tiePrev || m > 0
@@ -368,7 +371,7 @@ export function analyze(song: Song, o: { read?: boolean; hide?: (n: Note) => boo
             g0 = a
             g = e - a
           }
-          for (const r of restPieces(g0, g)) B.rests.push({ clef, bar: B.i, q: r.q, v: r.v, tup: r.tup })
+          for (const r of restPieces(g0, g)) B.rests.push({ clef, bar: B.i, q: r.q, v: r.v, tup: r.tup ? '3:2' : '' })
         }
       }
       if (!l1.length) B.barRest[clef] = true
@@ -408,7 +411,7 @@ export function analyze(song: Song, o: { read?: boolean; hide?: (n: Note) => boo
         const done = new Set<Chord | Rest>()
         for (const it of items) {
           if (!it.tup || done.has(it)) continue
-          for (const G of [0.5, 1, 2, 4]) {
+          for (const G of [0.5, 1, 1.5, 2, 3, 4]) {
             const gs = Math.floor((it.q + 0.01) / G) * G
             const grp = items.filter((x) => x.q > gs - 0.02 && x.q < gs + G - 0.02)
             const tiles = grp.every((x, k) => x.tup && (k === 0 ? near(x.q, gs) : near(x.q, grp[k - 1].q + grp[k - 1].v)))
@@ -770,7 +773,7 @@ export interface LRest {
   x: number
   y: number
   v: number
-  tup: boolean
+  tup: string
   whole: boolean // a whole-bar rest
   bar: number
   q: number
@@ -1162,7 +1165,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
         for (const B of bs) {
           const j = B.i - sy.from
           const two = B.two[clef]
-          if (B.barRest[clef] && !an.read) L.rests.push({ sys: si, clef, x: (bl[j] + bl[j + 1]) / 2, y: base[clef] - 3 * S, v: B.ql, tup: false, whole: true, bar: B.i, q: 0 })
+          if (B.barRest[clef] && !an.read) L.rests.push({ sys: si, clef, x: (bl[j] + bl[j + 1]) / 2, y: base[clef] - 3 * S, v: B.ql, tup: '', whole: true, bar: B.i, q: 0 })
           for (const r of B.rests.filter((x) => x.clef === clef)) {
             const y = figure(r.v, r.tup).head === 0 ? base[clef] - 3 * S : base[clef] - 2 * S
             L.rests.push({ sys: si, clef, x: X[j][B.cols.findIndex((k) => near(k.q, r.q, 0.011))], y: y - (two ? 1.5 * S : 0), v: r.v, tup: r.tup, whole: false, bar: B.i, q: r.q })
@@ -1232,7 +1235,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
           ...beamRows.filter((b) => lcs.some((l) => b.chords.includes(l))).flatMap((b) => b.rows.flatMap((r) => (up ? [r.y1, r.y2] : [r.y3, r.y4]))),
         ]
         const y = edge.length ? (up ? Math.min(...edge) - 9 : Math.max(...edge) + 9) : base[tp.clef] - 4 * S - 8
-        L.tuplets.push({ sys: si, x1: Math.min(...xs) - 6, x2: Math.max(...xs) + 6, y, up, bracket: !beamed, num: 3 })
+        L.tuplets.push({ sys: si, x1: Math.min(...xs) - 6, x2: Math.max(...xs) + 6, y, up, bracket: !beamed, num: Number(tp.items[0].tup.split(':')[0]) || 3 })
         mark(si, y + (up ? -8 : 8))
       }
     }

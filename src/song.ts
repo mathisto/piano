@@ -26,7 +26,7 @@ export interface Note {
   tiePrev?: boolean // set on the continuation pieces tiedSegments() returns, never on a Note
   voice?: 1 | 2 // 2 is a long note held under a moving line in the same hand
   grace?: boolean // an ornament shorter than a 32nd: draw small, don't give it a beat (qb is the note it leads into)
-  acc?: 1 | -1 // accidental to write a black key with, chosen from its neighbours; spell(p, fifths, acc)
+  acc?: -1 | 0 | 1 // accidental to write with: a MIDI black key's, chosen from its neighbours, or a score's written one; spell(p, fifths, acc)
 }
 
 export interface Bar {
@@ -51,6 +51,7 @@ export interface Song {
   artic?: 'legato' | 'staccato' // technique exercises: how long to hold each note
   keys?: { bar: number; fifths: number }[] // key changes estimated from the notes, first at bar 0; fifths is the best single key
   dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
+  flags?: string[] // what an importer could not do cleanly, for the ingestion pipeline: see scoreFlags in flags.ts
 }
 
 export interface Raw {
@@ -67,7 +68,8 @@ export interface Raw {
   q?: number
   dq?: number
   grace?: boolean
-  acc?: 1 | -1
+  acc?: -1 | 0 | 1
+  tuplet?: { num: number; den: number } // a score's own tuplet ratio, so its rhythm is never guessed
 }
 
 /** One track: split at a pitch, but a note near the split follows whichever hand's line is nearest in pitch and time. */
@@ -117,8 +119,8 @@ export function barAt(bars: Bar[], t: number): number {
   return lo
 }
 
-/** A rhythm written as 0.3333 is a third of a quarter. */
-const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 0.01 ? Math.round(x * 24) / 24 : x)
+/** A rhythm written as 0.3333 is a third of a quarter; 0.2 (a quintuplet) is not 5/24. */
+const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 2e-3 ? Math.round(x * 24) / 24 : x)
 const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
 
 export function build(
@@ -134,7 +136,7 @@ export function build(
   const bq = bars.map((b) => ({ q0: (acc += barQ(b)) - barQ(b), ql: barQ(b) }))
   // rhythm: as given, else read off the clock inside the bar (clean sources: drills, exercises)
   const rhythm = raw.map((r, k) => {
-    if (r.q !== undefined) return { q: onLattice(r.q), dq: r.dq ?? r.d, hand: hands[k], grace: r.grace }
+    if (r.q !== undefined) return { q: r.tuplet ? r.q : onLattice(r.q), dq: r.dq ?? r.d, hand: hands[k], grace: r.grace, tuplet: r.tuplet }
     const i = barAt(bars, r.t + 1e-6)
     const qs = (bars[i].t1 - bars[i].t0) / barQ(bars[i])
     return { q: bq[i].q0 + Math.round(((r.t - bars[i].t0) / qs) * 24) / 24, dq: r.d / qs, hand: hands[k] }
@@ -146,7 +148,7 @@ export function build(
     .map(({ r, h, w }, id) => {
       const b = bars[w.bar]
       const q = (b.t1 - b.t0) / barQ(b)
-      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...(r.f && { f: r.f }), ...w, ...(r.acc && { acc: r.acc }) }
+      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...(r.f && { f: r.f }), ...w, ...(r.acc !== undefined && { acc: r.acc }) }
     })
   const last = notes.reduce((m, n) => Math.max(m, n.t + n.d), 0)
   const b0 = bars[0]
@@ -265,16 +267,26 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
     den: b.den,
     ...(i === 0 && z.pickup && { ql: z.pickup }),
   }))
-  const ks = midi.header.keySignatures[0]
+  // key changes as the file states them: the reader repeats each event once per track, a key before its first event is C
+  const keys: { bar: number; fifths: number }[] = []
+  for (const k of [...midi.header.keySignatures].sort((a, b) => a.ticks - b.ticks)) {
+    const bar = z.bars.findLastIndex((b) => b.tick <= k.ticks + ppq / 8)
+    if (keys[keys.length - 1]?.bar === bar) keys.pop()
+    if (keys[keys.length - 1]?.fifths !== keyToFifths(k.key)) keys.push({ bar, fifths: keyToFifths(k.key) })
+  }
+  if (keys.length && keys[0].bar > 0) keys.unshift({ bar: 0, fifths: 0 })
   raw.forEach((r, i) => Object.assign(r, { q: z.q[i], dq: z.dq[i], grace: z.grace[i] }))
-  const fifths = ks?.key ? keyToFifths(ks.key) : estimateFifths(raw.filter((r) => !r.grace))
+  const fifths = keys.length ? keys[0].fifths : estimateFifths(raw.filter((r) => !r.grace))
   const acc = spellWindow(raw.map((r) => r.p), z.q, fifths)
   raw.forEach((r, i) => (r.acc = acc[i]))
   const song = build(id, title, raw, bars, fifths, split)
-  if (!ks?.key) {
-    const keys = estimateKeys(song.notes, bars.length)
-    if (keys.length > 1) song.keys = keys
-  }
+  const est = keys.length ? keys : estimateKeys(song.notes, bars.length)
+  if (est.length > 1) song.keys = est
+  const flags = [
+    ...(midi.header.tempos.length ? [] : ['no-tempo']),
+    ...(new Set(raw.map((r) => r.track)).size >= 3 && raw.some((r) => !r.h) ? ['three-track-midi'] : []), // hands fell back to a split at one pitch
+  ]
+  if (flags.length) song.flags = flags
   return song
 }
 

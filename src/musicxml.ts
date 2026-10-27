@@ -99,13 +99,64 @@ interface Ev {
   p: number
   track: number
   h?: Hand
+  acc?: -1 | 0 | 1 // as written
+  tuplet?: { num: number; den: number }
+  gn?: number // a grace note: how many graces before its main note it is played (1 = just before)
 }
 
 const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
 
-/** The order measures are played in, expanding repeat signs and first and second endings. */
-export function playOrder(part: El): number[] {
-  const ms = kids(part, 'measure')
+// Quarter-note bpm for a tempo word when the score gives no number.
+// ponytail: the first word wins and the beat is a quarter, so 'Nicht zu schnell' is fast and 6/8 Allegro is slow; a table per meter if it matters.
+const TEMPI: Record<string, number> = {
+  prestissimo: 200, presto: 176, vivace: 152, allegro: 132, allegretto: 112, moderato: 108, andantino: 92, andante: 84, adagietto: 72, adagio: 66, larghetto: 63, lento: 52, largo: 46, grave: 40,
+  schnell: 160, rasch: 144, lebhaft: 132, munter: 120, bewegt: 108, mässig: 96, mäßig: 96, massig: 96, langsam: 60,
+}
+const TEMPO_RE = new RegExp(`(?<!\\p{L})(${Object.keys(TEMPI).join('|')})(?!\\p{L})`, 'iu')
+const GRACE_S = 0.07 // a grace note sounds this long before the next one
+const UNIT: Record<string, number> ={ whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25 }
+
+// D.C., D.S., Fine, To Coda and Coda as words; <sound dacapo|dalsegno|segno|tocoda|coda|fine> say the same in machine form
+const JUMP: Record<string, RegExp> = { dc: /\bD\.\s?C\.|\bda\s+capo\b/i, ds: /\bD\.\s?S\.|\bdal\s+segno\b/i, tocoda: /\bto\s+coda\b/i, fine: /^\s*fine\.?\s*$/i, coda: /^\s*coda\s*$/i }
+
+/**
+ * The order measures are played in: repeat signs, first and second endings, then one D.C. or D.S. jump with al Fine or al Coda
+ * (no repeats on the way back, last ending only). A jump it cannot place (no segno, a To Coda with no Coda, two jumps)
+ * is left out and flagged 'repeats-unexpanded'. A Fine with no jump ends the last pass of a repeat (a strophic song's postlude).
+ */
+export function playOrder(parts: El[], flags: string[] = []): number[] {
+  const ms = kids(parts[0], 'measure')
+  const marks = ms.map(() => new Set<string>())
+  for (const part of parts)
+    kids(part, 'measure').forEach((meas, i) => {
+      const mk = marks[i]
+      if (!mk) return
+      for (const d of kids(meas, 'direction')) {
+        const dts = kids(d, 'direction-type')
+        const words = dts.flatMap((dt) => kids(dt, 'words')).map((w) => w.t).join(' ')
+        for (const [k, re] of Object.entries(JUMP)) if (re.test(words)) mk.add(k)
+        if (dts.some((dt) => kid(dt, 'segno'))) mk.add('segno')
+        if (dts.some((dt) => kid(dt, 'coda'))) mk.add('sign')
+      }
+      for (const s of [...kids(meas, 'sound'), ...kids(meas, 'direction').flatMap((d) => kids(d, 'sound'))]) {
+        if (s.a.dacapo === 'yes') mk.add('dc')
+        for (const k of ['dalsegno', 'segno', 'tocoda', 'coda', 'fine']) if (s.a[k]) mk.add(k === 'dalsegno' ? 'ds' : k)
+      }
+    })
+  const at = (k: string) => marks.flatMap((m, i) => (m.has(k) ? [i] : []))
+  // bare coda signs: the last is the Coda, an earlier one the To Coda
+  const signs = at('sign')
+  if (signs.length && !at('coda').length) marks[signs[signs.length - 1]].add('coda')
+  if (signs.length > 1 && !at('tocoda').length) marks[signs[0]].add('tocoda')
+  const jumps = [...at('dc'), ...at('ds')]
+  const [tocoda, coda] = [at('tocoda')[0], at('coda')[0]]
+  const any = jumps.length > 0 || tocoda !== undefined || coda !== undefined
+  const target = jumps.length === 1 ? (marks[jumps[0]].has('ds') ? at('segno')[0] : 0) : undefined
+  const ok = target !== undefined && target <= jumps[0] && (tocoda === undefined) === (coda === undefined) && (coda === undefined || (tocoda < coda && coda > jumps[0]))
+  if (any) flags.push('dc-ds')
+  if (any && !ok) flags.push('repeats-unexpanded')
+  const jump = ok ? jumps[0] : undefined
+
   const info = ms.map((meas) => {
     const bars = kids(meas, 'barline')
     const rep = (loc: string, dir: string) => bars.some((b) => (b.a.location ?? 'right') === loc && kids(b, 'repeat').some((r) => r.a.direction === dir))
@@ -126,29 +177,48 @@ export function playOrder(part: El): number[] {
     ending[i] = cur
     if (m.stop) cur = undefined
   })
+  // after a jump only the last ending of each set is played
+  const last = ending.map((e, i) => {
+    if (!e) return false
+    let a = i
+    let b = i
+    while (ending[a - 1]) a--
+    while (ending[b + 1]) b++
+    return e.includes(Math.max(...ending.slice(a, b + 1).flatMap((x) => x!)))
+  })
   const order: number[] = []
   let from = 0
   let pass = 1
+  let final = false // on the last pass of a repeat
+  let jumped = false
   for (let i = 0; i < ms.length && order.length < 5000; ) {
     if (info[i].forward && i !== from) {
       from = i
       pass = 1
+      final = false
     }
-    if (ending[i] && !ending[i]!.includes(pass)) {
+    if (ending[i] && !(jumped ? last[i] : ending[i]!.includes(pass))) {
       i++
       continue
     }
     order.push(i)
-    if (info[i].backward && pass < info[i].times) {
+    if (info[i].backward && pass < info[i].times && !jumped) {
       pass++
+      final = pass === info[i].times
       i = from
-    } else {
-      if (info[i].backward) {
-        from = i + 1
-        pass = 1
-      }
-      i++
+      continue
     }
+    if (info[i].backward) {
+      from = i + 1
+      pass = 1
+      final = false
+    }
+    if (marks[i].has('fine') && (jumped || (final && !any))) break
+    if (jumped && i === tocoda) i = coda!
+    else if (!jumped && i === jump) {
+      jumped = true
+      i = from = target!
+    } else i++
   }
   return order
 }
@@ -164,8 +234,10 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const maxQ: number[] = [] // longest content of each measure across parts
   const implicit: boolean[] = []
   const sig: ({ n: number; den: number } | undefined)[] = []
-  const tempos: { m: number; q: number; bpm: number }[] = []
-  let fifths: number | undefined
+  const tempos: { pi: number; m: number; q: number; bpm: number }[] = [] // <sound tempo> and <metronome>
+  const worded: typeof tempos = [] // Allegro, Andante ...: only when no part gives a number
+  const keyM: (number | undefined)[] = [] // key signature stated in each measure
+  const flags: string[] = []
 
   parts.forEach((part, pi) => {
     let div = 1
@@ -176,8 +248,8 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
       for (const a of kids(meas, 'attributes')) {
         div = num(a, 'divisions') ?? div
         staves = num(a, 'staves') ?? staves
-        const k = kid(a, 'key')
-        if (k && fifths === undefined) fifths = num(k, 'fifths')
+        const k = num(kid(a, 'key'), 'fifths')
+        if (k !== undefined) keyM[m] ??= k
         const t = kid(a, 'time')
         if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
       }
@@ -185,24 +257,33 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
       let cur = 0 // divisions into the measure
       let start = 0 // where the last note began, for chords
       let top = 0
+      let run: Ev[] = [] // grace notes waiting for the note they lead into
+      const land = () => {
+        const n = run[run.length - 1]?.gn ?? 0
+        for (const g of run) g.gn = n - g.gn! + 1
+        run = []
+      }
       const put = (q: number) => (maxQ[m] = Math.max(maxQ[m] ?? 0, q))
       for (const e of meas.c) {
         if (e.n === 'note') {
-          if (kid(e, 'grace')) continue
-          const dur = num(e, 'duration') ?? 0
+          const grace = !!kid(e, 'grace')
+          const dur = grace ? 0 : (num(e, 'duration') ?? 0)
           const chord = !!kid(e, 'chord')
-          const s = chord ? start : cur
-          if (!chord) {
+          const s = grace ? cur : chord ? start : cur
+          if (!chord && !grace) {
             start = cur
             cur += dur
+            land()
           }
           top = Math.max(top, s + dur)
           const pitch = kid(e, 'pitch')
-          if (!pitch) continue // rests and unpitched percussion
-          const p = 12 * ((num(pitch, 'octave') ?? 4) + 1) + (STEP[kid(pitch, 'step')?.t.trim() ?? 'C'] ?? 0) + (num(pitch, 'alter') ?? 0)
+          if (!pitch || kid(e, 'cue')) continue // rests, unpitched percussion, cue notes (another part's, printed small)
+          const alter = num(pitch, 'alter') ?? 0
+          if (Math.abs(alter) === 2) flags.push('double-accidental') // no glyph for it: spelled by the key instead
+          const p = Math.round(12 * ((num(pitch, 'octave') ?? 4) + 1) + (STEP[kid(pitch, 'step')?.t.trim() ?? 'C'] ?? 0) + alter)
           const staff = num(e, 'staff') ?? 1
           const track = pi * 4 + staff - 1
-          const ties = kids(e, 'tie').map((t) => t.a.type)
+          const ties = grace ? [] : kids(e, 'tie').map((t) => t.a.type)
           const key = `${track}:${p}`
           const held = open.get(key)
           if (ties.includes('stop') && held) {
@@ -210,21 +291,51 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
             if (!ties.includes('start')) open.delete(key)
             continue
           }
-          const ev: Ev = { m, q: s / div, dq: dur / div, p, track, v: curV, h: staves >= 2 ? (staff === 1 ? 'R' : 'L') : undefined }
+          const tm = kid(e, 'time-modification')
+          const ev: Ev = {
+            m,
+            q: s / div,
+            dq: dur / div,
+            p,
+            track,
+            v: curV,
+            h: staves >= 2 ? (staff === 1 ? 'R' : 'L') : undefined,
+            ...(alter === 0 || alter === 1 || alter === -1 ? { acc: alter } : {}),
+            ...(tm && { tuplet: { num: num(tm, 'actual-notes') ?? 3, den: num(tm, 'normal-notes') ?? 2 } }),
+          }
+          if (grace) {
+            ev.gn = chord && run.length ? run[run.length - 1].gn : (run[run.length - 1]?.gn ?? 0) + 1
+            run.push(ev)
+          }
           evs.push(ev)
           if (ties.includes('start')) open.set(key, ev)
         } else if (e.n === 'direction') {
-          for (const dt of kids(e, 'direction-type')) for (const d of kids(dt, 'dynamics')) if (d.c[0] && d.c[0].n in DYN) curV = DYN[d.c[0].n]
-        } else if (e.n === 'backup') cur -= num(e, 'duration') ?? 0
-        else if (e.n === 'forward') {
+          const q = cur / div
+          const told = kids(e, 'sound').some((s) => Number(s.a.tempo) > 0)
+          for (const dt of kids(e, 'direction-type')) {
+            for (const d of kids(dt, 'dynamics')) if (d.c[0] && d.c[0].n in DYN) curV = DYN[d.c[0].n]
+            const mt = kid(dt, 'metronome')
+            const pm = num(mt, 'per-minute')
+            if (pm && !told) tempos.push({ pi, m, q, bpm: pm * (UNIT[kid(mt, 'beat-unit')?.t.trim() ?? ''] ?? 1) * (kid(mt, 'beat-unit-dot') ? 1.5 : 1) })
+            for (const w of kids(dt, 'words')) {
+              const t = TEMPO_RE.exec(w.t)?.[1].toLowerCase()
+              if (t) worded.push({ pi, m, q, bpm: TEMPI[t] })
+            }
+          }
+        } else if (e.n === 'backup') {
+          cur -= num(e, 'duration') ?? 0
+          land()
+        } else if (e.n === 'forward') {
           cur += num(e, 'duration') ?? 0
           top = Math.max(top, cur)
+          land()
         }
         for (const s of [e, ...kids(e, 'sound')]) {
           const bpm = Number(s.n === 'sound' ? s.a.tempo : NaN)
-          if (bpm > 0 && pi === 0) tempos.push({ m, q: cur / div, bpm })
+          if (bpm > 0) tempos.push({ pi, m, q: cur / div, bpm })
         }
       }
+      land()
       put(Math.max(top, cur) / div)
     })
   })
@@ -232,7 +343,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   // the same note written twice for one hand (a voice line doubled by the piano) is one note: keep the longer
   const first = new Map<string, Ev>()
   for (const ev of evs.splice(0)) {
-    const k = `${ev.m}:${ev.q}:${ev.p}:${ev.h ?? ''}`
+    const k = `${ev.m}:${ev.q}:${ev.p}:${ev.h ?? ''}:${ev.gn ?? 0}`
     const had = first.get(k)
     if (!ev.h || !had) {
       if (ev.h) first.set(k, ev)
@@ -241,7 +352,17 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   }
 
   // repeats: play the measures in order, so a repeated bar is a bar again in the song
-  const order = playOrder(parts[0])
+  // numbers from the first part that has any, else tempo words; the key a measure is in, carried from the last one stated
+  const firstPart = (xs: typeof tempos) => xs.filter((x) => x.pi === Math.min(...xs.map((y) => y.pi)))
+  const tempos1 = tempos.length ? firstPart(tempos) : firstPart(worded)
+  tempos.length = 0
+  tempos.push(...tempos1)
+  if (!tempos.length) flags.push('no-tempo')
+  let kc = keyM.find((k) => k !== undefined)
+  const keyOf = Array.from({ length: kids(parts[0], 'measure').length }, (_, m) => (kc = keyM[m] ?? kc))
+  for (let m = 1; m < keyOf.length; m++) sig[m] ??= sig[m - 1] // so a jump back lands in the right meter too
+
+  const order = playOrder(parts, flags)
   if (order.some((o, i) => o !== i)) {
     const at = new Map<number, number[]>()
     order.forEach((o, k) => at.set(o, [...(at.get(o) ?? []), k]))
@@ -252,10 +373,12 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     const q2 = pick(maxQ)
     const i2 = pick(implicit)
     const s2 = pick(sig)
-    maxQ.length = implicit.length = sig.length = 0
+    const k2 = pick(keyOf)
+    maxQ.length = implicit.length = sig.length = keyOf.length = 0
     maxQ.push(...q2)
     implicit.push(...i2)
     sig.push(...s2)
+    keyOf.push(...k2)
     const tmoved = tempos.flatMap((t) => (at.get(t.m) ?? []).map((k) => ({ ...t, m: k })))
     tempos.length = 0
     tempos.push(...tmoved)
@@ -292,8 +415,16 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
 
   const raw: Raw[] = evs.map((e) => {
     const t = secAt(mq[e.m] + e.q)
-    return { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: e.v ?? 0.7, track: e.track, h: e.h, q: mq[e.m] + e.q, dq: e.dq }
+    const r: Raw = { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: e.v ?? 0.7, track: e.track, h: e.h, q: mq[e.m] + e.q, dq: e.dq, acc: e.acc, tuplet: e.tuplet }
+    return e.gn ? { ...r, t: Math.max(0, t - e.gn * GRACE_S), d: GRACE_S * 0.9, dq: 0.125, grace: true, tuplet: undefined } : r
   })
   if (!raw.length) throw new Error('No notes found in this score.')
-  return build(id, title, raw, bars, fifths ?? estimateFifths(raw))
+  const keys: { bar: number; fifths: number }[] = []
+  keyOf.forEach((f, bar) => {
+    if (f !== undefined && keys[keys.length - 1]?.fifths !== f) keys.push({ bar, fifths: f })
+  })
+  const song = build(id, title, raw, bars, keys[0]?.fifths ?? estimateFifths(raw))
+  if (keys.length > 1) song.keys = keys
+  if (flags.length) song.flags = [...new Set(flags)]
+  return song
 }

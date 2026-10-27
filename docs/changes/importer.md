@@ -1,0 +1,21 @@
+# Importer fixes for mass ingestion (branch feature/importer)
+
+What changed, in the order of the M1 list in ROADMAP.md ("Importer fixes first").
+
+1. **MIDI key changes** (`song.ts` `fromMidi`): `Song.keys` is built from every key event, de-duplicated (the reader reports each once per track), one per bar; a file whose first key event comes later starts in C. Raindrop (471) now goes D flat, C sharp minor (bar 28), D flat; Bethena (463) gets its six keys; Czerny Op. 840/1 (2146) starts in C instead of three flats throughout (bars 1 to 16 have no flat in them). The estimator only runs when a file states no key.
+2. **MusicXML written spelling and keys** (`musicxml.ts`, `spell.ts`): `<alter>` becomes `Note.acc` (now -1, 0 or 1, white keys included), and `spell()` honours it for any key, so E sharp, B sharp and F natural in F sharp major are drawn as written. A double sharp or flat is spelled by the key and flagged `double-accidental`. Every `<key>` is read per measure, carried through repeats and jumps, into `Song.keys`.
+3. **D.C., D.S., Fine, To Coda, Coda** (`playOrder`): read from `<sound dacapo|dalsegno|segno|tocoda|coda|fine>` and from `<words>`/`<segno/>`/`<coda/>` in any part. One jump is expanded; on the way back repeats are not taken and only the last ending plays. Anything it cannot place (no segno, To Coda without Coda, two jumps) is left unexpanded and flagged `dc-ds` + `repeats-unexpanded`. A Fine with no jump ends the last pass of a repeat: Das Wandern now plays bars 1-20 then 1-4 (24 bars, was 40).
+4. **Hands from track names** (`midi-tracks.ts` `namedHands`, used by `autoSelect`): up/down, upper/lower, rh/lh, right/left, treble/bass, Discant/Bass, Oberstimme/Unterstimme, staffu/staffl. Only when every kept track names exactly one hand and both hands appear; otherwise nothing is pinned. A MIDI import of 3+ tracks with unpinned notes is flagged `three-track-midi`.
+5. **Irregular tuplets**: MusicXML `<time-modification>` ratios go straight to `Note.tuplet` (`Raw.tuplet`, `NIn.tuplet`), so quintuplets, sextuplets, 2:3 and 4:3 keep their exact values. `onLattice` no longer snaps 0.2 to 5/24 (tolerance 0.01 to 0.002). MIDI: an exact file may also sit on the 1/20 and 1/28 lattices, and `notate` infers 5:4 and 7:4 there; performances are untouched. Layout carries the ratio ('5:4') instead of a triplet boolean: right noteheads, bracket number from the ratio, groups of 1.5 and 3 quarters.
+6. **Cues and graces**: `<cue/>` notes are skipped (their time kept); MusicXML grace notes are kept (`grace`, sounding 70 ms apart just before their note). MIDI: in an exact file, a short note off every lattice just before the next onset is a grace (LilyPond's), so Gnossienne No. 1 has 100 grace notes instead of 100 extra chord tones; also seen in K. 545, two Chopin preludes and others.
+7. **Tempo**: `<metronome>` (beat unit, dots) when there is no `<sound tempo>`, then tempo words (Italian and common German, `TEMPI`), else 100 bpm and `no-tempo`. Tempos now come from the first part that has any, not only part 1. MIDI with no tempo event is flagged too.
+8. **`scoreFlags(song)`** in `src/flags.ts`: importer flags plus `key-changes` and `irregular-tuplet`, sorted.
+
+Tests: `musicxml.test.ts` (jumps, endings on the return, unexpanded fallback, strophic Fine, key changes through a repeat, spelling, double sharp, quintuplet and 2:3, cues, tempo fallbacks), `quantize.test.ts` (new `oddTuplets` fixture: 5:4, 7:4, LilyPond grace), `midi-tracks.test.ts` (names), `library.test.ts` (real files: 471, 463, 2146, 2035, four named-track files, Das Wandern). All 38 library files parse and lay out every bar.
+
+Not verified / open:
+- No D.C./D.S. score or MusicXML tuplet exists in the library; those paths are tested on hand-written MusicXML only. No 3+ track real file either.
+- Tempo words assume a quarter beat and take the first word ('Nicht zu schnell' reads as fast; 6/8 Allegro as slow).
+- Rests inside a quintuplet are still written on the triplet/plain grid; a sextuplet draws a 6 only when the score says 6:4.
+- Not looked at by eye or ear in the app; only tests and a headless layout pass.
+- ROADMAP "MusicXML import" known gap ("da capo and segno are ignored; grace notes ... are skipped") is now out of date.
