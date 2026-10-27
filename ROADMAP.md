@@ -86,6 +86,10 @@ In rough order. Nothing locks.
 
 ### Decisions pending for the owner
 
+Standing delegation ("I trust you"): the lead took the four product defaults below on 2026-10-27 so nothing waits; each is one edit to reverse.
+
+- **Taken as defaults**: *grade calibration* stays as shipped, because label-fitted cuts would make grade 5 about 30% of the library and break browsing by level (the half-step-easy reading is a known bias, one edit in `scripts/library/fit.mjs`); *new Read stages* keep pulling Next back to the first unseen card; *Report a problem* stays a GitHub issue form until an address is set in `REPORT_TO` (`src/report.ts`), which needs the owner's email; *pulse trainers* stay an opt-in e2e lane. The rest below needs the device or the book.
+
 - **Grade calibration**: the cut points follow the asked 8/22/30/25/15% distribution; against the 159 hand labels the grades read about half a step easy. Cut points chosen to match the labels were about [2.6, 4.75, 6.9, 7.7], giving 3/14/35/18/30%; it is one edit in `scripts/library/fit.mjs`. They were fitted on the Mutopia set; the live grades are 1: 60, 2: 293, 3: 673, 4: 645, 5: 570 (the Lieder added 608 pieces at grades 4 and 5; `docs/changes/pipeline.md`, `libgrow.md`).
 - **New Read stages and Next**: inserting stages moves the Next stage back for a player already past them (for example to `t-led1`, which has a card new to them). Keep that, or leave Next where the player is (`docs/changes/readcur.md`).
 - **Report a problem destination**: it opens a GitHub issue form (an account is needed) until `REPORT_TO` in `src/report.ts` holds an address, which makes it a `mailto:` (`docs/changes/report.md`).
