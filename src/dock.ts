@@ -222,6 +222,7 @@ export class Dock {
   }
 
   private drawMap() {
+    if (!this.song) return // a resize before any song is open
     const { bars, notes } = this.song
     const counts = bars.map((b) => notes.filter((n) => n.bar === b.i).length)
     const max = Math.max(1, ...counts)
