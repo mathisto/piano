@@ -1,17 +1,21 @@
 import { dayNum, type NoteStat, type Stats } from './drill'
+import { degreeCards as earDegrees, intervalCards as earIntervals, playCards, rhythmCards, type Play } from './ear'
 
 /** Theory trainers answered on the keyboard: a prompt, and a played answer checked as sets of pitch classes. */
-export type Trainer = 'chords' | 'keys' | 'intervals' | 'cadences' | 'degrees'
+export type Trainer = 'chords' | 'keys' | 'intervals' | 'cadences' | 'degrees' | 'earplay' | 'earint' | 'eardeg' | 'rhythm'
 
 export interface Step {
   pcs: number[] // the pitch classes the answer is made of, in any octave and any order
   bass?: number // the lowest note must be this pitch class (an inversion)
+  abs?: number // the one note must be exactly this MIDI pitch (an octave by ear)
 }
 export interface TCard {
   id: string // the spaced-review key
   prompt: string
   steps: Step[] // one for most cards, several for a cadence
   show: string // the answer in words, for a miss
+  play?: Play // heard first: ear trainers (ear.ts)
+  name?: string // what to list on the results when the prompt would give the answer away
 }
 
 export const NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
@@ -116,16 +120,21 @@ export const TRAINERS: { id: Trainer; name: string; blurb: string; levels: strin
   { id: 'intervals', name: 'Intervals', blurb: 'Play the note an interval above or below a given note.', levels: [] },
   { id: 'cadences', name: 'Cadences', blurb: 'Play a progression in a key, a chord at a time.', levels: ['I–IV–V–I', 'Adds ii–V–I', 'Adds I–V–vi–IV and I–vi–IV–V'] },
   { id: 'degrees', name: 'Scale degrees', blurb: 'Play the 2nd to 7th note of a major scale. The same degrees fix the fingering.', levels: [] },
+  { id: 'earplay', name: 'Ear: play it back', blurb: 'Hear 2 to 5 notes in a key; play them back in order, in any octave.', levels: ['Steps in C major', 'Steps and thirds', 'Leaps up to an octave', 'Other major keys', 'Minor keys', 'A note off the scale'] },
+  { id: 'earint', name: 'Ear: intervals', blurb: 'Hear two notes, up, down or together; play the second one.', levels: ['2nds and 3rds', '4ths and 5ths', '6ths and 7ths', 'Octaves', 'All intervals'] },
+  { id: 'eardeg', name: 'Ear: scale degrees', blurb: 'A short cadence sets the key; then one note to play back. A miss tells you its degree.', levels: ['Degrees 1, 3 and 5 in C, G and F', 'All seven degrees in C, G and F', 'All seven degrees in every key'] },
+  { id: 'rhythm', name: 'Rhythm echo', blurb: 'Hear a bar clapped on a click, then tap it back on any key. Reports how far your bar sits from the click apart from how even your taps are.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
 ]
 
 export const deckOf = (t: Trainer, level: number): TCard[] =>
-  t === 'chords' ? chordCards(level) : t === 'keys' ? keyCards() : t === 'intervals' ? intervalCards() : t === 'cadences' ? cadenceCards(level) : degreeCards()
+  t === 'chords' ? chordCards(level) : t === 'keys' ? keyCards() : t === 'intervals' ? intervalCards() : t === 'cadences' ? cadenceCards(level) : t === 'earplay' ? playCards(level) : t === 'earint' ? earIntervals(level) : t === 'eardeg' ? earDegrees(level) : t === 'rhythm' ? rhythmCards(level) : degreeCards()
 
 /** Is a played gesture the answer? The same pitch classes, none extra, and the right lowest note when an inversion is asked. */
 export function check(step: Step, played: number[]): boolean {
   if (!played.length) return false
   const got = new Set(played.map(pc))
   if (got.size !== step.pcs.length || !step.pcs.every((p) => got.has(p))) return false
+  if (step.abs !== undefined && !played.every((p) => p === step.abs)) return false
   return step.bass === undefined || pc(Math.min(...played)) === step.bass
 }
 

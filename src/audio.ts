@@ -108,8 +108,8 @@ export function unlock() {
 }
 
 /** A wood-block tick: a short noise knock on a pair of dying tones, lower on the first beat. `after` seconds from now, on the audio clock, so the beat does not wait for an animation frame. */
-export function click(accent: boolean, after = 0) {
-  const level = settings.click
+export function click(accent: boolean, after = 0, force = false) {
+  const level = force ? settings.click || 0.6 : settings.click // the rhythm trainer needs its click even when the count-in is silent
   if (level <= 0) return
   const c = ready()
   const t = c.currentTime + after
@@ -138,6 +138,27 @@ export function click(accent: boolean, after = 0) {
   kg.gain.value = 0.7
   knock.connect(bp).connect(kg).connect(out)
   knock.start(t)
+}
+
+/** A hand clap for the rhythm trainer: two short bursts of band-passed noise a few ms apart, on the audio clock. */
+export function clap(after = 0) {
+  const c = ready()
+  const t = c.currentTime + after
+  const out = c.createGain()
+  out.gain.value = 0.9
+  out.connect(c.destination)
+  for (const d of [0, 0.012, 0.026]) {
+    const n = c.createBuffer(1, Math.floor(c.sampleRate * 0.09), c.sampleRate)
+    n.getChannelData(0).forEach((_, i, a) => (a[i] = (Math.random() * 2 - 1) * (1 - i / a.length) ** 2))
+    const src = c.createBufferSource()
+    src.buffer = n
+    const bp = c.createBiquadFilter()
+    bp.type = 'bandpass'
+    bp.frequency.value = 1500
+    bp.Q.value = 0.8
+    src.connect(bp).connect(out)
+    src.start(t + d)
+  }
 }
 
 /** The velocities a set of recordings at different strengths stands for, soft to hard. */

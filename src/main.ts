@@ -8,6 +8,7 @@ import * as audio from './audio'
 import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
+import { earView, earTap, newEar, playCard, stopEar, type EarRun } from './ear-play'
 import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
@@ -424,29 +425,45 @@ interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {
   missed: Set<string>
   buf: number[]
   timer: number
+  ears: EarRun
 }
 let theory: TheoryRun | undefined
 let theoryStats: Stats = {}
-const theoryLevels: Record<Trainer, number> = { chords: 1, keys: 1, intervals: 1, cadences: 1, degrees: 1 }
+const theoryLevels = Object.fromEntries(TRAINERS.map((t) => [t.id, 1])) as Record<Trainer, number>
 
 function showTheory() {
-  theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts) })
+  theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) })
 }
 
 async function startTheory(trainer: Trainer) {
   theoryStats = await store.getTheory()
   const level = theoryLevels[trainer]
-  theory = { trainer, level, cards: dealTheory(deckOf(trainer, level), theoryStats, 15), i: 0, step: 0, ok: 0, streak: 0, best: 0, at: performance.now(), rts: [], missed: new Set(), buf: [], timer: 0 }
+  if (theory) stopEar(theory.ears)
+  theory = { trainer, level, cards: dealTheory(deckOf(trainer, level), theoryStats, 15), i: 0, step: 0, ok: 0, streak: 0, best: 0, at: performance.now(), rts: [], missed: new Set(), buf: [], timer: 0, ears: newEar() }
   showTheory()
+  promptTheory()
+}
+
+/** An ear or rhythm card sounds its prompt (the app's own piano and click, whatever the Sound setting); the keyboard is deaf until it ends. After a miss, only the answer is played again. */
+function promptTheory(demo = false) {
+  const t = theory
+  const c = t?.cards[t.i]
+  if (!t || !c?.play) return
+  t.step = 0
+  t.buf = []
+  t.at = playCard(t.ears, c, () => $('#theory').classList.contains('on'), finishTheory, demo)
 }
 
 const theoryOpen = () => $('#theory').classList.contains('on') && !!theory && theory.i < theory.cards.length && !theory.answered
 
 /** A key played on a Theory card: single-note answers are judged at once, chords when the hand has settled. */
-function theoryNote(p: number) {
+function theoryNote(p: number, ts: number) {
   const t = theory!
+  if (ts < t.ears.deaf) return // a prompt is playing
+  const c = t.cards[t.i]
+  if (c.play?.kind === 'rhythm') return earTap(t.ears, c, ts) // any key is a tap
   t.buf.push(p)
-  const step = t.cards[t.i].steps[t.step]
+  const step = c.steps[t.step]
   clearTimeout(t.timer)
   if (t.buf.length >= step.pcs.length) judgeTheory()
   else t.timer = window.setTimeout(judgeTheory, 600)
@@ -463,7 +480,13 @@ function judgeTheory() {
     t.step++
     return showTheory()
   }
-  const rt = performance.now() - t.at
+  finishTheory(ok, performance.now() - t.at)
+}
+
+function finishTheory(ok: boolean, rt: number) {
+  const t = theory
+  if (!t || t.answered) return
+  const c = t.cards[t.i]
   record(theoryStats, c.id, ok, rt)
   practised(Math.min(30, rt / 1000)) // Theory has no song on the stage, so its time is counted here
   void store.saveTheory(theoryStats)
@@ -473,10 +496,11 @@ function judgeTheory() {
     t.ok++
     t.streak++
     t.best = Math.max(t.best, t.streak)
-    setTimeout(nextTheory, 700)
+    setTimeout(nextTheory, c.play ? 1200 : 700)
   } else {
     t.streak = 0
-    t.missed.add(c.prompt)
+    t.missed.add(c.name ?? c.prompt)
+    promptTheory(true)
   }
   showTheory()
 }
@@ -489,7 +513,8 @@ function nextTheory() {
   t.answered = undefined
   t.at = performance.now()
   if (t.i === t.cards.length) void store.markPlan(dayKey(), 'theory')
-  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: median(t.rts) })
+  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: t.trainer === 'rhythm' ? undefined : median(t.rts) })
+  promptTheory()
   showTheory()
 }
 
@@ -502,7 +527,12 @@ $('#theory').addEventListener('click', (e) => {
   if (!b) return
   if (b.dataset.trainer) void startTheory(b.dataset.trainer as Trainer)
   else if (b.id === 'thNext') nextTheory()
-  else if (b.id === 'thMenu') {
+  else if (b.id === 'thReplay' && theory) {
+    theory.ears.replays++
+    promptTheory()
+    showTheory()
+  } else if (b.id === 'thMenu') {
+    if (theory) stopEar(theory.ears)
     theory = undefined
     showTheory()
   } else if (b.id === 'thAgain' && theory) void startTheory(theory.trainer)
@@ -1490,7 +1520,7 @@ const fromKeyboard = (m: MidiMsg) => {
     if (!m.virtual && calNote(m.v)) return
     if (theoryOpen()) {
       if (settings.sound) audio.noteOn(m.p, m.v, true)
-      theoryNote(m.p)
+      theoryNote(m.p, m.ts)
       return // the trainer owns the keyboard while a card is open
     }
     if (quizOpen()) {
