@@ -1,0 +1,35 @@
+/* ---------- Accompaniment: the start card's 'You play', the notes the app plays for you ---------- */
+#staff .head.app {
+  opacity: 0.4; /* the app plays these: there to read along, not to play */
+}
+.ready .accomp .hint {
+  max-width: 46ch;
+  margin-inline: auto;
+}
+/* a short stage (iPad landscape) keeps the card small: caption and choice on one line, no hint */
+@container stage (max-height: 420px) {
+  #ready .accomp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  #ready .accomp .cap {
+    display: block;
+    margin: 0;
+  }
+  #ready .accomp .hint {
+    display: none;
+  }
+}
+/* the 'No keyboard yet' banner takes the top of the stage: the taller card drops onto the keys, which are no use before Play */
+#stage:has(.banner) #ready:has(.accomp) {
+  top: auto;
+  bottom: 10px;
+  transform: translateX(-50%);
+}
+@container stage (max-height: 420px) {
+  #stage:has(.banner) #ready:has(.accomp) > .seg + .hint {
+    display: none; /* the mode line: the Play button says the same. The credit stays */
+  }
+}

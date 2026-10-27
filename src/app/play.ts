@@ -1,5 +1,6 @@
 // A piece on the stage: opening it, leaving it, the start card, and the game's events. Features hook in through state.hooks.
 import * as audio from '../audio'
+import { chooserHtml, choices } from '../accomp'
 import * as lib from '../catalog'
 import * as coach from '../coach'
 import { creditLine } from '../credits'
@@ -207,14 +208,26 @@ export function onPhase() {
       ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}${report}`
+        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return
       const { base, credit } = current
+      const { you, parts } = game
       await store.setSimplify(base.id, Number(x.value))
       await openSong(base, game.mode)
+      game.accomp(you, [...parts]) // the part you chose survives a change of notes shown
       if (current) current.credit = credit
+      syncMode()
       onPhase()
+    }))
+    r.querySelectorAll<HTMLInputElement>('input[name=you]').forEach((x) => (x.onchange = () => {
+      const c = choices(game.song).find((c) => c.id === x.value)
+      if (!c) return
+      game.accomp(c.hands, c.parts)
+      syncMode()
+      staff.render()
+      onPhase()
+      $<HTMLInputElement>(`#ready input[name=you][value="${c.id}"]`).focus()
     }))
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
     r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => hooks.memStage(Number(x.value))))

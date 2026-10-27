@@ -1,4 +1,5 @@
 // The end of a piece: saving the run and the results card, or handing over to the drill, calibration, read-through or memorise ending.
+import { yourPart } from '../accomp'
 import * as coach from '../coach'
 import { dayNum } from '../drill'
 import type { Result } from '../game'
@@ -23,11 +24,12 @@ async function onDone(r: Result) {
   if (calibrating) return calibrated(r)
   if (rt) return rtDone(r)
   if (mem) return memDone(r)
+  const who = yourPart(game.song, game.hands, game.parts) // one part of the piece: judged, but not a run of the piece
   const prog = await store.commit(
     current.song.id,
     r.heat,
-    r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
-    r.mode === 'read' || game.loop ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
+    r.mode === 'perform' && !who ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
+    r.mode === 'read' || game.loop || who ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
   )
   current.heat = prog.heat
   void store.markPlan(dayKey(), current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
@@ -38,7 +40,7 @@ async function onDone(r: Result) {
     void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands, keyTouch: settings.keyTouch })
   }
   const kind = current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'tech' : 'song'
-  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: current.song.title, acc: r.acc, even: r.even?.inside, bias: r.timing?.bias })
+  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: who ? `${current.song.title}: your part` : current.song.title, acc: r.acc, even: r.even?.inside, bias: r.timing?.bias })
   if (coach.coached(current.song.id, current.song.dyn, r.mode)) void coach.tally(current.song.id, r.even?.rating)
   let note = ''
   const sc = parseId(current.song.id)
@@ -56,6 +58,7 @@ async function onDone(r: Result) {
   const worst = worstBars(r.heat)
   const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
+  if (who) note = `Judged on your part only: <b>${esc(who.you)}</b>.${who.app ? ` The app played ${esc(who.app)}.` : ''} ${note}`
   res.innerHTML = results(r, next, note)
   if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(current!.song.id, 1))
