@@ -14,7 +14,7 @@ import type { Starter } from './starters'
 import type { Stage, Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, type TCard, type Trainer } from './theory'
-import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
+import { degreeName, explain, fingering, keyLabels, keyName, unchecked, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
@@ -738,8 +738,8 @@ export interface ScalePick extends Card {
   bpm: number
 }
 
-const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together' } as const
-const FORMS: Record<Form, string> = { major: 'Major', natural: 'Natural minor', harmonic: 'Harmonic minor', melodic: 'Melodic minor' }
+const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together', contrary: 'Contrary motion' } as const
+const FORMS: Record<Form, string> = { major: 'Major', natural: 'Natural minor', harmonic: 'Harmonic minor', melodic: 'Melodic minor', chromatic: 'Chromatic', arpMajor: 'Major arpeggio', arpMinor: 'Minor arpeggio', dom7: 'Dominant 7th arpeggio', dim7: 'Diminished 7th arpeggio' }
 export const cardName = (c: Card) => `${keyName(c.tonic, c.form)}, ${HANDS[c.hands].toLowerCase()}, ${c.oct === 1 ? 'one octave' : 'two octaves'}`
 
 export interface QuizState {
@@ -769,11 +769,8 @@ function quizBody(q: QuizState) {
 }
 
 export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick' | 'quiz', p: ScalePick, quiz?: QuizState) {
-  const minor = p.form !== 'major'
-  const names = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
-  const mnames = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B']
-  const f = (h: 'R' | 'L') => fingering(p.tonic, p.form, h).split('').join(' ')
-  const shaky = (['R', 'L'] as const).filter((h) => UNCHECKED.has(`${minor ? 'm' : 'M'}${p.tonic}:${h}`))
+  const ex = explain(p)
+  const shaky = unchecked(p)
   const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
   const body =
     tab === 'quiz' && quiz
@@ -792,13 +789,13 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
       <p class="fine" style="margin-top:12px">A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.</p>`
       : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
       ${field('sgForm', 'Scale', Object.entries(FORMS).map(([v, l]) => `<option value="${v}"${v === p.form ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('sgKey', 'Key', (minor ? mnames : names).map((n, i) => `<option value="${i}"${i === p.tonic ? ' selected' : ''}>${n}</option>`).join(''))}
+      ${field('sgKey', 'Key', keyLabels(p.form).map((n, i) => `<option value="${i}"${i === p.tonic ? ' selected' : ''}>${n}</option>`).join(''))}
       ${field('sgHands', 'Hands', Object.entries(HANDS).map(([v, l]) => `<option value="${v}"${v === p.hands ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('sgOct', 'Octaves', [[1, 'One'], [2, 'Two']].map(([v, l]) => `<option value="${v}"${v === p.oct ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('sgBpm', 'Tempo', [50, 60, 66, 72, 80, 90, 100, 112, 120].map((b) => `<option value="${b}"${b === p.bpm ? ' selected' : ''}>${b}, eighth notes</option>`).join(''))}
     </div>
-    <p class="line">Fingering up the scale: right hand <b>${f('R')}</b>, left hand <b>${f('L')}</b>.</p>
-    <p class="fine">${esc(why(p.tonic, p.form, 'R'))}</p><p class="fine">${esc(why(p.tonic, p.form, 'L'))}</p>
+    <p class="line">${ex.lead}: right hand <b>${ex.r}</b>, left hand <b>${ex.l}</b>.</p>
+    ${ex.why.map((w) => `<p class="fine">${esc(w)}</p>`).join('')}
     ${shaky.length ? `<p class="fine">The ${shaky.map((h) => (h === 'R' ? 'right' : 'left')).join(' and ')}-hand fingering for this key is still to be checked against a printed book; your teacher or book wins.</p>` : ''}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `

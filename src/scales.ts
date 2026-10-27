@@ -1,8 +1,8 @@
 import { noteName } from './spell'
 import { build, type Bar, type Hand, type Raw, type Song } from './song'
 
-export type Form = 'major' | 'natural' | 'harmonic' | 'melodic'
-export type Hands = 'R' | 'L' | 'both'
+export type Form = 'major' | 'natural' | 'harmonic' | 'melodic' | 'chromatic' | 'arpMajor' | 'arpMinor' | 'dom7' | 'dim7'
+export type Hands = 'R' | 'L' | 'both' | 'contrary' // both: parallel, an octave apart; contrary: from one note, apart and back
 export interface Card {
   tonic: number // pitch class
   form: Form
@@ -15,16 +15,32 @@ const STEPS: Record<Form, number[]> = {
   natural: [0, 2, 3, 5, 7, 8, 10],
   harmonic: [0, 2, 3, 5, 7, 8, 11],
   melodic: [0, 2, 3, 5, 7, 9, 11], // going up; coming down it is the natural minor
+  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  arpMajor: [0, 4, 7],
+  arpMinor: [0, 3, 7],
+  dom7: [0, 4, 7, 10], // by chord root: C dominant 7th is C E G B flat
+  dim7: [0, 3, 6, 9],
 }
 const DOWN_MELODIC = STEPS.natural
-export const isMinor = (f: Form) => f !== 'major'
+export const isMinor = (f: Form) => f === 'natural' || f === 'harmonic' || f === 'melodic' || f === 'arpMinor'
+const isScale = (f: Form) => f === 'major' || f === 'natural' || f === 'harmonic' || f === 'melodic'
+const BLACK = [1, 3, 6, 8, 10]
 
 // Key signature (fifths) of each major tonic, and of each minor through its relative major.
 const MAJOR_FIFTHS = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5]
-export const fifthsOf = (tonic: number, form: Form) => (isMinor(form) ? (tonic === 3 ? -6 : MAJOR_FIFTHS[(tonic + 3) % 12]) : MAJOR_FIFTHS[tonic])
+export function fifthsOf(tonic: number, form: Form): number {
+  if (form === 'chromatic') return 0 // written with accidentals: sharps going up, flats coming down
+  if (form === 'dom7') return MAJOR_FIFTHS[(tonic + 5) % 12] // the dominant of the key a fourth up
+  if (form === 'dim7') return fifthsOf((tonic + 1) % 12, 'natural') // the seventh degree of the minor key a semitone up
+  return isMinor(form) ? (tonic === 3 ? -6 : MAJOR_FIFTHS[(tonic + 3) % 12]) : MAJOR_FIFTHS[tonic]
+}
 const MAJOR_NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
 const MINOR_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B']
-export const keyName = (tonic: number, form: Form) => `${isMinor(form) ? MINOR_NAMES[tonic] : MAJOR_NAMES[tonic]} ${isMinor(form) ? (form === 'natural' ? 'natural minor' : form === 'harmonic' ? 'harmonic minor' : form === 'melodic' ? 'melodic minor' : 'minor') : 'major'}`
+const SHARP_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
+/** The twelve starting notes as the Key select names them for a form. */
+export const keyLabels = (form: Form) => (form === 'chromatic' ? SHARP_NAMES : isMinor(form) || form === 'dim7' ? MINOR_NAMES : MAJOR_NAMES)
+const KIND: Record<Form, string> = { major: 'major', natural: 'natural minor', harmonic: 'harmonic minor', melodic: 'melodic minor', chromatic: 'chromatic', arpMajor: 'major arpeggio', arpMinor: 'minor arpeggio', dom7: 'dominant 7th arpeggio', dim7: 'diminished 7th arpeggio' }
+export const keyName = (tonic: number, form: Form) => `${keyLabels(form)[tonic]} ${KIND[form]}`
 
 /**
  * Standard fingering, one octave up from the tonic (eight notes), right hand and left hand. Minor keys use the same
@@ -51,7 +67,7 @@ const FINGERS: Record<string, { R: string; L: string }> = {
   m10: { R: '41231234', L: '21321432' },
 }
 export const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'm11:L'])
-export const fingering = (tonic: number, form: Form, h: Hand) => FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h]
+export const fingering = (tonic: number, form: Form, h: Hand) => (isScale(form) ? FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h] : fingers(tonic, form, h, 1).join(''))
 
 const mod = (a: number, n: number) => ((a % n) + n) % n
 
@@ -78,6 +94,8 @@ const TWO_OCT: Record<string, string> = { 'M11:L': '432143213214321', 'm11:L': '
 
 /** Fingers of a run up `oct` octaves, from the fourth-finger rule; where the printed octave disagrees with the rule, the printed one wins. */
 export function fingers(tonic: number, form: Form, h: Hand, oct: number): number[] {
+  if (form === 'chromatic') return chromaticFingers(tonic, h, oct)
+  if (!isScale(form)) return arpeggioFingers(tonic, form, h, oct)
   const key = `${isMinor(form) ? 'm' : 'M'}${tonic}`
   const s = FINGERS[key][h]
   if (oct === 2 && TWO_OCT[`${key}:${h}`]) return [...TWO_OCT[`${key}:${h}`]].map(Number)
@@ -85,28 +103,84 @@ export function fingers(tonic: number, form: Form, h: Hand, oct: number): number
   return oct === 1 && d.join('') !== s ? [...s].map(Number) : d
 }
 
+/**
+ * Chromatic fingering, by the usual convention and so for any starting note: the 3rd finger on every black key, the
+ * thumb on a white key, except where two white keys follow each other (E F, B C). Right hand going up: 1 then 2
+ * (E1 F2); left hand going up: 2 then 1 (E2 F1). From C: RH 1 3 1 3 1 2 3 1 3 1 3 1 2, LH 1 3 1 3 2 1 3 1 3 1 3 2 1.
+ * Coming down, each hand retraces its fingers.
+ */
+function chromaticFingers(tonic: number, h: Hand, oct: number): number[] {
+  const n = 12 * oct
+  const white = (i: number) => !BLACK.includes((tonic + i) % 12)
+  return Array.from({ length: n + 1 }, (_, i) => (!white(i) ? 3 : (h === 'R' ? i > 0 && white(i - 1) : i < n && white(i + 1)) ? 2 : 1))
+}
+
+/**
+ * Arpeggio fingering, a rule and not a table: nobody has checked these against a book (all are in UNCHECKED).
+ * Right hand: the fingers repeat every octave as a rotation of 1-a-b(-c), the thumb crossing under once; the top note
+ * takes the 5th finger, or restarts the cycle. 1 2 3 1 2 3 5 is the white-key shape. Left hand: the same rule read from
+ * the top down (so 5 3 2 1 3 2 1), plus for triads the open shape 5 4 2 1 (2 4 5), which wins a tie.
+ * Each candidate costs: thumb on a black key 10, 5th finger on a black key 3, 2nd to 4th finger on a black key
+ * -0.5, 1.5 per rotation away from the plain shape, a left hand starting on its thumb 10. The cheapest is used.
+ */
+const SETS: Record<number, number[][]> = { 3: [[1, 2, 3], [1, 2, 4], [1, 3, 4], [1, 2, 5], [1, 3, 5], [1, 4, 5]], 4: [[1, 2, 3, 4], [1, 2, 3, 5], [1, 2, 4, 5], [1, 3, 4, 5]] }
+function arpeggioFingers(tonic: number, form: Form, h: Hand, oct: number): number[] {
+  const st = STEPS[form]
+  const k = st.length
+  const n = k * oct + 1
+  const black = Array.from({ length: n }, (_, i) => BLACK.includes((tonic + st[i % k]) % 12))
+  const cands: { f: number[]; pen: number }[] = []
+  SETS[k].forEach((set, si) =>
+    set.forEach((_, r) => {
+      const cyc = [...set.slice(r), ...set.slice(0, r)]
+      const f = Array.from({ length: n }, (_, i) => (i < n - 1 ? cyc[i % k] : r === 0 && set[k - 1] < 5 ? 5 : cyc[0]))
+      cands.push({ f: h === 'R' ? f : f.reverse(), pen: 1.5 * r + 0.1 * si })
+    }),
+  )
+  if (h === 'L' && k === 3) cands.push({ f: oct === 1 ? [5, 4, 2, 1] : [5, 4, 2, 1, 2, 4, 5], pen: -0.05 })
+  const cost = (c: { f: number[]; pen: number }) => c.pen + (h === 'L' && c.f[0] === 1 ? 10 : 0) + c.f.reduce((a, f, i) => a + (!black[i] ? 0 : f === 1 ? 10 : f === 5 ? 3 : -0.5), 0)
+  return cands.reduce((best, c) => (cost(c) < cost(best) ? c : best)).f
+}
+
+/** Contrary motion, left hand, as the run up from its lowest note: it copies the right hand's fingers unless that puts its thumb on a black key; then it keeps its own fingering. */
+export function contraryLeft(tonic: number, form: Form, oct: number): { f: number[]; mirror: boolean; derived: boolean } {
+  const own = fingers(tonic, form, 'L', oct)
+  if (!isScale(form)) return { f: own, mirror: false, derived: false }
+  const mir = fingers(tonic, form, 'R', oct).reverse()
+  const I = STEPS[form]
+  const ok = mir.every((f, j) => f !== 1 || !BLACK.includes((tonic + 12 * Math.floor(j / 7) + I[j % 7]) % 12))
+  return ok ? { f: mir, mirror: true, derived: mir.join() !== own.join() } : { f: own, mirror: false, derived: false }
+}
+
 /** The scale as a song: eighth notes up and back, fingering carried on every note. */
 export function scaleSong(c: Card, bpm: number): Song {
   const q = 60 / bpm
   const step = q / 2
-  const n = 7 * c.oct
+  const I0 = STEPS[c.form]
+  const k = I0.length
+  const n = k * c.oct
   const up = Array.from({ length: n + 1 }, (_, d) => d)
   const order = [...up, ...up.slice(0, -1).reverse()]
   const raw: Raw[] = []
-  const hands: Hand[] = c.hands === 'both' ? ['R', 'L'] : [c.hands]
+  const contrary = c.hands === 'contrary'
+  const hands: Hand[] = c.hands === 'both' || c.hands === 'contrary' ? ['R', 'L'] : [c.hands]
+  const start = 60 + c.tonic - (c.tonic > 6 ? 12 : 0) // contrary: both hands leave this note
   for (const h of hands) {
-    const fs = fingers(c.tonic, c.form, h, c.oct)
-    const base = (h === 'R' ? 60 : 48) + c.tonic
+    const inv = contrary && h === 'L' // the left hand goes down first: it plays its own run up, backwards
+    const fs = inv ? contraryLeft(c.tonic, c.form, c.oct).f : fingers(c.tonic, c.form, h, c.oct)
+    const low = contrary ? (inv ? start - 12 * c.oct : start) : (h === 'R' ? 60 : 48) + c.tonic
     order.forEach((d, i) => {
-      const down = i > n
-      const I = down && c.form === 'melodic' ? DOWN_MELODIC : STEPS[c.form]
-      const p = d === n ? base + 12 * c.oct : base + 12 * Math.floor(d / 7) + I[d % 7]
-      raw.push({ t: i * step, d: step * 0.95, p, v: 0.7, track: 0, h, f: fs[d] })
+      if (inv && (i === 0 || i === order.length - 1)) return // the unison is one note, the right hand's
+      const j = inv ? n - d : d
+      const down = inv ? i < n : i > n
+      const I = down && c.form === 'melodic' ? DOWN_MELODIC : I0
+      const black = c.form === 'chromatic' && BLACK.includes((low + 12 * Math.floor(j / k) + I[j % k]) % 12)
+      raw.push({ t: i * step, d: step * 0.95, p: low + 12 * Math.floor(j / k) + I[j % k], v: 0.7, track: 0, h, f: fs[j], ...(black && { acc: down ? -1 : 1, flat: down }) })
     })
   }
   const total = order.length
   const bars: Bar[] = Array.from({ length: Math.ceil(total / 8) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
-  const title = `${keyName(c.tonic, c.form)}, ${c.oct === 1 ? 'one octave' : 'two octaves'}${c.hands === 'both' ? ', hands together' : c.hands === 'L' ? ', left hand' : ', right hand'}`
+  const title = `${keyName(c.tonic, c.form)}, ${c.oct === 1 ? 'one octave' : 'two octaves'}${c.hands === 'both' ? ', hands together' : contrary ? ', contrary motion' : c.hands === 'L' ? ', left hand' : ', right hand'}`
   return { ...build(`scale:${c.form}:${c.tonic}:${c.hands}:${c.oct}:${bpm}`, title, raw, bars, fifthsOf(c.tonic, c.form)), dyn: 'even' }
 }
 
@@ -120,7 +194,7 @@ export interface Stat {
 export type ScaleStats = Record<string, Stat>
 export const cardKey = (c: Card) => `${c.form}:${c.tonic}:${c.hands}:${c.oct}`
 export const parseId = (id: string): { card: Card; bpm: number } | null => {
-  const m = /^scale:(major|natural|harmonic|melodic):(\d+):(R|L|both):([12]):(\d+)$/.exec(id)
+  const m = /^scale:(major|natural|harmonic|melodic|chromatic|arpMajor|arpMinor|dom7|dim7):(\d+):(R|L|both|contrary):([12]):(\d+)$/.exec(id)
   return m ? { card: { form: m[1] as Form, tonic: Number(m[2]), hands: m[3] as Hands, oct: Number(m[4]) as 1 | 2 }, bpm: Number(m[5]) } : null
 }
 
@@ -145,6 +219,23 @@ export const STAGES: Stage[] = [
   { id: 's5', name: 'All 24 keys together', blurb: 'Every major and harmonic minor, hands together over two octaves.', keys: [...maj(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...min(9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)], combos: [['both', 2]], bpm: 80 },
   { id: 's6', name: 'Up to speed', blurb: 'All 24 keys again, faster.', keys: [...maj(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...min(9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)], combos: [['both', 2]], bpm: 100 },
 ]
+
+const ALL_MAJ = maj(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5)
+const ALL_MIN = min(9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)
+const triads = (f: 'arpMajor' | 'arpMinor', ...t: number[]): [number, Form][] => t.map((x) => [x, f])
+const EASY = [...triads('arpMajor', 0, 7, 5), ...triads('arpMinor', 9, 2)]
+const ALL_ARP = [...triads('arpMajor', 0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...triads('arpMinor', 9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)]
+const chrom = (...t: number[]): [number, Form][] => t.map((x) => [x, 'chromatic'])
+const seventh = (f: 'dom7' | 'dim7', ...t: number[]): [number, Form][] => t.map((x) => [x, f])
+STAGES.push(
+  { id: 's7', name: 'Contrary motion', blurb: 'Both hands leave one note and move apart: C, G, F, D, A, E major and A, E, D minor. One octave.', keys: [...maj(0, 7, 5, 2, 9, 4), ...min(9, 4, 2)], combos: [['contrary', 1]], bpm: 60 },
+  { id: 's8', name: 'Contrary motion, all keys', blurb: 'Every major and harmonic minor, two octaves, the hands meeting back on the first note.', keys: [...ALL_MAJ, ...ALL_MIN], combos: [['contrary', 2]], bpm: 72 },
+  { id: 's9', name: 'The chromatic scale', blurb: 'Thumb on white keys, 3rd finger on black. Each hand, then an octave apart, then in contrary motion, from C.', keys: chrom(0), combos: [['R', 1], ['L', 1], ['both', 2], ['contrary', 2]], bpm: 60 },
+  { id: 's10', name: 'Chromatic from every note', blurb: 'The twelve starting notes, two octaves, hands an octave apart.', keys: chrom(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), combos: [['both', 2]], bpm: 72 },
+  { id: 's11', name: 'Triad arpeggios', blurb: 'The broken chord up and down: C, G and F major, A and D minor. Each hand, then together.', keys: EASY, combos: [['R', 1], ['L', 1], ['both', 1]], bpm: 60 },
+  { id: 's12', name: 'Arpeggios in all keys', blurb: 'Every major and minor triad, two octaves, hands together.', keys: ALL_ARP, combos: [['both', 2]], bpm: 72 },
+  { id: 's13', name: 'Seventh arpeggios', blurb: 'Dominant sevenths on all twelve roots, then the three diminished sevenths, one octave, hands together.', keys: [...seventh('dom7', 0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...seventh('dim7', 0, 1, 2)], combos: [['both', 1]], bpm: 60 },
+)
 
 export const cardsOf = (s: Stage): Card[] => s.keys.flatMap(([tonic, form]) => s.combos.map(([hands, oct]) => ({ tonic, form, hands, oct })))
 export const solid = (stats: ScaleStats, c: Card, bpm: number) => (stats[cardKey(c)]?.best ?? 0) >= bpm
@@ -197,6 +288,32 @@ export function why(tonic: number, form: Form, h: Hand): string {
     return `Left hand: the 4th finger sits on ${at}, so each half of the octave runs 4-3-2-1, ending on the thumb at E and B. In the first octave B takes the 4th finger; after that B takes the thumb.`
   if (h === 'R') return `Right hand: the 4th finger ends a group 1-2-3-4, on ${at}. That group is degrees ${list(cyc(d - 3, 4))}; the other is 1-2-3 on degrees ${list(cyc(d + 1, 3))}.`
   return `Left hand: the 4th finger starts a group 4-3-2-1, on ${at}. That group is degrees ${list(cyc(d, 4))}; the other is 3-2-1 on degrees ${list(cyc(d + 4, 3))}.`
+}
+
+/** The hands whose fingering for this card nobody has checked against the book: every arpeggio, chromatic from any note but C, and a contrary left hand that is not a table fingering. */
+export function unchecked(c: Card): Hand[] {
+  if (c.form === 'chromatic') return c.tonic === 0 ? [] : ['R', 'L']
+  if (!isScale(c.form)) return ['R', 'L']
+  const t = (h: Hand) => UNCHECKED.has(`${isMinor(c.form) ? 'm' : 'M'}${c.tonic}:${h}`)
+  return (['R', 'L'] as const).filter((h) => t(h) || (h === 'L' && c.hands === 'contrary' && contraryLeft(c.tonic, c.form, c.oct).derived))
+}
+
+/** What the Choose a scale card says about the fingering: the lead-in, each hand's fingers (the left hand going down in contrary motion), and the reasons. */
+export function explain(c: Card): { lead: string; r: string; l: string; why: string[] } {
+  const j = (a: number[]) => a.join(' ')
+  const contrary = c.hands === 'contrary'
+  const r = isScale(c.form) && !contrary ? [...fingering(c.tonic, c.form, 'R')].map(Number) : fingers(c.tonic, c.form, 'R', c.oct)
+  const lAsc = contrary ? contraryLeft(c.tonic, c.form, c.oct).f : isScale(c.form) ? [...fingering(c.tonic, c.form, 'L')].map(Number) : fingers(c.tonic, c.form, 'L', c.oct)
+  const l = contrary ? [...lAsc].reverse() : lAsc
+  const lead = contrary ? 'Fingering out from the start' : `Fingering up the ${isScale(c.form) || c.form === 'chromatic' ? 'scale' : 'arpeggio'}`
+  const why_: string[] = []
+  if (isScale(c.form)) {
+    why_.push(why(c.tonic, c.form, 'R'), contrary ? '' : why(c.tonic, c.form, 'L'))
+    if (contrary) why_.push(contraryLeft(c.tonic, c.form, c.oct).mirror ? 'Contrary motion: the left hand uses the same fingers as the right, so the thumbs and the long fingers meet.' : 'Contrary motion: the left hand cannot copy the right here (its thumb would land on a black key), so each hand keeps its usual fingering.')
+  } else if (c.form === 'chromatic')
+    why_.push('The thumb on white keys, the 3rd finger on black keys. Where two white keys follow each other (E F, B C) the right hand plays 1 then 2 going up, the left hand 2 then 1. Coming down each hand retraces its fingers.')
+  else why_.push('The fingers repeat every octave, the thumb crossing under once; long fingers go on black keys and the thumb on a white key where it can. The left hand reads the same rule from the top down.')
+  return { lead, r: j(r), l: j(l), why: why_.filter(Boolean) }
 }
 
 export interface QCard {
