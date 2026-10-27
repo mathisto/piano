@@ -89,6 +89,7 @@ In rough order. Nothing locks.
 - **Pulse trainers in the default e2e run**: the three take about 8 minutes alone, so they are an opt-in lane (`E2E_PULSE=1`); the default run has an 8-minute watchdog (`docs/changes/pulse.md`, `e2e.md`). The question-and-answer cards are not driven by e2e at all.
 - **The held Lieder**: whether to spend the IMSLP lookups to release the 278 (Next, item 7), or leave them out.
 - **Fingerings against the Alfred book**: every arpeggio fingering and some contrary and chromatic ones are unchecked; the table is in `docs/changes/scales2.md` (Known gaps).
+- **Caddy header for the service worker**: add `@sw path /sw.js` and `header @sw Cache-Control "no-cache"` on quartz beside the corpus rules (`docs/changes/offline.md`); without it an edge may hold `sw.js` for hours, which only delays updates. The offline web app is merged, not yet deployed or checked outside headless Chrome.
 - **Real-device checks**: the iPad and FP-10 list in Known gaps. Nothing in the newest features has been seen or heard on the device.
 
 ## Known gaps
