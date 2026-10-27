@@ -16,6 +16,7 @@ import { rtDone } from './readthrough-ui'
 import { memDone, memorise } from './memorise-ui'
 import { drillDone } from './drill'
 import { calibrated } from './calibration'
+import { takeCard } from './take-ui'
 
 async function onDone(r: Result) {
   if (!current) return
@@ -59,6 +60,7 @@ async function onDone(r: Result) {
   res.innerHTML = results(r, next, note)
   if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(current!.song.id, 1))
+  void takeCard(res) // Listen back and Compare with last time
   resOpen(true)
   res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)

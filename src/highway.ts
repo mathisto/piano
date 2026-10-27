@@ -350,6 +350,17 @@ export class Highway {
     }
     for (let j = this.labelUsed; j < this.labelPool.length; j++) this.labelPool[j].visible = false
 
+    // ----- Ghost: last time's keys as a thin trace in their lanes, a tick where each went down and a hairline while held
+    const gh = hide ? null : g.ghost
+    for (let j = 0; gh && j < gh.t.length && gh.t[j] <= T + look; j++) {
+      const k = this.keys.get(gh.p[j])
+      const yb = Math.min(H, H - (gh.t[j] - T) * pps)
+      const yt = H - (gh.t[j] + gh.d[j] - T) * pps
+      if (!k || yt >= H) continue
+      ng.rect(k.x + k.w / 2 - 0.75, yt, 1.5, yb - yt).fill({ color: C.ink, alpha: 0.4 })
+      if (yb < H) ng.rect(k.x + 4, yb - 1, k.w - 8, 2).fill({ color: C.ink, alpha: 0.7 })
+    }
+
     // ----- receptor line with a lamp over every white key
     const rc = this.rec
     rc.clear()

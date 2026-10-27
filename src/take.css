@@ -1,0 +1,128 @@
+/* The recorder: the Ghost switch on the start card, the ghost's dots on the staff, the Listen back bar, and Compare with last time */
+.ready .ghostsw {
+  pointer-events: auto;
+  display: flex;
+  width: fit-content;
+  margin: 6px auto 0;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+@container stage (max-height: 260px) {
+  #ready .ghostsw {
+    display: none;
+  }
+}
+/* behind the heads: an on-time key hides under its note, an early or late one shows beside it */
+#staff .traces circle {
+  fill: var(--ink-2);
+  opacity: 0.5;
+}
+
+.takebar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 6px 6px 18px;
+  background: var(--scrim-hi);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-pill);
+  box-shadow: 0 8px 24px var(--drop);
+  white-space: nowrap;
+}
+.takebar b {
+  font: 800 italic 22px/1 var(--display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.takebar small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* the comparison makes the results card taller than a landscape iPad: the card scrolls instead of clipping */
+.results:has(.cmp) {
+  place-items: start center;
+  overflow-y: auto;
+}
+.cmp {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.cmp-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+.cmp-key i {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+.cmp-grid {
+  justify-self: stretch;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  align-items: center;
+}
+.cmp-grid .cap {
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.cmp-grid svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+}
+.cmp .last,
+.cmp-key .last {
+  fill: var(--ink-3);
+  background: var(--ink-3);
+  opacity: 0.55;
+}
+.cmp .now,
+.cmp-key .now {
+  fill: var(--ink);
+  background: var(--ink);
+}
+.cmp .now.up {
+  fill: var(--great);
+}
+.cmp .now.down {
+  fill: var(--bad);
+}
+.cmp line {
+  stroke: var(--edge);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.cmp-grid .cap small {
+  display: block;
+  margin-top: 4px;
+  font: 500 13px/1 var(--ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cmp-bars small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.cmp-bars {
+  display: flex;
+  justify-content: space-between;
+}

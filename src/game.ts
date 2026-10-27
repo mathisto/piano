@@ -98,6 +98,7 @@ export class Game {
   readonly quiet = new Quiet() // goes quiet on judgement words once the playing is clean
   known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
   autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
+  ghost: { p: number[]; t: number[]; d: number[]; h: ('R' | 'L')[] } | null = null // Ghost: the last take's keys, drawn faintly on the staff and lanes (src/app/take-ui.ts)
 
   /** Which panes to show. Reading drills always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {

@@ -272,6 +272,7 @@ export class Staff {
       }
     })
 
+    this.traces(L)
     // the cursor sits behind the noteheads so it never covers what you are about to play
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
     const g = el('g', { class: 'notes' }, svg)
@@ -378,18 +379,37 @@ export class Staff {
     }
   }
 
+  /** Where a key struck at song time `t` sits on the page. */
+  private place(pitch: number, t: number) {
+    const L = this.L!
+    const pos = this.posAt(t)
+    const sp = spell(pitch, this.an?.bars[Math.min(Math.max(L.from, barAt(this.game.song.bars, t)), L.to - 1)]?.fifths ?? this.game.song.fifths)
+    const want: Clef = pitch >= 60 ? 'treble' : 'bass'
+    const clef = L.clefs.includes(want) ? want : L.clefs[0] // a one-clef drill has only its own staff
+    const step = Math.min(BOTTOM_STEP[clef] + 8 + 14, Math.max(BOTTOM_STEP[clef] - 14, sp.step)) // further out would leave the page
+    return { pos, sp, clef, step, y: yOf(step, clef, L.base) + pos.dy }
+  }
+
+  /** Ghost: a dim dot where each key went down last time, behind the heads, so early or late shows beside the note. */
+  private traces(L: Layout) {
+    const gh = this.game.ghost
+    const bars = this.game.song.bars
+    if (!gh) return
+    const g = el('g', { class: 'traces', 'aria-hidden': 'true' }, this.svg)
+    gh.t.forEach((t, j) => {
+      if (t < bars[L.from].t0 || t >= bars[L.to - 1].t1) return
+      const { pos, y } = this.place(gh.p[j], t)
+      el('circle', { cx: pos.x, cy: y, r: 3 }, g)
+    })
+  }
+
   /** A hollow dashed notehead where you pressed a key: not part of the score, but the note you played. */
   ghost(pitch: number, t: number) {
     const L = this.L
     const { bars } = this.game.song
     if (!L || !bars.length) return
     this.ghosts.get(pitch)?.remove()
-    const pos = this.posAt(t)
-    const sp = spell(pitch, this.an?.bars[Math.min(Math.max(L.from, barAt(bars, t)), L.to - 1)]?.fifths ?? this.game.song.fifths)
-    const want: Clef = pitch >= 60 ? 'treble' : 'bass'
-    const clef = L.clefs.includes(want) ? want : L.clefs[0] // a one-clef drill has only its own staff
-    const step = Math.min(BOTTOM_STEP[clef] + 8 + 14, Math.max(BOTTOM_STEP[clef] - 14, sp.step)) // further out would leave the page
-    const y = yOf(step, clef, L.base) + pos.dy
+    const { pos, sp, clef, step, y } = this.place(pitch, t)
     const g = el('g', { class: 'ghost' }, this.svg) as SVGGElement
     g.style.transform = `translate(${pos.x}px, ${y}px)`
     g.setAttribute('aria-hidden', 'true')
