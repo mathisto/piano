@@ -13,6 +13,7 @@ import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
 import { LIMITS, type Arcade, type RunSpec } from './run'
+import { UNCHECKED, fingering, keyName, type Card, type Form, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
@@ -27,6 +28,7 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="nav" value="today" checked><span>Today</span></label>
       <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>
       <label><input type="radio" name="nav" value="read"><span>Read</span></label>
+      <label><input type="radio" name="nav" value="scales"><span>Scales</span></label>
       <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
       <label><input type="radio" name="nav" value="progress"><span>Progress</span></label>
     </div>
@@ -59,6 +61,7 @@ export function skeleton(app: HTMLElement) {
     <section id="today" class="view on" aria-label="Today"></section>
     <section id="library" class="view" aria-label="Songs"></section>
     <section id="read" class="view" aria-label="Read"></section>
+    <section id="scales" class="view" aria-label="Scales"></section>
     <section id="technique" class="view" aria-label="Technique"></section>
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
@@ -260,7 +263,7 @@ export function touchBlock(t: TouchStats) {
     <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
 }
 
-export function results(r: Result, next: Next | null) {
+export function results(r: Result, next: Next | null, note = '') {
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
@@ -285,6 +288,7 @@ export function results(r: Result, next: Next | null) {
     }
     ${r.touch.n >= 4 ? touchBlock(r.touch) : ''}
     ${r.even ? evenBlock(r.even) : ''}
+    ${note ? `<p class="line">${note}</p>` : ''}
     <div class="row">
       ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
@@ -668,4 +672,58 @@ export function runResults(d: RunSummary) {
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
     <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
   </div></div>`
+}
+
+// ---------------------------------------------------------------- Scales
+
+export interface ScaleRow {
+  stage: ScaleStage
+  pct: number
+  solid: boolean
+  done: number
+  total: number
+  next: boolean
+  card: Card
+}
+export interface ScalePick extends Card {
+  bpm: number
+}
+
+const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together' } as const
+const FORMS: Record<Form, string> = { major: 'Major', natural: 'Natural minor', harmonic: 'Harmonic minor', melodic: 'Melodic minor' }
+export const cardName = (c: Card) => `${keyName(c.tonic, c.form)}, ${HANDS[c.hands].toLowerCase()}, ${c.oct === 1 ? 'one octave' : 'two octaves'}`
+
+export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick', p: ScalePick) {
+  const minor = p.form !== 'major'
+  const names = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
+  const mnames = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B']
+  const f = (h: 'R' | 'L') => fingering(p.tonic, p.form, h).split('').join(' ')
+  const shaky = (['R', 'L'] as const).filter((h) => UNCHECKED.has(`${minor ? 'm' : 'M'}${p.tonic}:${h}`))
+  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
+  const body =
+    tab === 'stages'
+      ? `<table class="songs stages"><caption class="sr-only">Scale stages</caption>
+      <colgroup><col><col style="width:250px"><col style="width:150px"></colgroup>
+      <thead><tr><th scope="col">Stage</th><th scope="col">Solid</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
+      <tbody>${rows
+        .map(
+          (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm}.${r.solid ? '' : ` Up next: ${esc(cardName(r.card))}.`}</small></td>
+        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`,
+        )
+        .join('')}</tbody></table>
+      <p class="fine" style="margin-top:12px">A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.</p>`
+      : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
+      ${field('sgForm', 'Scale', Object.entries(FORMS).map(([v, l]) => `<option value="${v}"${v === p.form ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('sgKey', 'Key', (minor ? mnames : names).map((n, i) => `<option value="${i}"${i === p.tonic ? ' selected' : ''}>${n}</option>`).join(''))}
+      ${field('sgHands', 'Hands', Object.entries(HANDS).map(([v, l]) => `<option value="${v}"${v === p.hands ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('sgOct', 'Octaves', [[1, 'One'], [2, 'Two']].map(([v, l]) => `<option value="${v}"${v === p.oct ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('sgBpm', 'Tempo', [50, 60, 66, 72, 80, 90, 100, 112, 120].map((b) => `<option value="${b}"${b === p.bpm ? ' selected' : ''}>${b}, eighth notes</option>`).join(''))}
+    </div>
+    <p class="line">Fingering up the scale: right hand <b>${f('R')}</b>, left hand <b>${f('L')}</b>.</p>
+    ${shaky.length ? `<p class="fine">The ${shaky.map((h) => (h === 'R' ? 'right' : 'left')).join(' and ')}-hand fingering for this key is still to be checked against a printed book; your teacher or book wins.</p>` : ''}
+    <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
+  el.innerHTML = `
+    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
+    ${body}`
 }

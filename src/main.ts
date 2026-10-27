@@ -8,6 +8,7 @@ import * as audio from './audio'
 import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
+import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, type Card as ScaleCard, type Form } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, award, bestKey, deal, goalMs, newArcade, over, runCards, widened, mult, type Arcade, type RunSpec } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -33,7 +34,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, cardName, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -156,7 +157,7 @@ async function libSong(e: LibraryEntry) {
   return store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
 }
 
-const SECTIONS = ['today', 'library', 'read', 'technique', 'progress', 'play'] as const
+const SECTIONS = ['today', 'library', 'read', 'scales', 'technique', 'progress', 'play'] as const
 
 function view(name: (typeof SECTIONS)[number]) {
   for (const v of SECTIONS) $(`#${v}`).classList.toggle('on', v === name)
@@ -167,7 +168,7 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
 
-type Section = 'today' | 'songs' | 'read' | 'technique' | 'progress'
+type Section = 'today' | 'songs' | 'read' | 'scales' | 'technique' | 'progress'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -176,6 +177,7 @@ async function showSection(name: Section, err = '') {
   if (name === 'today') await showToday()
   else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
+  else if (name === 'scales') await showScales()
   else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
@@ -389,6 +391,39 @@ async function saveRun(s: RunSpec) {
   await store.saveRuns({ ...saved, last: s })
 }
 
+let scaleTab: 'stages' | 'pick' = 'stages'
+let scalePick: ScalePick = { tonic: 0, form: 'major', hands: 'R', oct: 1, bpm: 60 }
+
+async function showScales() {
+  const stats = await store.getScales()
+  const f = nextScaleStage(stats)
+  scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick)
+}
+
+const startScale = (c: ScaleCard, bpm: number) => void openSong(scaleSong(c, bpm), 'perform')
+
+$('#scales').addEventListener('change', (e) => {
+  const t = e.target as HTMLInputElement
+  if (t.name === 'scaleTab') {
+    scaleTab = t.value as typeof scaleTab
+    return void showScales()
+  }
+  const v = (id: string) => ($(`#${id}`, $('#scales')) as HTMLSelectElement | null)?.value
+  if (!v('sgForm')) return
+  const form = v('sgForm') as Form
+  scalePick = { form, tonic: Number(v('sgKey')), hands: v('sgHands') as ScalePick['hands'], oct: Number(v('sgOct')) as 1 | 2, bpm: Number(v('sgBpm')) }
+  if (t.id !== 'sgBpm') void showScales() // major and minor name the keys differently, and the fingering line follows the key
+})
+$('#scales').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest('button')
+  if (!b) return
+  if (b.id === 'sgStart') startScale(scalePick, scalePick.bpm)
+  else if (b.dataset.sstage) {
+    const st = SCALE_STAGES.find((x) => x.id === b.dataset.sstage)!
+    void store.getScales().then((stats) => startScale(nextCard(st, stats), st.bpm))
+  }
+})
+
 async function ensureStage() {
   if (highway) return
   await Promise.all([document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
@@ -441,7 +476,7 @@ function screenKeys(canvas: HTMLCanvasElement) {
 async function openSong(base: Song, mode: Mode) {
   game.endPass()
   // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
-  const level = mode === 'read' || base.id.startsWith('tech:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
+  const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
   const song = simplify(base, level)
   if (settings.asWritten && !song.dyn && mode !== 'read') {
     const w = writtenTargets(song.notes, settings.edges)
@@ -478,6 +513,7 @@ function leave() {
   document.body.classList.remove('hush')
   const wasDrill = !!drill
   const techSong = current?.song.id.startsWith('tech:')
+  const scaleSong_ = current?.song.id.startsWith('scale:')
   if (drill) void store.saveDrill(drillStats)
   drill = undefined
   run = undefined
@@ -493,7 +529,7 @@ function leave() {
   document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
   history.replaceState(null, '', location.pathname)
-  void showSection(wasDrill ? 'read' : techSong ? 'technique' : 'songs')
+  void showSection(wasDrill ? 'read' : scaleSong_ ? 'scales' : techSong ? 'technique' : 'songs')
 }
 
 /** Show the panes the view asks for: staff only, both, or falling notes only. */
@@ -1131,17 +1167,30 @@ async function onDone(r: Result) {
     r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
   )
   current.heat = prog.heat
-  void store.markPlan(dayKey(), current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
+  void store.markPlan(dayKey(), /^(tech|scale):/.test(current.song.id) ? 'warm' : game.loop ? 'fix' : 'piece')
   if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
     void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
   }
+  let note = ''
+  const sc = parseId(current.song.id)
+  if (sc && r.mode === 'perform') {
+    const stats = await store.getScales()
+    const ok = passed(r)
+    const before = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]?.best ?? 0
+    recordScale(stats, sc.card, sc.bpm, ok)
+    await store.saveScales(stats)
+    const s = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]
+    note = ok
+      ? s.best > before ? `Three clean runs in a row: <b>${esc(cardName(sc.card))}</b> is solid at ${sc.bpm}.` : `A clean run, ${s.streak} of ${CLEAN_RUNS} at ${sc.bpm}.`
+      : `This run did not count: ${!r.clean ? 'a missed or wrong note' : r.acc < 0.85 ? 'the timing slipped' : 'the touch was uneven'}. The count starts again.`
+  }
   const worst = worstBars(r.heat)
   const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
-  res.innerHTML = results(r, next)
+  res.innerHTML = results(r, next, note)
   resOpen(true)
   res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)

@@ -16,6 +16,7 @@ export interface Note {
   beats: number // duration in quarter notes
   flat?: boolean // a black key the source wants written as a flat (drills); otherwise spelled by the key
   want?: [number, number] // key velocity range (1..127) this note is meant to be played in; technique exercises set it
+  f?: number // fingering 1..5, drawn beside the head: scales set it
   // Notation layer. t, d, beats and bar above stay the performance; these say how to write it. All quarter notes.
   qb?: number // quantized onset from the start of its bar
   qd?: number // written length, snapped to a standard or tuplet value; clipped to the next onset in its voice and to the barline
@@ -61,6 +62,7 @@ export interface Raw {
   h?: Hand // set when the source already knows the hand
   flat?: boolean
   want?: [number, number]
+  f?: number // fingering 1..5, scales
   // Clean sources give their rhythm (quarters from the start); a MIDI import gives the quantized onset. Else it is read from t and d.
   q?: number
   dq?: number
@@ -144,7 +146,7 @@ export function build(
     .map(({ r, h, w }, id) => {
       const b = bars[w.bar]
       const q = (b.t1 - b.t0) / barQ(b)
-      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...w, ...(r.acc && { acc: r.acc }) }
+      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...(r.f && { f: r.f }), ...w, ...(r.acc && { acc: r.acc }) }
     })
   const last = notes.reduce((m, n) => Math.max(m, n.t + n.d), 0)
   const b0 = bars[0]

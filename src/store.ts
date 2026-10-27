@@ -1,6 +1,7 @@
 import { del, get, keys, set } from 'idb-keyval'
 import type { Stats } from './drill'
 import type { RunSpec } from './run'
+import type { ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
@@ -175,7 +176,7 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -188,11 +189,12 @@ export async function importAll(text: string) {
   if (d.practice) await set('practice:days', d.practice)
   if (d.technique) await set('tech:stats', d.technique)
   if (d.runs) await set('run:state', d.runs)
+  if (d.scales) await set('scale:stats', d.scales)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -211,4 +213,12 @@ export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; b
 
 export async function saveRuns(r: Awaited<ReturnType<typeof getRuns>>) {
   await set('run:state', r)
+}
+
+export async function getScales(): Promise<ScaleStats> {
+  return (await get<ScaleStats>('scale:stats')) ?? {}
+}
+
+export async function saveScales(s: ScaleStats) {
+  await set('scale:stats', s)
 }

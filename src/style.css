@@ -461,6 +461,7 @@ input[type='range']::-moz-range-thumb {
 #today,
 #library,
 #read,
+#scales,
 #technique,
 #progress {
   overflow: auto;
@@ -2009,6 +2010,7 @@ body.zen #dock .aids {
 #today > *,
 #library > *,
 #read > *,
+#scales > *,
 #technique > *,
 #progress > * {
   width: min(100%, 1100px);
@@ -2442,4 +2444,11 @@ dialog.sheet footer .btn {
 #staff .devmark {
   fill: var(--ink);
   opacity: 0.85;
+}
+
+/* fingering on scale notes */
+#staff .finger {
+  font: 700 15px var(--ui);
+  fill: var(--ink-2);
+  pointer-events: none;
 }
