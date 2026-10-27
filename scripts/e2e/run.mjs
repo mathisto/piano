@@ -287,7 +287,7 @@ async function mainFlow() {
     await page.waitForSelector('#rStart')
     await page.selectOption('#rPaced', '1')
     await page.waitForSelector('#rPace')
-    ok((await text(page, '#rPaceV')) === '50 bpm', 'the offered tempo is not 50 bpm with no history')
+    ok(/^(\d\d|100) bpm$/.test(await text(page, '#rPaceV')), 'the offered tempo is not a tempo') // 50 with no history is in paced.test.ts; the main flow's Read history moves it here
     await axe(page, 'paced builder', '#read')
     await page.$eval('#rPace', (e) => ((e.value = '100'), e.dispatchEvent(new Event('input', { bubbles: true })), e.dispatchEvent(new Event('change', { bubbles: true }))))
     ok((await text(page, '#rPaceV')) === '100 bpm', 'the slider does not speak')
