@@ -27,6 +27,8 @@ export interface Note {
   voice?: 1 | 2 // 2 is a long note held under a moving line in the same hand
   grace?: boolean // an ornament shorter than a 32nd: draw small, don't give it a beat (qb is the note it leads into)
   acc?: -1 | 0 | 1 // accidental to write with: a MIDI black key's, chosen from its neighbours, or a score's written one; spell(p, fifths, acc)
+  art?: 'stac' | 'ten' | 'acc' // a score's articulation: staccato (or staccatissimo), tenuto, accent
+  slur?: boolean // under a slur and joined to the next note of its hand (the slur's last note is not)
 }
 
 export interface Bar {
@@ -52,6 +54,8 @@ export interface Song {
   keys?: { bar: number; fifths: number }[] // key changes estimated from the notes, first at bar 0; fifths is the best single key
   dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
   flags?: string[] // what an importer could not do cleanly, for the ingestion pipeline: see scoreFlags in flags.ts
+  curve?: number[] // a score with dynamics marks: the written level (0..1) of each bar, the mean of its notes' v
+  wedges?: { t0: number; t1: number; up: boolean }[] // hairpins, by the first and last note under them (seconds); up is a crescendo
 }
 
 export interface Raw {
@@ -70,6 +74,8 @@ export interface Raw {
   grace?: boolean
   acc?: -1 | 0 | 1
   tuplet?: { num: number; den: number } // a score's own tuplet ratio, so its rhythm is never guessed
+  art?: Note['art']
+  slur?: boolean
 }
 
 /** One track: split at a pitch, but a note near the split follows whichever hand's line is nearest in pitch and time. */
@@ -148,7 +154,7 @@ export function build(
     .map(({ r, h, w }, id) => {
       const b = bars[w.bar]
       const q = (b.t1 - b.t0) / barQ(b)
-      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...(r.f && { f: r.f }), ...w, ...(r.acc !== undefined && { acc: r.acc }) }
+      return { id, t: r.t, d: r.d, p: r.p, v: r.v, h, beats: r.d / q, flat: r.flat, want: r.want, ...(r.f && { f: r.f }), ...w, ...(r.acc !== undefined && { acc: r.acc }), ...(r.art && { art: r.art }), ...(r.slur && { slur: true }) }
     })
   const last = notes.reduce((m, n) => Math.max(m, n.t + n.d), 0)
   const b0 = bars[0]

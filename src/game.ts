@@ -3,7 +3,7 @@ import { ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
-import { articulation, fixedAt, melodyHand, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
+import { articulation, fixedAt, melodyHand, songLines, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
 import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -25,6 +25,7 @@ export interface Result {
   artic: Artic | null // legato joins or staccato lengths, when the piece asks for one
   voice: Voicing | null // right hand over left, for melody-over-accompaniment and two-hand songs
   fixed?: number // the one velocity every note came in at (Fixed key touch)
+  follow: string[] // a song: how its written dynamics and articulation were followed, at most two lines
   dyn?: string // the technique exercise's dynamics, when it was one
   clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
@@ -361,6 +362,7 @@ export class Game {
       artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
       voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES, this.song.dyn === 'balance' ? 'R' : melodyHand(this.song.notes)),
       fixed: fixedAt(j.samples().map((x) => x.v)),
+      follow: settings.coach === 'off' || this.mode === 'read' || this.wait || judged(this.song.id) ? [] : songLines(this.song, this.presses, j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach, this.rate),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
       dyn: this.song.dyn,

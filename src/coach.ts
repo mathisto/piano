@@ -1,7 +1,7 @@
 import './coach.css'
-import { judged, lines, MIN_RUN } from './even'
-import type { Edges } from './touch'
-import type { Hand, Note } from './song'
+import { evenness, judged, lines, MIN_RUN, MIN_V, tolerance, type Coach, type Evenness } from './even'
+import { writtenTargets, type Edges } from './touch'
+import { barAt, type Hand, type Note, type Song } from './song'
 import { settings } from './settings'
 import * as store from './store'
 
@@ -61,8 +61,8 @@ export const LEGATO_GAP = 30 // ms: a lift shorter than this still sounds joined
 export const LEGATO_BLUR = 120 // ms: overlap past this (or a third of the gap, if longer) smears the two notes
 export const STACCATO_MAX = 0.5 // share of the written value: held longer than this is not detached
 
-/** Legato: the overlap of each key with the next one in its hand. Staccato: how much of each written value the key was held. */
-export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[], rate: number): Artic | null {
+/** Legato: the overlap of each key with the next one in its hand. Staccato: how much of each written value the key was held. `only` picks the notes judged (a song's staccato or slurred ones). */
+export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[], rate: number, only: (n: Note) => boolean = () => true): Artic | null {
   const by = new Map(presses.map((x) => [x.i, x])) // a note struck twice (Learn's hold-to-advance) keeps its last press
   const played = [...by.values()].map((x) => ({ ...x, t: notes[x.i].t, p: notes[x.i].p, h: notes[x.i].h }))
   const onsets = { R: [] as number[], L: [] as number[] }
@@ -72,6 +72,7 @@ export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[
   for (const l of lines(played))
     for (let k = 0; k < l.length; k++) {
       const a = l[k]
+      if (!only(notes[a.i])) continue
       const ts = onsets[a.h]
       const next = ts[ts.indexOf(a.t) + 1]
       if (next === undefined) continue
@@ -183,9 +184,165 @@ export async function tally(id: string, rating: string | undefined) {
   await store.saveCoach(book)
 }
 
+// ---------- following the score (songs) ----------
+
+/** A pattern from a song run; `n` is how often it showed, and the most repeated earn the results lines. */
+export interface Finding {
+  n: number
+  line: string
+}
+export const REPEATS = 3 // a pattern shows at least this often (and in a third of its chances) before it earns a line
+const MOST = 2 // song lines per run
+const often = (miss: number, n: number) => miss >= REPEATS && miss * 3 >= n
+const where = (s: Song, t0: number, t1: number) => {
+  const [a, b] = [barAt(s.bars, t0 + 1e-6) + 1, barAt(s.bars, t1 + 1e-6) + 1]
+  return a === b ? `bar ${a}` : `bars ${a} to ${b}`
+}
+
+/** Staccato notes held short and slurred notes joined, judged as in the exercises: only the lines worth saying. */
+export function articulationReport(song: Song, presses: Press[], rate = 1): Finding[] {
+  const out: Finding[] = []
+  const st = articulation('staccato', song.notes, presses, rate, (n) => n.art === 'stac')
+  if (st && often(st.n - st.ok, st.n)) out.push({ n: st.n - st.ok, line: `<b>${st.n - st.ok} of ${st.n}</b> staccato notes were held long (about ${Math.round(st.typical * 100)}% of their value); let each key spring back at once.` })
+  const lg = articulation('legato', song.notes, presses, rate, (n) => !!n.slur)
+  if (lg && often(lg.n - lg.ok, lg.n)) {
+    const how = lg.typical < -LEGATO_GAP ? 'had a gap; hold each key until the next one sounds' : lg.typical > LEGATO_BLUR ? 'blurred; let each key up as the next goes down' : 'were not joined'
+    out.push({ n: lg.n - lg.ok, line: `Under the slurs, <b>${lg.n - lg.ok} of ${lg.n}</b> joins ${how}.` })
+  }
+  return out
+}
+
+/** How far a line rises from its first point to its last: least squares through (t, y), each hand measured against its own mean. */
+function rise(xs: { t: number; h: Hand }[], ys: number[], span: number) {
+  const c = (h: Hand) => {
+    const k = xs.flatMap((x, i) => (x.h === h ? [i] : []))
+    return { t: mean(k.map((i) => xs[i].t)), y: mean(k.map((i) => ys[i])) }
+  }
+  const m = { R: c('R'), L: c('L') }
+  let num = 0
+  let den = 0
+  xs.forEach((x, i) => {
+    num += (x.t - m[x.h].t) * (ys[i] - m[x.h].y)
+    den += (x.t - m[x.h].t) ** 2
+  })
+  return den ? (num / den) * span : 0
+}
+
+/** Stretches where evenness is the point: 8 or more single notes in one hand, equal gaps, one written level, no accent. */
+export function levelRuns(notes: Note[], min = 8): Note[][] {
+  const out: Note[][] = []
+  for (const h of ['R', 'L'] as const) {
+    const on: Note[][] = []
+    for (const n of notes)
+      if (n.h === h && !n.grace) {
+        const last = on.at(-1)
+        if (last && n.t - last[0].t < 0.03) last.push(n)
+        else on.push([n])
+      }
+    let cur: Note[] = []
+    const flush = () => {
+      if (cur.length >= min) out.push(cur)
+      cur = []
+    }
+    for (const c of on) {
+      const [n, prev] = [c[0], cur.at(-1)]
+      if (c.length > 1 || n.art === 'acc') {
+        flush()
+        continue
+      }
+      const g0 = cur.length > 1 ? cur[1].t - cur[0].t : 0
+      if (prev && (Math.abs(n.v - prev.v) > 0.005 || (g0 && Math.abs(n.t - prev.t - g0) > g0 * 0.1))) flush()
+      cur.push(n)
+    }
+    flush()
+  }
+  return out
+}
+
+/**
+ * The written dynamics against the velocities you played, both on your calibrated range: hairpins (a flat or backwards line),
+ * changes between soft and loud at a bar line, accents over their neighbours, and evenness in a run written at one level.
+ */
+export function shapeReport(song: Song, samples: { v: number; h: Hand; p: number; t: number }[], e: Edges, coach: Exclude<Coach, 'off'> = 'steady'): Finding[] {
+  const out: Finding[] = []
+  if (!song.curve || samples.every((s) => s.v === samples[0].v)) return out // no written dynamics, or Fixed key touch
+  const tol = tolerance(e, coach)
+  const at = new Map(song.notes.map((n) => [`${n.t}:${n.p}`, n]))
+  const struck = samples.flatMap((s) => {
+    const n = at.get(`${s.t}:${s.p}`)
+    return n && s.v >= MIN_V ? [{ ...s, n }] : []
+  })
+  const mid = ([a, b]: [number, number]) => (a + b) / 2
+
+  const want = writtenTargets(song.notes, e)
+  if (want) {
+    const aim = new Map(song.notes.map((n, i) => [n, mid(want[i])]))
+    const off: string[] = []
+    let most = 0
+    for (const w of song.wedges ?? []) {
+      const xs = struck.filter((s) => s.t >= w.t0 - 1e-6 && s.t <= w.t1 + 1e-6)
+      if (xs.length < 2 * REPEATS) continue
+      const goal = rise(xs, xs.map((s) => aim.get(s.n)!), w.t1 - w.t0)
+      const got = rise(xs, xs.map((s) => s.v), w.t1 - w.t0)
+      if (Math.abs(goal) < 2 * tol || (Math.sign(got) === Math.sign(goal) && Math.abs(got) > tol)) continue
+      off.push(`You played the ${w.up ? 'crescendo' : 'diminuendo'} in ${where(song, w.t0, w.t1)} ${Math.abs(got) <= tol ? 'as a flat line' : `getting ${w.up ? 'softer' : 'louder'}`}`)
+      most = Math.max(most, xs.length)
+    }
+    if (off.length) out.push({ n: most, line: off[0] + (off.length > 1 ? `, and ${off.length - 1} more like it.` : '.') })
+  }
+
+  const lv = writtenTargets(song.curve.map((v) => ({ v })), e)
+  if (lv) {
+    const hm = { R: mean(struck.filter((s) => s.h === 'R').map((s) => s.v)), L: mean(struck.filter((s) => s.h === 'L').map((s) => s.v)) }
+    const per = song.bars.map(() => [] as number[])
+    for (const s of struck) per[s.n.bar]?.push(s.v - hm[s.h])
+    const pinned = (b: number) => song.wedges?.some((w) => barAt(song.bars, w.t0 + 1e-6) <= b && b <= barAt(song.bars, w.t1 + 1e-6))
+    let n = 0
+    let miss = 0
+    for (let b = 1; b < per.length; b++) {
+      const goal = mid(lv[b]) - mid(lv[b - 1])
+      if (Math.abs(goal) < 2 * tol || pinned(b) || pinned(b - 1) || per[b].length < 2 || per[b - 1].length < 2) continue
+      n++
+      const got = mean(per[b]) - mean(per[b - 1])
+      if (Math.sign(got) !== Math.sign(goal) || Math.abs(got) <= tol) miss++
+    }
+    if (often(miss, n)) out.push({ n: miss, line: `The score changes between soft and loud at <b>${n}</b> bar lines; you followed <b>${n - miss}</b> of them.` })
+  }
+
+  let acc = 0
+  let flat = 0
+  for (const l of lines(struck))
+    l.forEach((x, k) => {
+      if (x.n.art !== 'acc') return
+      const ref = l.filter((y, j) => j !== k && Math.abs(j - k) <= 3 && y.n.art !== 'acc').map((y) => y.v)
+      if (ref.length < 2) return
+      acc++
+      if (x.v - median(ref) < tol / 2) flat++
+    })
+  if (often(flat, acc)) out.push({ n: flat, line: `<b>${flat} of ${acc}</b> accents came out no louder than the notes around them.` })
+
+  let worst: { ev: Evenness; l: Note[] } | undefined
+  for (const l of levelRuns(song.notes)) {
+    const set = new Set(l)
+    const ev = evenness(struck.filter((s) => set.has(s.n)), e, coach)
+    if (ev && ev.n >= 6 && (!worst || ev.inside < worst.ev.inside)) worst = { ev, l }
+  }
+  const stray = worst ? Math.round((1 - worst.ev.inside) * worst.ev.n) : 0
+  if (worst && worst.ev.rating !== 'even' && stray >= REPEATS)
+    out.push({ n: stray, line: `In the run in ${where(song, worst.l[0].t, worst.l.at(-1)!.t)}, written at one level, <b>${Math.round(worst.ev.inside * 100)}%</b> of notes stayed within ±${worst.ev.band} of their neighbours.${worst.ev.hint ? ` ${worst.ev.hint}` : ''}` })
+  return out
+}
+
+/** At most two lines for a song run, the most repeated patterns first. */
+export const songLines = (song: Song, presses: Press[], samples: { v: number; h: Hand; p: number; t: number }[], e: Edges, coach: Exclude<Coach, 'off'>, rate: number) =>
+  [...articulationReport(song, presses, rate), ...shapeReport(song, samples, e, coach)]
+    .sort((a, b) => b.n - a.n)
+    .slice(0, MOST)
+    .map((f) => f.line)
+
 /** The extra results lines; `perform` already shows timing as its histogram caption. */
-export function coachLines(r: { timing: Timing | null; artic: Artic | null; voice: Voicing | null; fixed?: number; mode: string }, test: boolean) {
-  const out: string[] = []
+export function coachLines(r: { timing: Timing | null; artic: Artic | null; voice: Voicing | null; fixed?: number; mode: string; follow?: string[] }, test: boolean) {
+  const out: string[] = [...(r.follow ?? [])]
   if (test) out.push('A test run: no touch marks while you played.')
   if (r.timing && r.mode !== 'perform') out.push(timingLine(r.timing))
   if (r.artic) out.push(articLine(r.artic))

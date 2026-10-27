@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { articulation, fixedAt, marksFor, melodyHand, seen, timing, voiceLine, voicing, type Press } from './coach'
+import { articulation, articulationReport, fixedAt, levelRuns, marksFor, melodyHand, seen, shapeReport, songLines, timing, voiceLine, voicing, type Press } from './coach'
+import { fromMusicXml } from './musicxml'
+import { touchPiece } from './score-fixtures'
 import { DEFAULT_EDGES } from './touch'
 import { evenness } from './even'
 import type { Note } from './song'
@@ -124,5 +126,63 @@ describe('fading the live marks', () => {
   })
   it('a run too short to rate keeps the count', () => {
     expect(seen({ runs: 2, even: 2 }, undefined)).toEqual({ runs: 3, even: 2 })
+  })
+})
+
+describe('a real piece: following the written touch', () => {
+  const song = fromMusicXml(touchPiece(), 'Touch', 'id') // 120 bpm: a quarter is 500 ms
+  const E = DEFAULT_EDGES
+  /** Every note struck on time; `hold` ms held and `vel` velocity per note. */
+  const run = (hold: (n: Note) => number, vel: (n: Note, i: number) => number) => ({
+    presses: song.notes.map((n, i) => ({ i, down: n.t * 1000, up: n.t * 1000 + hold(n) })),
+    samples: song.notes.map((n, i) => ({ v: vel(n, i), h: n.h, p: n.p, t: n.t })),
+  })
+  const good = (n: Note) => (n.art === 'stac' ? 150 : n.slur ? 520 : 450)
+  const shaped = (n: Note, i: number) => Math.round(30 + (n.v - 0.35) * 160 + (n.art === 'acc' ? 20 : 0) + (i % 2)) // follows the page, with a little noise
+  const lines = (r: ReturnType<typeof run>) => songLines(song, r.presses, r.samples, E, 'steady', 1)
+
+  it('played as written: nothing to say', () => {
+    expect(lines(run(good, shaped))).toEqual([])
+  })
+  it('staccato held long and slurs lifted are each named', () => {
+    const r = run((n) => (n.art === 'stac' ? 480 : n.slur ? 400 : 450), shaped)
+    const a = articulationReport(song, r.presses)
+    expect(a.map((f) => f.line).join()).toMatch(/8 of 8<\/b> staccato/)
+    expect(a.map((f) => f.line).join()).toMatch(/7 of 7<\/b> joins had a gap/)
+  })
+  it('a flat crescendo and flat accents', () => {
+    const r = run(good, (_, i) => 70 + (i % 3))
+    const s = shapeReport(song, r.samples, E)
+    expect(s.map((f) => f.line)).toContain('You played the crescendo in bars 5 to 8 as a flat line.')
+    expect(s.map((f) => f.line).join()).toMatch(/4 of 4<\/b> accents/)
+  })
+  it('a crescendo played softer is named as such', () => {
+    const r = run(good, (n, i) => (n.bar >= 4 && n.bar <= 7 ? 100 - (n.bar - 4) * 15 : shaped(n, i)))
+    expect(shapeReport(song, r.samples, E)[0].line).toMatch(/crescendo in bars 5 to 8 getting softer/)
+  })
+  it('at most two lines, the most repeated first', () => {
+    const r = run((n) => (n.art === 'stac' ? 480 : n.slur ? 400 : 450), (_, i) => 70 + (i % 3))
+    const out = lines(r)
+    expect(out).toHaveLength(2)
+    expect(out[0]).toMatch(/staccato|crescendo/)
+  })
+  it('evenness only in the run written at one level', () => {
+    expect(levelRuns(song.notes).map((l) => l.length)).toEqual([17]) // bars 1-4 and the hairpin's first note, still p; then the level moves, and accents break
+    const r = run(good, (n, i) => (i < 16 ? (i % 4 === 2 ? 60 : 30) : shaped(n, i)))
+    expect(shapeReport(song, r.samples, E).map((f) => f.line).join()).toMatch(/run in bars 1 to 5, written at one level/)
+  })
+  it('a MIDI file (no written marks) and Fixed key touch say nothing about shape', () => {
+    const plain = { ...song, curve: undefined, notes: song.notes.map((n) => ({ ...n, art: undefined, slur: undefined })) }
+    const r = run(() => 480, () => 70)
+    expect(songLines(plain, r.presses, r.samples, E, 'steady', 1)).toEqual([])
+    expect(shapeReport(song, r.samples, E)).toEqual([])
+  })
+  it('steps between soft and loud at bar lines', () => {
+    // p, f, p, f in turn: four bar lines to follow, none followed
+    const s = fromMusicXml(touchPiece().replace(/<direction placement="below"><direction-type><wedge[^]*?<\/direction>/g, '').replace('<measure number="2">', '<measure number="2"><direction><direction-type><dynamics><f/></dynamics></direction-type></direction>').replace('<measure number="3">', '<measure number="3"><direction><direction-type><dynamics><p/></dynamics></direction-type></direction>').replace('<measure number="4">', '<measure number="4"><direction><direction-type><dynamics><f/></dynamics></direction-type></direction>').replace('<measure number="5">', '<measure number="5"><direction><direction-type><dynamics><p/></dynamics></direction-type></direction>'), 't', 'id')
+    const flat = s.notes.map((n, i) => ({ v: 70 + (i % 2), h: n.h, p: n.p, t: n.t }))
+    expect(shapeReport(s, flat, E).map((f) => f.line).join()).toMatch(/at <b>5<\/b> bar lines; you followed <b>0<\/b>/)
+    const follow = s.notes.map((n) => ({ v: n.v > 0.5 ? 100 : 40, h: n.h, p: n.p, t: n.t }))
+    expect(shapeReport(s, follow, E).map((f) => f.line).join()).not.toMatch(/bar lines/)
   })
 })

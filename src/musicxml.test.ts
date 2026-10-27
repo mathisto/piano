@@ -4,6 +4,7 @@ import { scoreFlags } from './flags'
 import { figure } from './layout'
 import { fromMusicXml, parseXml, unzip, xmlText } from './musicxml'
 import { spell } from './spell'
+import { touchPiece } from './score-fixtures'
 
 const XML = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
@@ -251,5 +252,38 @@ describe('musicxml jumps, keys, spelling, tuplets, cues and tempo', () => {
     const none = read(meas(note('C')))
     expect(none.bars[0].t1).toBeCloseTo(2.4)
     expect(scoreFlags(none)).toEqual(['no-tempo'])
+  })
+})
+
+describe('musicxml articulation and hairpins', () => {
+  const s = fromMusicXml(touchPiece(), 'Touch', 'id')
+  it('reads staccato, accents and slurs onto the notes', () => {
+    expect(s.notes.slice(0, 8).every((n) => n.art === 'stac')).toBe(true)
+    expect(s.notes.slice(8, 16).map((n) => !!n.slur)).toEqual([true, true, true, true, true, true, true, false]) // the slur's last note is not joined on
+    expect(s.notes.slice(32).map((n) => n.art ?? '')).toEqual(['acc', '', 'acc', '', 'acc', '', 'acc', ''])
+    expect(s.notes.slice(16, 32).some((n) => n.art || n.slur)).toBe(false)
+  })
+  it('a crescendo hairpin moves the level from p to the f at its end, note by note', () => {
+    const v = s.notes.slice(16, 33).map((n) => n.v)
+    expect(v[0]).toBeCloseTo(0.35)
+    expect(v[16]).toBeCloseTo(0.78)
+    for (let i = 1; i < v.length; i++) expect(v[i]).toBeGreaterThan(v[i - 1])
+    expect(s.wedges).toEqual([{ t0: 8, t1: 15.5, up: true }])
+    expect(s.curve![0]).toBeCloseTo(0.35)
+    expect(s.curve![9]).toBeCloseTo(0.78)
+    expect(s.curve![6]).toBeGreaterThan(s.curve![5])
+  })
+  it('a hairpin with no mark after it moves one step and holds', () => {
+    const x = touchPiece().replace('<dynamics><f/></dynamics>', '<words>x</words>')
+    const n = fromMusicXml(x, 't', 'id').notes
+    expect(n[32].v).toBeCloseTo(0.5)
+    expect(n[39].v).toBeCloseTo(0.5)
+  })
+  it('a repeated hairpin is two hairpins', () => {
+    const x = touchPiece().replace('<measure number="8">', '<measure number="8"><barline location="left"><repeat direction="forward"/></barline>').replace('</measure><measure number="9">', '<barline location="right"><repeat direction="backward"/></barline></measure><measure number="9">')
+    expect(fromMusicXml(x, 't', 'id').wedges).toHaveLength(2)
+  })
+  it('no marks, no curve', () => {
+    expect(fromMusicXml(XML, 't', 'id').curve).toBeUndefined()
   })
 })
