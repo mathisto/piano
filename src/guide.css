@@ -1,0 +1,151 @@
+/* The first-week card, the one-line tab notes, the Connect line and the Help sheet: quiet, Ink only, one lamp on the day's Start. */
+.tcard.guide {
+  grid-column: 1 / -1;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+.guide > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.guide h2 {
+  margin: 0;
+  font: 800 italic 22px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.guide header p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+}
+.guide ol {
+  display: grid;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gstep {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 42px;
+  padding: 4px;
+  border-top: 1px solid var(--line);
+}
+.gstep .pwho b {
+  font-size: 16px;
+}
+.gstep.later .pwho b,
+.gstep.skipped .pwho b {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.gstep.done .pwho b {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.gstep.now .pwho b {
+  font-size: 18px;
+}
+.gn {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 650;
+}
+.gstep.now .gn {
+  border-color: var(--lamp);
+  color: var(--ink);
+}
+.gact {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  min-width: 160px;
+}
+.gact .link,
+.gsk {
+  color: var(--ink-3);
+  font-size: 15px;
+}
+.gact .link {
+  min-height: var(--control);
+  padding: 0 4px;
+}
+
+.gnote,
+.kbline {
+  display: flex;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 20px;
+  color: var(--ink-2);
+}
+.gnote > span {
+  max-width: 72ch;
+}
+.gnote .link {
+  flex: none;
+  min-height: var(--control);
+  padding: 0 4px;
+}
+.kbline {
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--panel);
+}
+.kbline[hidden] {
+  display: none;
+}
+.kbline > span {
+  flex: 1 1 28ch;
+}
+.kbline b {
+  color: var(--ink);
+}
+
+.helpbody dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 18px;
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.helpbody dt {
+  color: var(--ink);
+  font-weight: 650;
+}
+.helpbody dd {
+  margin: 0;
+}
+.helpbody .fine {
+  max-width: 72ch;
+}
+
+@media (max-width: 760px) {
+  .gstep {
+    flex-wrap: wrap;
+  }
+  .gact {
+    min-width: 0;
+    margin-left: 40px;
+  }
+  .helpbody dl {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .helpbody dd {
+    margin-bottom: 8px;
+  }
+}

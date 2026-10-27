@@ -25,6 +25,8 @@ import { pathSection, startAttr, streakHtml } from './habit-ui'
 import type { Level, Row as GradeRow, Start } from './grades'
 import type { LadderLevel } from './ladder'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
+import { guideCard, HELP, keyboardLine, tabNote, type Guide } from './guide'
+import { inputs } from './midi'
 import type { Streak } from './streak'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
@@ -61,10 +63,7 @@ export function skeleton(app: HTMLElement) {
   <dialog id="tracks" class="sheet" aria-label="Options"></dialog>
   <dialog id="credits" class="sheet" aria-label="Credits"></dialog>
   <dialog id="setup" class="sheet" aria-label="Set up"></dialog>
-  <dialog id="help" class="sheet" aria-label="Shortcuts">
-    <header><h2>Shortcuts</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>B</kbd><span>Metronome</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This list</span></div>
-    <p class="fine">Hearing every note twice? Turn Local Control off on the keyboard. No keyboard: <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p></div>
+  <dialog id="help" class="sheet" aria-label="Help">${HELP}
   </dialog>
   <main id="main" style="display:grid;min-height:0">
     <section id="today" class="view on" aria-label="Today"></section>
@@ -168,7 +167,9 @@ function table(caption: string, rows: Row[], empty: string) {
 export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const head = (title: string, actions = '', lede = '') =>
-  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
+  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
+
+const noKeyboard = () => keyboardLine(inputs().length > 0)
 
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
@@ -340,7 +341,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="srow"><span>Fall speed</span><span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"><small>Fast</small></span></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot"><button class="link" id="sSetup">Set up</button> <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Shortcuts</button></p>`
+  <p class="fine foot"><button class="link" id="sSetup">Set up</button> <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Help</button></p>`
 }
 
 // ---------- reading drills ----------
@@ -391,7 +392,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
     .join('')
   el.innerHTML = `
     ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
-    ${tab === 'run' ? run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
+    ${tab === 'run' ? noKeyboard() + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
       <colgroup><col><col class="mcol">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`}`
@@ -476,6 +477,7 @@ interface Go {
 }
 
 export interface TodayData {
+  guide?: Guide | null // the first-week card
   last: { id: string; title: string; sub: string; first: boolean }
   again?: { id: string; title: string; sub: string } // a piece whose spaced review is due
   read: { id: string; name: string; pct: number; line: string }
@@ -533,6 +535,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .join('')
   el.innerHTML = `
     ${head('Today', `<span class="plan-cap">Plan</span><div class="seg" role="radiogroup" aria-label="Plan length">${PLAN_LENGTHS.map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
+    ${d.guide ? guideCard(d.guide) : ''}
     ${d.recap ? `<section class="tcard recap" aria-label="Last week"><span>Last week: <b>${d.recap.minutes} min</b> on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}.${d.recap.better ? ` Most improved: ${esc(d.recap.better)}.` : ''}</span>${d.recap.suggest > d.goal ? `<button class="btn ghost" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : ''}</section>` : ''}
     <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal, d.streak)}</section>
     <div class="plan">${rows}</div>`
@@ -838,7 +841,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
     ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
-    ${body}`
+    ${tab === 'quiz' ? noKeyboard() : ''}${body}`
 }
 
 // ---------------------------------------------------------------- Theory
@@ -881,5 +884,5 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       ${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
-  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${body}`
+  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${noKeyboard()}${body}`
 }

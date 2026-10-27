@@ -41,6 +41,7 @@ export function updateChip() {
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
   $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
   $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
+  document.querySelectorAll<HTMLElement>('.kbline').forEach((e) => (e.hidden = list.length > 0)) // the Connect line on Theory, the Quiz and Sight Run
   const su = document.querySelector('#suMidi')
   if (su) {
     su.textContent = midiLine()
@@ -77,6 +78,8 @@ export async function connectMidi() {
   updateChip()
   updateBanner()
 }
+
+document.addEventListener('click', (e) => (e.target as HTMLElement).closest('[data-connect]') && void connectMidi())
 
 let chipTimer = 0
 export function chipFlash(p: number) {
