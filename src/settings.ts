@@ -1,5 +1,6 @@
 import { instrumentId } from './instruments'
 import type { Coach } from './even'
+import type { Metro } from './metronome'
 import type { Opts } from './technique'
 import type { PlanMin } from './plan'
 export type KeyTouch = 'Light' | 'Medium' | 'Heavy' | 'Fixed' | 'Unknown'
@@ -11,7 +12,8 @@ export interface Settings {
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
   instrument: string // an id from instruments.ts: grand piano (default), other sampled instruments, or the small built-in synth
   volume: number
-  click: number // count-in click level, 0 = silent
+  click: number // count-in and metronome click level, 0 = silent count-in
+  metro: Metro // practice metronome: off, on the beat, or with eighths between
   names: boolean // note names on keys and notes
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
   fade: boolean // hide the name of a note on the bars once the Read drills show you know it
@@ -42,6 +44,7 @@ const DEFAULTS: Settings = {
   instrument: 'piano',
   volume: 0.7,
   click: 0.6,
+  metro: 'off',
   names: true,
   fade: true,
   asWritten: false,

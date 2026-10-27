@@ -1,4 +1,5 @@
 import * as audio from './audio'
+import { ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
@@ -86,6 +87,7 @@ export class Game {
   private anchorT = 0
   private autoI = 0
   private nextClick = 0
+  private nextMetro = 0 // song time up to which the metronome has handed clicks to the audio clock
   private stallAt = 0
   private stallBar = 0
   private lastPerf = 0
@@ -207,6 +209,7 @@ export class Game {
     this.t = t
     this.anchor(performance.now())
     this.nextClick = Math.ceil((t - 1e-6) / this.song.spb)
+    this.nextMetro = t
   }
 
   /** Jump while playing or paused (the scrubber): everything before `t` stops counting. */
@@ -285,6 +288,7 @@ export class Game {
       this.nextClick++
     }
     if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
+    this.metronome(lead.to, look)
 
     // listen-hand notes play themselves
     while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
@@ -327,6 +331,20 @@ export class Game {
       const last = this.song.notes[this.song.notes.length - 1]
       if (!this.loop && this.t > (last ? last.t + last.d : 0) + 0.5) this.finish()
     }
+  }
+
+  /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. It never runs past the loop end, nor past the note a wait is about to stall on (the beat then sounds as you play it). */
+  private metronome(from: number, look: number) {
+    if (this.mode === 'read' || !this.running()) return
+    let end = this.t + look
+    if (this.loop) end = Math.min(end, this.loop.b)
+    const i = this.wait ? this.judge.nextPending() : -1
+    if (i >= 0) end = Math.min(end, this.song.notes[i].t)
+    if (settings.metro !== 'off') {
+      for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, settings.metro === 'eighths'))
+        audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
+    }
+    this.nextMetro = Math.max(this.nextMetro, end)
   }
 
   private finish() {

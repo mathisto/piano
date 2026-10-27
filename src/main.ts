@@ -2036,6 +2036,8 @@ addEventListener('keydown', (e) => {
     game.toggle()
   } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current) {
     setZoom(settings.zoom * (e.key === '-' ? 1 / ZOOM.step : ZOOM.step))
+  } else if (e.key === 'b' && current && game.mode !== 'read') {
+    dock.cycleMetro()
   } else if (e.key === 'v' && current && game.mode !== 'read') {
     const order = ['sheet', 'both', 'falling'] as const
     setView(order[(order.indexOf(settings.view) + 1) % 3])

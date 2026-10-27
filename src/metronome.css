@@ -1,0 +1,32 @@
+/* the dock's metronome: a toggle, an eighths switch when it is on, and one dot per beat of the bar */
+.metro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.metro .btn {
+  min-width: 172px;
+}
+.metro .btn[aria-pressed='true'] {
+  background: var(--line-2);
+  border-color: var(--ink-2);
+}
+.beats {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.beats i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--edge);
+}
+.beats i:first-child {
+  width: 14px;
+  height: 14px;
+}
+.beats i.on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
