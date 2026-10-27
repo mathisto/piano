@@ -270,7 +270,7 @@ export function frame() {
   dock.frame()
   const j = game.judge
   if (game.mode === 'perform') {
-    if (j.score !== last.score) $('#hScore').textContent = `${Math.round(j.accuracy * 100)}%`
+    if (j.score !== last.score || !j.judged) $('#hScore').textContent = j.judged ? `${Math.round(j.accuracy * 100)}%` : '–' // a dash until a note has been judged
     if (j.combo !== last.combo) $('#hCombo').textContent = String(j.combo)
     last = { ...last, score: j.score, combo: j.combo }
   }
