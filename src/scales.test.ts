@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLEAN_RUNS, contraryLeft, explain, unchecked, keyName, cardKey, degreeName, degreeOfPitch, quizDeal, quizRecord, quizRight, derive, fourth, why, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
+import { CLEAN_RUNS, checkNote, contraryLeft, explain, unchecked, keyName, cardKey, degreeName, degreeOfPitch, quizDeal, quizRecord, quizRight, derive, fourth, why, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
 
 const c = (o: Partial<Card> = {}): Card => ({ tonic: 0, form: 'major', hands: 'R', oct: 1, ...o })
 
@@ -210,6 +210,17 @@ describe('contrary motion', () => {
   })
 })
 
+describe('unchecked scale fingerings', () => {
+  it('the quiz names only the hand it asked about', () => {
+    expect(checkNote(c({ tonic: 3, form: 'harmonic' }), 'L')).toMatch(/^Fingering for the left hand/)
+    expect(checkNote(c({ tonic: 3, form: 'harmonic' }), 'R')).toBe('')
+  })
+  it('say so in the explanation; a checked key does not', () => {
+    expect(explain(c({ tonic: 3, form: 'harmonic' })).why.join(' ')).toMatch(/left hand is not yet checked against a book/)
+    expect(explain(c()).why.join(' ')).not.toMatch(/checked/)
+  })
+})
+
 describe('the chromatic scale', () => {
   const f = (t: number, h: 'R' | 'L', oct = 1) => fingers(t, 'chromatic', h, oct).join(' ')
   it('from C: the standard fingering, thumb on white keys, 3 on black, 1-2 and 2-1 at E F and B C', () => {
@@ -285,6 +296,8 @@ describe('arpeggios', () => {
   it('every arpeggio is unchecked, in both hands, and says so', () => {
     for (const form of FORMS) expect(unchecked(c({ form, tonic: 4, hands: 'both' }))).toEqual(['R', 'L'])
     expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/thumb/)
+    expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/rule-derived, not yet checked against a book/)
+    expect(explain(c({ form: 'arpMajor' })).why.join(' ')).not.toMatch(/standard fingering/)
   })
   it('keys: key signatures and names', () => {
     expect(fifthsOf(0, 'dom7')).toBe(-1) // C7 is the dominant of F

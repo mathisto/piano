@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { articulation, fixedAt, marksFor, seen, timing, voicing, type Press } from './coach'
+import { articulation, fixedAt, marksFor, melodyHand, seen, timing, voiceLine, voicing, type Press } from './coach'
 import { DEFAULT_EDGES } from './touch'
 import { evenness } from './even'
 import type { Note } from './song'
@@ -65,12 +65,36 @@ describe('articulation', () => {
 })
 
 describe('voicing', () => {
-  it('the right hand over the left, with an aim from the calibrated range', () => {
-    const s = [...Array(6).fill({ v: 80, h: 'R' }), ...Array(6).fill({ v: 60, h: 'L' })]
-    expect(voicing(s, DEFAULT_EDGES)).toEqual({ gap: 20, aim: 10 })
+  const s = [...Array(6).fill({ v: 80, h: 'R' }), ...Array(6).fill({ v: 60, h: 'L' })]
+  it('the melody hand over the other, with an aim from the calibrated range', () => {
+    expect(voicing(s, DEFAULT_EDGES, 'R')).toEqual({ melody: 'R', gap: 20, aim: 10 })
+  })
+  it('a left-hand melody is judged against the right, not the other way round', () => {
+    const x = voicing(s, DEFAULT_EDGES, 'L')!
+    expect(x.gap).toBe(-20)
+    expect(voiceLine(x)).toContain('right hand ran <b>20</b> louder than the melody (left hand)')
+  })
+  it('says nothing without a clear melody hand', () => {
+    expect(voicing(s, DEFAULT_EDGES, null)).toBeNull()
   })
   it('needs both hands', () => {
-    expect(voicing(Array(8).fill({ v: 80, h: 'R' }), DEFAULT_EDGES)).toBeNull()
+    expect(voicing(Array(8).fill({ v: 80, h: 'R' }), DEFAULT_EDGES, 'R')).toBeNull()
+  })
+})
+
+describe('melodyHand', () => {
+  const bars = (r: number[], l: number[]): Note[] => [...r.map((p, bar) => ({ id: bar, t: bar, d: 1, p, v: 0.7, h: 'R' as const, bar, beats: 1 })), ...l.map((p, bar) => ({ id: 99 + bar, t: bar, d: 1, p, v: 0.7, h: 'L' as const, bar, beats: 1 }))]
+  it('is the right hand when it holds the top line', () => {
+    expect(melodyHand(bars([72, 74, 76, 77], [48, 50, 52, 53]))).toBe('R')
+  })
+  it('is the left hand for a left-hand melody (cello line over high chords)', () => {
+    expect(melodyHand(bars([60, 60, 60, 60], [67, 69, 71, 67]))).toBe('L')
+  })
+  it('is null when the hands trade the top line', () => {
+    expect(melodyHand(bars([72, 50, 72, 50], [48, 60, 48, 60]))).toBeNull()
+  })
+  it('is null with a single hand', () => {
+    expect(melodyHand(bars([72, 74, 76, 77], []))).toBeNull()
   })
 })
 
