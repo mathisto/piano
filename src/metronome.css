@@ -30,3 +30,23 @@
   background: var(--ink);
   border-color: var(--ink);
 }
+/* a paced Sight Run: the beat as a slim bar of its own above the staff, where the eyes are; never over the notation. A segment is on or off, nothing moves */
+#play:has(> #beatBar:not([hidden])) {
+  grid-template-rows: auto var(--rows);
+}
+.beat-bar {
+  display: flex;
+  gap: 6px;
+  padding: 4px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.beat-bar i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-2);
+}
+.beat-bar i.on {
+  background: var(--ink);
+}

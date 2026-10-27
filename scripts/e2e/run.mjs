@@ -295,6 +295,7 @@ async function mainFlow() {
     await ready(page)
     ok(await ev(page, () => window.__piano.game.paced && !window.__piano.game.wait && document.querySelector('#tempo').parentElement.hidden), 'not a paced game')
     await page.click('#go')
+    await wait(page, () => document.querySelectorAll('#beatBar i.on').length === 1 && !document.querySelector('#beats i')) // the beat shows in the bar above the staff, not in the dock
     await ev(page, () => window.__e2e.perform({ skip: [2, 9] })) // every other card on its beat, two never played: the pulse carries on
     const r = await res(page, 'Run results')
     const t = await r.textContent()

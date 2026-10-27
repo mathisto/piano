@@ -77,6 +77,7 @@ export function skeleton(app: HTMLElement) {
     <section id="technique" class="view" aria-label="Technique"></section>
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
+      <div id="beatBar" class="beat-bar" aria-hidden="true" hidden></div>
       <div id="staff"><div class="zoomc" role="group" aria-label="Staff size"><span class="zgrip" id="zoomGrip" aria-hidden="true">${icon('grip')}</span><button class="btn icon sm" id="zoomFit" aria-label="Fit the whole piece" title="Fit the whole piece">${icon('page')}</button><button class="btn icon sm" id="zoomOut" aria-label="Smaller staff, more bars">${icon('minus')}</button><button class="btn icon sm" id="zoomIn" aria-label="Larger staff, fewer bars">${icon('plus')}</button></div></div>
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">

@@ -28,6 +28,9 @@ export class Dock {
   private heat: number[] = []
   private lastHeat = 0
   private beatKey = ''
+  private get bar() {
+    return document.querySelector<HTMLElement>('#beatBar')!
+  }
   onNote = (_msg: string) => {}
   onHands = () => {}
 
@@ -143,6 +146,7 @@ export class Dock {
     const g = this.game
     const learn = g.mode === 'learn'
     this.host.querySelectorAll<HTMLElement>('[data-modes]').forEach((e) => (e.hidden = !e.dataset.modes!.split(' ').includes(g.mode)))
+    this.bar.hidden = !g.paced
     this.tempo.parentElement!.hidden = g.paced // a paced run's tempo is the one it was built with
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
@@ -155,9 +159,6 @@ export class Dock {
     const row = this.host.querySelector(learn ? '.aids' : '.dock-row')!
     if (m.parentElement !== row) row.insertBefore(m, row.querySelector(learn ? '.dock-fill' : '.dock-end'))
     lad.textContent = g.autoTempo ? 'Ladder on' : 'Ladder off'
-    // a paced run has no metronome button (the click is always on) but shows the beat dots: with the silent switch on, they are the pulse
-    m.hidden = m.hidden && !g.paced
-    this.host.querySelector<HTMLElement>('#metro')!.hidden = g.paced
     this.syncMetro()
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
     ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
@@ -189,9 +190,10 @@ export class Dock {
     b.textContent = `Metronome: ${settings.metro === 'beat' ? 'beats' : settings.metro}`
     this.beatKey = ''
     this.host.querySelector<HTMLElement>('#beats')!.replaceChildren()
+    this.bar.replaceChildren()
   }
 
-  /** The beat dots: one per beat of the bar, the current one lit. Touches the page only when the beat changes. */
+  /** The beat marks: one per beat of the bar, the current one lit. In a paced run they are the segments of the bar above the staff (where the eyes are), else the dots in the dock. Touches the page only when the beat changes. */
   private dots() {
     const g = this.game
     let b = (settings.metro !== 'off' || g.paced) && g.phase !== 'ready' && g.phase !== 'done' ? beatAt(this.song.bars, g.t) : null
@@ -202,7 +204,7 @@ export class Dock {
     const key = b ? `${b.n}:${b.k}` : ''
     if (key === this.beatKey) return
     this.beatKey = key
-    const el = this.host.querySelector<HTMLElement>('#beats')!
+    const el = g.paced ? this.bar : this.host.querySelector<HTMLElement>('#beats')!
     if (el.children.length !== (b?.n ?? 0)) el.replaceChildren(...Array.from({ length: b?.n ?? 0 }, () => document.createElement('i')))
     ;[...el.children].forEach((d, i) => d.classList.toggle('on', i === b?.k))
   }
