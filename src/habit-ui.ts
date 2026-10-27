@@ -28,7 +28,7 @@ export function pathSection(p: Level[], next?: Row): string {
     <p class="note">Five levels of technical requirements, from the public graded syllabi, in our own words. A requirement is solid when its practice is. Coming means nothing trains it yet.</p>
     ${p
       .map(
-        (l) => `<details class="libgrp lvl"${l.level === open ? ' open' : ''}><summary>Level ${l.level}<span>${l.solid} of ${l.total} solid${l.coming ? ` · ${l.coming} coming` : ''}</span></summary>
+        (l) => `<details class="all lvl"${l.level === open ? ' open' : ''}><summary>Level ${l.level}<span>${l.solid} of ${l.total} solid${l.coming ? ` · ${l.coming} coming` : ''}</span></summary>
         <ul class="rqs-list">${l.rows.map((r) => reqRow(r, r === l.next ? (r === next ? 'primary' : 'sm') : '')).join('')}</ul></details>`,
       )
       .join('')}`

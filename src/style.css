@@ -547,9 +547,24 @@ table.songs th.num {
 }
 table.songs td.acts {
   text-align: right;
-  white-space: nowrap;
 }
-table.songs col:first-child {
+/* three row actions fit side by side; a fourth (Options) or a narrow window wraps them instead of overprinting */
+table.songs col.acol {
+  width: 352px;
+}
+td.acts .row-actions {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+@media (max-width: 1000px) {
+  table.songs col.acol {
+    width: 320px;
+  }
+  td.acts .row-actions .btn {
+    padding: 0 10px;
+  }
+}
+table.songs:not(.stages) col:first-child {
   width: 242px;
 }
 table.songs td.thumb {
@@ -568,7 +583,7 @@ table.songs td.thumb {
 }
 /* a mid-width window keeps the cover and drops the mini-staff, so the title has room */
 @media (max-width: 1000px) {
-  table.songs col:first-child {
+  table.songs:not(.stages) col:first-child {
     width: 94px;
   }
   table.songs td.thumb {
@@ -713,6 +728,31 @@ table.stages td {
   padding-top: 8px;
   padding-bottom: 8px;
 }
+table.stages td.name small {
+  font-size: 15px;
+}
+/* Theory: the level selects line up in one column */
+#theory .prow .field {
+  display: block;
+  flex: none;
+  width: 340px;
+}
+#theory .prow select {
+  width: 100%;
+}
+@media (max-width: 1000px) {
+  #theory .prow .field {
+    width: 220px;
+  }
+}
+table.stages col.mcol {
+  width: 250px;
+}
+@media (max-width: 1000px) {
+  table.stages col.mcol {
+    width: 170px;
+  }
+}
 
 /* ---------- play: layout by view ---------- */
 #play {
@@ -732,7 +772,7 @@ table.stages td {
 @container stage (max-height: 420px) {
   #ready {
     top: auto;
-    bottom: 10px;
+    bottom: calc(24cqh + 8px); /* above the keyboard (24% of the stage at most), so the keys stay readable */
     transform: translateX(-50%);
     padding: 10px 24px 12px;
   }
@@ -743,15 +783,17 @@ table.stages td {
     display: none;
   }
 }
+/* a strip too short to hold the card above the keys: it sits on them */
+@container stage (max-height: 260px) {
+  #ready {
+    bottom: 10px;
+  }
+}
 /* the cover needs room above the title; short and mid-height stages go without */
 @container stage (max-height: 640px) {
   #ready .cover {
     display: none;
   }
-}
-#play.v-sheet .results {
-  position: fixed;
-  inset: 56px 0 0;
 }
 #split {
   position: relative;
@@ -796,10 +838,6 @@ body.reading .hud small {
 }
 #play.drill .ready span {
   font-size: 20px;
-}
-#play.drill .results {
-  position: fixed;
-  inset: 56px 0 0;
 }
 
 /* ---------- staff ---------- */
@@ -1438,9 +1476,10 @@ kbd {
 }
 
 /* ---------- results ---------- */
+/* over the whole play area, staff included: the stage alone is too short for the card in landscape */
 .results {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  inset: 56px 0 0;
   display: grid;
   place-items: center;
   background: var(--scrim);
@@ -1488,7 +1527,7 @@ kbd {
 }
 .hist {
   width: 100%;
-  height: 92px;
+  height: 76px;
   margin: 12px 0 6px;
 }
 .hist rect {
@@ -1513,6 +1552,14 @@ kbd {
 }
 #nav {
   margin-left: 6px;
+  /* seven tabs: a split-view window narrower than the row scrolls it sideways instead of pushing Settings off screen */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#nav::-webkit-scrollbar {
+  display: none;
 }
 #play.resopen #go,
 #play.resopen #restart {
@@ -1743,8 +1790,8 @@ button.link {
   table.songs col {
     width: auto !important;
   }
-  table.songs col:first-child,
-  table.songs th:first-child,
+  table.songs:not(.stages) col:first-child,
+  table.songs:not(.stages) th:first-child,
   table.songs td.thumb {
     display: none;
   }
@@ -1803,6 +1850,20 @@ button.link {
     width: 32px;
     height: 32px;
     margin-top: -13px;
+  }
+  input[type='range'] {
+    height: var(--control);
+  }
+  /* segment cells stay 38px to sit in their well; the hit area reaches the well's edge (44px) and is never narrower than tall */
+  .seg label::after {
+    content: '';
+    position: absolute;
+    inset: -3px 0;
+  }
+  .seg span,
+  .btn.sm,
+  .drawer .foot .link {
+    min-width: var(--control);
   }
 }
 
@@ -1914,7 +1975,7 @@ body.zen #dock .aids {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 14px 4px;
+  padding: 12px;
   border-top: 1px solid var(--line);
 }
 .prow:last-child {
@@ -1935,6 +1996,11 @@ body.zen #dock .aids {
 }
 .prow .mrow {
   width: 260px;
+}
+@media (max-width: 760px) {
+  .prow .mrow {
+    width: 140px;
+  }
 }
 .pact {
   flex: none;
@@ -2315,6 +2381,12 @@ dialog.sheet footer .btn {
   font: 600 14px/1 var(--ui);
   cursor: pointer;
 }
+@media (pointer: coarse) {
+  .chip-btn {
+    min-height: var(--control);
+    min-width: var(--control);
+  }
+}
 .chip-btn.on {
   background: var(--panel-3);
   color: var(--ink);
@@ -2438,7 +2510,7 @@ dialog.sheet footer .btn {
   font-size: 14px;
 }
 .hist.known rect.seen {
-  fill: var(--R);
+  fill: var(--ink);
   fill-opacity: var(--m);
 }
 .hist.known rect.unseen {

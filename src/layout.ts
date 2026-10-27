@@ -1051,6 +1051,8 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
           const h: Head = { x: x + dx, y, ids: n.ids, kind: c.fig.head, t: c.t, want: c.want, grace: c.grace, cont: c.cont, up, sys: si, clef, step, clamped }
           lc.heads.push(h)
           mark(si, y - 5, y + 5)
+          // scales: the finger number staff.ts draws away from the stem (baseline +27 below, -19 above) is ink too
+          if (!c.cont && !c.grace && song.notes[n.ids[0]]?.f) mark(si, up ? y + 31 : y - 31)
           if (c.fig.dots && !c.grace) {
             const online = step % 2 === BOTTOM_STEP[clef] % 2
             for (let d = 0; d < c.fig.dots; d++) lc.dots.push({ x: x + 10 + Math.max(0, dx) + d * 4.5, y: y - (online ? S / 2 : 0) })

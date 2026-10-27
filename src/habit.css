@@ -24,6 +24,20 @@
 .lvl {
   margin: 0 0 12px;
 }
+.lvl > summary {
+  min-height: var(--control);
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 650;
+}
+.lvl > summary span {
+  margin-left: 12px;
+  color: var(--ink-3);
+  font-size: 15px;
+  font-weight: 500;
+}
 .rqs-list {
   margin: 0 0 12px;
   padding: 0;
@@ -34,24 +48,24 @@
   grid-template-columns: minmax(0, 1fr) 170px 88px;
   align-items: center;
   gap: 20px;
-  padding: 12px 4px;
+  padding: 12px;
   border-top: 1px solid var(--line);
 }
 .rqn b {
   display: block;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 650;
 }
 .rqn span {
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: 15px;
 }
 .rqs {
   display: flex;
   flex-direction: column;
   gap: 6px;
   color: var(--ink-2);
-  font-size: 14px;
+  font-size: 15px;
 }
 .rq.solid .rqs {
   color: var(--ink);
@@ -78,4 +92,13 @@
 }
 .rqs .meter {
   flex: none;
+}
+
+/* the Set up sheet: plan rows in a sheet, a select as the row's action */
+#setup .pact select {
+  width: auto;
+}
+dialog.sheet footer .free {
+  margin: 0;
+  align-self: center;
 }
