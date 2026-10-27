@@ -6,28 +6,23 @@ import './style.css'
 import * as audio from './audio'
 import * as lib from './catalog'
 import * as coach from './coach'
-import { creditBlock, creditLine, libraryUrl } from './credits'
-import { Dock } from './dock'
+import { creditBlock, libraryUrl } from './credits'
 import { type Card, cardKey, cards, dayNum, deck, deckSong, dueCards, fluentMs, focus, mastery, nextStage, noteCards, record, reviewPool, type Stage, stageDeck, STAGES, type Stats, weakest } from './drill'
 import { type EarRun, earTap, earView, newEar, playCard, stopEar } from './ear-play'
-import type { GameEvent, Mode, Result } from './game'
+import type { Mode, Result } from './game'
 import { type Ctx, nextOf, path as gradePath, type Start } from './grades'
-import { Highway } from './highway'
 import { icon } from './icons'
-import { afterPass, barHtml, facts, hidden, passCard, type PassReport, startCard, startStage, TOP, verdict } from './memory'
+import { afterPass, barHtml, hidden, passCard, type PassReport, startStage, TOP, verdict } from './memory'
 import { chooseInput, inputs, type MidiMsg, monitor, onMidi, onPedal, typingKeyboard } from './midi'
 import { nextStep } from './pace'
 import { type PlanMin, theoryDue } from './plan'
-import { knownPitches } from './quiet'
-import { LOOK, lookCard, pct, pickPiece, type RtPiece, startRate, summaryCard } from './readthrough'
+import { LOOK, pct, pickPiece, type RtPiece, startRate, summaryCard } from './readthrough'
 import { buildSummary, reportLink } from './report'
 import { bestKey, deal, DEFAULT_RUN, goalMs, LIMITS, newTally, runCards, type RunSpec, SET, tally, widened } from './run'
 import { type Card as ScaleCard, CLEAN_RUNS, degreeOfPitch, type Form, keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, quizDeal, quizRecord, quizRight, type QuizStats, record as recordScale, scaleSong, STAGES as SCALE_STAGES } from './scales'
 import { save, settings, showSetup } from './settings'
-import { autoLevel, type Level, LEVELS, simplify } from './simplify'
-import { barAt, fromSpec, type Song } from './song'
+import { barAt, fromSpec } from './song'
 import { noteName } from './spell'
-import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
 import { streak as dayStreak } from './streak'
@@ -35,13 +30,14 @@ import { applyRun, nextRecipe, stateOf, SYLLABUS, type TechStats } from './sylla
 import { exercise, type Opts, PATTERNS } from './technique'
 import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from './theory'
 import { thumb } from './thumb'
-import { calibrate, writtenTargets } from './touch'
-import { $, art, CAL_NOTES, cardName, creditsDialog, drawer, drillResults, progressView, type QuizState, readView, results, RUN_START, runForm, runResults, runTitle, type ScalePick, scalesView, setupDialog, type StageRow, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
+import { calibrate } from './touch'
+import { $, CAL_NOTES, cardName, creditsDialog, drawer, drillResults, progressView, type QuizState, readView, results, RUN_START, runForm, runResults, runTitle, type ScalePick, scalesView, setupDialog, type StageRow, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, resOpen, rt, run, runSpec, say, type Section, setCalibrating, setCurrent, setDock, setDrill, setDrillStats, setHighway, setMem, setPlayed, setRt, setRun, setRunSpec, setStaff, staff, stageById, starters, worstBars } from './app/state'
+import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, resOpen, rt, run, runSpec, say, type Section, setCalibrating, setDrill, setDrillStats, setMem, setPlayed, setRt, setRun, setRunSpec, staff, stageById, starters, worstBars } from './app/state'
 import { chipFlash, connectMidi, flash, midiLine, midiState, updateBanner, updateChip } from './app/banner'
-import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, practised, screenKeys, setView, setZoom, syncMode, view, wake, zen, ZOOM } from './app/stage'
-import { lens, libraryData, libSong, openTracks, shareFile, showLibrary } from './app/library'
+import { flushPractice, practised, setView, setZoom, syncMode, view, zen, ZOOM } from './app/stage'
+import { lens, libraryData, openTracks, shareFile, showLibrary } from './app/library'
+import { fixBars, leave, onPhase, openById, openLibrary, openSong } from './app/play'
 
 let readTab: 'stages' | 'run' = 'stages'
 
@@ -181,17 +177,6 @@ $('#today').addEventListener('click', (e) => {
   else if (b.dataset.today === 'sight') void readThrough(b.dataset.id)
   else void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
-
-/** Open a piece in Learn with two worst bars looped at a lower tempo. */
-async function fixBars(id: string, a: number, b: number) {
-  await openById(id, 'learn')
-  if (!current || current.song.id !== id) return
-  const bars = current.song.bars
-  game.setRate(0.7)
-  game.setLoop({ a: bars[a].t0, b: bars[b].t1 })
-  syncMode()
-  onPhase()
-}
 
 async function showTechnique() {
   const el = $('#technique')
@@ -496,199 +481,7 @@ $('#scales').addEventListener('click', (e) => {
   }
 })
 
-async function ensureStage() {
-  if (highway) return
-  await Promise.all([document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
-  const h = setHighway(new Highway($('#stage'), game)) // the guard above narrows `highway`, so the new one is read through `h`
-  await h.init()
-  h.onFrame = frame
-  screenKeys(h.app.canvas)
-  setStaff(new Staff($('#staff'), game))
-  staff.onDense = () => void stepSimplify()
-  setDock(new Dock($('#dock'), game))
-  dock.onNote = flash
-  dock.onHands = () => staff.render()
-}
-
-async function openSong(base: Song, mode: Mode) {
-  game.endPass()
-  // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
-  const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
-  const song = simplify(base, level)
-  if (settings.asWritten && !song.dyn && mode !== 'read') {
-    const w = writtenTargets(song.notes, settings.edges)
-    if (w) song.notes.forEach((n, i) => (n.want = w[i]))
-  }
-  game.known = knownPitches(await store.getDrill())
-  view('play')
-  void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
-  await ensureStage()
-  game.load(song, mode)
-  const prog = await store.getProgress(song.id)
-  setCurrent({ song, base, level, heat: prog.heat })
-  $('#title').textContent = song.title
-  $('#stagesBtn').hidden = mode !== 'read'
-  document.body.classList.toggle('reading', mode === 'read')
-  $('#brand').setAttribute('aria-label', 'Piano Forte: leave this piece')
-  if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
-  $('#modeSeg').hidden = mode === 'read'
-  $('#play').classList.toggle('drill', mode === 'read')
-  applyLayout()
-  highway.layout()
-  staff.render()
-  dock.setSong(song, prog.heat)
-  syncMode()
-  dock.setPhase()
-  resOpen(false)
-  onPhase()
-  if (!$('#ready').contains(document.activeElement)) $('#go').focus({ preventScroll: true }) // Play is the first stop of a new piece, not the ninth
-  history.replaceState(null, '', mode === 'read' ? location.pathname : '#' + song.id)
-}
-
-function leave() {
-  if (document.body.classList.contains('zen')) zen()
-  void flushPractice()
-  document.body.classList.remove('hush')
-  const wasDrill = !!drill
-  const techSong = current?.song.id.startsWith('tech:')
-  const scaleSong_ = current?.song.id.startsWith('scale:')
-  if (drill) void store.saveDrill(drillStats)
-  setDrill(undefined)
-  setRun(undefined)
-  rtEnd()
-  memEnd()
-  staff.lookahead = 0
-  game.endPass()
-  if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
-  if (calibrating) {
-    settings.offset = calibrating.prevOffset
-    setCalibrating(undefined)
-  }
-  setCurrent(undefined)
-  $('#stagesBtn').hidden = true
-  document.body.classList.remove('reading')
-  $('#play').classList.remove('drill')
-  history.replaceState(null, '', location.pathname)
-  void showSection(wasDrill ? 'read' : scaleSong_ ? 'scales' : techSong ? 'technique' : 'songs')
-}
-
 // ---------------------------------------------------------------- game events
-
-game.on((e: GameEvent) => {
-  switch (e.type) {
-    case 'press':
-      staff?.ghost(e.p, e.t)
-      chordUpdate()
-      break
-    case 'release':
-      staff?.ghostEnd(e.p)
-      chordUpdate()
-      break
-    case 'hit':
-      feel(e.note, e.v)
-      highway.hit(e.note.p, e.grade, e.note.h)
-      staff.ghostHit(e.note.p, e.note.id, e.grade)
-      staff.mark(e.note.id, `hit-${e.grade}`)
-      popup(e.grade, e.off, e.note.p, e.note.id, e.vel)
-      break
-    case 'ok':
-      feel(e.note, e.v)
-      highway.hit(e.note.p, 'ok', e.note.h)
-      staff.ghostHit(e.note.p, e.note.id, 'great')
-      staff.mark(e.note.id, 'hit-ok')
-      if (e.vel) popup(null, 0, e.note.p, e.note.id, e.vel)
-      if (drill) drillOk(e.note.id, e.rt, e.clean)
-      break
-    case 'hold':
-      if (e.grade === 'short') staff.cut(e.note.id)
-      else if (e.grade === 'long') staff.over(e.note.id)
-      break
-    case 'miss':
-      staff.mark(e.note.id, 'miss')
-      popup('miss', 0, e.note.p, e.note.id)
-      break
-    case 'wrong':
-      highway.wrong(e.p)
-      staff.ghostBad(e.p)
-      staff.uncover()
-      break
-    case 'loop':
-      fixChain(e.clean)
-      break
-    case 'short':
-      flash('Hold it a little longer')
-      break
-    case 'tempo':
-      dock.sync()
-      say(`Tempo ${Math.round(e.rate * 100)} percent`)
-      flash(`Tempo ${Math.round(e.rate * 100)}%`)
-      break
-    case 'phase':
-      onPhase()
-      break
-    case 'pass':
-      if (current && game.mode !== 'read') void store.commit(current.song.id, e.heat)
-      break
-    case 'done':
-      void onDone(e.result)
-      break
-  }
-})
-
-function onPhase() {
-  if (!dock || !current) return
-  if (game.phase === 'ready') {
-    for (const f of Object.values(felt)) (f.v = []), (f.t = -1)
-    const s = game.song
-    void coach.arm(s.id).then((m) => m === 'none' && coach.coached(s.id, s.dyn, game.mode) && flash('A test run: no touch marks this time'))
-  }
-  dock.setPhase()
-  const r = $('#ready')
-  r.hidden = game.phase !== 'ready'
-  $('#modeSeg').hidden = game.mode === 'read' || game.phase === 'ready' // the start card carries the choice until play begins
-  if (game.phase === 'ready') {
-    resOpen(false)
-    let legend = ''
-    try {
-      if (!localStorage.getItem('piano.legend') && !drill && !calibrating && !rt && game.view !== 'sheet') {
-        legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
-        localStorage.setItem('piano.legend', '1') // the colours explain themselves after one song
-      }
-    } catch {
-      /* private mode: the legend shows every time */
-    }
-    const go = matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'
-    const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'} ${go}</span>`
-    const lp = current.base.id.startsWith('lib:') ? lib.piece(current.base.id.slice(4)) : undefined
-    const report = lp ? reportLink(lib.catalog, lp, game.t > 0 ? barAt(game.song.bars, game.t) + 1 : undefined) : ''
-    const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
-    const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
-    r.innerHTML = mem
-      ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
-      : rt
-      ? lookCard({ title: current.song.title, left: rt.left, rate: rt.rate, ahead: !!settings.readAhead, why: rt.why, credit: current.credit })
-      : drill
-      ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
-      : calibrating
-        ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}${report}`
-    r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
-      if (!current) return
-      const { base, credit } = current
-      await store.setSimplify(base.id, Number(x.value))
-      await openSong(base, game.mode)
-      if (current) current.credit = credit
-      onPhase()
-    }))
-    r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
-    r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => memStage(Number(x.value))))
-  }
-  if (rt) rtPhase()
-  wake()
-  if (game.phase === 'paused') say('Paused')
-  if (game.phase === 'waiting') say('Waiting for you')
-  updateBanner()
-}
 
 // ---------------------------------------------------------------- Read through
 
@@ -1405,27 +1198,6 @@ $('#read').addEventListener('click', (e) => {
   } else if (b.dataset.review) void startDrill('review')
 })
 
-/** Thin the notes one level, from the 'too dense' hint on the staff. */
-async function stepSimplify() {
-  if (!current || current.level >= 3) return
-  const { base, credit } = current
-  await store.setSimplify(base.id, current.level + 1)
-  await openSong(base, game.mode)
-  if (current) current.credit = credit
-  onPhase()
-}
-
-function chooseMode(mode: Mode) {
-  game.endPass()
-  game.setMode(mode)
-  ;($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
-  resOpen(false)
-  syncMode()
-  onPhase()
-}
-
-for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) r.onchange = () => chooseMode(r.value as Mode)
-
 addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement
   const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
@@ -1454,11 +1226,6 @@ addEventListener('keydown', (e) => {
   }
 })
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting')) game.toggle()
-})
-addEventListener('pagehide', () => game.endPass())
-
 // ---------------------------------------------------------------- library actions + import
 
 $('#library').addEventListener('click', async (e) => {
@@ -1478,19 +1245,6 @@ $('#library').addEventListener('click', async (e) => {
     void openTracks(b.dataset.tracks)
   }
 })
-
-/** Fetch a piece from the open library, then play it like any imported file, with its credit on the start card. */
-async function openLibrary(id: string, mode: Mode) {
-  const p = lib.piece(id)
-  if (!p) return
-  try {
-    await openSong(await libSong(p), mode)
-    if (current) current.credit = creditLine(lib.catalog, p)
-    onPhase()
-  } catch (err) {
-    void showSection('songs', (err as Error).message)
-  }
-}
 
 /** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
 async function openCredits() {
@@ -1527,21 +1281,7 @@ function openSetup() {
   d.showModal()
 }
 
-async function openById(id: string, mode: Mode) {
-  if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
-  const i = STARTERS.findIndex((s) => s.spec.id === id)
-  if (i >= 0) return openSong(starters[i], mode) // awaited: fixBars and readThrough look at the piece once it is open
-  const row = (await store.listSongs()).find((s) => s.id === id)
-  if (row) {
-    try {
-      await openSong(await store.toSong(row, settings.split), mode)
-    } catch (err) {
-      void showLibrary((err as Error).message)
-    }
-  }
-}
-
-Object.assign(hooks, { openDrawer, showSection })
+Object.assign(hooks, { openDrawer, showSection, rtEnd, rtPhase, memEnd, memStage, drillOk, onDone })
 
 // ---------------------------------------------------------------- boot
 
