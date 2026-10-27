@@ -18,6 +18,10 @@ import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, t
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
+import { pathSection, startAttr, streakHtml } from './habit-ui'
+import type { Level, Row as GradeRow, Start } from './grades'
+import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
+import type { Streak } from './streak'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -456,6 +460,13 @@ function pathBlock(path: PathRow[]) {
     ${rest.length ? `<details class="all"><summary>${rest.length} more</summary><div class="plan">${rest.map(row).join('')}</div></details>` : ''}`
 }
 
+/** A plan row that starts something through the same route as the Path: a title, a line and what to start. */
+interface Go {
+  title: string
+  sub: string
+  start: Start
+}
+
 export interface TodayData {
   last: { id: string; title: string; sub: string; first: boolean }
   again?: { id: string; title: string; sub: string } // a piece whose spaced review is due
@@ -467,16 +478,22 @@ export interface TodayData {
   review?: { name: string; id: string; line: string } // a second reading stage, for the longest plan
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
   goal: number
-  planMin: 5 | 10 | 20
+  planMin: PlanMin
+  streak: Streak
+  scale?: Go & { pct: number } // the next Scales stage, for the longer plans
+  theory?: Go // a Theory session with cards due
+  path?: Go // the next requirement on the Path, when Today has no row of its own for it
   done: string[] // steps finished today
   recap?: { minutes: number; played: number; suggest: number; better?: string } // last week, shown early in the week
 }
 
-const weekBlock = (w: TodayData['week'], goal: number) => `
+const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) => `
   <div class="week" role="img" aria-label="${w.days.filter((d) => d.played).length} days practised this week, ${w.minutes} of ${goal} minutes">
     ${w.days.map((d) => `<span class="day${d.played ? ' on' : ''}${d.today ? ' today' : ''}"><i></i>${d.label}</span>`).join('')}
   </div>
-  <div class="goal"><div class="meter${w.minutes >= goal ? ' solid' : ''}"><i style="width:${Math.min(100, Math.round((w.minutes / goal) * 100))}%"></i></div><span><b>${w.minutes}</b> of ${goal} min</span></div>`
+  <div class="goal"><div class="meter${w.minutes >= goal ? ' solid' : ''}"><i style="width:${Math.min(100, Math.round((w.minutes / goal) * 100))}%"></i></div><span><b>${w.minutes}</b> of ${goal} min</span></div>${streak ? streakHtml(streak) : ''}`
+
+const go = (c: string, s: Start, word: string) => `<button class="btn${c}" data-today="start" data-start="${startAttr(s)}">${c.includes('primary') ? icon('play') : ''}${word}</button>`
 
 /** The day as a short list in practice order; nothing is locked and each row stands alone. */
 export function todayView(el: HTMLElement, d: TodayData) {
@@ -487,10 +504,13 @@ export function todayView(el: HTMLElement, d: TodayData) {
     { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${d.last.id}">${c.includes('primary') ? icon('play') : ''}${d.last.first ? 'Start' : 'Continue'}</button>` },
     ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${d.again!.id}">Play</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${d.fix!.id}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
+    ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
+    ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
+    ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
+    { key: 'run', min: 3, title: 'Sight Run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${c.includes('primary') ? icon('play') : ''}Start</button>` },
     ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${d.review!.id}">${c.includes('primary') ? icon('play') : ''}Practice</button>` }] : []),
   ]
-  const keep: Record<number, string[]> = { 5: ['warm', 'read'], 10: ['warm', 'read', 'piece', 'again'], 20: ['warm', 'read', 'piece', 'again', 'fix', 'review'] }
-  const plan = all.filter((r) => keep[d.planMin].includes(r.key))
+  const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
   // what is still to do comes first, in practice order; finished steps sink to the bottom as a record of the day
   const ordered = [...plan.filter((r) => !d.done.includes(r.key)), ...plan.filter((r) => d.done.includes(r.key))]
   const first = ordered.find((r) => !d.done.includes(r.key))
@@ -502,13 +522,16 @@ export function todayView(el: HTMLElement, d: TodayData) {
     })
     .join('')
   el.innerHTML = `
-    ${head('Today', `<span class="plan-cap">Plan</span><div class="seg" role="radiogroup" aria-label="Plan length">${[5, 10, 20].map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
+    ${head('Today', `<span class="plan-cap">Plan</span><div class="seg" role="radiogroup" aria-label="Plan length">${PLAN_LENGTHS.map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
     ${d.recap ? `<section class="tcard recap" aria-label="Last week"><span>Last week: <b>${d.recap.minutes} min</b> on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}.${d.recap.better ? ` Most improved: ${esc(d.recap.better)}.` : ''}</span>${d.recap.suggest > d.goal ? `<button class="btn ghost" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : ''}</section>` : ''}
-    <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal)}</section>
+    <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal, d.streak)}</section>
     <div class="plan">${rows}</div>`
 }
 
 export interface ProgressData {
+  streak: Streak
+  path: Level[]
+  next?: GradeRow // the one requirement to work on next
   week: TodayData['week']
   goal: number
   stages: StageRow[]
@@ -583,7 +606,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
   el.innerHTML = `
     ${head('Progress')}
     <h2 class="sec">This week</h2>
-    <div class="tcard">${weekBlock(d.week, d.goal)}
+    <div class="tcard">${weekBlock(d.week, d.goal, d.streak)}
       <label class="field inline"><span>Weekly goal</span><select id="pGoal">${[30, 60, 90, 120, 180].map((m) => opt(m, `${m} min`, d.goal)).join('')}</select></label></div>
     <h2 class="sec">Over time</h2>
     ${overTime(d.history)}
@@ -604,6 +627,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
           .join('')}</div></div>`
       })
       .join('')}</div>
+    ${pathSection(d.path, d.next)}
     <h2 class="sec">Touch</h2>
     ${spark ? `${spark}<table class="songs"><caption class="sr-only">Recent sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="note">Finish a song on a real keyboard and its touch shows up here.</p>'}`
 }

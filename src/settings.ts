@@ -1,6 +1,7 @@
 import { instrumentId } from './instruments'
 import type { Coach } from './even'
 import type { Opts } from './technique'
+import type { PlanMin } from './plan'
 export interface Settings {
   fx: 0 | 1 // effects: off, calm
   fall: number // seconds of look-ahead on the highway
@@ -11,7 +12,7 @@ export interface Settings {
   names: boolean // note names on keys and notes
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
   fade: boolean // hide the name of a note on the bars once the Read drills show you know it
-  planMin: 5 | 10 | 20 // how long a Today plan should take
+  planMin: PlanMin // how long a Today plan should take
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
