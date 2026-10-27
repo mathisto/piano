@@ -128,7 +128,7 @@ describe('review schedule', () => {
     for (const c of cs(stage)) rec(st, ck(c), true, 900, 0)
     expect(dueCards(stage, st, 0)).toBe(0)
     expect(dueCards(stage, st, INTERVALS[1])).toBe(cs(stage).length)
-    expect(dueCards(ST[5], st, 99)).toBe(0) // bass cards were never seen
+    expect(dueCards(ST.find((s) => s.id === 'b-land')!, st, 99)).toBe(0) // bass cards were never seen
   })
 
   it('deals due cards more often', () => {
@@ -188,5 +188,100 @@ describe('melody stages', () => {
     const st: Stats = {}
     for (const c of cards(tune)) for (let i = 0; i < 6; i++) record(st, cardKey(c), true, 1500)
     expect(mastery(tune, st).solid).toBe(true)
+  })
+})
+
+import { fluentMs, stageDeck } from './drill'
+import { BOTTOM_STEP } from './spell'
+
+describe('curriculum fill', () => {
+  const stage = (id: string) => STAGES.find((s) => s.id === id)!
+  // the stages before the fill: their ids and cards are stored progress
+  const OLD = ['t-land', 't-five', 't-oct', 't-staff', 't-high', 'b-land', 'b-five', 'b-oct', 'b-staff', 'b-low', 'grand', 'sharps', 'flats', 'keys-g', 'keys-f', 'tune-c', 'tune-g', 'tune-f', 'tune-b', 'ints', 'triads']
+  const NEW = STAGES.filter((s) => !OLD.includes(s.id))
+  const ledgers = (p: number, c: ReturnType<typeof cards>[number]) => {
+    const clef = clefFor(p, c.hand)
+    const sp = spell(p, c.flat ? -2 : c.fifths ?? 0, c.sharp ? 1 : undefined)
+    const bottom = BOTTOM_STEP[clef]
+    return Math.max(0, Math.floor((sp.step - (bottom + 8)) / 2), Math.floor((bottom - sp.step) / 2))
+  }
+  const most = (id: string) => Math.max(...cards(stage(id)).map((c) => ledgers(c.pitches[0], c)))
+
+  it('keeps every old stage id and its cards', () => {
+    expect(OLD.every((id) => STAGES.some((s) => s.id === id))).toBe(true)
+    expect(cards(stage('t-high')).map(cardKey)).toEqual(whites(60, 84).map((p) => `1:treble:${p}`))
+    expect(new Set(STAGES.map((s) => s.id)).size).toBe(STAGES.length)
+  })
+
+  it('ledger stages hold one, then two ledger lines; anchors no more than two; octave signs need four or more', () => {
+    expect([most('t-led1'), most('b-led1')]).toEqual([1, 1])
+    expect([most('t-led2'), most('b-led2')]).toEqual([2, 2])
+    expect([most('t-anch'), most('b-anch')]).toEqual([2, 2])
+    for (const st of NEW.filter((s) => s.id !== 'oct8')) expect(most(st.id), st.id).toBeLessThanOrEqual(2)
+    // past three ledger lines the layout writes 8va or 8vb, so every card here is read under one
+    expect(cards(stage('oct8')).every((c) => ledgers(c.pitches[0], c) >= 4)).toBe(true)
+  })
+
+  it('pins each card to its hand and clef, inside the keyboard', () => {
+    for (const st of NEW) for (const c of cards(st)) expect(c.pitches.every((p) => p >= 21 && p <= 108), st.id).toBe(true)
+    expect(cards(stage('t-led2')).every((c) => c.hand === 'R' && clefFor(c.pitches[0], c.hand) === 'treble')).toBe(true)
+    expect(cards(stage('b-led1')).every((c) => c.hand === 'L' && clefFor(c.pitches[0], c.hand) === 'bass')).toBe(true)
+    expect(cards(stage('oct8')).map((c) => c.hand)).toEqual(['L', 'L', 'L', 'L', 'R', 'R', 'R', 'R', 'R'])
+  })
+
+  it('a switching set alternates treble and bass card by card', () => {
+    let i = 3
+    const rnd = () => ((i = (i * 9301 + 49297) % 233280) / 233280)
+    const d = stageDeck(stage('mixed'), {}, 3000, 24, rnd)
+    expect(d).toHaveLength(24)
+    for (let k = 1; k < d.length; k++) expect(clefFor(d[k].pitches[0], d[k].hand)).not.toBe(clefFor(d[k - 1].pitches[0], d[k - 1].hand))
+  })
+
+  it('reads keys and minors with the right signs', () => {
+    expect(cards(stage('keys-d')).every((c) => c.fifths === 2 && [2, 4, 6, 7, 9, 11, 1].includes(c.pitches[0] % 12))).toBe(true)
+    expect(cards(stage('keys-am')).map((c) => c.pitches[0] % 12)).toEqual(expect.arrayContaining([7, 8])) // G and G sharp
+    const dm = cards(stage('keys-dm'))
+    const song = deckSong('x', 'x', dm, -1)
+    const cs = song.notes.filter((n) => n.p % 12 === 1)
+    expect(cs).toHaveLength(2)
+    expect(cs.map((n) => spell(n.p, song.fifths, n.acc))).toEqual(cs.map(() => expect.objectContaining({ letter: 0, acc: 1 }))) // C sharp, not D flat
+    expect(spell(70, -1).acc).toBe(-1) // B flat comes from the signature
+  })
+
+  it('old stats leave new stages at 0, or unsolid where they share notes with the reach stages', () => {
+    const st: Stats = {}
+    for (const id of OLD) for (const c of cards(stage(id))) for (let k = 0; k < 12; k++) record(st, cardKey(c), true, 1000)
+    for (const id of OLD) expect(mastery(stage(id), st).solid, id).toBe(true)
+    for (const id of ['mixed', 'oct8', 'tune-a1', 'tune-a2', 'keys-d', 'keys-bb', 'keys-a', 'keys-eb']) expect(mastery(stage(id), st).pct, id).toBe(0)
+    // the anchors are the reach stages' own notes: the same card is the same skill wherever it is dealt
+    for (const s of NEW.filter((s) => !s.id.endsWith('-anch'))) expect(mastery(s, st).solid, s.id).toBe(false)
+  })
+
+  it('names a weak tune without garbage', () => {
+    const k = cardKey(cards(stage('tune-g'))[0])
+    expect(weakest({ [k]: { n: 5, clean: 0.2, rt: 4000 } }, 1)[0].name).toBe('tune from G4, key of G')
+  })
+})
+
+describe('the Fluent tier', () => {
+  it('tightens the goal to 1.5 s a card, never under 1.2 s', () => {
+    for (const st of STAGES) {
+      expect(fluentMs(st), st.id).toBeGreaterThanOrEqual(1200)
+      expect(fluentMs(st), st.id).toBeLessThan(st.goalMs)
+    }
+    expect(fluentMs(STAGES[0])).toBe(1500)
+  })
+
+  it('a stage is Solid at its goal before it is Fluent, from the same stats', () => {
+    const st = STAGES[0]
+    const stats: Stats = {}
+    for (const c of cards(st)) for (let i = 0; i < 12; i++) record(stats, cardKey(c), true, 2000)
+    expect(mastery(st, stats)).toEqual(mastery(st, stats, st.goalMs)) // old callers see no change
+    expect(mastery(st, stats).solid).toBe(true)
+    const f = mastery(st, stats, fluentMs(st))
+    expect(f.solid).toBe(false)
+    expect(f.pct).toBeCloseTo(1500 / 2000, 2)
+    for (const c of cards(st)) for (let i = 0; i < 12; i++) record(stats, cardKey(c), true, 1000)
+    expect(mastery(st, stats, fluentMs(st)).solid).toBe(true)
   })
 })

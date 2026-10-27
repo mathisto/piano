@@ -648,6 +648,16 @@ table.songs tr.band th {
 .meter.solid i {
   background: var(--ink);
 }
+/* Solid, climbing to Fluent: the second fill in Ink over the full Ink Soft one */
+.meter.tier {
+  position: relative;
+}
+.meter .fl {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 0;
+  background: var(--ink);
+}
 .mrow {
   display: flex;
   align-items: center;
