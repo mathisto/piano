@@ -59,6 +59,7 @@ export interface Song {
   parts?: string[] // names of the source parts, indexed like Note.part
   curve?: number[] // a score with dynamics marks: the written level (0..1) of each bar, the mean of its notes' v
   wedges?: { t0: number; t1: number; up: boolean }[] // hairpins, by the first and last note under them (seconds); up is a crescendo
+  marks?: { t: number; text: string }[] // the dynamic letters a score writes (p, mf, sfz), where it writes them
 }
 
 export interface Raw {

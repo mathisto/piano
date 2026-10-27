@@ -250,6 +250,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const flags: string[] = []
   const W: { a: number; b: number; up: boolean; m0: number; v0: number }[] = [] // hairpins, in part quarters
   let marked = false // the score writes any dynamics
+  const dynM: { m: number; q: number; text: string }[] = [] // where the letters are written, to draw them
 
   parts.forEach((part, pi) => {
     let div = 1
@@ -345,6 +346,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
               if (d.c[0] && d.c[0].n in DYN) {
                 curV = DYN[d.c[0].n]
                 marks.push({ at: base + q, v: curV })
+                dynM.push({ m, q, text: d.c[0].n })
                 marked = true
               }
             for (const w of kids(dt, 'wedge')) {
@@ -442,6 +444,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     const tmoved = tempos.flatMap((t) => (at.get(t.m) ?? []).map((k) => ({ ...t, m: k })))
     tempos.length = 0
     tempos.push(...tmoved)
+    dynM.splice(0, Infinity, ...dynM.flatMap((d) => (at.get(d.m) ?? []).map((k) => ({ ...d, m: k }))))
   }
   const measures = Math.max(order.length, ...parts.slice(1).map((p) => kids(p, 'measure').length))
   let cs = { n: 4, den: 4 }
@@ -510,6 +513,13 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
       ws.set(k, { ...w, t0: Math.min(w.t0, raw[i].t), t1: Math.max(w.t1, raw[i].t) })
     })
     if (ws.size) song.wedges = [...ws.values()].sort((a, b) => a.t0 - b.t0)
+    // one letter a moment: a voice and the piano, or both staves, often write the same one (the first part's wins)
+    const by = new Map<number, { t: number; text: string }>()
+    for (const d of dynM) {
+      const t = secAt(mq[d.m] + d.q)
+      if (!by.has(Math.round(t * 100))) by.set(Math.round(t * 100), { t, text: d.text })
+    }
+    if (by.size) song.marks = [...by.values()].sort((a, b) => a.t - b.t)
   }
   return song
 }

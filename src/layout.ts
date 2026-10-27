@@ -761,6 +761,7 @@ export interface LChord {
   dots: { x: number; y: number }[]
   beamed: boolean
   slash?: boolean // acciaccatura
+  art?: { x: number; y: number; kind: 'stac' | 'ten' | 'acc'; above: boolean } // y is the mark's middle
 }
 export interface LBeam {
   sys: number
@@ -803,6 +804,33 @@ export interface LOttava {
   y: number
   label: string
   below: boolean
+}
+/** A slur as a cubic curve; open at a system's edge when the rest of it is off the page or on the next line. */
+export interface LSlur {
+  sys: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  c1: [number, number]
+  c2: [number, number]
+  above: boolean
+}
+/** A hairpin's piece in one system: half its opening at each end (0 is the point). */
+export interface LWedge {
+  sys: number
+  x1: number
+  x2: number
+  y: number
+  w1: number
+  w2: number
+}
+/** A written dynamic letter, centred on x, its middle at y. */
+export interface LDyn {
+  sys: number
+  x: number
+  y: number
+  text: string
 }
 export interface LSign {
   sys: number
@@ -847,6 +875,9 @@ export interface Layout {
   ties: LTie[]
   tuplets: LTuplet[]
   ottavas: LOttava[]
+  slurs: LSlur[]
+  wedges: LWedge[]
+  dyns: LDyn[]
   signs: LSign[]
   finalBar: boolean
   /** A moment in time on the page: x, and the system it sits in. */
@@ -878,7 +909,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
 
   const L: Placed = {
     w: 0, h: 0, w0: W0, from: win.from, to: win.to, follow: win.follow, clefs, base,
-    systems: [], bars: [], chords: [], beams: [], rests: [], ties: [], tuplets: [], ottavas: [], signs: [],
+    systems: [], bars: [], chords: [], beams: [], rests: [], ties: [], tuplets: [], ottavas: [], slurs: [], wedges: [], dyns: [], signs: [],
     finalBar: win.to >= an.bars.length, posAt: () => ({ x: 0, sys: 0, dy: 0 }),
   }
   const ink: { lo: number; hi: number }[] = []
@@ -1243,6 +1274,28 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
     }
   })
 
+  // time to x
+  L.posAt = (t: number) => {
+    const bars = song.bars
+    let lo = L.from
+    let hi = L.to - 1
+    while (lo < hi) {
+      const m = (lo + hi + 1) >> 1
+      if (bars[m].t0 <= t) lo = m
+      else hi = m - 1
+    }
+    const b = bars[lo]
+    const q = Math.min(1, Math.max(0, (t - b.t0) / Math.max(b.t1 - b.t0, 1e-6))) * barQ(b)
+    const lb = L.bars[lo - L.from]
+    const cols = lb.cols
+    let k = cols.length - 1
+    while (k > 0 && cols[k].q > q) k--
+    const x1 = k + 1 < cols.length ? cols[k + 1].x : lb.xNext
+    const q1 = k + 1 < cols.length ? cols[k + 1].q : barQ(b)
+    return { x: cols[k].x + ((q - cols[k].q) / Math.max(q1 - cols[k].q, 1e-6)) * (x1 - cols[k].x), sys: lb.sys, dy: L.systems[lb.sys].dy }
+  }
+  marks(L, an, mark)
+
   // ---- the page: system heights and the viewBox ----
   L.systems.forEach((s, si) => {
     const k = ink[si] ?? { lo: top, hi: bottom }
@@ -1264,27 +1317,136 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
     y += s.h + GAP
   }
 
-  // time to x
-  L.posAt = (t: number) => {
-    const bars = song.bars
-    let lo = L.from
-    let hi = L.to - 1
-    while (lo < hi) {
-      const m = (lo + hi + 1) >> 1
-      if (bars[m].t0 <= t) lo = m
-      else hi = m - 1
-    }
-    const b = bars[lo]
-    const q = Math.min(1, Math.max(0, (t - b.t0) / Math.max(b.t1 - b.t0, 1e-6))) * barQ(b)
-    const lb = L.bars[lo - L.from]
-    const cols = lb.cols
-    let k = cols.length - 1
-    while (k > 0 && cols[k].q > q) k--
-    const x1 = k + 1 < cols.length ? cols[k + 1].x : lb.xNext
-    const q1 = k + 1 < cols.length ? cols[k + 1].q : barQ(b)
-    return { x: cols[k].x + ((q - cols[k].q) / Math.max(q1 - cols[k].q, 1e-6)) * (x1 - cols[k].x), sys: lb.sys, dy: L.systems[lb.sys].dy }
-  }
   return L
+}
+
+/** What a score writes about touch: articulation, slurs, hairpins and dynamic letters. MIDI files and drills have none. */
+function marks(L: Layout, an: Analysis, mark: (sys: number, y0: number, y1?: number) => void) {
+  const { song } = an
+  const { base } = L
+  const d = (above: boolean) => (above ? -1 : 1)
+  const two = (c: LChord) => L.chords.some((o) => o.sys === c.sys && o.bar === c.bar && o.clef === c.clef && o.lane === 2)
+  const side = (c: LChord) => (two(c) ? c.lane === 1 : !c.up) // away from the stem; past it, outward, when a staff has two voices
+
+  // articulation: in a space, never on a staff or ledger line; past a finger number
+  for (const c of L.chords) {
+    const kind = c.grace ? undefined : c.heads.flatMap((h) => (h.cont ? [] : h.ids.map((id) => song.notes[id]?.art))).find(Boolean)
+    if (!kind) continue
+    const above = side(c)
+    const h = above ? c.heads[c.heads.length - 1] : c.heads[0]
+    const B0 = BOTTOM_STEP[c.clef]
+    const onLine = (st: number) => (st - B0) % 2 === 0 && ((st >= B0 && st <= B0 + 8) || c.ledgers.some((l) => near(l.y, yOf(st, c.clef, base))))
+    let step = h.step - d(above) * (kind === 'acc' ? 3 : 2)
+    if (onLine(step)) step -= d(above)
+    let y = yOf(step, c.clef, base)
+    if (c.stem && c.up === above) y = above ? Math.min(y, c.stem.y2 - 7) : Math.max(y, c.stem.y2 + 7)
+    if (c.heads.some((x) => !x.cont && song.notes[x.ids[0]]?.f)) y = above ? Math.min(y, h.y - 38) : Math.max(y, h.y + 38)
+    c.art = { x: c.x, y, kind, above }
+    mark(c.sys, y - 6, y + 6)
+  }
+
+  // slurs: the first to the last note of a run in one hand and part, over the heads unless every stem points up
+  const lcOf = new Map<number, LChord>()
+  for (const c of L.chords) if (!c.grace) for (const h of c.heads) if (!h.cont) for (const id of h.ids) lcOf.set(id, c)
+  const edge = (c: LChord, above: boolean) => {
+    const ys = [...c.heads.map((h) => h.y + d(above) * 7), ...(c.stem && c.up === above ? [c.stem.y2 + d(above) * 4] : []), ...(c.art?.above === above ? [c.art.y + d(above) * 7] : [])]
+    return above ? Math.min(...ys) : Math.max(...ys)
+  }
+  const lines = new Map<string, Note[][]>()
+  for (const n of song.notes) {
+    if (n.grace) continue
+    const k = `${n.h}${n.part ?? 0}`
+    const gs = lines.get(k) ?? lines.set(k, []).get(k)!
+    const g = gs[gs.length - 1]
+    if (g && Math.abs(g[0].t - n.t) < 1e-3) g.push(n)
+    else gs.push([n])
+  }
+  for (const gs of lines.values()) {
+    for (let a = 0; a < gs.length; a++) {
+      if (!gs[a].some((n) => n.slur)) continue
+      let z = a
+      while (z + 1 < gs.length && gs[z].some((n) => n.slur)) z++
+      const ids = new Set(gs.slice(a, z + 1).flatMap((g) => g.map((n) => n.id)))
+      const end = (g: Note[]) => g.map((n) => lcOf.get(n.id)).find(Boolean)
+      slur(end(gs[a]), end(gs[z]), L.chords.filter((c) => !c.grace && c.heads.some((h) => h.ids.some((i) => ids.has(i)))))
+      a = Math.max(a, z - 1) // the last note may start the next slur
+    }
+  }
+  function slur(ca: LChord | undefined, cz: LChord | undefined, all: LChord[]) {
+    if (!all.length || (ca && ca === cz)) return
+    const ends = [ca, cz].filter((c) => !!c)
+    const above = (ends.length ? ends : all).some(side) // under the notes only when its ends' stems both point up
+    const dir = d(above)
+    for (const si of new Set(all.map((c) => c.sys))) {
+      const mine = all.filter((c) => c.sys === si)
+      const sy = L.systems[si]
+      const a = ca?.sys === si ? ca : undefined
+      const z = cz?.sys === si ? cz : undefined
+      const far = above ? Math.min(...mine.map((c) => edge(c, true))) : Math.max(...mine.map((c) => edge(c, false)))
+      const x1 = a ? a.x : Math.min(sy.x0 + 4, Math.min(...mine.map((c) => c.x)) - 6) // open: from the system's start or to its end
+      const x2 = z ? z.x : Math.max(sy.x1 - 2, Math.max(...mine.map((c) => c.x)) + 6)
+      let y1 = a ? edge(a, above) : z ? edge(z, above) : far
+      let y2 = z ? edge(z, above) : y1
+      const span = Math.max(x2 - x1, 1)
+      // high enough to clear every note under it; past 4 spaces the ends move out instead
+      const gaps = mine.flatMap((c) => {
+        const u = (c.x - x1) / span
+        return c === a || c === z || u <= 0 || u >= 1 ? [] : [{ k: 3 * u * (1 - u), g: (edge(c, above) - (y1 + (y2 - y1) * u)) * dir }]
+      })
+      let H = Math.min(24, Math.max(6, span * 0.12))
+      for (const { k, g } of gaps) H = Math.max(H, g / k)
+      H = Math.min(H, 4 * S)
+      const lift = Math.max(0, ...gaps.map(({ k, g }) => g - k * H))
+      y1 += dir * lift
+      y2 += dir * lift
+      L.slurs.push({ sys: si, x1, y1, x2, y2, c1: [x1 + span / 3, y1 + (y2 - y1) / 3 + dir * H], c2: [x1 + (2 * span) / 3, y1 + (2 * (y2 - y1)) / 3 + dir * H], above })
+      mark(si, y1, y2)
+      mark(si, (y1 + y2) / 2 + dir * 0.75 * H)
+    }
+  }
+
+  // dynamic letters and hairpins: between the staves (under a lone staff), clear of the notes over their stretch
+  if (!song.marks?.length && !song.wedges?.length) return
+  const bars = song.bars
+  const span = L.systems.map((sy) => [bars[sy.from].t0, bars[sy.to - 1].t1])
+  const ys = (si: number, clef: Clef, xa: number, xb: number, stems: boolean) =>
+    L.chords.filter((c) => c.sys === si && c.clef === clef && c.x + 8 >= xa && c.x - 8 <= xb).flatMap((c) => [...c.heads.map((h) => h.y), ...(c.stem && stems ? [c.stem.y2] : []), ...(c.art ? [c.art.y] : [])])
+  // ponytail: slurs and beams in the gap are not avoided; a stem is, unless that leaves no room
+  const rowAt = (si: number, xa: number, xb: number) => {
+    if (L.clefs.length === 1) return Math.max(base[L.clefs[0]] + 25, ...ys(si, L.clefs[0], xa, xb, true).map((y) => y + 16))
+    const band = (stems: boolean) => [Math.max(base.treble + 2, ...ys(si, 'treble', xa, xb, stems).map((y) => y + 8)), Math.min(base.bass - 4 * S - 2, ...ys(si, 'bass', xa, xb, stems).map((y) => y - 8))]
+    const [hi, lo] = band(true)[1] - band(true)[0] >= 16 ? band(true) : band(false)
+    return (hi + lo) / 2
+  }
+  for (const m of song.marks ?? []) {
+    if (m.t < span[0][0] - 1e-6 || m.t >= span[span.length - 1][1]) continue
+    const p = L.posAt(m.t)
+    const y = rowAt(p.sys, p.x - m.text.length * 7.5, p.x + m.text.length * 7.5)
+    L.dyns.push({ sys: p.sys, x: p.x, y, text: m.text })
+    mark(p.sys, y - 14, y + 8)
+  }
+  const HALF = 6 // half a hairpin's opening
+  for (const w of song.wedges ?? []) {
+    const len = Math.max(w.t1 - w.t0, 1e-6)
+    L.systems.forEach((sy, si) => {
+      const [s0, s1] = span[si]
+      if (w.t1 < s0 || w.t0 >= s1) return
+      let x1 = w.t0 >= s0 ? L.posAt(w.t0).x - 4 : sy.x0 + 4
+      let x2 = w.t1 < s1 ? Math.min(L.posAt(w.t1).x + 14, sy.x1 - 2) : sy.x1 - 2
+      for (const g of L.dyns) {
+        const r = g.text.length * 7.5 + 3
+        if (g.sys !== si || g.x + r < x1 || g.x - r > x2) continue
+        if (g.x < (x1 + x2) / 2) x1 = g.x + r
+        else x2 = g.x - r
+      }
+      if (x2 - x1 < 10) return
+      const f1 = Math.max(0, (s0 - w.t0) / len)
+      const f2 = Math.min(1, (s1 - w.t0) / len)
+      const y = rowAt(si, x1, x2)
+      L.wedges.push({ sys: si, x1, x2, y, w1: HALF * (w.up ? f1 : 1 - f1), w2: HALF * (w.up ? f2 : 1 - f2) })
+      mark(si, y - HALF, y + HALF)
+    })
+  }
 }
 
 /** Every x and y the layout would draw in, for tests: the extremes in viewBox units. */
@@ -1311,6 +1473,10 @@ export function inkBounds(L: Layout) {
   for (const t of L.ties) (pt(t.sys, t.x1, t.y), pt(t.sys, t.x2, t.y + (t.below ? 7 : -7)))
   for (const t of L.tuplets) (pt(t.sys, t.x1, t.y - 8), pt(t.sys, t.x2, t.y + 8))
   for (const o of L.ottavas) (pt(o.sys, o.x1, o.y - 8), pt(o.sys, o.x2, o.y + 8))
+  for (const c of L.chords) if (c.art) (pt(c.sys, c.art.x - 7, c.art.y - 5), pt(c.sys, c.art.x + 7, c.art.y + 5))
+  for (const s of L.slurs) (pt(s.sys, s.x1, s.y1), pt(s.sys, s.x2, s.y2), pt(s.sys, s.c1[0], (s.y1 + s.y2) / 2 + (s.c1[1] - s.y1 - (s.y2 - s.y1) / 3) * 0.75))
+  for (const w of L.wedges) (pt(w.sys, w.x1, w.y - HEAD), pt(w.sys, w.x2, w.y + HEAD))
+  for (const g of L.dyns) (pt(g.sys, g.x - g.text.length * 7.5, g.y - 13), pt(g.sys, g.x + g.text.length * 7.5, g.y + 7))
   return { minX, maxX, minY, maxY }
 }
 
@@ -1337,5 +1503,7 @@ function inkTop(L: Layout, beams: LBeam[], sys: number, xa: number, xb: number) 
   for (const b of beams) if (b.sys === sys) for (const r of b.rows) if (r.x2 >= xa && r.x1 <= xb) y = Math.min(y, r.y1, r.y2, r.y3, r.y4)
   for (const t of L.tuplets) if (t.sys === sys && t.x2 >= xa && t.x1 <= xb) y = Math.min(y, t.y - 8)
   for (const o of L.ottavas) if (o.sys === sys && o.x2 >= xa && o.x1 <= xb) y = Math.min(y, o.y - 9)
+  for (const c of L.chords) if (c.art && c.sys === sys && c.x + 7 >= xa && c.x - 7 <= xb) y = Math.min(y, c.art.y - 6)
+  for (const s of L.slurs) if (s.sys === sys && s.x2 >= xa && s.x1 <= xb) y = Math.min(y, s.y1, s.y2, s.c1[1], s.c2[1])
   return y
 }
