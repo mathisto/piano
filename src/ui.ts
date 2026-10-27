@@ -11,6 +11,7 @@ import type { Progress, Stored, TouchEntry } from './store'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
+import { LIMITS, type Arcade, type RunSpec } from './run'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
@@ -38,6 +39,9 @@ export function skeleton(app: HTMLElement) {
     <div class="hud" id="hud" hidden>
       <div data-m="perform" role="group" aria-label="Score" title="Score"><small>Score</small><b id="hScore">0</b></div>
       <div data-m="perform" class="combo" role="group" aria-label="Combo" title="Combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
+      <div data-m="read" data-run="arc" role="group" aria-label="Run score" title="Score"><small>Score</small><b id="rScore">0</b></div>
+      <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b><span class="mult" id="rMult" hidden>×2</span></div>
+      <div data-m="read" data-run="lives" role="group" aria-label="Lives" title="Lives"><small>Lives</small><b id="hLives">3</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
     </div>
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
@@ -333,7 +337,7 @@ const GROUPS: [string, (id: string) => boolean][] = [
 const meter = (pct: number, solid: boolean, label: string) =>
   `<div class="meter${solid ? ' solid' : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><i style="width:${Math.round(pct * 100)}%"></i></div>`
 
-export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) {
+export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, run = '') {
   let group = ''
   const timed = rows.some((r) => r.rt) // no column of dashes before the first card
   const body = rows
@@ -351,6 +355,8 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean) 
     .join('')
   el.innerHTML = `
     ${head('Read', canReview ? `<button class="btn" data-review="1">Review weak notes</button>` : '')}
+    ${run}
+    <p class="label cap">Stages</p>
     <table class="songs stages"><caption class="sr-only">Stages</caption>
       <colgroup><col><col style="width:250px">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
@@ -562,5 +568,86 @@ export function drillResults(d: DrillSummary) {
       <button class="btn primary big" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
       <button class="btn" id="toStages">All stages</button>
     </div>
+  </div></div>`
+}
+
+// ---------------------------------------------------------------- Sight Run
+
+const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
+const RANGES: Record<RunSpec['clef'], [string, number, number][]> = {
+  treble: [['Middle C octave', 60, 72], ['Five fingers', 60, 67], ['The staff', 64, 77], ['With ledger lines', 60, 84]],
+  bass: [['Octave below', 48, 60], ['Five fingers', 48, 55], ['The staff', 43, 57], ['With ledger lines', 36, 60]],
+  grand: [['Around middle C', 55, 67], ['The staff', 43, 77], ['Wide', 36, 84]],
+}
+export const RUN_START: Record<RunSpec['clef'], [number, number]> = { treble: [60, 72], bass: [48, 60], grand: [43, 77] }
+const WHITE = (p: number) => ![1, 3, 6, 8, 10].includes(p % 12)
+const KEYS_RUN: [number, string][] = [[1, 'Key of G'], [2, 'Key of D'], [3, 'Key of A'], [4, 'Key of E'], [-1, 'Key of F'], [-2, 'Key of B♭'], [-3, 'Key of E♭'], [-4, 'Key of A♭']]
+export const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
+export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
+const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)} · ${s.mode === 'arcade' ? 'Arcade' : 'Practice'}${s.length ? ` · ${s.length} cards` : ''}`
+
+/** The Sight Run builder on the Read page, and the saved runs under it. */
+export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { score: number; streak: number }>, bestKey: (s: RunSpec) => string) {
+  const [min, max] = LIMITS[s.clef]
+  const names = Array.from({ length: max - min + 1 }, (_, i) => min + i).filter(WHITE)
+  const picks = (cur: number) => names.map((p) => `<option value="${p}"${p === cur ? ' selected' : ''}>${noteName(p)}</option>`).join('')
+  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}"${id === 'rNotes' && s.size > 1 ? ' disabled' : ''}>${body}</select></label>`
+  const slider = (id: string, label: string, lo: string, hi: string, v: number) => `<label class="field"><span>${label}</span><span class="slider"><small>${lo}</small><input id="${id}" type="range" min="0" max="1" step="0.1" value="${v}"><small>${hi}</small></span></label>`
+  const notes = s.fifths ? `k${s.fifths}` : s.acc
+  const saved = presets
+    .map((p, i) => {
+      const b = best[bestKey(p)]
+      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Best ${b.score.toLocaleString()}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
+    })
+    .join('')
+  const b = best[bestKey(s)]
+  return `<section class="tcard run" aria-label="Sight Run">
+    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range, how the notes jump about, and how hard it pushes.</p></div>
+      <div class="seg" role="radiogroup" aria-label="Mode">${(['practice', 'arcade'] as const).map((m) => `<label><input type="radio" name="rMode" value="${m}"${s.mode === m ? ' checked' : ''}><span>${m === 'practice' ? 'Practice' : 'Arcade'}</span></label>`).join('')}</div></div>
+    <div class="tech-form">
+      ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rLo', 'From', picks(s.lo))}
+      ${field('rHi', 'To', picks(s.hi))}
+      ${field('rNotes', 'Notes', [['nat', 'Naturals'], ['sharp', 'With sharps'], ['flat', 'With flats']].map(([v, l]) => `<option value="${v}"${v === notes ? ' selected' : ''}>${l}</option>`).join('') + KEYS_RUN.map(([f, l]) => `<option value="k${f}"${notes === `k${f}` ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rSize', 'Cards', [[1, 'Single notes'], [2, 'Intervals'], [3, 'Triads']].map(([v, l]) => `<option value="${v}"${v === s.size ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rLength', 'Length', [[0, 'Endless'], [10, '10 cards'], [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rAhead', 'Reading ahead', [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']].map(([v, l]) => `<option value="${v}"${v === s.ahead ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${slider('rNear', 'Jumps', 'Leaps', 'Steps', s.near)}
+      ${slider('rWeak', 'Shuffle', 'Even', 'My weak notes', s.weak)}
+    </div>
+    <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
+    <div class="run-opts"><label class="switch"><input type="checkbox" id="rLives"${s.lives ? ' checked' : ''}><i></i><span><b>Three lives</b><small>Arcade: a third miss ends the run</small></span></label>
+      <label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label></div>
+    <div class="row-actions run-go">${b ? `<span class="fine">Best on this range: <b>${b.score.toLocaleString()}</b>, streak ${b.streak}</span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
+    ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
+  </section>`
+}
+
+export interface RunSummary {
+  spec: RunSpec
+  arc: Arcade
+  medianMs: number
+  record: boolean
+  best?: { score: number; streak: number }
+  notes: { p: number; n: number; miss: number; ms: number }[]
+  weakest: string[]
+}
+
+export function runResults(d: RunSummary) {
+  const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
+  const arcade = d.spec.mode === 'arcade'
+  const top = Math.max(3000, ...d.notes.map((n) => n.ms / n.n))
+  const strip = [...d.notes]
+    .sort((a, b) => a.p - b.p)
+    .map((n) => `<div class="hbar" style="--h:${Math.round(((n.ms / n.n) / top) * 100)}%;--m:${Math.round((n.miss / n.n) * 100)}%" title="${esc(noteName(n.p, d.spec.fifths))}: ${secs(n.ms / n.n)}, ${n.miss} missed of ${n.n}"><i></i><span>${esc(noteName(n.p, d.spec.fifths))}</span></div>`)
+    .join('')
+  return `
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
+    <h2>${esc(d.spec.name ?? runTitle(d.spec))}</h2>
+    ${arcade ? `<p class="bigscore">${d.arc.score.toLocaleString()}${d.record ? ' <span class="tag next">New best</span>' : ''}</p>` : ''}
+    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${arcade && d.best && !d.record ? ` · best on this range ${d.best.score.toLocaleString()}` : ''}</p>
+    ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
+    ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
+    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
   </div></div>`
 }

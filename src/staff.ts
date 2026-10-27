@@ -98,8 +98,22 @@ export class Staff {
     if (!this.L) return
     this.moveCursor()
     this.markAwaited()
+    this.peek()
     // dim the notes already played
     for (; this.seen < this.timeline.length && this.timeline[this.seen].t < t - 0.02; this.seen++) this.timeline[this.seen].el.classList.add('past')
+  }
+
+  /** Sight Run's reading ahead: only the next `lookahead` beats of notes show, the rest stay blank until the cursor nears them. 0 shows everything. */
+  lookahead = 0
+  private peeked = -2
+  private peek() {
+    const g = this.game
+    const n = g.mode === 'read' ? this.lookahead : 0
+    const i = n ? g.judge.nextPending() : -1
+    if (i === this.peeked) return
+    this.peeked = i
+    const t0 = i >= 0 ? g.song.notes[i].t : 0
+    for (const [id, p] of this.byId) p.grp.classList.toggle('ahead', i >= 0 && g.song.notes[id].t - t0 > n - 0.5)
   }
 
   /** In wait mode, light the noteheads the song is waiting for. */
@@ -177,6 +191,7 @@ export class Staff {
     this.all = []
     this.timeline = []
     this.awaiting.clear()
+    this.peeked = -2
     this.ghosts.clear() // the page was redrawn: the ghosts went with it
     this.seen = 0
     const { base, clefs } = L

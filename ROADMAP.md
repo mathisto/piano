@@ -5,7 +5,7 @@ Where the work stands, in the order it will be done. The reasoning is in `docs/S
 ## Shipped
 
 - Play: Perform (scored falling notes, combo, judgement), Learn (wait mode, tempo, A-B loop, hands separate or dimmed or heard), a draggable divider between the staff and the falling notes (drag to an end for one pane alone), staff zoom (pinch, trackpad pinch, - and +, or the corner buttons, which can be dragged anywhere: smaller shows more bars, and a second line appears once two fit; a Fit button shows the whole piece, a double tap resets), portrait and split-view windows (no minimum width), count-in click, ghost notes on the staff, held-chord readout, hold and pedal grading, strictness (Easy, Standard, Strict), calibration.
-- Read: 17 sight-reading stages from landmarks to triads, sharps, flats, keys of G and F, weighted deck, mastery meters.
+- Read: 17 sight-reading stages from landmarks to triads, sharps, flats, keys of G and F, weighted deck, mastery meters. Sight Run (`src/run.ts`): a run you build yourself on the Read page: clef, range, naturals/sharps/flats or a key, notes/intervals/triads, a Jumps slider (leaps to steps), a Shuffle slider (even to weighted by your weak notes), endless or 10 to 100 cards, reading ahead (only the next 1 to 4 notes show), saved runs. Practice waits and scores nothing; Arcade scores each first-try card by speed times a combo (x2 every 5, up to x8) with a pace that tightens as the combo climbs, optional three lives, a clean set can widen the range, a best per range, and a results strip of speed and misses per note. It feeds the same per-card stats as the stages. Endless runs chain sets of 16 with a short seam.
 - Technique: five-finger, scale and arpeggio in seven keys, either or both hands, with soft/medium/hard, crescendo, decrescendo and accent targets (pips on the falling bar, dynamics on the staff, a touch verdict per note).
 - Touch: key velocity capture, histogram and hand balance on results, session log, personal calibration of soft/medium/hard.
 - Content: MIDI and MusicXML (.musicxml, .mxl) import, eight starter pieces, sampled grand piano (Salamander, CC BY 3.0).
@@ -67,6 +67,8 @@ Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoN
 - Limits: 60 Hz cap in the web view; storage is separate from the website; Bluetooth MIDI pairing reportedly crashes on iPadOS 27.0, so use USB.
 
 ## Known gaps
+
+- Sight Run: not yet tried on the iPad or with a real keyboard (headless Chrome with synthetic key presses only); the pace tightening is a scoring threshold, not an on-screen timer or a moving tempo; "widen when a set goes well" and "stay a note or two past comfort" are design bets, not research findings; intervals and triads are white-key only and ignore the key; the results strip is a bar chart per note, not a keyboard heatmap; Read's stage table is cramped at about 820px wide.
 
 Play and staff:
 - Staff clips ledger lines below about C2 and above about C7 (needs 8va marks).

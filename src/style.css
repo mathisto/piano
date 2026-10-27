@@ -2314,3 +2314,114 @@ dialog.sheet footer .btn {
     display: none; /* the buttons say it; the label would push the hands onto a third row at 1180px */
   }
 }
+
+/* ---------- Sight Run: the builder on Read, the reading-ahead curtain, the results strip ---------- */
+.tcard.run {
+  margin-bottom: 28px;
+}
+.run-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.run-head h2 {
+  margin: 0 0 2px;
+  font: 800 italic 28px/1 var(--display);
+}
+.run .tech-form {
+  margin-bottom: 0;
+}
+.run .field:has(.slider) {
+  grid-column: span 2;
+}
+.run .slider input {
+  min-width: 0;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-2);
+  font: 600 14px/1 var(--ui);
+  cursor: pointer;
+}
+.chip-btn.on {
+  background: var(--panel-3);
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+.run-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+}
+.run-opts small {
+  display: block;
+  color: var(--ink-3);
+}
+.run-go {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+.run-go .fine {
+  margin-right: auto;
+}
+.fine {
+  color: var(--ink-3);
+  margin: 0;
+  font-size: 14px;
+}
+.bigscore {
+  margin: 0;
+  font: 800 italic 64px/1 var(--display);
+  color: var(--lamp);
+}
+.hstrip {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  height: 120px;
+  padding-bottom: 20px;
+}
+.hbar {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 34px;
+  height: 100%;
+  display: flex;
+  align-items: end;
+}
+.hbar i {
+  display: block;
+  width: 100%;
+  height: var(--h);
+  min-height: 4px;
+  border-radius: var(--r-1) var(--r-1) 0 0;
+  background: color-mix(in oklab, var(--bad) var(--m), var(--R));
+}
+.hbar span {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  translate: -50% 0;
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+#staff .ch.ahead {
+  opacity: 0;
+}
+@media (max-width: 760px) {
+  .run-head {
+    flex-direction: column;
+  }
+}
