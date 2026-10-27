@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import { movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
-import { analyse, GATES, judge, lyPace, merge, reach, run, type Input } from '../scripts/library/pipeline'
+import { analyse, dedupe, GATES, judge, lyPace, merge, reach, run, type Input } from '../scripts/library/pipeline'
 import { Midi } from '@tonejs/midi'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromSpec, type Song } from './song'
@@ -252,5 +252,17 @@ describe('lieder: the voice folded into the right hand', () => {
     expect(m.pieces[0]).toEqual(JSON.parse(before).pieces[0]) // the base piece as it was, not this run's
     expect(m.pieces.map((p: { id: string }) => p.id)).toEqual(['lieder-a', 'lieder-b'])
     expect(readdirSync(`${d}/p`).sort()).toEqual(m.pieces.map((p: { file: string }) => p.file.slice(2)).sort())
+  })
+})
+
+describe('dedupe: editions of one song', () => {
+  const item = (id: string, voice: 'folded' | 'dropped' | undefined, fp: string[], quality: number) =>
+    ({ e: { id, title: 'Hulanka (Drinking Song), Op. 74 No. 4', composer: 'Frédéric Chopin (1810–1849)', sourceUrl: id, voice } as Input, a: { fails: [], quality, fp: new Set(fp) } }) as unknown as Parameters<typeof dedupe>[0][number]
+
+  it('are one song though one folds and the other falls back to piano-only (their top lines differ); two plain pieces are not', () => {
+    const song = dedupe([item('g', 'folded', ['a', 'b', 'c'], 100), item('sam', 'dropped', ['x', 'y', 'z'], 90)])
+    expect(song.keep.map((x) => x.e.id)).toEqual(['g'])
+    expect(song.dropped).toEqual([{ id: 'sam', dupOf: 'g' }])
+    expect(dedupe([item('g', undefined, ['a', 'b', 'c'], 100), item('sam', undefined, ['x', 'y', 'z'], 90)]).keep).toHaveLength(2)
   })
 })

@@ -16,7 +16,7 @@
 
 ## Open
 
-- The 48 Op. 74 songs (voice and piano) would take the Lieder fold (voice into the right hand); refused for now.
+- The 48 Op. 74 song files are done in `docs/changes/op74.md` (voice folded into the right hand, 16 songs).
 - Encoding slips refused as they are: `*>[A,A,B.B1,...]` (007-1-W-002), a missing C1 section (024-1-Sm-004), a mid-bar section start (035-1a-TR-002); 84 unreadable tokens across the set (typos like `8ded`).
 - Op. 9 No. 2: `!!!SIC` says the printed M.M. should be an eighth, not a quarter; SIC records are not read (the published Mutopia version ships instead).
 - A key or clef change written inside a bar takes effect from the next bar (the app draws its own clefs; keys only affect spelling).
