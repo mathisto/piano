@@ -1,0 +1,87 @@
+/* ---------- the open library: search, filters, a page of rows ---------- */
+.biglib .label.cap span {
+  margin-left: 8px;
+  color: var(--ink-2);
+}
+.libtools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 12px 0 8px;
+}
+.libq {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+.libq svg.i {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.libq input {
+  appearance: none;
+  width: 100%;
+  height: var(--control);
+  padding: 0 12px 0 40px;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-2);
+}
+.libq input::placeholder {
+  color: var(--ink-3);
+}
+.libq input:hover {
+  border-color: var(--ink-3);
+}
+.libq input:focus-visible {
+  outline-offset: 0;
+  border-radius: var(--r-2);
+}
+.libtools select {
+  width: auto;
+  max-width: 280px;
+}
+.biglib table.songs {
+  margin-bottom: 0;
+}
+.pfacts {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.35;
+  font-size: 13px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.libmore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 16px;
+  min-height: var(--control);
+  margin: 12px 0 36px;
+}
+.libmore .fine {
+  margin: 0 auto 0 12px;
+  color: var(--ink-3);
+}
+.libmore .fine:empty {
+  display: none;
+}
+@media (max-width: 1000px) {
+  .pfacts {
+    white-space: normal;
+  }
+}
+dialog.sheet .fine a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+.biglib td.name small span {
+  white-space: nowrap; /* a sub-line breaks between composer, level and licence, never inside one */
+}

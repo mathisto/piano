@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { builtin } from './catalog'
 import { creditBlock, creditLine, type LibraryEntry } from './credits'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromMidi } from './song'
@@ -32,8 +33,9 @@ describe('library manifest', () => {
       expect(m.licenceEvidence).toMatch(/^https:\/\//)
       expect(m.sha256).toMatch(/^[0-9a-f]{64}$/)
       expect(m.file.endsWith(m.format === 'midi' ? '.mid' : '.mxl')).toBe(true)
-      expect(creditLine(m)).toContain(m.composer)
-      expect(creditBlock(m)).toContain(m.licenceUrl)
+      const c = builtin([m])
+      expect(creditLine(c, c.pieces[0])).toContain(m.composer)
+      expect(creditBlock(c, c.pieces[0])).toContain(m.licenceUrl)
       // Mutopia pieces name the person who typeset them
       if (m.collection === 'Mutopia Project') expect(m.typesetter, `${m.id} typesetter`).toBeTruthy()
     }

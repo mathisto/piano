@@ -1,3 +1,4 @@
+import type { Catalog, Piece } from './catalog-types'
 import { served } from './net'
 // The curated library: public/library/manifest.json (built by scripts/fetch-library.mjs) and the credit text it must carry.
 
@@ -44,26 +45,33 @@ export async function loadManifest(fetchFn: typeof fetch = fetch, base?: string)
 /** 'CC-BY-SA-2.5' -> 'CC BY-SA 2.5', 'CC0-1.0' -> 'CC0 1.0'; 'Public Domain' stays. */
 export const licenceName = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
 
-const shareAlike = (e: LibraryEntry) => /-SA-/.test(e.licence)
+const SOURCE: Record<Piece['source'], string> = { mutopia: 'Mutopia Project', 'openscore-lieder': 'OpenScore Lieder Corpus', pdmx: 'PDMX' }
+const CHANGES: Record<string, string> = { 'voice-folded': 'vocal line folded into the right hand', 'voice-dropped': 'voice part left out' }
 
-/** One line for the start sheet: who made it, where from, under what licence. */
-export function creditLine(e: LibraryEntry): string {
-  const by = [e.collection, e.typesetter && `typeset by ${e.typesetter}`, e.arranger && `arr. ${e.arranger}`].filter(Boolean).join(', ')
-  return `${e.composer} · ${by} · ${licenceName(e.licence)}${e.nc ? ' (non-commercial)' : ''}`
+const who = (c: Catalog['composers'][number]) => `${c.name}${c.died ? (c.born ? ` (${c.born}–${c.died})` : ` (d. ${c.died})`) : ''}`
+/** What we changed from the source, from the piece's flags; empty when it is as published. */
+export const changes = (p: Piece) => p.flags.map((f) => CHANGES[f]).filter(Boolean).join(', ')
+
+/** One line for the start card: who wrote it, who typeset it where, what we changed, under what licence. */
+export function creditLine(cat: Catalog, p: Piece): string {
+  const by = [SOURCE[p.source], p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`, changes(p)].filter(Boolean).join(', ')
+  return `${who(cat.composers[p.composer])} · ${by} · ${licenceName(cat.licences[p.licence].id)}${p.nc ? ' (non-commercial)' : ''}`
 }
 
-/** Several lines (joined with \n) for a Credits screen. */
-export function creditBlock(e: LibraryEntry): string {
+/** Several lines (joined with \n) for the Credits sheet. */
+export function creditBlock(cat: Catalog, p: Piece): string {
+  const l = cat.licences[p.licence]
   return [
-    e.title,
-    e.composer,
-    e.arranger && `Arranger: ${e.arranger}`,
-    `${e.typesetter ? `Typeset by ${e.typesetter}, ` : ''}${e.collection}`,
-    `Source edition: ${e.sourceEdition}`,
-    `Licence: ${licenceName(e.licence)} (${e.licenceUrl})`,
-    shareAlike(e) && `Share-alike: this score, and any copy or edit of it, stays under ${licenceName(e.licence)}.`,
-    e.nc && 'Non-commercial licence: not for commercial use.',
-    `Source: ${e.sourceUrl}`,
+    p.title,
+    who(cat.composers[p.composer]),
+    p.arranger && `Arranger: ${p.arranger}`,
+    `${p.typesetter ? `Typeset by ${p.typesetter}, ` : ''}${SOURCE[p.source]}`,
+    p.edition && `Source edition: ${p.edition}`,
+    changes(p) && `Changes: ${changes(p)}`,
+    `Licence: ${licenceName(l.id)} (${l.url})`,
+    /-SA-/.test(l.id) && `Share-alike: this score, and any copy or edit of it, stays under ${licenceName(l.id)}.`,
+    p.nc && 'Non-commercial licence: not for commercial use.',
+    `Source: ${p.sourceUrl}`,
   ]
     .filter(Boolean)
     .join('\n')

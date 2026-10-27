@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { creditBlock, creditLine, licenceName, loadManifest, libraryUrl, type LibraryEntry } from './credits'
+import { builtin } from './catalog'
+import { creditBlock as block, creditLine as line, licenceName, loadManifest, libraryUrl, type LibraryEntry } from './credits'
+
+const creditLine = (e: LibraryEntry) => { const c = builtin([e]); return line(c, c.pieces[0]) }
+const creditBlock = (e: LibraryEntry) => { const c = builtin([e]); return block(c, c.pieces[0]) }
 
 const E: LibraryEntry = {
   id: 'mutopia-647',
@@ -41,6 +45,13 @@ describe('credits', () => {
     for (const s of [E.title, E.composer, 'Typeset by Philippe Hézaine, Mutopia Project', 'Source edition: Peters', E.licenceUrl, E.sourceUrl, 'Share-alike']) expect(b).toContain(s)
     expect(creditBlock(PD)).not.toContain('Share-alike')
     expect(creditBlock(PD)).toContain('Arranger: Edvard Grieg')
+  })
+
+  it('names what was changed from an OpenScore song, once', () => {
+    const L: LibraryEntry = { ...E, collection: 'OpenScore Lieder Corpus', typesetter: undefined, licence: 'CC0-1.0', sourceEdition: 'Transcribed from #1; the vocal line is folded into the right hand' }
+    expect(creditLine(L)).toBe('Robert Schumann (1810–1856) · OpenScore Lieder Corpus, vocal line folded into the right hand · CC0 1.0')
+    expect(creditBlock(L).match(/folded/g)).toHaveLength(1)
+    expect(creditLine({ ...L, sourceEdition: 'OpenScore Lieder Corpus' })).toContain('voice part left out')
   })
 
   it('resolves library files against the base', () => {
