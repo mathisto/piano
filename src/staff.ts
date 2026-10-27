@@ -414,7 +414,6 @@ export class Staff {
   private flag(id: number, p: Placed, cls: string) {
     p.head.classList.add(cls)
     if (cls === 'miss') {
-      if (settings.fx >= 2 && !matchMedia('(prefers-reduced-motion: reduce)').matches) p.head.classList.add('thud') // a short drop
       if (p.head.parentElement?.querySelector(`.miss-mark[data-id="${id}"]`)) return
       const y = p.y + 12
       const m = el('path', { class: 'miss-mark', 'data-id': id, d: `M${p.x - 4},${y + 5} L${p.x + 4},${y + 5} L${p.x},${y - 2} Z` }, p.head.parentElement!)

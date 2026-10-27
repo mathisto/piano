@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_RUN, LIMITS, award, base, closeness, deal, mult, newArcade, over, pace, runCards, runPitches, widened, type RunSpec } from './run'
+import { DEFAULT_RUN, LIMITS, closeness, deal, newTally, runCards, runPitches, tally, widened, type RunSpec } from './run'
 
 const spec = (o: Partial<RunSpec> = {}): RunSpec => ({ ...DEFAULT_RUN, ...o })
 // a repeatable stream of "random" numbers
@@ -78,31 +78,12 @@ describe('widening', () => {
   })
 })
 
-describe('the arcade', () => {
-  it('the multiplier climbs every five clean cards and stops at eight', () => {
-    expect([0, 4, 5, 10, 34, 35, 99].map(mult)).toEqual([1, 1, 2, 3, 7, 8, 8])
-  })
-  it('faster answers score more, and the pace tightens with the combo', () => {
-    expect(base(1000, 3000)).toBeGreaterThan(base(2500, 3000))
-    expect(base(2500, 3000)).toBeGreaterThan(base(4000, 3000))
-    expect(pace(3000, 0)).toBe(3000)
-    expect(pace(3000, 40)).toBeLessThan(2000)
-  })
-  it('a clean card scores and builds the combo; a miss clears it', () => {
-    const s = spec({ mode: 'arcade' })
-    let a = newArcade(s)
-    for (let i = 0; i < 6; i++) a = award(a, s, true, 1000)
+describe('the tally', () => {
+  it('a first-try card extends the streak; a miss ends it and the longest is kept', () => {
+    let a = newTally()
+    for (let i = 0; i < 6; i++) a = tally(a, true)
     expect(a.streak).toBe(6)
-    expect(a.score).toBe(150 * 5 + 150 * 2) // five at x1, the sixth at x2
-    a = award(a, s, false, 1000)
-    expect([a.streak, a.best, a.score]).toEqual([0, 6, 1050])
-  })
-  it('three misses end a run only when lives are on', () => {
-    const on = spec({ lives: true })
-    let a = newArcade(on)
-    for (let i = 0; i < 3; i++) a = award(a, on, false, 0)
-    expect(over(a, on)).toBe(true)
-    const off = spec()
-    expect(over(award(newArcade(off), off, false, 0), off)).toBe(false)
+    a = tally(a, false)
+    expect([a.streak, a.best, a.cards, a.clean]).toEqual([0, 6, 7, 6])
   })
 })

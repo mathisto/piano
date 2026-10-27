@@ -73,7 +73,9 @@ Web build in a Capacitor web view (`ios/`), CoreMIDI through `ios/App/App/PianoN
 3. **Read curriculum fill** (stages stay first on the page): octave anchors (C3, C5, G2, G5), one-ledger-line stages, mixed-clef cards before the grand staff, 8va, minor keys, more keys, reading-ahead stages; a Fluent tier that tightens the goal from about 2.5 s toward 1 to 1.5 s. Evidence is thin: teachers agree on landmarks then neighbours and on mixed-clef cards; nothing settles treble-first against bass-first.
 4. **Sight Run follow-ups**: key-aware intervals and triads, an on-screen pace.
 
-## Proposed 2026-10-28, from five research reports (awaiting approval; nothing below is built)
+## Approved 2026-10-28, from five research reports (order: 1, 2, 4, 3, 5, 6; the app drops its arcade feel: no points, ranks, lives or fireworks; gamification is skill over time, the day streak and accuracy charts)
+
+Built so far: the arcade feel is gone (effects Off or Calm, HUD shows accuracy and notes in a row, results show accuracy, Sight Run has a streak, longest streak per range and no score or lives); item 1's Theory tab with chords, key signatures, intervals, cadences and scale degrees (`src/theory.ts`, played answers, misses dealt more often). Still to build: ear play-back, fix-it loop, timing and touch, real-music reading, grade path, session and habit, progress charts.
 
 Sources: leafo's sightreading.training (open source), a market survey of 16 apps, a learning-science review, a piano-teaching consensus review (ABRSM, RCM and Trinity syllabi read from the PDFs), and a theory, ear and rhythm survey. Strength tags: S strong, M moderate, W weak, F folklore.
 

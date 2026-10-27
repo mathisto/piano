@@ -176,7 +176,7 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -190,11 +190,12 @@ export async function importAll(text: string) {
   if (d.technique) await set('tech:stats', d.technique)
   if (d.runs) await set('run:state', d.runs)
   if (d.scales) await set('scale:stats', d.scales)
+  if (d.theory) await set('theory:stats', d.theory)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -207,7 +208,7 @@ export async function saveDrill(s: Stats) {
 }
 
 /** Sight Run: saved setups, the last one used, and the best score for each range. */
-export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { score: number; streak: number }> }> {
+export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { streak: number; ms: number }> }> {
   return (await get('run:state')) ?? { presets: [], best: {} }
 }
 
@@ -229,4 +230,12 @@ export async function getQuiz(): Promise<QuizStats> {
 
 export async function saveQuiz(s: QuizStats) {
   await set('scale:quiz', s)
+}
+
+export async function getTheory(): Promise<Stats> {
+  return (await get<Stats>('theory:stats')) ?? {}
+}
+
+export async function saveTheory(s: Stats) {
+  await set('theory:stats', s)
 }

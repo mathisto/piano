@@ -11,14 +11,12 @@ export interface RunSpec {
   near: number // 0 leaps anywhere in the range .. 1 mostly steps
   weak: number // 0 an even shuffle .. 1 weighted toward what you are slow or wrong at
   length: number // cards; 0 is endless
-  mode: 'practice' | 'arcade'
-  lives: boolean // arcade: three misses end the run
   widen: boolean // a clean set stretches the range by one note
   ahead: number // notes visible ahead of the one to play; 0 shows the whole set
   name?: string
 }
 
-export const DEFAULT_RUN: RunSpec = { clef: 'treble', lo: 60, hi: 72, acc: 'nat', fifths: 0, size: 1, near: 0.4, weak: 0.5, length: 0, mode: 'practice', lives: false, widen: false, ahead: 0 }
+export const DEFAULT_RUN: RunSpec = { clef: 'treble', lo: 60, hi: 72, acc: 'nat', fifths: 0, size: 1, near: 0.4, weak: 0.5, length: 0, widen: false, ahead: 0 }
 
 /** The notes each clef lets you pick: a few ledger lines past the staff. */
 export const LIMITS = { treble: [55, 88], bass: [36, 62], grand: [36, 88] } as const
@@ -93,36 +91,22 @@ export function widened(s: RunSpec, turn: number): RunSpec {
   return lo >= min ? { ...s, lo } : s
 }
 
-// ---------------------------------------------------------------- the arcade
+// ---------------------------------------------------------------- the tally
 
-export const mult = (streak: number) => Math.min(8, 1 + Math.floor(streak / 5))
-/** The pace tightens as the combo climbs: at ×8 a card has to be answered in about 60% of the usual time. */
-export const pace = (goal: number, streak: number) => goal * Math.max(0.5, 1 - 0.06 * (mult(streak) - 1))
-export const base = (rt: number, goal: number) => (rt <= goal / 2 ? 150 : rt <= goal ? 100 : 60)
-
-export interface Arcade {
-  score: number
+/** What a run shows while it goes: cards, first-try cards, the streak of them and the longest streak. */
+export interface Tally {
   streak: number
   best: number
-  lives: number
   cards: number
   clean: number
 }
-export const newArcade = (s: RunSpec): Arcade => ({ score: 0, streak: 0, best: 0, lives: s.lives ? 3 : 0, cards: 0, clean: 0 })
+export const newTally = (): Tally => ({ streak: 0, best: 0, cards: 0, clean: 0 })
 
-/** One finished card. A first-try answer scores by speed and the combo; anything else breaks the combo (and costs a life if they are on). */
-export function award(a: Arcade, s: RunSpec, clean: boolean, rt: number): Arcade {
+/** One finished card. A first-try answer extends the streak; anything else ends it. */
+export function tally(a: Tally, clean: boolean): Tally {
   const streak = clean ? a.streak + 1 : 0
-  return {
-    score: a.score + (clean ? base(rt, pace(goalMs(s), a.streak)) * mult(a.streak) : 0),
-    streak,
-    best: Math.max(a.best, streak),
-    lives: !clean && s.lives ? a.lives - 1 : a.lives,
-    cards: a.cards + 1,
-    clean: a.clean + (clean ? 1 : 0),
-  }
+  return { streak, best: Math.max(a.best, streak), cards: a.cards + 1, clean: a.clean + (clean ? 1 : 0) }
 }
-export const over = (a: Arcade, s: RunSpec) => s.lives && a.lives <= 0
 
 /** Personal bests are kept per range, not per slider. */
 export const bestKey = (s: RunSpec) => `${s.clef}:${s.lo}-${s.hi}:${s.acc}:${s.fifths}:${s.size}`

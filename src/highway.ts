@@ -56,7 +56,6 @@ export class Highway {
   private fxLayer = new Container()
   private labels = new Container()
   private glowTex!: Texture
-  private sparkTex!: Texture
   private bgGlow!: Sprite
   private sparks: Spark[] = []
   private flashes = new Map<number, { at: number; color: number; power: number }>()
@@ -84,7 +83,6 @@ export class Highway {
     this.host.appendChild(this.app.canvas)
     this.app.canvas.setAttribute('aria-hidden', 'true')
     this.glowTex = radial(128, [[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,.45)'], [1, 'rgba(255,255,255,0)']])
-    this.sparkTex = radial(32, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,.6)'], [1, 'rgba(255,255,255,0)']])
     this.bgGlow = new Sprite(this.glowTex)
     this.bgGlow.blendMode = 'add'
     this.bgGlow.tint = C.lamp
@@ -176,7 +174,6 @@ export class Highway {
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
     this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
-    if (fx >= 2) this.burst(k.x + k.w / 2, this.H, color, 9)
   }
 
   /** The key under a point on the canvas (black keys sit on top), if it is over the keyboard. */
@@ -205,20 +202,6 @@ export class Highway {
     s.scale.set(base)
     this.fxLayer.addChild(s)
     this.sparks.push({ s, vx: 0, vy: 0, life: 0.38, max: 0.38, grow: base * 1.9, from: base })
-  }
-
-  private burst(x: number, y: number, color: number, n: number) {
-    for (let i = 0; i < n; i++) {
-      const s = new Sprite(this.sparkTex)
-      s.anchor.set(0.5)
-      s.tint = color
-      s.scale.set(0.25 + Math.random() * 0.35)
-      s.position.set(x + (Math.random() - 0.5) * 10, y)
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.8
-      const v = 120 + Math.random() * 260
-      this.fxLayer.addChild(s)
-      this.sparks.push({ s, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5, max: 0.5 })
-    }
   }
 
   private label(text: string, color: number, size: number): Sprite {
@@ -417,10 +400,6 @@ export class Highway {
     }
     for (let j = this.labelUsed; j < this.labelPool.length; j++) this.labelPool[j].visible = false
 
-    // ----- ambient lamp glow grows with the multiplier (slow breathing, never a strobe)
-    const mult = g.judge.combo >= 50 ? 3 : g.judge.combo >= 25 ? 2 : g.judge.combo >= 10 ? 1 : 0
-    const target = fx >= 2 ? mult * 0.045 * (0.85 + 0.15 * Math.sin(this.clock * Math.PI)) : 0
-    this.bgGlow.alpha += (target - this.bgGlow.alpha) * Math.min(1, dt * 3)
 
     // ----- sparks and glows
     for (let j = this.sparks.length - 1; j >= 0; j--) {
