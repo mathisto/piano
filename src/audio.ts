@@ -107,14 +107,21 @@ export function unlock() {
   void preload()
 }
 
-/** A wood-block tick: a short noise knock on a pair of dying tones, lower on the first beat. `after` seconds from now, on the audio clock, so the beat does not wait for an animation frame. */
-export function click(accent: boolean, after = 0, force = false) {
+/** `after` seconds from now on the audio clock. currentTime only moves in output-buffer steps, so the clock is read from the output timestamp, which pairs a context time with a performance.now() one; that keeps a click's jitter below a render quantum. A pair that disagrees with currentTime by over 100 ms is not trusted. */
+function audioTime(c: AudioContext, after: number): number {
+  const o = c.getOutputTimestamp?.()
+  const t = o?.contextTime && o.performanceTime ? o.contextTime + (performance.now() - o.performanceTime) / 1000 + after : 0
+  return Math.abs(t - c.currentTime - after) < 0.1 ? t : c.currentTime + after
+}
+
+/** A wood-block tick: a short noise knock on a pair of dying tones, lower on the first beat. `after` seconds from now, on the audio clock, so the beat does not wait for an animation frame. `soft` scales the level (the metronome's eighths). */
+export function click(accent: boolean, after = 0, force = false, soft = 1) {
   const level = force ? settings.click || 0.6 : settings.click // the rhythm trainer needs its click even when the count-in is silent
   if (level <= 0) return
   const c = ready()
-  const t = c.currentTime + after
+  const t = audioTime(c, after)
   const out = c.createGain()
-  out.gain.value = level * 0.7 * (accent ? 1 : 0.7)
+  out.gain.value = level * 0.7 * (accent ? 1 : 0.7) * soft
   out.connect(c.destination)
   const f = accent ? 760 : 1130
   for (const [mult, amp, len] of [[1, 0.9, 0.07], [2.7, 0.35, 0.03]]) {

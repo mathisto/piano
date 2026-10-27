@@ -1,5 +1,8 @@
+import './metronome.css'
 import type { Game, HandMode } from './game'
 import { icon } from './icons'
+import { beatAt, METROS } from './metronome'
+import { save, settings } from './settings'
 import type { Song } from './song'
 
 const HANDS: HandMode[] = ['play', 'listen', 'hide']
@@ -24,6 +27,7 @@ export class Dock {
   private song!: Song
   private heat: number[] = []
   private lastHeat = 0
+  private beatKey = ''
   onNote = (_msg: string) => {}
   onHands = () => {}
 
@@ -42,6 +46,10 @@ export class Dock {
           <div class="head"></div>
           <div class="lbl tip" hidden></div>
         </div>
+        <div class="metro" data-modes="perform learn">
+          <button class="btn" id="metro" aria-pressed="false" title="Metronome: off, beats, beats and eighths (B)"></button>
+          <span class="beats" id="beats" aria-hidden="true"></span>
+        </div>
         <div class="dock-end" data-modes="learn">
           <button class="btn" id="loopWorst" hidden>${icon('loop')}Loop worst bars</button>
           <button class="btn" id="loopClear" hidden>Clear loop</button>
@@ -58,11 +66,11 @@ export class Dock {
           <span class="tempo-val" id="tempoVal">100%</span>
           <button class="btn icon sm touch-only" id="tempoUp" aria-label="Faster" title="Faster">+</button>
           ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
+          <button class="btn sm" id="ladder" aria-pressed="true" title="Three clean passes of the loop raise the tempo 5%; two messy ones lower it" hidden></button>
         </div>
         <div class="pop" data-modes="learn">
           <button class="btn" id="aidsBtn" aria-expanded="false" aria-haspopup="true" aria-controls="aidsMenu">Aids</button>
           <div class="popmenu" id="aidsMenu" hidden>
-            <label class="switch"><input type="checkbox" id="autoTempo" checked><i></i>Auto tempo</label>
             <label class="switch"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
             <label class="switch"><input type="checkbox" id="holdAdvance"><i></i>Hold to advance</label>
           </div>
@@ -96,7 +104,9 @@ export class Dock {
     this.wait.onchange = () => game.setWait(this.wait.checked)
     q<HTMLInputElement>('#holdAdvance').onchange = (e) => (game.holdAdvance = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
-    q<HTMLInputElement>('#autoTempo').onchange = (e) => (game.autoTempo = (e.target as HTMLInputElement).checked)
+    q('#ladder').onclick = () => ((game.autoTempo = !game.autoTempo), this.sync())
+    q('#metro').onclick = () => this.cycleMetro()
+    this.syncMetro()
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
     for (const h of ['R', 'L'] as const) {
@@ -136,7 +146,15 @@ export class Dock {
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait
-    ;(this.host.querySelector('#autoTempo') as HTMLInputElement).checked = g.autoTempo
+    const lad = this.host.querySelector<HTMLElement>('#ladder')!
+    lad.hidden = !learn || !g.loop
+    lad.setAttribute('aria-pressed', String(g.autoTempo))
+    // in Learn the first row is full of loop buttons: the metronome joins the aids row
+    const m = this.host.querySelector('.metro')!
+    const row = this.host.querySelector(learn ? '.aids' : '.dock-row')!
+    if (m.parentElement !== row) row.insertBefore(m, row.querySelector(learn ? '.dock-fill' : '.dock-end'))
+    lad.textContent = g.autoTempo ? 'Ladder on' : 'Ladder off'
+    this.syncMetro()
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
     ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
     for (const h of ['R', 'L'] as const) {
@@ -151,6 +169,33 @@ export class Dock {
     this.scrub.setAttribute('aria-label', learn ? 'Song position' : 'Song progress')
     this.scrub.tabIndex = learn ? 0 : -1
     this.drawLoop()
+  }
+
+  /** Off, on the beat, or with eighths between; remembered. */
+  cycleMetro() {
+    settings.metro = METROS[(METROS.indexOf(settings.metro) + 1) % METROS.length]
+    save()
+    this.syncMetro()
+  }
+
+  private syncMetro() {
+    const on = settings.metro !== 'off'
+    const b = this.host.querySelector('#metro')!
+    b.setAttribute('aria-pressed', String(on))
+    b.textContent = `Metronome: ${settings.metro === 'beat' ? 'beats' : settings.metro}`
+    this.beatKey = ''
+    this.host.querySelector<HTMLElement>('#beats')!.replaceChildren()
+  }
+
+  /** The beat dots: one per beat of the bar, the current one lit. Touches the page only when the beat changes. */
+  private dots() {
+    const b = settings.metro !== 'off' && this.game.phase !== 'ready' && this.game.phase !== 'done' ? beatAt(this.song.bars, this.game.t) : null
+    const key = b ? `${b.n}:${b.k}` : ''
+    if (key === this.beatKey) return
+    this.beatKey = key
+    const el = this.host.querySelector<HTMLElement>('#beats')!
+    if (el.children.length !== (b?.n ?? 0)) el.replaceChildren(...Array.from({ length: b?.n ?? 0 }, () => document.createElement('i')))
+    ;[...el.children].forEach((d, i) => d.classList.toggle('on', i === b?.k))
   }
 
   setPhase() {
@@ -221,6 +266,7 @@ export class Dock {
     if (!this.song) return
     const t = Math.min(Math.max(this.game.t, 0), this.song.end)
     this.head.style.left = `${this.barX(t)}%`
+    this.dots()
     this.scrub.setAttribute('aria-valuenow', String(Math.max(0, this.song.bars.findIndex((b) => b.t1 > t)) + 1))
   }
 
