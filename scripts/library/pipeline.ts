@@ -73,6 +73,10 @@ export function pinHands(buf: ArrayBuffer): Selection | undefined {
   return { tracks: live.map((t) => t.index), hands }
 }
 
+/** Grade cut points on D, the sum of the seven terms: the 8th, 30th, 60th and 85th percentile of D over the analysed
+ * Mutopia set (scripts/library/fit.mjs), so it splits 8/22/30/25/15% into grades 1 to 5. */
+export const CUTS = [3.52, 5.47, 7.07, 8.19]
+
 /** Gates, flags, tags and the grade terms for one parsed Song. `marks` is the score text (.ly or MusicXML) when there is one. */
 export function judge(s: Song, marks = '', hasTempo = true) {
   const fails: string[] = []
@@ -107,7 +111,8 @@ export function judge(s: Song, marks = '', hasTempo = true) {
   if (spanP95 > 12) review.push('span')
   if (!hasTempo) flags.push('no-tempo')
   if (/D\.\s?[CS]\.|\\segno|\\coda|<segno|<coda|dacapo=|dalsegno=|\bFine\b|\bCoda\b/.test(marks)) flags.push('dc-ds')
-  if (/\\repeat\s+volta|<repeat /.test(marks)) flags.push('repeats')
+  // LilyPond's MIDI plays a repeat only under \unfoldRepeats; the MusicXML importer expands them unless it says it could not
+  if ((/\\repeat\s+volta/.test(marks) && !/\\unfoldRepeats/.test(marks)) || s.flags?.includes('repeats-unexpanded')) flags.push('repeats')
   if (notes.some((n) => n.tuplet && !(n.tuplet.num === 3 && n.tuplet.den === 2))) flags.push('tuplets')
   const tags = [...(notes.some((n) => n.tieNext) ? ['ties'] : []), ...(notes.some((n) => n.tuplet?.num === 3 && n.tuplet.den === 2) ? ['triplets'] : [])]
 
@@ -128,7 +133,7 @@ export function judge(s: Song, marks = '', hasTempo = true) {
     clamp(5 * share((n) => !!n.tuplet) + 1.5 * share((n) => (n.qd ?? n.beats) <= 0.25 + 1e-6), 1),
   ].map(r2)
   const D = why.reduce((a, b) => a + b, 0)
-  const grade = D < 2 ? 1 : D < 3.5 ? 2 : D < 5 ? 3 : D < 6.5 ? 4 : 5
+  const grade = 1 + CUTS.filter((c) => D >= c).length
   return { fails, review, flags, tags, grade, gradeWhy: why, quality: 100 - 10 * review.length - 3 * flags.length }
 }
 
@@ -169,7 +174,8 @@ export async function analyse(e: Input): Promise<Analysis> {
 // ---- dedupe ----
 
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-export const composerKey = (c: string) => fold(c.replace(/\(.*\)/, '')).replace(/[^a-z]/g, '')
+// surname and dates: 'F. F. Chopin (1810–1849)' and 'Frédéric Chopin (1810–1849)' are one composer
+export const composerKey = (c: string) => fold(c.replace(/\(.*\)/, '')).trim().split(/[\s.]+/).pop()!.replace(/[^a-z]/g, '') + (c.match(/\d{4}/g) ?? []).join('')
 const CAT = /\b(BWV\s*(?:Anh\.?\s*)?\d+[a-z]?|K(?:V|\.)?\s*\d+[a-z]?|Anh\.?\s*\d+|WoO\s*\d+|Op\.?\s*\d+[a-z]?(?:,?\s*No\.?\s*\d+)?)/i
 export const catKey = (e: Pick<Input, 'title' | 'opus'>) => {
   const m = CAT.exec(`${e.opus ?? ''} ${e.title}`)
@@ -185,9 +191,10 @@ const idOrder = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: tr
 const LIC_RANK = (l: string) => (/^(Public Domain|CC0)/.test(l) ? 0 : /-SA-/.test(l) ? 2 : 1)
 const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2 }
 
-/** Same composer, and the same catalogue number or a similar title, and the same tune by fingerprint: keep the best one. */
-export function dedupe(items: { e: Input; a: Analysis }[]): { keep: typeof items; dropped: { id: string; dupOf: string }[] } {
+/** Same composer, and the same catalogue number or a similar title, and the same tune by fingerprint: keep a pinned one, else the best one. */
+export function dedupe(items: { e: Input; a: Analysis }[], pinned = new Set<string>()): { keep: typeof items; dropped: { id: string; dupOf: string }[] } {
   const better = (x: (typeof items)[0], y: (typeof items)[0]) =>
+    +pinned.has(y.e.id) - +pinned.has(x.e.id) ||
     x.a.fails.length - y.a.fails.length ||
     y.a.quality - x.a.quality ||
     (x.e.format === 'musicxml' ? 0 : 1) - (y.e.format === 'musicxml' ? 0 : 1) ||
@@ -203,7 +210,8 @@ export function dedupe(items: { e: Input; a: Analysis }[]): { keep: typeof items
       for (let j = i + 1; j < idx.length; j++) {
         const [x, y] = [items[idx[i]], items[idx[j]]]
         const cx = catKey(x.e)
-        const same = (cx && cx === catKey(y.e)) || jaccard(words(x.e.title), words(y.e.title)) >= 0.6
+        // movements of one Mutopia page share a page, so a zip that holds a movement twice is caught whatever the file names
+        const same = x.e.sourceUrl === y.e.sourceUrl || (cx && cx === catKey(y.e)) || jaccard(words(x.e.title), words(y.e.title)) >= 0.6
         if (same && jaccard(x.a.fp, y.a.fp) >= 0.6) parent[find(idx[j])] = find(idx[i])
       }
   const groups = new Map<number, number[]>()
@@ -223,7 +231,8 @@ export function dedupe(items: { e: Input; a: Analysis }[]): { keep: typeof items
 export interface Options {
   overrides?: Record<string, number>
   grades?: [number, number] // ship only these grades
-  limit?: number // ship at most this many, in id order (numeric part compared as a number)
+  limit?: number // ship at most this many: pinned first, then the easiest (grade, then D)
+  pinned?: string[] // ids already shipped (public/library): they win dedupe and ship at any grade
 }
 
 export interface Row {
@@ -257,16 +266,19 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
     if (g) a.grade = g
     if (a.fails.length) set(e.id, 'analyse', a.error ? [...a.fails, a.error] : a.fails, a)
   }
-  const { keep, dropped } = dedupe(items)
+  const pinned = new Set(o.pinned)
+  const { keep, dropped } = dedupe(items, pinned)
   for (const d of dropped) set(d.id, 'dedupe', [`duplicate of ${d.dupOf}`], items.find((x) => x.e.id === d.id)!.a)
   let ship = keep.filter(({ e, a }) => {
     if (a.fails.length) return false
     if (a.quality < 70) return set(e.id, 'quality', [...a.review, ...a.flags], a)
-    if (o.grades && (a.grade < o.grades[0] || a.grade > o.grades[1])) return set(e.id, 'grade', [`grade ${a.grade}`], a)
+    if (o.grades && !pinned.has(e.id) && (a.grade < o.grades[0] || a.grade > o.grades[1])) return set(e.id, 'grade', [`grade ${a.grade}`], a)
     return true
   })
+  const D = (a: Analysis) => a.gradeWhy.reduce((x, y) => x + y, 0)
+  ship.sort((x, y) => +pinned.has(y.e.id) - +pinned.has(x.e.id) || x.a.grade - y.a.grade || D(x.a) - D(y.a) || idOrder(x.e.id, y.e.id))
   for (const { e, a } of ship.slice(o.limit ?? Infinity)) set(e.id, 'limit', [], a)
-  ship = ship.slice(0, o.limit ?? Infinity)
+  ship = ship.slice(0, o.limit ?? Infinity).sort((x, y) => idOrder(x.e.id, y.e.id))
 
   // emit
   mkdirSync(`${out}/p`, { recursive: true })
@@ -321,7 +333,9 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
   }
   for (const f of readdirSync(`${out}/p`)) if (!files.has(f)) rmSync(`${out}/p/${f}`)
   const built = sha(all.map((e) => `${e.id} ${e.upstreamSha}\n`).join('')).slice(0, 16)
-  const cat: Catalog = { v: 1, built, composers, licences, pieces }
+  // a dropped duplicate's id leads to the piece that ships instead, unless it was shipped itself (then it is the bundle's)
+  const aliases = Object.fromEntries(dropped.filter((d) => !pinned.has(d.id) && pieces.some((p) => p.id === d.dupOf)).map((d) => [d.id, d.dupOf]))
+  const cat: Catalog = { v: 1, built, composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces }
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
   const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`].filter(Boolean).join(', ')
   const who = (p: Piece) => {
