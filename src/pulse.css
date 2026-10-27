@@ -1,0 +1,46 @@
+/* Pulse trainers: the bars of a card, a dot where a tap is wanted. */
+.pulse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 12px;
+  margin: 14px 0;
+}
+.pulse-bar {
+  flex: 0 0 auto;
+  width: 170px;
+  max-width: 100%;
+  margin: 0;
+}
+.pulse.wide .pulse-bar {
+  width: 300px;
+}
+.pulse-bar > div {
+  position: relative;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-1);
+  background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 25%) content-box; /* a line on every beat, where the dots are */
+}
+.pulse-bar b {
+  position: absolute;
+  top: 50%;
+  left: calc(12px + (100% - 24px) * var(--m));
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: var(--r-pill);
+  background: var(--ink-2); /* Ink, not Lamp: the card's Next is the one lamp */
+}
+.pulse-bar.silent > div {
+  border-style: dashed;
+}
+.pulse-bar.silent b {
+  background: transparent;
+  border: 2px solid var(--ink-3);
+}
+.pulse-bar figcaption {
+  margin-top: 4px;
+  color: var(--ink-3);
+  font: 500 12px/1.2 var(--ui);
+}

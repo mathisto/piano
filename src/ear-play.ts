@@ -1,5 +1,5 @@
 import * as audio from './audio'
-import { RHYTHM, beatMs, biasText, scoreTaps, type EarView } from './ear'
+import { RHYTHM, beatMs, biasText, scoreTaps, type EarView, type Play } from './ear'
 import type { TCard } from './theory'
 import './ear.css'
 
@@ -11,12 +11,13 @@ export interface EarRun {
   taps: number[]
   bias: number[] // per rhythm card, the mean offset from the click
   spread: number[]
+  drift: number[] // per keep the beat card, ms a beat
   last: string // the verdict on the last rhythm
   timer: number
   judge: number
   finish?: (ok: boolean, rt: number) => void
 }
-export const newEar = (): EarRun => ({ replays: 0, deaf: 0, t0: 0, taps: [], bias: [], spread: [], last: '', timer: 0, judge: 0 })
+export const newEar = (): EarRun => ({ replays: 0, deaf: 0, t0: 0, taps: [], bias: [], spread: [], drift: [], last: '', timer: 0, judge: 0 })
 
 export function stopEar(e: EarRun) {
   clearInterval(e.timer)
@@ -26,7 +27,7 @@ export function stopEar(e: EarRun) {
 const LOOK = 30 // ms: an event is handed over this far ahead, and clicks and claps carry their exact moment to the audio clock
 
 /** Run timed events on a 10 ms tick. Stops when the Theory tab is left. */
-function schedule(e: EarRun, evs: { at: number; fn: (after: number) => void }[], open: () => boolean) {
+export function schedule(e: EarRun, evs: { at: number; fn: (after: number) => void }[], open: () => boolean) {
   stopEar(e)
   const list = [...evs].sort((a, b) => a.at - b.at)
   e.timer = window.setInterval(() => {
@@ -43,7 +44,7 @@ function schedule(e: EarRun, evs: { at: number; fn: (after: number) => void }[],
 /** Sound the card: always through the app's own piano (force), whatever the Sound setting, because these prompts are the exercise. Returns when the player may answer. A rhythm card plays its bar on a click and then holds a second, silent-but-clicked bar for the taps. */
 export function playCard(e: EarRun, c: TCard, open: () => boolean, finish: (ok: boolean, rt: number) => void, demoOnly = false): number {
   audio.unlock()
-  const p = c.play!
+  const p = c.play as Exclude<Play, { kind: 'pulse' }> // pulse cards play in pulse-play.ts
   const t = performance.now() + 250
   const evs: { at: number; fn: (after: number) => void }[] = []
   e.taps = []
@@ -98,6 +99,7 @@ const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length
 export function earView(e: EarRun): EarView {
   const parts = []
   if (e.spread.length) parts.push(`Over the session: ${biasText(mean(e.bias), mean(e.spread))}. Bias is where your whole bar sat against the click; spread is how uneven the taps were inside it.`)
+  if (e.drift.length) parts.push(`Your beat drifted ${mean(e.drift) < 0 ? 'faster' : 'slower'} by ${Math.abs(Math.round(mean(e.drift)))} ms a beat on average.`)
   if (e.replays) parts.push(`Replays: ${e.replays}.`)
   return { replays: e.replays, last: e.last, summary: parts.join(' ') }
 }

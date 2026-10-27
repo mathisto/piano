@@ -1,6 +1,7 @@
 // End-to-end suite: `npm i --no-save playwright-core axe-core`, then `npm run e2e`. Starts its own Vite dev server
 // (the dev hooks window.__piano and window.__ear exist only in dev) unless E2E_URL points at one. E2E_HEADED=1 shows the browser.
 // Every feature drives the real UI with synthetic key presses and fails on any console or page error. Docs: docs/changes/e2e.md.
+// E2E_PULSE=1 adds a lane with the three pulse trainers (about 8 minutes on its own, so use E2E_ONLY with it: the watchdog below is 8 minutes).
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -84,7 +85,10 @@ const INIT = `
         const c = T.cards[T.i], i = T.i, step = T.step
         if (T.answered === 'miss') why.push(T.ears.last || c.show), document.querySelector('#thNext')?.click()
         if (T.answered || performance.now() < T.ears.deaf) { await sleep(20); continue }
-        if (c.play?.kind === 'rhythm') {
+        if (c.play?.kind === 'pulse') {
+          const B = 60000 / c.play.bpm, now = performance.now()
+          for (const b of c.play.want) setTimeout(() => P().key(60, 0.6), T.ears.t0 + b * B - now)
+        } else if (c.play?.kind === 'rhythm') {
           const B = 2 * (T.ears.t0 - T.ears.deaf) // the keyboard opens half a beat before the bar
           const now = performance.now()
           for (const o of c.play.onsets) setTimeout(() => P().key(60, 0.6), T.ears.t0 + (o * B) / 2 - now)
@@ -402,6 +406,7 @@ async function mainFlow() {
   return page
 }
 
+const isPulse = (t) => ['keepbeat', 'subdiv', 'holdrhythm'].includes(t)
 async function theory(page, trainers) {
   await feature(`4 Theory: ${trainers.join(', ')}`, page, async () => {
     await nav(page, 'theory')
@@ -414,7 +419,7 @@ async function theory(page, trainers) {
       await page.waitForSelector('#theory [aria-label="Session results"]')
       ok((await text(page, '#theory h2')).startsWith(`${r.n} of ${r.n}`), `${t} results`)
       if (t === 'chords') await axe(page, 'Theory results', '#theory')
-      if (t === 'rhythm') ok(/Over the session/.test(await text(page, '#theory')), 'no rhythm summary')
+      if (t === 'rhythm' || isPulse(t)) ok(/Over the session/.test(await text(page, '#theory')), 'no rhythm summary')
       await page.click('#thMenu')
     }
     if (trainers.some((t) => t.startsWith('ear'))) ok(await ev(page, () => !!window.__ear), 'the __ear hook never appeared')
@@ -477,7 +482,7 @@ async function songsFlow() {
 
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
-const [page] = await Promise.all([mainFlow(), lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint'])), lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']))])
+const [page] = await Promise.all([mainFlow(), lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint'])), lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm'])), ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : [])])
 await feature('11 accessibility: every page and the drawer', page, async () => {
   for (const tab of ['today', 'songs', 'read', 'scales', 'theory', 'technique', 'progress']) {
     await nav(page, tab)

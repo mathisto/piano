@@ -1,8 +1,9 @@
 import { dayNum, type NoteStat, type Stats } from './drill'
+import { isPulse, pulseDeck, type PulseId } from './pulse'
 import { degreeCards as earDegrees, intervalCards as earIntervals, playCards, rhythmCards, type Play } from './ear'
 
 /** Theory trainers answered on the keyboard: a prompt, and a played answer checked as sets of pitch classes. */
-export type Trainer = 'chords' | 'keys' | 'intervals' | 'cadences' | 'degrees' | 'earplay' | 'earint' | 'eardeg' | 'rhythm'
+export type Trainer = 'chords' | 'keys' | 'intervals' | 'cadences' | 'degrees' | 'earplay' | 'earint' | 'eardeg' | 'rhythm' | PulseId
 
 export interface Step {
   pcs: number[] // the pitch classes the answer is made of, in any octave and any order
@@ -124,10 +125,13 @@ export const TRAINERS: { id: Trainer; name: string; blurb: string; levels: strin
   { id: 'earint', name: 'Ear: intervals', blurb: 'Hear two notes, up, down or together; play the second one.', levels: ['2nds and 3rds', '4ths and 5ths', '6ths and 7ths', 'Octaves', 'All intervals'] },
   { id: 'eardeg', name: 'Ear: scale degrees', blurb: 'A short cadence sets the key; then one note to play back. A miss tells you its degree.', levels: ['Degrees 1, 3 and 5 in C, G and F', 'All seven degrees in C, G and F', 'All seven degrees in every key'] },
   { id: 'rhythm', name: 'Rhythm echo', blurb: 'Hear a bar clapped on a click, then tap it back on any key. Reports how far your bar sits from the click apart from how even your taps are.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
+  { id: 'keepbeat', name: 'Keep the beat', blurb: 'A click, then silence: keep tapping the beat on any key. When the click comes back you are told whether you sped up or slowed down, apart from how even your taps were.', levels: ['1 silent bar', '2 silent bars', '4 silent bars'] },
+  { id: 'subdiv', name: 'Subdivisions', blurb: 'Tap eighths, triplets, sixteenths or swung eighths on any key against a quarter-note click.', levels: ['Eighths', 'Triplets', 'Sixteenths', 'Mixed, with swung eighths'] },
+  { id: 'holdrhythm', name: 'Hold a rhythm against the beat', blurb: 'A bar is written as marks on a grid; tap it twice through against a steady click.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
 ]
 
 export const deckOf = (t: Trainer, level: number): TCard[] =>
-  t === 'chords' ? chordCards(level) : t === 'keys' ? keyCards() : t === 'intervals' ? intervalCards() : t === 'cadences' ? cadenceCards(level) : t === 'earplay' ? playCards(level) : t === 'earint' ? earIntervals(level) : t === 'eardeg' ? earDegrees(level) : t === 'rhythm' ? rhythmCards(level) : degreeCards()
+  isPulse(t) ? pulseDeck(t, level) : t === 'chords' ? chordCards(level) : t === 'keys' ? keyCards() : t === 'intervals' ? intervalCards() : t === 'cadences' ? cadenceCards(level) : t === 'earplay' ? playCards(level) : t === 'earint' ? earIntervals(level) : t === 'eardeg' ? earDegrees(level) : t === 'rhythm' ? rhythmCards(level) : degreeCards()
 
 /** Is a played gesture the answer? The same pitch classes, none extra, and the right lowest note when an inversion is asked. */
 export function check(step: Step, played: number[]): boolean {

@@ -1,6 +1,8 @@
 // Theory: the trainers, ear and rhythm cards, played on the keyboard.
 import { record, type Stats } from '../drill'
 import { type EarRun, earTap, earView, newEar, playCard, stopEar } from '../ear-play'
+import { isPulse } from '../pulse'
+import { playPulse, pulseTap } from '../pulse-play'
 import * as store from '../store'
 import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from '../theory'
 import { $, type TheoryRunView, theoryView } from '../ui'
@@ -42,7 +44,7 @@ function promptTheory(demo = false) {
   if (!t || !c?.play) return
   t.step = 0
   t.buf = []
-  t.at = playCard(t.ears, c, () => $('#theory').classList.contains('on'), finishTheory, demo)
+  t.at = (c.play.kind === 'pulse' ? playPulse : playCard)(t.ears, c, () => $('#theory').classList.contains('on'), finishTheory, demo)
 }
 
 export const theoryOpen = () => $('#theory').classList.contains('on') && !!theory && theory.i < theory.cards.length && !theory.answered
@@ -53,6 +55,7 @@ export function theoryNote(p: number, ts: number) {
   if (ts < t.ears.deaf) return // a prompt is playing
   const c = t.cards[t.i]
   if (c.play?.kind === 'rhythm') return earTap(t.ears, c, ts) // any key is a tap
+  if (c.play?.kind === 'pulse') return pulseTap(t.ears, c, ts)
   t.buf.push(p)
   const step = c.steps[t.step]
   clearTimeout(t.timer)
@@ -87,7 +90,7 @@ function finishTheory(ok: boolean, rt: number) {
     t.ok++
     t.streak++
     t.best = Math.max(t.best, t.streak)
-    setTimeout(nextTheory, c.play ? 1200 : 700)
+    setTimeout(() => theory === t && nextTheory(), c.play ? 1200 : 700) // not if Stop or another trainer came first
   } else {
     t.streak = 0
     t.missed.add(c.name ?? c.prompt)
@@ -104,7 +107,7 @@ function nextTheory() {
   t.answered = undefined
   t.at = performance.now()
   if (t.i === t.cards.length) void store.markPlan(dayKey(), 'theory')
-  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: t.trainer === 'rhythm' ? undefined : median(t.rts) })
+  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: t.trainer === 'rhythm' || isPulse(t.trainer) ? undefined : median(t.rts) })
   promptTheory()
   showTheory()
 }
