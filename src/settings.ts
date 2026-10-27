@@ -2,7 +2,7 @@ import { instrumentId } from './instruments'
 import type { Coach } from './even'
 import type { Opts } from './technique'
 export interface Settings {
-  fx: 0 | 1 | 2 // effects: off, calm, arcade
+  fx: 0 | 1 // effects: off, calm
   fall: number // seconds of look-ahead on the highway
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
   instrument: string // an id from instruments.ts: grand piano (default), other sampled instruments, or the small built-in synth
@@ -27,10 +27,8 @@ export interface Settings {
   device: string // MIDI input id, '' = all
 }
 
-const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-
 const DEFAULTS: Settings = {
-  fx: reduced ? 1 : 2,
+  fx: 1,
   fall: 3,
   sound: false,
   instrument: 'piano',
@@ -61,7 +59,7 @@ function load(): Settings {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
     if (saved.staff === false && !saved.view) saved.view = 'falling' // from the old "Show the staff" switch
     delete saved.staff
-    if (saved.fx > 2) saved.fx = 2 // the Max tier is gone
+    if (saved.fx > 1) saved.fx = 1 // the Arcade tier is gone
     if (!saved.strict && saved.hold) saved.strict = saved.hold === 'off' ? 'easy' : saved.hold === 'strict' ? 'strict' : 'standard'
     delete saved.hold
     saved.instrument = instrumentId(saved.instrument)

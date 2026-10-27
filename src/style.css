@@ -462,6 +462,7 @@ input[type='range']::-moz-range-thumb {
 #library,
 #read,
 #scales,
+#theory,
 #technique,
 #progress {
   overflow: auto;
@@ -1060,9 +1061,6 @@ body.reading .hud small {
 #staff .ghost.bad {
   animation: ghostshake 0.5s ease-out;
 }
-#staff .head.thud {
-  animation: thud 0.35s var(--ease);
-}
 @keyframes ghostsnap {
   0% {
     opacity: 1;
@@ -1088,11 +1086,6 @@ body.reading .hud small {
   75% {
     translate: -1px 0;
     opacity: 0.6;
-  }
-}
-@keyframes thud {
-  35% {
-    translate: 0 3px;
   }
 }
 /* the grade, as a word on the staff, for staff-only view */
@@ -1148,8 +1141,7 @@ body.reading .hud small {
 #stage > :not(canvas) {
   z-index: 2;
 }
-#judge,
-#slam {
+#judge {
   position: absolute;
   pointer-events: none;
   font-family: var(--display);
@@ -1188,22 +1180,6 @@ body.reading .hud small {
 }
 #judge[data-g='miss'] {
   color: var(--bad);
-}
-#slam {
-  left: 50%;
-  top: 18%;
-  transform: translateX(-50%);
-  font-size: clamp(64px, 11vw, 150px);
-  line-height: 0.9;
-  color: var(--lamp);
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 24px var(--shade);
-}
-#slam small {
-  display: block;
-  font-size: 0.32em;
-  letter-spacing: 0.2em;
-  color: var(--ink);
 }
 
 .banner {
@@ -2011,6 +1987,7 @@ body.zen #dock .aids {
 #library > *,
 #read > *,
 #scales > *,
+#theory > *,
 #technique > *,
 #progress > * {
   width: min(100%, 1100px);

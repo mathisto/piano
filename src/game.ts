@@ -36,7 +36,6 @@ export type GameEvent =
   | { type: 'ok'; note: Note; rt: number; clean: boolean; vel?: VelGrade; v: number } // rt: ms the song waited on this card (0 if you were ahead)
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
-  | { type: 'milestone'; combo: number }
   | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
   | { type: 'release'; p: number }
   | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
@@ -52,7 +51,6 @@ const COUNT_IN = 4
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
-const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500]
 
 export function letter(acc: number): string {
   return acc >= 0.97 ? 'S' : acc >= 0.9 ? 'A' : acc >= 0.8 ? 'B' : acc >= 0.7 ? 'C' : 'D'
@@ -359,7 +357,6 @@ export class Game {
         this.offs.push(e.off)
         this.quiet.note((e.grade === 'perfect' || e.grade === 'great') && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel, v: this.judge.velAt(e.i) })
-        if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong

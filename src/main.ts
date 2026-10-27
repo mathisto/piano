@@ -8,15 +8,16 @@ import * as audio from './audio'
 import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
+import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, type Card as ScaleCard, type Form, type QuizStats } from './scales'
-import { DEFAULT_RUN, LIMITS, SET, award, bestKey, deal, goalMs, newArcade, over, runCards, widened, mult, type Arcade, type RunSpec } from './run'
+import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { nextStep } from './pace'
 import { knownPitches } from './quiet'
-import { multiplier, type Grade, type VelGrade } from './judge'
+import type { Grade, VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
@@ -34,7 +35,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -74,7 +75,7 @@ interface Drill {
 interface RunCtx {
   base: RunSpec // as set up
   spec: RunSpec // as dealt: the range grows when widening is on
-  arc: Arcade
+  arc: Tally
   prev?: Card
   turn: number
   sets: number
@@ -157,7 +158,7 @@ async function libSong(e: LibraryEntry) {
   return store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
 }
 
-const SECTIONS = ['today', 'library', 'read', 'scales', 'technique', 'progress', 'play'] as const
+const SECTIONS = ['today', 'library', 'read', 'scales', 'theory', 'technique', 'progress', 'play'] as const
 
 function view(name: (typeof SECTIONS)[number]) {
   for (const v of SECTIONS) $(`#${v}`).classList.toggle('on', v === name)
@@ -168,7 +169,7 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
 
-type Section = 'today' | 'songs' | 'read' | 'scales' | 'technique' | 'progress'
+type Section = 'today' | 'songs' | 'read' | 'scales' | 'theory' | 'technique' | 'progress'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -178,6 +179,7 @@ async function showSection(name: Section, err = '') {
   else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
   else if (name === 'scales') await showScales()
+  else if (name === 'theory') showTheory()
   else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
@@ -379,8 +381,6 @@ function readRun(): RunSpec {
     weak: Number(v('rWeak')),
     length: Number(v('rLength')),
     ahead: Number(v('rAhead')),
-    mode: (($('input[name=rMode]:checked', $('#read')) as HTMLInputElement)?.value ?? 'practice') as RunSpec['mode'],
-    lives: ($('#rLives', $('#read')) as HTMLInputElement).checked,
     widen: ($('#rWiden', $('#read')) as HTMLInputElement).checked,
   }
 }
@@ -390,6 +390,96 @@ async function saveRun(s: RunSpec) {
   const saved = await store.getRuns()
   await store.saveRuns({ ...saved, last: s })
 }
+
+// ---------------------------------------------------------------- Theory trainers
+
+interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {
+  level: number
+  at: number
+  rts: number[]
+  missed: Set<string>
+  buf: number[]
+  timer: number
+}
+let theory: TheoryRun | undefined
+let theoryStats: Stats = {}
+const theoryLevels: Record<Trainer, number> = { chords: 1, keys: 1, intervals: 1, cadences: 1, degrees: 1 }
+
+function showTheory() {
+  theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts) })
+}
+
+async function startTheory(trainer: Trainer) {
+  theoryStats = await store.getTheory()
+  const level = theoryLevels[trainer]
+  theory = { trainer, level, cards: dealTheory(deckOf(trainer, level), theoryStats, 15), i: 0, step: 0, ok: 0, streak: 0, best: 0, at: performance.now(), rts: [], missed: new Set(), buf: [], timer: 0 }
+  showTheory()
+}
+
+const theoryOpen = () => $('#theory').classList.contains('on') && !!theory && theory.i < theory.cards.length && !theory.answered
+
+/** A key played on a Theory card: single-note answers are judged at once, chords when the hand has settled. */
+function theoryNote(p: number) {
+  const t = theory!
+  t.buf.push(p)
+  const step = t.cards[t.i].steps[t.step]
+  clearTimeout(t.timer)
+  if (t.buf.length >= step.pcs.length) judgeTheory()
+  else t.timer = window.setTimeout(judgeTheory, 600)
+}
+
+function judgeTheory() {
+  const t = theory
+  if (!t || t.answered) return
+  clearTimeout(t.timer)
+  const c = t.cards[t.i]
+  const ok = checkAnswer(c.steps[t.step], t.buf)
+  t.buf = []
+  if (ok && t.step + 1 < c.steps.length) {
+    t.step++
+    return showTheory()
+  }
+  const rt = performance.now() - t.at
+  record(theoryStats, c.id, ok, rt)
+  void store.saveTheory(theoryStats)
+  t.rts.push(rt)
+  t.answered = ok ? 'ok' : 'miss'
+  if (ok) {
+    t.ok++
+    t.streak++
+    t.best = Math.max(t.best, t.streak)
+    setTimeout(nextTheory, 700)
+  } else {
+    t.streak = 0
+    t.missed.add(c.prompt)
+  }
+  showTheory()
+}
+
+function nextTheory() {
+  const t = theory
+  if (!t) return
+  t.i++
+  t.step = 0
+  t.answered = undefined
+  t.at = performance.now()
+  showTheory()
+}
+
+$('#theory').addEventListener('change', (e) => {
+  const s = e.target as HTMLSelectElement
+  if (s.dataset.tlevel) theoryLevels[s.dataset.tlevel as Trainer] = Number(s.value)
+})
+$('#theory').addEventListener('click', (e) => {
+  const b = (e.target as HTMLElement).closest('button')
+  if (!b) return
+  if (b.dataset.trainer) void startTheory(b.dataset.trainer as Trainer)
+  else if (b.id === 'thNext') nextTheory()
+  else if (b.id === 'thMenu') {
+    theory = undefined
+    showTheory()
+  } else if (b.id === 'thAgain' && theory) void startTheory(theory.trainer)
+})
 
 let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
 let quiz: QuizState | undefined
@@ -729,7 +819,7 @@ function nudge(dir: 1 | -1) {
 function syncMode() {
   for (const e of document.querySelectorAll<HTMLElement>('#hud [data-m]')) {
     const r = e.dataset.run
-    e.hidden = e.dataset.m !== game.mode || (!!r && (!run || (r === 'arc' && run.spec.mode !== 'arcade') || (r === 'lives' && !run.spec.lives)))
+    e.hidden = e.dataset.m !== game.mode || (!!r && !run)
   }
   dock.sync()
 }
@@ -761,13 +851,8 @@ function frame() {
   dock.frame()
   const j = game.judge
   if (game.mode === 'perform') {
-    if (j.score !== last.score) $('#hScore').textContent = j.score.toLocaleString()
-    if (j.combo !== last.combo) {
-      $('#hCombo').textContent = String(j.combo)
-      const m = multiplier(j.combo)
-      $('#hMult').hidden = m === 1
-      $('#hMult').textContent = `×${m}`
-    }
+    if (j.score !== last.score) $('#hScore').textContent = `${Math.round(j.accuracy * 100)}%`
+    if (j.combo !== last.combo) $('#hCombo').textContent = String(j.combo)
     last = { ...last, score: j.score, combo: j.combo }
   }
   const n = game.count
@@ -826,24 +911,6 @@ function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?
   )
 }
 
-let lastSlam = 0
-function slam(combo: number) {
-  const now = performance.now()
-  if (settings.fx < 2 || reduced || game.view === 'sheet' || now - lastSlam < 1000) return // one big flash per second at most
-  lastSlam = now
-  const el = $('#slam')
-  el.innerHTML = `${combo}<small>combo</small>`
-  el.getAnimations().forEach((a) => a.cancel())
-  el.animate(
-    [
-      { opacity: 0, transform: 'translateX(-50%) scale(1.5)' },
-      { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.2 },
-      { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.65 },
-      { opacity: 0, transform: 'translateX(-50%) scale(0.96)' },
-    ],
-    { duration: 900, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' },
-  )
-}
 
 let chordTimer = 0
 /** The readout of what is held now; it lingers a moment after the last key comes up. */
@@ -895,9 +962,6 @@ game.on((e: GameEvent) => {
     case 'wrong':
       highway.wrong(e.p)
       staff.ghostBad(e.p)
-      break
-    case 'milestone':
-      slam(e.combo)
       break
     case 'short':
       flash('Hold it a little longer')
@@ -1016,10 +1080,10 @@ async function startDrill(which: Stage | 'review') {
 // ---------------------------------------------------------------- Sight Run
 
 async function startRun(spec: RunSpec) {
-  spec = { ...DEFAULT_RUN, ...spec, lives: spec.lives && spec.mode === 'arcade' }
+  spec = { ...DEFAULT_RUN, ...spec }
   void saveRun(spec)
   drillStats = await store.getDrill()
-  run = { base: spec, spec, arc: newArcade(spec), turn: 0, sets: 0, setCards: 0, setClean: 0, setRts: [], seen: new Map(), rts: [], done: false }
+  run = { base: spec, spec, arc: newTally(), turn: 0, sets: 0, setCards: 0, setClean: 0, setRts: [], seen: new Map(), rts: [], done: false }
   await runSet()
 }
 
@@ -1043,7 +1107,7 @@ async function runSet() {
 /** One card answered: score it, count the note, end the run if the lives are gone. */
 function runCard(c: Card, clean: boolean, rt: number) {
   const r = run!
-  r.arc = award(r.arc, r.spec, clean, rt)
+  r.arc = tally(r.arc, clean)
   r.setCards++
   if (clean) r.setClean++
   r.setRts.push(rt)
@@ -1055,8 +1119,6 @@ function runCard(c: Card, clean: boolean, rt: number) {
     if (!clean) s.miss++
     r.seen.set(p, s)
   }
-  if (clean && r.arc.streak % 5 === 0) say(`Streak ${r.arc.streak}, times ${mult(r.arc.streak)}`)
-  if (over(r.arc, r.spec) && !r.done) setTimeout(() => void runFinish(), 500)
 }
 
 /** A set is done: widen the range if it went well, then deal on, or finish. */
@@ -1068,7 +1130,7 @@ async function runSetDone() {
     void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
   }
   if (r.spec.widen && r.setCards && r.setClean / r.setCards >= 0.9 && median(r.setRts) <= goalMs(r.spec)) r.spec = widened(r.spec, r.turn++)
-  if (r.done || over(r.arc, r.spec) || (r.spec.length && r.arc.cards >= r.spec.length)) return runFinish()
+  if (r.done || (r.spec.length && r.arc.cards >= r.spec.length)) return runFinish()
   await runSet()
   game.toggle()
 }
@@ -1082,8 +1144,9 @@ async function runFinish() {
   const saved = await store.getRuns()
   const k = bestKey(r.spec)
   const prev = saved.best[k]
-  const record = r.spec.mode === 'arcade' && r.arc.score > (prev?.score ?? 0)
-  if (r.spec.mode === 'arcade') saved.best[k] = { score: Math.max(prev?.score ?? 0, r.arc.score), streak: Math.max(prev?.streak ?? 0, r.arc.best) }
+  const record = r.arc.best > (prev?.streak ?? 0)
+  const ms = median(r.rts)
+  saved.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
   await store.saveRuns(saved)
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const res = $('#res')
@@ -1117,12 +1180,7 @@ function drillHud() {
   }
   const { arc, spec } = run
   $('#hCards').textContent = spec.length ? `${arc.cards}/${spec.length}` : String(arc.cards)
-  $('#rScore').textContent = arc.score.toLocaleString()
   $('#rStreak').textContent = String(arc.streak)
-  const m = mult(arc.streak)
-  $('#rMult').hidden = m === 1 || spec.mode !== 'arcade'
-  $('#rMult').textContent = `×${m}`
-  $('#hLives').textContent = '♥'.repeat(Math.max(0, arc.lives))
 }
 
 function drillOk(noteId: number, rt: number, clean: boolean) {
@@ -1368,6 +1426,11 @@ const fromKeyboard = (m: MidiMsg) => {
       updateBanner()
     }
     if (!m.virtual && calNote(m.v)) return
+    if (theoryOpen()) {
+      if (settings.sound) audio.noteOn(m.p, m.v, true)
+      theoryNote(m.p)
+      return // the trainer owns the keyboard while a card is open
+    }
     if (quizOpen()) {
       const c = quiz!.cards[quiz!.i]
       const d = c ? degreeOfPitch(c.tonic, c.form, m.p) : 0
@@ -1415,7 +1478,7 @@ function openDrawer() {
   })
   $('#sCal', d).onclick = () => void startCalibration()
   radios('fx', (v) => {
-    settings.fx = Number(v) as 0 | 1 | 2
+    settings.fx = Number(v) as 0 | 1
     save()
   })
   radios('coach', (v) => {

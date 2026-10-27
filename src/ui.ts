@@ -12,7 +12,8 @@ import type { Evenness } from './even'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
-import { LIMITS, type Arcade, type RunSpec } from './run'
+import { LIMITS, type RunSpec, type Tally } from './run'
+import { TRAINERS, type TCard, type Trainer } from './theory'
 import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
@@ -29,6 +30,7 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>
       <label><input type="radio" name="nav" value="read"><span>Read</span></label>
       <label><input type="radio" name="nav" value="scales"><span>Scales</span></label>
+      <label><input type="radio" name="nav" value="theory"><span>Theory</span></label>
       <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
       <label><input type="radio" name="nav" value="progress"><span>Progress</span></label>
     </div>
@@ -40,11 +42,9 @@ export function skeleton(app: HTMLElement) {
     </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
-      <div data-m="perform" role="group" aria-label="Score" title="Score"><small>Score</small><b id="hScore">0</b></div>
-      <div data-m="perform" class="combo" role="group" aria-label="Combo" title="Combo"><small>Combo</small><b id="hCombo">0</b><span class="mult" id="hMult" hidden>×2</span></div>
-      <div data-m="read" data-run="arc" role="group" aria-label="Run score" title="Score"><small>Score</small><b id="rScore">0</b></div>
-      <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b><span class="mult" id="rMult" hidden>×2</span></div>
-      <div data-m="read" data-run="lives" role="group" aria-label="Lives" title="Lives"><small>Lives</small><b id="hLives">3</b></div>
+      <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hScore">100%</b></div>
+      <div data-m="perform" class="combo" role="group" aria-label="In a row" title="Notes in a row"><small>In a row</small><b id="hCombo">0</b></div>
+      <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
     </div>
     <button class="chip" id="dev"><span class="dot"></span><span id="devName">No keyboard</span></button>
@@ -62,6 +62,7 @@ export function skeleton(app: HTMLElement) {
     <section id="library" class="view" aria-label="Songs"></section>
     <section id="read" class="view" aria-label="Read"></section>
     <section id="scales" class="view" aria-label="Scales"></section>
+    <section id="theory" class="view" aria-label="Theory"></section>
     <section id="technique" class="view" aria-label="Technique"></section>
     <section id="progress" class="view" aria-label="Progress"></section>
     <section id="play" class="view" aria-label="Play">
@@ -69,7 +70,6 @@ export function skeleton(app: HTMLElement) {
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
-        <div id="slam" aria-hidden="true"></div>
         <div id="banner"></div>
         <div id="ready" class="ready" hidden></div>
         <div id="count" class="countin" hidden aria-hidden="true"></div>
@@ -140,7 +140,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="thumb">${art(r.id)}${r.thumb}</td>
         <td class="name">${esc(r.title)}<small>${esc(r.sub)}</small></td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
-        ${best ? `<td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>` : ''}
+        ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
@@ -175,7 +175,7 @@ function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>, meta: Ma
       ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
       <table class="songs"><caption class="sr-only">${lv}</caption><colgroup><col><col><col style="width:100px"><col style="width:60px"><col style="width:320px"></colgroup><tbody>${es
         .map(
-          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${art(`lib:${e.id}`)}${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
+          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${art(`lib:${e.id}`)}${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<b>${Math.round(prog.get(`lib:${e.id}`)!.best!.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
         )
@@ -275,9 +275,9 @@ export function results(r: Result, next: Next | null, note = '') {
   const perform = r.mode === 'perform'
   return `
   <div class="results"><div class="card" role="dialog" aria-label="Results">
-    <div class="big-grade" style="color:${gradeColor(r.grade)}">${perform ? r.grade : icon('check')}</div>
+    <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : icon('check')}</div>
     <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line">${perform ? `<b>${r.score.toLocaleString()}</b> points · ` : ''}<b>${Math.round(r.acc * 100)}%</b> accuracy · best combo <b>${r.maxCombo}</b> · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
+    <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy · longest run <b>${r.maxCombo}</b> notes · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
         ? `<div>
@@ -305,7 +305,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   const device = settings.sound
   el.innerHTML = `
   <h2 id="drawerTitle" tabindex="-1" role="heading" aria-level="1">Settings</h2>
-  ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm'], ['2', 'Arcade']], String(settings.fx))}
+  ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx))}
   ${seg('sound', 'Sound', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard')}
   ${
     device
@@ -606,10 +606,10 @@ const WHITE = (p: number) => ![1, 3, 6, 8, 10].includes(p % 12)
 const KEYS_RUN: [number, string][] = [[1, 'Key of G'], [2, 'Key of D'], [3, 'Key of A'], [4, 'Key of E'], [-1, 'Key of F'], [-2, 'Key of B♭'], [-3, 'Key of E♭'], [-4, 'Key of A♭']]
 export const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
 export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
-const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)} · ${s.mode === 'arcade' ? 'Arcade' : 'Practice'}${s.length ? ` · ${s.length} cards` : ''}`
+const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)}${s.length ? ` · ${s.length} cards` : ''}`
 
 /** The Sight Run builder on the Read page, and the saved runs under it. */
-export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { score: number; streak: number }>, bestKey: (s: RunSpec) => string) {
+export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { streak: number; ms: number }>, bestKey: (s: RunSpec) => string) {
   const [min, max] = LIMITS[s.clef]
   const names = Array.from({ length: max - min + 1 }, (_, i) => min + i).filter(WHITE)
   const picks = (cur: number) => names.map((p) => `<option value="${p}"${p === cur ? ' selected' : ''}>${noteName(p)}</option>`).join('')
@@ -619,13 +619,12 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
   const saved = presets
     .map((p, i) => {
       const b = best[bestKey(p)]
-      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Best ${b.score.toLocaleString()}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
+      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Longest streak ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
     })
     .join('')
   const b = best[bestKey(s)]
   return `<section class="tcard run" aria-label="Sight Run">
-    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range, how the notes jump about, and how hard it pushes.</p></div>
-      <div class="seg" role="radiogroup" aria-label="Mode">${(['practice', 'arcade'] as const).map((m) => `<label><input type="radio" name="rMode" value="${m}"${s.mode === m ? ' checked' : ''}><span>${m === 'practice' ? 'Practice' : 'Arcade'}</span></label>`).join('')}</div></div>
+    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range and how the notes jump about. It waits for you, and keeps going until you finish.</p></div></div>
     <div class="tech-form">
       ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rLo', 'From', picks(s.lo))}
@@ -638,26 +637,25 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
       ${slider('rWeak', 'Shuffle', 'Even', 'My weak notes', s.weak)}
     </div>
     <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
-    <div class="run-opts"><label class="switch"><input type="checkbox" id="rLives"${s.lives ? ' checked' : ''}><i></i><span><b>Three lives</b><small>Arcade: a third miss ends the run</small></span></label>
+    <div class="run-opts">
       <label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label></div>
-    <div class="row-actions run-go">${b ? `<span class="fine">Best on this range: <b>${b.score.toLocaleString()}</b>, streak ${b.streak}</span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
+    <div class="row-actions run-go">${b ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
     ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
   </section>`
 }
 
 export interface RunSummary {
   spec: RunSpec
-  arc: Arcade
+  arc: Tally
   medianMs: number
   record: boolean
-  best?: { score: number; streak: number }
+  best?: { streak: number; ms: number }
   notes: { p: number; n: number; miss: number; ms: number }[]
   weakest: string[]
 }
 
 export function runResults(d: RunSummary) {
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
-  const arcade = d.spec.mode === 'arcade'
   const top = Math.max(3000, ...d.notes.map((n) => n.ms / n.n))
   const strip = [...d.notes]
     .sort((a, b) => a.p - b.p)
@@ -666,8 +664,7 @@ export function runResults(d: RunSummary) {
   return `
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
     <h2>${esc(d.spec.name ?? runTitle(d.spec))}</h2>
-    ${arcade ? `<p class="bigscore">${d.arc.score.toLocaleString()}${d.record ? ' <span class="tag next">New best</span>' : ''}</p>` : ''}
-    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${arcade && d.best && !d.record ? ` · best on this range ${d.best.score.toLocaleString()}` : ''}</p>
+    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
     <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
@@ -755,4 +752,46 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
   el.innerHTML = `
     ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
     ${body}`
+}
+
+// ---------------------------------------------------------------- Theory
+
+export interface TheoryRunView {
+  trainer: Trainer
+  cards: TCard[]
+  i: number
+  step: number // which chord of a progression is being asked
+  ok: number
+  streak: number
+  best: number
+  answered?: 'ok' | 'miss'
+  missed: string[]
+  medianMs: number
+}
+
+/** The trainer list, or one card of a session, or its results. */
+export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run?: TheoryRunView) {
+  let body: string
+  if (!run) {
+    body = `<div class="plan">${TRAINERS.map(
+      (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span></div>
+      ${t.levels.length ? `<label class="field inline"><span class="sr-only">Level of ${esc(t.name)}</span><select data-tlevel="${t.id}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}
+      <div class="pact"><button class="btn ghost" data-trainer="${t.id}">Start</button></div></div>`,
+    ).join('')}</div>
+    <p class="fine" style="margin-top:12px">Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.</p>`
+  } else if (run.i >= run.cards.length) {
+    const n = run.cards.length
+    body = `<section class="tcard run" aria-label="Session results"><h2>${run.ok} of ${n} first time</h2>
+      <p class="line">Best streak <b>${run.best}</b> · median <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}</p>
+      <div class="row-actions run-go"><button class="btn ghost" id="thMenu">All trainers</button><button class="btn primary" id="thAgain">${icon('restart')}Again</button></div></section>`
+  } else {
+    const c = run.cards[run.i]
+    const t = TRAINERS.find((x) => x.id === run.trainer)!
+    body = `<section class="tcard run" aria-label="${esc(t.name)}"><p class="fine">${esc(t.name)} · card ${run.i + 1} of ${run.cards.length}${run.streak > 1 ? ` · streak ${run.streak}` : ''}</p>
+      <h2>${esc(c.prompt)}</h2>
+      ${c.steps.length > 1 ? `<p class="line">Chord <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
+      <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : 'Play it on your keyboard.'}</p>
+      <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
+  }
+  el.innerHTML = `${head('Theory')}${body}`
 }
