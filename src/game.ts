@@ -2,6 +2,7 @@ import * as audio from './audio'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
+import { articulation, fixedAt, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
 import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -19,6 +20,10 @@ export interface Result {
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
   even: Evenness | null // how even the loudness was, when there was a line long enough to judge
+  timing: Timing | null // spread of the gaps and the lean off the beat, for runs that did not wait
+  artic: Artic | null // legato joins or staccato lengths, when the piece asks for one
+  voice: Voicing | null // right hand over left, for melody-over-accompaniment and two-hand songs
+  fixed?: number // the one velocity every note came in at (Fixed key touch)
   dyn?: string // the technique exercise's dynamics, when it was one
   clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
@@ -85,6 +90,8 @@ export class Game {
   private stallBar = 0
   private lastPerf = 0
   private wrongMark = 0
+  presses: Press[] = [] // key down and up times of struck notes, for legato and staccato
+  private downAt = new Map<number, { i: number; at: number }>()
   readonly pace = new Pace()
   readonly quiet = new Quiet() // goes quiet on judgement words once the playing is clean
   known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
@@ -163,6 +170,8 @@ export class Game {
   /** Re-score after a setting change without leaving the song. */
   private rescore() {
     this.judge = new Judge(this.song.notes, this.cfg(), this.scored)
+    this.presses = []
+    this.downAt.clear()
     this.wrongMark = 0
     this.autoI = this.song.notes.findIndex((n) => n.t >= this.t)
     if (this.autoI < 0) this.autoI = this.song.notes.length
@@ -330,6 +339,10 @@ export class Game {
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
       even: settings.coach === 'off' || this.mode === 'read' || !judged(this.song.id, this.song.dyn) ? null : evenness(j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach),
+      timing: this.mode === 'read' ? null : timing(this.song.notes.flatMap((n, i) => (j.grade[i] && j.grade[i] !== 'miss' ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
+      artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
+      voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES),
+      fixed: fixedAt(j.samples().map((x) => x.v)),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
       dyn: this.song.dyn,
@@ -386,7 +399,9 @@ export class Game {
     const t = live ? this.tAt(ts) - (settings.offset / 1000) * this.rate : this.t
     this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
     if (!live) return
-    this.dispatch(this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel))
+    const evs = this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel)
+    for (const e of evs) if (e.k === 'hit' || e.k === 'ok') this.downAt.set(p, { i: e.i, at: ts })
+    this.dispatch(evs)
     if (this.phase === 'waiting') {
       if (!this.judge.required(this.t).length) {
         if (this.holdAdvance && this.mode === 'learn') {
@@ -406,6 +421,9 @@ export class Game {
     this.held.delete(p)
     if (settings.sound || virtual) audio.noteOff(p)
     this.emit({ type: 'release', p })
+    const k = this.downAt.get(p)
+    if (k) this.presses.push({ i: k.i, down: k.at, up: ts })
+    this.downAt.delete(p)
     if (this.hold && performance.now() < this.hold.until && this.hold.idx.some((i) => this.song.notes[i].p === p)) {
       this.judge.reopen(this.hold.idx)
       this.hold = undefined

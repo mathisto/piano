@@ -1,6 +1,9 @@
 import { instrumentId } from './instruments'
 import type { Coach } from './even'
 import type { Opts } from './technique'
+export type KeyTouch = 'Light' | 'Medium' | 'Heavy' | 'Fixed' | 'Unknown'
+export const KEY_TOUCH: KeyTouch[] = ['Unknown', 'Light', 'Medium', 'Heavy', 'Fixed']
+
 export interface Settings {
   fx: 0 | 1 // effects: off, calm
   fall: number // seconds of look-ahead on the highway
@@ -16,6 +19,8 @@ export interface Settings {
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
   coach: Coach // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands
+  marks: boolean // always show the live evenness marks: no fading once the touch is even, no quiet test runs
+  keyTouch: KeyTouch // the keyboard's own key touch setting, logged with each touch entry; Fixed makes evenness unmeasurable
   strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
@@ -39,6 +44,8 @@ const DEFAULTS: Settings = {
   asWritten: false,
   strict: 'standard',
   coach: 'gentle',
+  marks: false,
+  keyTouch: 'Unknown',
   planMin: 10,
   goal: 60,
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
