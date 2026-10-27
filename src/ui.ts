@@ -23,6 +23,7 @@ import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
 import { pathSection, startAttr, streakHtml } from './habit-ui'
 import type { Level, Row as GradeRow, Start } from './grades'
+import type { LadderLevel } from './ladder'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
 import type { Streak } from './streak'
 
@@ -540,6 +541,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
 export interface ProgressData {
   streak: Streak
   path: Level[]
+  ladder: LadderLevel[]
   next?: GradeRow // the one requirement to work on next
   week: TodayData['week']
   goal: number
@@ -636,7 +638,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
           .join('')}</div></div>`
       })
       .join('')}</div>
-    ${pathSection(d.path, d.next)}
+    ${pathSection(d.path, d.next, d.ladder)}
     <h2 class="sec">Touch</h2>
     ${spark ? `${spark}<table class="songs"><caption class="sr-only">Recent sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="note">Finish a song on a real keyboard and its touch shows up here.</p>'}`
 }
