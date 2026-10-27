@@ -8,3 +8,4 @@ dist
 *.local
 .impeccable/critique-shots
 art/*.png
+.cache
