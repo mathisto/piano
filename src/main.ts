@@ -6,6 +6,7 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
+import { DEFAULT_RUN, LIMITS, SET, award, bestKey, deal, goalMs, newArcade, over, runCards, widened, mult, type Arcade, type RunSpec } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
@@ -30,7 +31,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -64,7 +65,25 @@ interface Drill {
   cleanN: number
   rts: number[]
   before: number
+  run?: RunCtx
 }
+// Sight Run: one setup, dealt a set of cards at a time until you finish or run out of lives.
+interface RunCtx {
+  base: RunSpec // as set up
+  spec: RunSpec // as dealt: the range grows when widening is on
+  arc: Arcade
+  prev?: Card
+  turn: number
+  sets: number
+  setCards: number
+  setClean: number
+  setRts: number[]
+  seen: Map<number, { n: number; miss: number; ms: number }>
+  rts: number[]
+  done: boolean
+}
+let run: RunCtx | undefined
+let runSpec: RunSpec = { ...DEFAULT_RUN }
 let drill: Drill | undefined
 let drillStats: Stats = {}
 
@@ -330,7 +349,41 @@ function calNote(vel: number) {
 }
 
 async function showRead() {
-  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3)
+  const saved = await store.getRuns()
+  if (saved.last) runSpec = { ...DEFAULT_RUN, ...saved.last }
+  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, runForm(runSpec, saved.presets, saved.best, bestKey))
+}
+
+/** The form as the DOM has it now, kept inside what the clef can show. */
+function readRun(): RunSpec {
+  const v = (id: string) => ($(`#${id}`, $('#read')) as HTMLInputElement | HTMLSelectElement).value
+  const clef = v('rClef') as RunSpec['clef']
+  let lo = Number(v('rLo'))
+  let hi = Number(v('rHi'))
+  if (lo > hi) [lo, hi] = [hi, lo]
+  const [min, max] = LIMITS[clef]
+  const n = Number(v('rSize')) > 1 ? 'nat' : v('rNotes') // intervals and triads are built on white keys
+  return {
+    clef,
+    lo: Math.max(min, lo),
+    hi: Math.min(max, hi),
+    acc: n.startsWith('k') ? 'nat' : (n as RunSpec['acc']),
+    fifths: n.startsWith('k') ? Number(n.slice(1)) : 0,
+    size: Number(v('rSize')) as RunSpec['size'],
+    near: Number(v('rNear')),
+    weak: Number(v('rWeak')),
+    length: Number(v('rLength')),
+    ahead: Number(v('rAhead')),
+    mode: (($('input[name=rMode]:checked', $('#read')) as HTMLInputElement)?.value ?? 'practice') as RunSpec['mode'],
+    lives: ($('#rLives', $('#read')) as HTMLInputElement).checked,
+    widen: ($('#rWiden', $('#read')) as HTMLInputElement).checked,
+  }
+}
+
+async function saveRun(s: RunSpec) {
+  runSpec = s
+  const saved = await store.getRuns()
+  await store.saveRuns({ ...saved, last: s })
 }
 
 async function ensureStage() {
@@ -424,6 +477,8 @@ function leave() {
   const techSong = current?.song.id.startsWith('tech:')
   if (drill) void store.saveDrill(drillStats)
   drill = undefined
+  run = undefined
+  staff.lookahead = 0
   game.endPass()
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
   if (calibrating) {
@@ -605,7 +660,10 @@ function nudge(dir: 1 | -1) {
 }
 
 function syncMode() {
-  for (const e of document.querySelectorAll<HTMLElement>('#hud [data-m]')) e.hidden = e.dataset.m !== game.mode
+  for (const e of document.querySelectorAll<HTMLElement>('#hud [data-m]')) {
+    const r = e.dataset.run
+    e.hidden = e.dataset.m !== game.mode || (!!r && (!run || (r === 'arc' && run.spec.mode !== 'arcade') || (r === 'lives' && !run.spec.lives)))
+  }
   dock.sync()
 }
 
@@ -868,8 +926,100 @@ async function startDrill(which: Stage | 'review') {
     rts: [],
     before: stage ? mastery(stage, drillStats).pct : 0,
   }
+  run = undefined
+  $('#stagesBtn').textContent = 'All stages'
   await openSong(song, 'read')
   drillHud()
+}
+
+// ---------------------------------------------------------------- Sight Run
+
+async function startRun(spec: RunSpec) {
+  spec = { ...DEFAULT_RUN, ...spec, lives: spec.lives && spec.mode === 'arcade' }
+  void saveRun(spec)
+  drillStats = await store.getDrill()
+  run = { base: spec, spec, arc: newArcade(spec), turn: 0, sets: 0, setCards: 0, setClean: 0, setRts: [], seen: new Map(), rts: [], done: false }
+  await runSet()
+}
+
+/** Deal the next set and open it. */
+async function runSet() {
+  const r = run!
+  const n = r.spec.length ? Math.min(SET, r.spec.length - r.arc.cards) : SET
+  const d = deal(runCards(r.spec), drillStats, r.spec, n, r.prev)
+  r.prev = d[d.length - 1]
+  r.setCards = r.setClean = 0
+  r.setRts = []
+  const title = runTitle(r.spec)
+  const song = deckSong('drill:run', title, d, r.spec.fifths)
+  drill = { stage: 'review', title, goal: goalMs(r.spec), cards: d, left: d.map((c) => c.pitches.length), agg: d.map(() => ({ clean: true, rt: 0 })), noteCard: noteCards(d, song), done: 0, streak: 0, cleanN: 0, rts: [], before: 0, run: r }
+  $('#stagesBtn').textContent = 'Finish'
+  await openSong(song, 'read')
+  staff.lookahead = r.spec.ahead
+  drillHud()
+}
+
+/** One card answered: score it, count the note, end the run if the lives are gone. */
+function runCard(c: Card, clean: boolean, rt: number) {
+  const r = run!
+  r.arc = award(r.arc, r.spec, clean, rt)
+  r.setCards++
+  if (clean) r.setClean++
+  r.setRts.push(rt)
+  r.rts.push(rt)
+  for (const p of c.pitches) {
+    const s = r.seen.get(p) ?? { n: 0, miss: 0, ms: 0 }
+    s.n++
+    s.ms += rt
+    if (!clean) s.miss++
+    r.seen.set(p, s)
+  }
+  if (clean && r.arc.streak % 5 === 0) say(`Streak ${r.arc.streak}, times ${mult(r.arc.streak)}`)
+  if (over(r.arc, r.spec) && !r.done) setTimeout(() => void runFinish(), 500)
+}
+
+/** A set is done: widen the range if it went well, then deal on, or finish. */
+async function runSetDone() {
+  const r = run!
+  await store.saveDrill(drillStats)
+  if (!r.sets++) {
+    const done = await store.getPlan(dayKey())
+    void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
+  }
+  if (r.spec.widen && r.setCards && r.setClean / r.setCards >= 0.9 && median(r.setRts) <= goalMs(r.spec)) r.spec = widened(r.spec, r.turn++)
+  if (r.done || over(r.arc, r.spec) || (r.spec.length && r.arc.cards >= r.spec.length)) return runFinish()
+  await runSet()
+  game.toggle()
+}
+
+async function runFinish() {
+  const r = run
+  if (!r || r.done || !drill) return
+  r.done = true
+  if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
+  await store.saveDrill(drillStats)
+  const saved = await store.getRuns()
+  const k = bestKey(r.spec)
+  const prev = saved.best[k]
+  const record = r.spec.mode === 'arcade' && r.arc.score > (prev?.score ?? 0)
+  if (r.spec.mode === 'arcade') saved.best[k] = { score: Math.max(prev?.score ?? 0, r.arc.score), streak: Math.max(prev?.streak ?? 0, r.arc.best) }
+  await store.saveRuns(saved)
+  const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
+  const res = $('#res')
+  res.innerHTML = runResults({
+    spec: r.spec,
+    arc: r.arc,
+    medianMs: median(r.rts),
+    record,
+    best: saved.best[k],
+    notes,
+    weakest: notes.filter((n) => n.miss).sort((a, b) => b.miss / b.n - a.miss / a.n).slice(0, 4).map((n) => noteName(n.p, r.spec.fifths)),
+  })
+  resOpen(true)
+  $('#runAgain', res).focus()
+  say(`Run finished. ${r.arc.cards} cards, ${r.arc.cards ? Math.round((r.arc.clean / r.arc.cards) * 100) : 0} percent first try.`)
+  $('#runAgain', res).onclick = () => void startRun(r.base)
+  $('#toStages', res).onclick = leave
 }
 
 function median(xs: number[]) {
@@ -880,7 +1030,18 @@ function median(xs: number[]) {
 
 function drillHud() {
   if (!drill) return
-  $('#hCards').textContent = `${drill.done}/${drill.cards.length}`
+  if (!run) {
+    $('#hCards').textContent = `${drill.done}/${drill.cards.length}`
+    return
+  }
+  const { arc, spec } = run
+  $('#hCards').textContent = spec.length ? `${arc.cards}/${spec.length}` : String(arc.cards)
+  $('#rScore').textContent = arc.score.toLocaleString()
+  $('#rStreak').textContent = String(arc.streak)
+  const m = mult(arc.streak)
+  $('#rMult').hidden = m === 1 || spec.mode !== 'arcade'
+  $('#rMult').textContent = `×${m}`
+  $('#hLives').textContent = '♥'.repeat(Math.max(0, arc.lives))
 }
 
 function drillOk(noteId: number, rt: number, clean: boolean) {
@@ -895,10 +1056,12 @@ function drillOk(noteId: number, rt: number, clean: boolean) {
   drill.streak = a.clean ? drill.streak + 1 : 0
   if (a.clean) drill.cleanN++
   drill.rts.push(a.rt)
+  if (run) runCard(drill.cards[i], a.clean, a.rt)
   drillHud()
 }
 
 async function drillDone() {
+  if (run) return runSetDone()
   const d = drill!
   await store.saveDrill(drillStats)
   const done = await store.getPlan(dayKey())
@@ -1248,12 +1411,33 @@ document.addEventListener('pointerdown', (e) => {
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
 $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
-$('#stagesBtn').onclick = leave
+$('#stagesBtn').onclick = () => (run && run.arc.cards ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
+$('#read').addEventListener('change', (e) => {
+  if (!($(`#rClef`, $('#read')))) return
+  const id = (e.target as HTMLElement).id
+  let s = readRun()
+  if (id === 'rClef') {
+    ;[s.lo, s.hi] = RUN_START[s.clef]
+    s = { ...s, ...(s.clef === 'bass' ? { acc: s.acc } : {}) }
+  }
+  void saveRun(s)
+  if (id === 'rClef' || id === 'rSize') void showRead() // the pickers list a different span of notes; intervals and triads have no key or sharps
+})
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
   if (!b) return
-  if (b.dataset.stage) {
+  if (b.id === 'rStart') void startRun(readRun())
+  else if (b.id === 'rSave') {
+    const s = readRun()
+    const name = prompt('Name this run', runTitle(s))
+    if (name) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: [...r.presets, { ...s, name }] }), showRead()))
+  } else if (b.dataset.runp) void store.getRuns().then((r) => startRun(r.presets[Number(b.dataset.runp)]))
+  else if (b.dataset.rund) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: r.presets.filter((_, i) => i !== Number(b.dataset.rund)) }), showRead()))
+  else if (b.dataset.rr) {
+    const [lo, hi] = b.dataset.rr.split(':').map(Number)
+    void saveRun({ ...readRun(), lo, hi }).then(showRead)
+  } else if (b.dataset.stage) {
     const st = stageById(b.dataset.stage)
     if (st) void startDrill(st)
   } else if (b.dataset.review) void startDrill('review')

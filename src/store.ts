@@ -1,5 +1,6 @@
 import { del, get, keys, set } from 'idb-keyval'
 import type { Stats } from './drill'
+import type { RunSpec } from './run'
 import type { TechStats } from './syllabus'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
@@ -174,7 +175,7 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -186,11 +187,12 @@ export async function importAll(text: string) {
   if (d.touch) await set('touch:log', d.touch)
   if (d.practice) await set('practice:days', d.practice)
   if (d.technique) await set('tech:stats', d.technique)
+  if (d.runs) await set('run:state', d.runs)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -200,4 +202,13 @@ export async function getDrill(): Promise<Stats> {
 
 export async function saveDrill(s: Stats) {
   await set('drill:stats', s)
+}
+
+/** Sight Run: saved setups, the last one used, and the best score for each range. */
+export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { score: number; streak: number }> }> {
+  return (await get('run:state')) ?? { presets: [], best: {} }
+}
+
+export async function saveRuns(r: Awaited<ReturnType<typeof getRuns>>) {
+  await set('run:state', r)
 }
