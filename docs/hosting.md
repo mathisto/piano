@@ -11,7 +11,9 @@ The app (`dist/`) and the library corpus are separate on quartz: `/opt/piano/dis
 
 The web app fetches `/corpus/` on its own origin. The iPad app's origin is `capacitor://localhost`, so it fetches `https://pianoforte.mattkelly.io/corpus/` and needs CORS. Requests are plain GETs with no custom headers, so there is no preflight; `Access-Control-Allow-Origin *` is enough.
 
-## Caddy
+## Caddy (applied on quartz 2026-10-28)
+
+The live block uses `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them; the previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`. The snippet below is the corpus part.
 
 Inside the existing site block for pianoforte.mattkelly.io, before the app's `file_server`:
 
