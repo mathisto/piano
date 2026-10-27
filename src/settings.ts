@@ -89,3 +89,6 @@ export function save() {
     /* private mode: settings last for the session */
   }
 }
+
+/** The first-run Set up sheet: once, never over saved settings, never under automation (`?setup` forces it). */
+export const showSetup = (o: { seen: boolean; saved: boolean; automated: boolean; forced: boolean }) => o.forced || !(o.seen || o.saved || o.automated)

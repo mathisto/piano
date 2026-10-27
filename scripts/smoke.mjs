@@ -20,9 +20,14 @@ const views = () => page.evaluate(() => [...document.querySelectorAll('.view.on'
 await page.goto(URL)
 await page.waitForSelector('#today.on')
 check('boots on Today', (await views()) === 'today')
-check('first launch shows Set up', await page.waitForSelector('dialog#setup[open]', { timeout: 3000 }).then(() => true, () => false))
-await page.keyboard.press('Escape')
-check('Set up skips with Escape', !(await page.isVisible('dialog#setup[open]')))
+await page.waitForTimeout(500)
+check('automation never gets the Set up sheet unasked', !(await page.isVisible('dialog#setup[open]')))
+const first = await browser.newPage()
+await first.goto(`${URL}?setup`)
+check('?setup shows Set up on a first launch', await first.waitForSelector('dialog#setup[open]', { timeout: 3000 }).then(() => true, () => false))
+await first.keyboard.press('Escape')
+check('Set up skips with Escape', !(await first.isVisible('dialog#setup[open]')))
+await first.close()
 
 for (const [tab, id] of [['songs', 'library'], ['read', 'read'], ['scales', 'scales'], ['theory', 'theory'], ['technique', 'technique'], ['progress', 'progress'], ['today', 'today']]) {
   await page.click(`label:has(input[value=${tab}])`)

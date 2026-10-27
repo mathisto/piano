@@ -22,7 +22,7 @@ import { knownPitches } from './quiet'
 import type { Grade, VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
-import { save, settings } from './settings'
+import { save, settings, showSetup } from './settings'
 import { barAt, fromSpec, type Hand, type Note, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
@@ -2120,8 +2120,7 @@ void (async () => {
   const want = location.hash.slice(1)
   const i = STARTERS.findIndex((s) => s.spec.id === want)
   if (i >= 0) void openSong(starters[i], 'perform')
-  // once, on a first launch: a returning player already has settings saved
-  else if (!localStorage.getItem('piano.setup') && !localStorage.getItem('piano.settings')) openSetup()
+  else if (showSetup({ seen: !!localStorage.getItem('piano.setup'), saved: !!localStorage.getItem('piano.settings'), automated: navigator.webdriver, forced: location.search.includes('setup') })) openSetup()
 })()
 
 if (import.meta.env.DEV) {
