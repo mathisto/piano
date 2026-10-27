@@ -465,6 +465,7 @@ input[type='range']::-moz-range-thumb {
 #theory,
 #technique,
 #progress {
+  grid-template-columns: minmax(0, 1fr); /* the auto column grew to the widest cell strip and pushed the page past the screen */
   overflow: auto;
   align-content: start;
   padding: 32px clamp(16px, 6vw, 96px) 64px;
@@ -2017,6 +2018,7 @@ body.zen #dock .aids {
 }
 .crow {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-top: 8px;
 }
@@ -2046,6 +2048,11 @@ body.zen #dock .aids {
 }
 .cell.solid b {
   background: var(--ink);
+}
+@media (pointer: coarse) {
+  .cell {
+    width: 44px;
+  }
 }
 
 /* ---------- one measure for every page ---------- */
