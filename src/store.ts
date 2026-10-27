@@ -1,5 +1,5 @@
 import { del, get, keys, set } from 'idb-keyval'
-import type { Stats } from './drill'
+import { INTERVALS, dayNum, type Stats } from './drill'
 import type { RunSpec } from './run'
 import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
@@ -21,6 +21,9 @@ export interface Progress {
   last: number
   best?: { score: number; acc: number; grade: string }
   heat: number[] // decaying per-bar trouble score
+  box?: number // spaced review: 0..4, up a box for a clean run, down one for a messy one
+  due?: number // the local day number a review is next due
+  days?: number[] // the last few days with a clean run: ready is two different days
 }
 
 export async function hash(bytes: ArrayBuffer): Promise<string> {
@@ -91,11 +94,17 @@ export async function allProgress(): Promise<Map<string, Progress>> {
 }
 
 /** Fold one session's trouble into the long-run heat: old trouble cools as you improve. */
-export async function commit(id: string, heat: number[], result?: { score: number; acc: number; grade: string }) {
+export async function commit(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
   const p = await getProgress(id)
   const n = Math.max(p.heat.length, heat.length)
   p.heat = Array.from({ length: n }, (_, i) => (p.heat[i] ?? 0) * 0.7 + (heat[i] ?? 0))
   p.last = Date.now()
+  if (clean !== undefined) {
+    const day = dayNum()
+    p.box = Math.min(INTERVALS.length - 1, Math.max(0, (p.box ?? 0) + (clean ? 1 : -1)))
+    p.due = day + INTERVALS[p.box]
+    if (clean && !p.days?.includes(day)) p.days = [...(p.days ?? []), day].slice(-6)
+  }
   if (result) {
     p.plays++
     if (!p.best || result.score > p.best.score) p.best = result
@@ -176,7 +185,7 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -191,11 +200,12 @@ export async function importAll(text: string) {
   if (d.runs) await set('run:state', d.runs)
   if (d.scales) await set('scale:stats', d.scales)
   if (d.theory) await set('theory:stats', d.theory)
+  if (d.history) await set('history:log', d.history)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -238,4 +248,21 @@ export async function getTheory(): Promise<Stats> {
 
 export async function saveTheory(s: Stats) {
   await set('theory:stats', s)
+}
+
+/** One finished practice session of any kind, kept for the charts on Progress. */
+export interface HistoryEntry {
+  ts: number
+  kind: 'read' | 'run' | 'scale' | 'theory' | 'song' | 'tech'
+  label: string
+  acc: number // 0..1
+  ms?: number // median time a card took, where cards are timed
+}
+
+export async function getHistory(): Promise<HistoryEntry[]> {
+  return (await get<HistoryEntry[]>('history:log')) ?? []
+}
+
+export async function logHistory(e: HistoryEntry) {
+  await set('history:log', [...(await getHistory()), e].slice(-600))
 }

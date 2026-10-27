@@ -7,11 +7,11 @@ import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings } from './settings'
-import type { Progress, Stored, TouchEntry } from './store'
+import type { HistoryEntry, Progress, Stored, TouchEntry } from './store'
 import type { Evenness } from './even'
 import type { Song } from './song'
 import type { Starter } from './starters'
-import type { Stage } from './drill'
+import type { Stage, Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, type TCard, type Trainer } from './theory'
 import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
@@ -138,7 +138,7 @@ function table(caption: string, rows: Row[], empty: string) {
         .map(
           (r) => `<tr class="open" data-open="${r.id}">
         <td class="thumb">${art(r.id)}${r.thumb}</td>
-        <td class="name">${esc(r.title)}<small>${esc(r.sub)}</small></td>
+        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}<small>${esc(r.sub)}</small></td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
@@ -458,6 +458,7 @@ function pathBlock(path: PathRow[]) {
 
 export interface TodayData {
   last: { id: string; title: string; sub: string; first: boolean }
+  again?: { id: string; title: string; sub: string } // a piece whose spaced review is due
   read: { id: string; name: string; pct: number; line: string }
   tech: string
   techDue: boolean
@@ -484,10 +485,11 @@ export function todayView(el: HTMLElement, d: TodayData) {
     { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${c.includes('primary') ? icon('play') : ''}Start</button>` },
     { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${d.read.id}">${c.includes('primary') ? icon('play') : ''}Practice</button>` },
     { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${d.last.id}">${c.includes('primary') ? icon('play') : ''}${d.last.first ? 'Start' : 'Continue'}</button>` },
+    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${d.again!.id}">Play</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${d.fix!.id}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${d.review!.id}">${c.includes('primary') ? icon('play') : ''}Practice</button>` }] : []),
   ]
-  const keep: Record<number, string[]> = { 5: ['warm', 'read'], 10: ['warm', 'read', 'piece'], 20: ['warm', 'read', 'piece', 'fix', 'review'] }
+  const keep: Record<number, string[]> = { 5: ['warm', 'read'], 10: ['warm', 'read', 'piece', 'again'], 20: ['warm', 'read', 'piece', 'again', 'fix', 'review'] }
   const plan = all.filter((r) => keep[d.planMin].includes(r.key))
   // what is still to do comes first, in practice order; finished steps sink to the bottom as a record of the day
   const ordered = [...plan.filter((r) => !d.done.includes(r.key)), ...plan.filter((r) => d.done.includes(r.key))]
@@ -512,6 +514,53 @@ export interface ProgressData {
   stages: StageRow[]
   tech: PathRow[]
   log: TouchEntry[]
+  history: HistoryEntry[]
+  stats: Stats // reading, card by card
+}
+
+const KIND_NAME: Record<HistoryEntry['kind'], string> = { read: 'Reading drills', run: 'Sight Run', scale: 'Scales', theory: 'Theory', song: 'Songs', tech: 'Technique' }
+
+/** One small chart per kind of practice: accuracy session by session, and whether the latest few are better than the few before. */
+function overTime(h: HistoryEntry[]) {
+  const cards = (Object.keys(KIND_NAME) as HistoryEntry['kind'][])
+    .map((k) => {
+      const xs = h.filter((e) => e.kind === k).slice(-24)
+      if (xs.length < 2) return ''
+      const W = 260
+      const X = (i: number) => 6 + (i / (xs.length - 1)) * (W - 12)
+      const Y = (a: number) => 46 - Math.max(0, (a - 0.4) / 0.6) * 40 // the chart runs from 40 to 100 percent
+      const avg = (a: HistoryEntry[]) => a.reduce((s, e) => s + e.acc, 0) / a.length
+      const recent = xs.slice(-5)
+      const before = xs.slice(-10, -5)
+      const delta = before.length >= 3 ? Math.round((avg(recent) - avg(before)) * 100) : null
+      return `<div class="otc"><small class="label">${KIND_NAME[k]}</small>
+        <svg class="hist spark" viewBox="0 0 ${W} 52" role="img" aria-label="${KIND_NAME[k]} accuracy over your last ${xs.length} sessions, now ${Math.round(avg(recent) * 100)} percent">
+          <line class="mid" x1="6" x2="${W - 6}" y1="${Y(1)}" y2="${Y(1)}" stroke-dasharray="3 5"/><polyline points="${xs.map((e, i) => `${X(i)},${Y(e.acc)}`).join(' ')}"/></svg>
+        <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} on the five before`}</span></div></div>`
+    })
+    .join('')
+  return cards ? `<div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
+}
+
+/** Which notes you read well: one bar per semitone across the keyboard, filled by how often, how cleanly and how fast. */
+function knownStrip(stats: Stats) {
+  const best = new Map<number, number>()
+  for (const [k, s] of Object.entries(stats)) {
+    const [size, , p] = k.split(':')
+    if (size !== '1') continue
+    const m = Math.min(1, s.n / 12) * s.clean * Math.min(1, 3000 / Math.max(s.rt, 1))
+    best.set(Number(p), Math.max(best.get(Number(p)) ?? 0, m))
+  }
+  if (!best.size) return ''
+  const lo = 36
+  const hi = 96
+  const w = 600 / (hi - lo + 1)
+  const bars = Array.from({ length: hi - lo + 1 }, (_, i) => {
+    const p = lo + i
+    const m = best.get(p)
+    return `<rect x="${(i * w).toFixed(1)}" y="2" width="${(w - 1).toFixed(1)}" height="40" rx="1.5" class="${m === undefined ? 'unseen' : 'seen'}"${m === undefined ? '' : ` style="--m:${(0.15 + 0.85 * m).toFixed(2)}"`}><title>${noteName(p)}${m === undefined ? ', not met yet' : `, ${Math.round(m * 100)}%`}</title></rect>${p % 12 === 0 ? `<text x="${(i * w).toFixed(1)}" y="56">${noteName(p)}</text>` : ''}`
+  }).join('')
+  return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter is better: met often, answered cleanly and quickly. Dark outlines are notes you have not drilled yet.</p>`
 }
 
 export function progressView(el: HTMLElement, d: ProgressData) {
@@ -536,6 +585,9 @@ export function progressView(el: HTMLElement, d: ProgressData) {
     <h2 class="sec">This week</h2>
     <div class="tcard">${weekBlock(d.week, d.goal)}
       <label class="field inline"><span>Weekly goal</span><select id="pGoal">${[30, 60, 90, 120, 180].map((m) => opt(m, `${m} min`, d.goal)).join('')}</select></label></div>
+    <h2 class="sec">Over time</h2>
+    ${overTime(d.history)}
+    ${knownStrip(d.stats)}
     <h2 class="sec">Reading</h2>
     <p class="note">${solid} of ${d.stages.length} stages solid.</p>
     <div class="cells">${GROUPS.map(([g, f]) => {

@@ -2429,3 +2429,40 @@ dialog.sheet footer .btn {
   fill: var(--ink-2);
   pointer-events: none;
 }
+
+/* ---------- Progress: charts over time and the notes you know ---------- */
+.over {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px 24px;
+  margin-bottom: 8px;
+}
+.otc svg.hist {
+  width: 100%;
+  height: 52px;
+  display: block;
+}
+.otv {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.otv b {
+  font: 800 italic 24px/1 var(--display);
+}
+.otv span {
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.hist.known rect.seen {
+  fill: var(--R);
+  fill-opacity: var(--m);
+}
+.hist.known rect.unseen {
+  fill: none;
+  stroke: var(--line-2);
+}
+.hist.known text {
+  font-size: 11px;
+  fill: var(--ink-3);
+}

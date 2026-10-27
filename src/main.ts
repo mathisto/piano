@@ -8,7 +8,7 @@ import * as audio from './audio'
 import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
-import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
+import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
@@ -21,7 +21,7 @@ import type { Grade, VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
-import { fromSpec, type Hand, type Note, type Song } from './song'
+import { barAt, fromSpec, type Hand, type Note, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
@@ -121,7 +121,7 @@ async function libraryData() {
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
   const libRows: Row[] = libEntries.map((e) => ({ id: `lib:${e.id}`, title: e.title, sub: `${e.composer} · ${e.level}`, bars: 0, len: 0, prog: prog.get(`lib:${e.id}`), user: false, thumb: '' }))
   const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
-  return { starts, mine, last }
+  return { starts, mine, last, all: [...starts, ...mine, ...libRows] }
 }
 
 async function showLibrary(err = '') {
@@ -195,7 +195,7 @@ async function stageRows(): Promise<StageRow[]> {
 }
 
 async function showToday() {
-  const [{ last }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
+  const [{ last, all }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
   const next = rows.find((r) => r.next)!
   const ts = await store.getTech()
   const nr = nextRecipe(ts, dayNum())
@@ -210,7 +210,11 @@ async function showToday() {
   const prevKey = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 7 - ((new Date().getDay() + 6) % 7)))
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   todayView($('#today'), {
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${last.prog.best.grade}, ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
+    again: (() => {
+      const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
+      return r ? { id: r.id, title: r.title, sub: 'Due for another go' } : undefined
+    })(),
     read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
     techDue: nr.reason === 'due',
@@ -231,9 +235,9 @@ async function showToday() {
 }
 
 async function showProgress() {
-  const [stages, days, log, ts] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech()])
+  const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -463,6 +467,7 @@ function nextTheory() {
   t.step = 0
   t.answered = undefined
   t.at = performance.now()
+  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: median(t.rts) })
   showTheory()
 }
 
@@ -867,6 +872,25 @@ function frame() {
 
 // ---------------------------------------------------------------- game events
 
+/** Fix-it chain: three clean passes of a loop add the next bar to it, and once the loop is the whole piece it lets go. */
+let cleanPasses = 0
+function fixChain(clean: boolean) {
+  const lp = game.loop
+  if (!lp || game.mode !== 'learn') return
+  cleanPasses = clean ? cleanPasses + 1 : 0
+  if (cleanPasses < 3) return
+  cleanPasses = 0
+  const bars = game.song.bars
+  const last = barAt(bars, lp.b - 1e-3)
+  if (last + 1 < bars.length) {
+    game.setLoop({ a: lp.a, b: bars[last + 1].t1 })
+    flash(`Clean three times. Adding bar ${last + 2}.`)
+  } else {
+    game.setLoop(null)
+    flash('Clean three times, and the whole piece is in. Loop off.')
+  }
+}
+
 // Touch coach, live: how hard each note was struck against the last few of its hand.
 const felt: Record<Hand, { v: number[]; t: number }> = { R: { v: [], t: -1 }, L: { v: [], t: -1 } }
 function feel(n: Note, v: number) {
@@ -962,6 +986,9 @@ game.on((e: GameEvent) => {
     case 'wrong':
       highway.wrong(e.p)
       staff.ghostBad(e.p)
+      break
+    case 'loop':
+      fixChain(e.clean)
       break
     case 'short':
       flash('Hold it a little longer')
@@ -1148,6 +1175,7 @@ async function runFinish() {
   const ms = median(r.rts)
   saved.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
   await store.saveRuns(saved)
+  if (r.arc.cards) void store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) })
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const res = $('#res')
   res.innerHTML = runResults({
@@ -1205,6 +1233,7 @@ async function drillDone() {
   await store.saveDrill(drillStats)
   const done = await store.getPlan(dayKey())
   void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
+  void store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats) : undefined
   const nxt = nextStage(drillStats)
@@ -1251,6 +1280,7 @@ async function onDone(r: Result) {
     current.song.id,
     r.heat,
     r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
+    r.mode === 'read' || game.loop ? undefined : r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait,
   )
   current.heat = prog.heat
   void store.markPlan(dayKey(), /^(tech|scale):/.test(current.song.id) ? 'warm' : game.loop ? 'fix' : 'piece')
@@ -1260,6 +1290,8 @@ async function onDone(r: Result) {
     const { n, mean, sd, hands, bands } = r.touch
     void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
   }
+  const kind = current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'tech' : 'song'
+  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: current.song.title, acc: r.acc })
   let note = ''
   const sc = parseId(current.song.id)
   if (sc && r.mode === 'perform') {
