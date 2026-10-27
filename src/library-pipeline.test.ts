@@ -3,7 +3,8 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import { movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
-import { analyse, GATES, judge, merge, reach, run, type Input } from '../scripts/library/pipeline'
+import { analyse, GATES, judge, lyPace, merge, reach, run, type Input } from '../scripts/library/pipeline'
+import { Midi } from '@tonejs/midi'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromSpec, type Song } from './song'
 
@@ -53,6 +54,62 @@ describe('library pipeline gates', () => {
     expect(Object.keys(cases).sort()).toEqual([...GATES.fail, ...GATES.review, ...GATES.flag].filter((g) => g !== 'parse').sort())
     const bad = await analyse({ id: 'bad', format: 'midi', bytes: new Uint8Array([1, 2, 3]) } as Input)
     expect(bad.fails).toEqual(['parse'])
+  })
+})
+
+describe('the pace a Mutopia .ly names', () => {
+  it('a number means the MIDI already plays it, in any of the three spellings', () => {
+    for (const ly of ['\\tempo 4=96', '\\tempo "Allegro" 4 = 120', '\\set Score.tempoWholesPerMinute = #(ly:make-moment 90 4)']) expect(lyPace(ly)).toEqual({ given: true })
+    expect(lyPace('% \\tempo 4=96\n\\tempo "Presto"').bpm).toBe(176) // a comment is not a tempo
+  })
+  it('reads the first word of a \\tempo, a header piece or meter, a markup or a script', () => {
+    expect(lyPace('\\tempo "Allegro moderato"').bpm).toBe(118)
+    expect(lyPace('\\header { piece = " Andante" }').bpm).toBe(84)
+    expect(lyPace('\\header { meter = \\markup { \\bold "Adagio" } }').bpm).toBe(66)
+    expect(lyPace('\\header { title = "x" }\n{ c4^\\markup { \\italic "Vivace" } }').bpm).toBe(152)
+    expect(lyPace('{ c4_"Lento" }').bpm).toBe(52)
+    expect(lyPace('\\header { piece = \\markup { \\bold "Allegro" } }', true).bpm).toBe(158) // a compound meter beats a dotted quarter
+  })
+  it('a markup metronome mark is a number, in quarters whatever its unit', () => {
+    const mark = (note: string, n: number) => `\\markup{\\column {\\line {\\bold "Andante. ("\\note #"${note}" #1 \\bold " = ${n})"}}}`
+    expect(lyPace(mark('4', 60))).toEqual({ given: false, bpm: 60, exact: true }) // not the 84 that "Andante" would guess
+    expect(lyPace(mark('2', 50)).bpm).toBe(100)
+    expect(lyPace(mark('4.', 112)).bpm).toBe(168)
+    expect(lyPace(mark('8', 120)).bpm).toBe(60)
+  })
+  it('finds nothing in a title, a composer or a tagline', () => {
+    expect(lyPace('\\header { title = "Allegro in C" composer = "Lento" tagline = \\markup { Free to download } }')).toEqual({ given: false })
+  })
+
+  // LilyPond's MIDI plays 60 bpm when the score gives no number
+  const midi = (bpm?: number, ly?: string) => {
+    const m = new Midi()
+    if (bpm) m.header.setTempo(bpm)
+    m.header.timeSignatures.push({ ticks: 0, timeSignature: [4, 4] } as never)
+    const t = m.addTrack()
+    for (let i = 0; i < 64; i++) t.addNote({ midi: 60 + (i % 7), ticks: i * 480, durationTicks: 400 })
+    return { id: 'x', title: 'x', format: 'midi', bytes: new Uint8Array(m.toArray()), ly } as Input
+  }
+  it('a tempo word replaces the default 60 and is flagged as a guess, in the catalogue entry and not in the bytes', async () => {
+    const e = midi(60, '\\header { piece = "Allegro" }')
+    const a = await analyse(e)
+    expect(a.tempo).toBe(132)
+    expect(a.flags).toEqual(['tempo-estimated'])
+    expect(a.song!.spb).toBeCloseTo(60 / 132, 3)
+  })
+  it('a markup metronome mark sets the tempo without the flag', async () => {
+    const a = await analyse(midi(60, '\\header { piece = \\markup { \\bold "Allegro" \\note #"4" #1 " = 100" } }'))
+    expect(a.tempo).toBe(100)
+    expect(a.flags).toEqual([])
+  })
+  it('a score that names no pace stays at no-tempo, and a number or a tempo set elsewhere is left alone', async () => {
+    expect((await analyse(midi(60, '{ c4 }'))).flags).toEqual(['no-tempo'])
+    expect((await analyse(midi(undefined, '{ c4 }'))).flags).toEqual(['no-tempo'])
+    for (const e of [midi(60, '\\tempo "Allegro" 4=60'), midi(96, '\\header { piece = "Allegro" }'), midi(96, '{ c4 }'), midi(60)]) {
+      const a = await analyse(e)
+      expect(a.tempo).toBeUndefined()
+      expect(a.flags).toEqual([])
+    }
   })
 })
 

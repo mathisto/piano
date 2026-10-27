@@ -5,7 +5,7 @@ import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
 import type { Seen } from './coach'
 import type { KeyTouch } from './settings'
-import type { Selection } from './midi-tracks'
+import type { Selection, Tempo } from './midi-tracks'
 import type { Song } from './song'
 import { KEEP, type Take } from './take'
 
@@ -15,6 +15,7 @@ export interface Stored {
   bytes: ArrayBuffer
   added: number
   kind?: 'midi' | 'xml' // absent on older saves: MIDI
+  tempo?: Tempo // a library MIDI: the catalogue's pace in place of the file's own
   pick?: Selection // which MIDI tracks to import and the hand each is pinned to; absent = chosen automatically
 }
 
@@ -97,7 +98,7 @@ export async function toSong(s: Stored, split: number): Promise<Song> {
     return fromMusicXml(await xmlText(s.bytes), s.title, s.id)
   }
   const { autoSelect, fromMidi, inspectMidi } = await import('./midi-tracks')
-  return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)))
+  return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)), s.tempo)
 }
 
 export async function getProgress(id: string): Promise<Progress> {

@@ -4,11 +4,11 @@
 import { createHash } from 'node:crypto'
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { Midi } from '@tonejs/midi'
-import { fromMidi, inspectMidi, type Selection } from '../../src/midi-tracks'
-import { fromMusicXml, xmlText } from '../../src/musicxml'
+import { fromMidi, inspectMidi, type Selection, type Tempo } from '../../src/midi-tracks'
+import { fromMusicXml, tempoWord, xmlText } from '../../src/musicxml'
 import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
-import { withRepeats } from './repeats'
+import { plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
 export { pickLy, unfold } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
@@ -57,6 +57,7 @@ export interface Analysis {
   song?: Song
   pick?: Selection
   tracks: number
+  tempo?: number // quarter-note bpm the catalogue overrides the MIDI's own with (a tempo word of the .ly)
   fp: Set<string>
   note?: string // why a song ships piano-only, kept in the report
 }
@@ -158,24 +159,53 @@ export function fingerprint(s: Song): Set<string> {
   return out
 }
 
+// ---- the pace a Mutopia .ly names ----
+
+const LY_NUMBER = /\\tempo[^\n]*=\s*\d|tempoWholesPerMinute/ // either one LilyPond writes into the MIDI
+// the text after \tempo, \mark, \markup, a script string or a header piece/meter/subtitle: a string, a {group} (one nested level) or the rest of the line
+const LY_TEXT = /(?:\\tempo|\\mark(?:up)?|\b(?:piece|meter|subtitle)\s*=|[\^_-](?="))\s*(?:\\markup\s*)?("(?:[^"\\]|\\.)*"|\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|[^\n]{0,200})/g
+const LY_METRONOME = /\\note\s+#"(\d+)(\.*)"[^=]{0,60}=\s*(\d+)/ // a markup's (note = 66): the unit, its dots and the number
+
+/** What a .ly says about pace: `given` when it holds a number the MIDI already plays; else `bpm` (quarters a minute) from the
+ * first markup metronome mark ("exact") or tempo word (a guess) in it, in file order. */
+export function lyPace(ly: string, compound = false): { given: boolean; bpm?: number; exact?: boolean } {
+  const src = ly.replace(/%\{[\s\S]*?%\}|%.*$/gm, ' ')
+  if (LY_NUMBER.test(src)) return { given: true }
+  for (const [, text] of src.matchAll(LY_TEXT)) {
+    const m = LY_METRONOME.exec(text)
+    if (m) return { given: false, bpm: Math.round(+m[3] * (4 / +m[1]) * (2 - 0.5 ** m[2].length)), exact: true }
+    const bpm = tempoWord(text, compound)
+    if (bpm) return { given: false, bpm }
+  }
+  return { given: false }
+}
+
 export async function analyse(e: Input): Promise<Analysis> {
   const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], tracks: 0, fp: new Set<string>() }
   try {
-    let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number
+    let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number, tempo: Tempo | undefined
     if (e.format === 'midi') {
       pick = pinHands(ab(e.bytes))
-      s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick)
       const midi = new Midi(ab(e.bytes))
       tracks = midi.tracks.filter((t) => t.notes.length).length
       marks = e.ly ?? ''
-      hasTempo = e.ly ? /\\tempo/.test(e.ly) : midi.header.tempos.length > 0
+      // LilyPond's default is 60: a file at exactly that, or with no tempo event, whose .ly gives no number, has no tempo
+      // (a non-60 one with no number in this .ly got it from an \include or a sibling .ly)
+      const [n, d] = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
+      const pace = e.ly ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: true }
+      // a movement of a zip (mutopia-N-k) may have been given a sibling's .ly when none matched (pickLy's fallback)
+      if (pace.bpm && /^mutopia-\d+-\d+$/.test(e.id) && !plays(e.bytes, e.ly!)) pace.bpm = undefined
+      const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)
+      if (!pace.given && flat && pace.bpm) tempo = { bpm: pace.bpm, guess: !pace.exact }
+      hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)
+      s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo)
     } else {
       marks = await xmlText(ab(e.bytes))
       s = fromMusicXml(marks, e.title, e.id)
       tracks = (marks.match(/<part id="/g) ?? []).length
       hasTempo = !s.flags?.includes('no-tempo') // a <sound tempo>, a <metronome> or a tempo word (that one flagged 'tempo-estimated')
     }
-    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, fp: fingerprint(s) }
+    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, ...(tempo && { tempo: tempo.bpm }), fp: fingerprint(s) }
   } catch (err) {
     return { ...base, fails: ['parse'], error: String((err as Error).message ?? err) }
   }
@@ -343,6 +373,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       hi: s.hi,
       tracks: a.tracks,
       ...(a.pick && { pick: a.pick }),
+      ...(a.tempo && { tempo: a.tempo }),
       grade: a.grade,
       gradeWhy: a.gradeWhy,
       ...(go && { gradeOverride: go }),

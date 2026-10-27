@@ -143,6 +143,9 @@ export interface QOut {
 const CHORD_S = 0.04 // onsets this close, at the local tempo, are one chord
 const EARLY = 0.12 // quarters: a note this early belongs to the next beat
 const SIGMA = 0.05 // quarters of timing noise a grid has to explain
+const PICKUP_WIN = 0.9 // a pickup, once discounted by what sounds before it, has to score this much of what no pickup scores
+const PICKUP_END = 0.02 // the closing chord on the downbeat is worth this much per onset: a piece often ends mid-bar, so it is a hint, not a vote
+const PICKUP_COST = 0.1 // after each onset in front of its first downbeat divides the score by this much more
 const SWITCH = 5 // cost of changing grid between two beats of one hand
 const GRIDS = [
   { pos: [0, 0.25, 0.5, 0.75], pen: 0 },
@@ -200,7 +203,8 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
   if (exact) for (const c of slip) c.grace = true
   const live = clusters.filter((c) => !c.grace)
 
-  // a pickup: the barlines that put long notes and the closing chord on the downbeat
+  // a pickup: the barlines that put long notes and the closing chord on the downbeat. A pickup is a fragment, so each onset
+  // before the first downbeat counts against it (a half-bar shift of a busy file is not one).
   const sigs = o.sigs.length ? o.sigs : [{ tick: 0, n: 4, den: 4 }]
   const B = (sigs[0].n * 4) / sigs[0].den
   const limit = sigs[1] ? sigs[1].tick / ppq : Infinity
@@ -211,16 +215,13 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
       const phase = (x: number) => (((x - u) % B) + B) % B
       const at = (x: number) => phase(x) < 0.15 || phase(x) > B - 0.15
       const last = head.reduce((m, c) => (c.x > m.x ? c : m))
-      return head.reduce((s, c) => s + (at(c.x) ? 1 + Math.min(c.dur, B) : 0), 0) + (at(last.x) ? 0.1 * head.length * 2 : 0)
+      return head.reduce((s, c) => s + (at(c.x) ? 1 + Math.min(c.dur, B) : 0), 0) + (at(last.x) ? PICKUP_END * head.length : 0)
     }
-    const base = score(0)
-    let best = 0
-    let top = base * 1.4
+    let top = score(0) * PICKUP_WIN
     for (let u = 0.5; u < B; u += 0.5) {
-      const s = score(u)
-      if (s > top && head[0].x < u - 0.2) (top = s), (best = u)
+      const s = score(u) / (1 + PICKUP_COST * head.filter((c) => c.x < u - 0.15).length)
+      if (s > top && head[0].x < u - 0.2) (top = s), (pickup = u)
     }
-    pickup = best
   }
 
   // bars in ticks

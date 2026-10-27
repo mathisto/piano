@@ -109,8 +109,21 @@ function keyToFifths(key: string): number {
   return MAJOR_FIFTHS[key] ?? 0
 }
 
-export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection): Song {
+/** A catalogue piece's own pace in place of the file's: quarter-note bpm, and whether it is a guess from a tempo word ('tempo-estimated'). */
+export interface Tempo {
+  bpm: number
+  guess: boolean
+}
+
+export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection, tempo?: Tempo): Song {
   const midi = new Midi(buf)
+  const h = midi.header
+  if (tempo && !h.tempos.length) h.setTempo(tempo.bpm)
+  else if (tempo) {
+    const k = tempo.bpm / h.tempos[0].bpm // one scale for every event: a tempo map keeps its shape
+    for (const t of h.tempos) t.bpm *= k
+    h.update()
+  }
   const raw: Raw[] = []
   const ticks: { tick: number; dtick: number }[] = []
   midi.tracks.forEach((tr, track) => {
@@ -159,7 +172,7 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
   const est = keys.length ? keys : estimateKeys(song.notes, bars.length)
   if (est.length > 1) song.keys = est
   const flags = [
-    ...(midi.header.tempos.length ? [] : ['no-tempo']),
+    ...(tempo ? (tempo.guess ? ['tempo-estimated'] : []) : midi.header.tempos.length ? [] : ['no-tempo']),
     ...(new Set(raw.map((r) => r.track)).size >= 3 && raw.some((r) => !r.h) ? ['three-track-midi'] : []), // hands fell back to a split at one pitch
   ]
   if (flags.length) song.flags = flags
