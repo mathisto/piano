@@ -1,7 +1,7 @@
 # Repertoire ladder on the Path
 
 ## Built
-- **Ladder data** (`src/ladder-data.ts`): 18 pieces, 3 to 4 per Path level, `{level, id, why}` with a one-phrase reason. Every piece's catalogue grade equals its level.
+- **Ladder data** (`src/ladder-data.ts`): 19 pieces, 3 to 4 per Path level, `{level, id, why}` with a one-phrase reason. Every piece's catalogue grade equals its level.
   1: Bach Minuet in G (Anh. 114), Schumann Melodie Op. 68 No. 1, Tchaikovsky March of the Wooden Soldiers |
   2: Burgmueller La Candeur, Bach Musette in D, Satie Gymnopedie No. 1, Chopin Prelude Op. 28 No. 6 |
   3: Kuhlau Sonatina Op. 20 No. 1 (Allegro), Burgmueller L'Arabesque, Chopin Prelude Op. 28 No. 7, Bach Invention 4 |
@@ -16,6 +16,6 @@
 Headless Chrome at 1180x820 and 820x1180 with seeded `prog:lib:*` records and the corpus served from the cache: counts, states, Downloading, offline message, Learn opens.
 
 ## Honest gaps
-- Titles come from the runtime catalogue: before the corpus catalogue has been fetched once, only bundled pieces (13 of 18) show, and the counts follow.
+- Titles come from the runtime catalogue: before the corpus catalogue has been fetched once, only bundled pieces (16 of 19) show, and the counts follow.
 - Ready counts the whole piece; "Moonlight (3rd)" and "Pathetique (2nd)" are single movements.
 - Not run on the iPad. The Today plan does not suggest ladder pieces.
