@@ -12,9 +12,9 @@ import { earView, earTap, newEar, playCard, stopEar, type EarRun } from './ear-p
 import * as coach from './coach'
 import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
-import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
+import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, fluentMs, focus, mastery, nextStage, record, reviewPool, stageDeck, weakest, type Card, type Stage, type Stats } from './drill'
-import { Game, type GameEvent, type Mode, type Result } from './game'
+import { type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
 import { nextStep } from './pace'
@@ -45,64 +45,16 @@ import { breakToast } from './habit-ui'
 import { theoryDue, type PlanMin } from './plan'
 import { restTracker } from './rest'
 import { streak as dayStreak } from './streak'
-import { $, CAL_NOTES, art, creditsDialog, setupDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, creditsDialog, setupDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, starterRows, userRows, type StageRow } from './ui'
 import { LOOK, lookCard, pct, pickPiece, startRate, summaryCard, type RtPiece } from './readthrough'
 import { TOP, afterPass, barHtml, facts, hidden, passCard, startCard, startStage, verdict, type PassReport } from './memory'
+import { calibrating, current, dock, drill, drillStats, esc, game, highway, median, mem, played, reduced, resOpen, rt, run, runSpec, say, setCalibrating, setCurrent, setDock, setDrill, setDrillStats, setHighway, setMem, setPlayed, setRt, setRun, setRunSpec, setStaff, staff, stageById, starters, worstBars, type Section } from './app/state'
 
-const app = $('#app')
-skeleton(app)
-
-const game = new Game()
-const starters = STARTERS.map((s) => fromSpec(s.spec))
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-
-let highway!: Highway
-let staff!: Staff
-let dock!: Dock
-let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
-let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
-let played = false
 let noteTimer = 0
 let note = ''
 
-// A reading drill in progress: one card per beat, tracked card by card.
-interface Drill {
-  stage: Stage | 'review'
-  title: string
-  goal: number
-  cards: Card[]
-  left: number[] // notes still to play on each card
-  agg: { clean: boolean; rt: number }[]
-  noteCard: number[] // note id -> card index
-  done: number
-  streak: number
-  cleanN: number
-  rts: number[]
-  before: number
-  fast?: boolean // the Fluent tier: the same stage against fluentMs
-  run?: RunCtx
-}
-// Sight Run: one setup, dealt a set of cards at a time until you finish.
-interface RunCtx {
-  base: RunSpec // as set up
-  spec: RunSpec // as dealt: the range grows when widening is on
-  arc: Tally
-  prev?: Card
-  turn: number
-  sets: number
-  setCards: number
-  setClean: number
-  setRts: number[]
-  seen: Map<number, { n: number; miss: number; ms: number }>
-  rts: number[]
-  done: boolean
-}
-let run: RunCtx | undefined
-let runSpec: RunSpec = { ...DEFAULT_RUN }
 let readTab: 'stages' | 'run' = 'stages'
-let drill: Drill | undefined
-let drillStats: Stats = {}
 
 // ---------------------------------------------------------------- views
 
@@ -161,7 +113,6 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
 
-type Section = 'today' | 'songs' | 'read' | 'scales' | 'theory' | 'technique' | 'progress'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -179,7 +130,7 @@ async function showSection(name: Section, err = '') {
 }
 
 async function stageRows(): Promise<StageRow[]> {
-  drillStats = await store.getDrill()
+  setDrillStats(await store.getDrill())
   const f = focus(drillStats)
   return STAGES.map((stage) => {
     const m = mastery(stage, drillStats)
@@ -395,7 +346,7 @@ function calNote(vel: number) {
 
 async function showRead() {
   const saved = await store.getRuns()
-  if (saved.last) runSpec = { ...DEFAULT_RUN, ...saved.last }
+  if (saved.last) setRunSpec({ ...DEFAULT_RUN, ...saved.last })
   readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey))
 }
 
@@ -424,7 +375,7 @@ function readRun(): RunSpec {
 }
 
 async function saveRun(s: RunSpec) {
-  runSpec = s
+  setRunSpec(s)
   const saved = await store.getRuns()
   await store.saveRuns({ ...saved, last: s })
 }
@@ -615,13 +566,13 @@ $('#scales').addEventListener('click', (e) => {
 async function ensureStage() {
   if (highway) return
   await Promise.all([document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
-  highway = new Highway($('#stage'), game)
-  await highway.init()
-  highway.onFrame = frame
-  screenKeys(highway.app.canvas)
-  staff = new Staff($('#staff'), game)
+  const h = setHighway(new Highway($('#stage'), game)) // the guard above narrows `highway`, so the new one is read through `h`
+  await h.init()
+  h.onFrame = frame
+  screenKeys(h.app.canvas)
+  setStaff(new Staff($('#staff'), game))
   staff.onDense = () => void stepSimplify()
-  dock = new Dock($('#dock'), game)
+  setDock(new Dock($('#dock'), game))
   dock.onNote = flash
   dock.onHands = () => staff.render()
 }
@@ -646,7 +597,7 @@ function screenKeys(canvas: HTMLCanvasElement) {
     audio.unlock()
     down.set(e.pointerId, k.p)
     game.press(k.p, k.vel, performance.now(), true)
-    played = true
+    setPlayed(true)
     updateBanner()
   })
   canvas.addEventListener('pointermove', (e) => {
@@ -676,7 +627,7 @@ async function openSong(base: Song, mode: Mode) {
   await ensureStage()
   game.load(song, mode)
   const prog = await store.getProgress(song.id)
-  current = { song, base, level, heat: prog.heat }
+  setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
   document.body.classList.toggle('reading', mode === 'read')
@@ -704,8 +655,8 @@ function leave() {
   const techSong = current?.song.id.startsWith('tech:')
   const scaleSong_ = current?.song.id.startsWith('scale:')
   if (drill) void store.saveDrill(drillStats)
-  drill = undefined
-  run = undefined
+  setDrill(undefined)
+  setRun(undefined)
   rtEnd()
   memEnd()
   staff.lookahead = 0
@@ -713,9 +664,9 @@ function leave() {
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
   if (calibrating) {
     settings.offset = calibrating.prevOffset
-    calibrating = undefined
+    setCalibrating(undefined)
   }
-  current = undefined
+  setCurrent(undefined)
   $('#stagesBtn').hidden = true
   document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
@@ -1095,10 +1046,6 @@ function wake() {
 }
 for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, wake, { passive: true }) // only opacity changes, so waking costs no layout
 
-function say(msg: string) {
-  $('#live').textContent = msg
-}
-
 function onPhase() {
   if (!dock || !current) return
   if (game.phase === 'ready') {
@@ -1154,15 +1101,8 @@ function onPhase() {
   updateBanner()
 }
 
-function resOpen(on: boolean) {
-  $('#res').hidden = !on
-  $('#play').classList.toggle('resopen', on)
-}
-
 // ---------------------------------------------------------------- Read through
 
-// a read-through in progress: look-through seconds left, the timer counting them, the tempo, and why this piece was offered
-let rt: { left: number; timer: number; rate: number; why: string; zoom?: number } | undefined
 
 const RT_LEVEL = ['Beginner', 'Beginner', 'Elementary', 'Intermediate', 'Intermediate', 'Intermediate'] // catalogue grade 1..5 to the three levels the picker knows
 const rtPieces = (): RtPiece[] => [...STARTERS.map((s) => ({ id: s.spec.id, title: s.spec.title, level: s.level })), ...lib.catalog.pieces.filter((p) => lib.local(p.id)).map((p) => ({ id: `lib:${p.id}`, title: p.title, level: RT_LEVEL[Math.min(5, lib.gradeOf(p))] }))]
@@ -1174,7 +1114,7 @@ async function readThrough(id?: string) {
   id ??= pick?.piece.id
   if (!id) return
   rtEnd()
-  rt = { left: LOOK, timer: 0, rate: startRate(settings.readBest), why: id === pick?.piece.id ? pick.why : '' }
+  setRt({ left: LOOK, timer: 0, rate: startRate(settings.readBest), why: id === pick?.piece.id ? pick.why : '' })
   document.body.classList.add('readthru')
   await openById(id, 'perform')
   if (!current || current.song.id !== id || !rt) return rtEnd()
@@ -1186,7 +1126,7 @@ async function readThrough(id?: string) {
 function rtEnd() {
   if (rt) clearInterval(rt.timer)
   if (rt?.zoom) setZoom(rt.zoom)
-  rt = undefined
+  setRt(undefined)
   document.body.classList.remove('readthru')
   if (staff) staff.aheadBars = 0
 }
@@ -1260,8 +1200,6 @@ async function rtDone(r: Result) {
 
 // ---------------------------------------------------------------- Memorise
 
-// a memorise session: the stage, clean passes in a row, this pass's notes right, slips and peeks, and the bar a peek shows
-let mem: { stage: number; clean: number; right: number; slips: number; peeks: number; peek: number; timer: number } | undefined
 
 /** Learn with the score fading by bars. `floor`: start at this stage at least (1 after a clean Learn run). */
 async function memorise(id: string, floor = 0) {
@@ -1269,7 +1207,7 @@ async function memorise(id: string, floor = 0) {
   await openById(id, 'learn')
   if (!current || current.song.id !== id) return
   memEnd()
-  mem = { stage: startStage(prog, floor), clean: 0, right: 0, slips: 0, peeks: 0, peek: -1, timer: 0 }
+  setMem({ stage: startStage(prog, floor), clean: 0, right: 0, slips: 0, peeks: 0, peek: -1, timer: 0 })
   document.body.classList.add('memorise')
   memShow()
   onPhase()
@@ -1277,7 +1215,7 @@ async function memorise(id: string, floor = 0) {
 
 function memEnd() {
   clearTimeout(mem?.timer)
-  mem = undefined
+  setMem(undefined)
   document.body.classList.remove('memorise')
   if (staff) memShow()
 }
@@ -1358,10 +1296,8 @@ async function memDone(r: Result) {
 
 // ---------------------------------------------------------------- reading drills
 
-const stageById = (id: string) => STAGES.find((s) => s.id === id)
-
 async function startDrill(which: Stage | 'review', fast = false) {
-  drillStats = await store.getDrill()
+  setDrillStats(await store.getDrill())
   const stage = which === 'review' ? undefined : which
   fast = fast && !!stage
   const goal = stage ? (fast ? fluentMs(stage) : stage.goalMs) : 3000
@@ -1370,7 +1306,7 @@ async function startDrill(which: Stage | 'review', fast = false) {
   const title = stage ? `${stage.name}${fast ? ', for speed' : ''}` : 'Weak notes review'
   const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d, stage?.fifths ?? 0)
   const noteCard = noteCards(d, song)
-  drill = {
+  setDrill({
     stage: which,
     title,
     goal,
@@ -1384,8 +1320,8 @@ async function startDrill(which: Stage | 'review', fast = false) {
     rts: [],
     before: stage ? mastery(stage, drillStats, goal).pct : 0,
     fast,
-  }
-  run = undefined
+  })
+  setRun(undefined)
   $('#stagesBtn').textContent = 'All stages'
   await openSong(song, 'read')
   staff.lookahead = -(stage?.cover ?? 0)
@@ -1397,8 +1333,8 @@ async function startDrill(which: Stage | 'review', fast = false) {
 async function startRun(spec: RunSpec) {
   spec = { ...DEFAULT_RUN, ...spec }
   void saveRun(spec)
-  drillStats = await store.getDrill()
-  run = { base: spec, spec, arc: newTally(), turn: 0, sets: 0, setCards: 0, setClean: 0, setRts: [], seen: new Map(), rts: [], done: false }
+  setDrillStats(await store.getDrill())
+  setRun({ base: spec, spec, arc: newTally(), turn: 0, sets: 0, setCards: 0, setClean: 0, setRts: [], seen: new Map(), rts: [], done: false })
   await runSet()
 }
 
@@ -1412,7 +1348,7 @@ async function runSet() {
   r.setRts = []
   const title = runTitle(r.spec)
   const song = deckSong('drill:run', title, d, r.spec.fifths)
-  drill = { stage: 'review', title, goal: goalMs(r.spec), cards: d, left: d.map((c) => c.pitches.length), agg: d.map(() => ({ clean: true, rt: 0 })), noteCard: noteCards(d, song), done: 0, streak: 0, cleanN: 0, rts: [], before: 0, run: r }
+  setDrill({ stage: 'review', title, goal: goalMs(r.spec), cards: d, left: d.map((c) => c.pitches.length), agg: d.map(() => ({ clean: true, rt: 0 })), noteCard: noteCards(d, song), done: 0, streak: 0, cleanN: 0, rts: [], before: 0, run: r })
   $('#stagesBtn').textContent = 'Finish'
   await openSong(song, 'read')
   staff.lookahead = r.spec.ahead
@@ -1483,12 +1419,6 @@ async function runFinish() {
   $('#toStages', res).onclick = leave
 }
 
-function median(xs: number[]) {
-  if (!xs.length) return 0
-  const s = [...xs].sort((a, b) => a - b)
-  return s[s.length >> 1]
-}
-
 function drillHud() {
   if (!drill) return
   if (!run) {
@@ -1545,22 +1475,6 @@ async function drillDone() {
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
   $('#nextSet', res).onclick = () => void (m?.solid && stage ? startDrill(nxt) : startDrill(d.stage, d.fast)).then(() => game.toggle())
   $('#toStages', res).onclick = leave
-}
-
-const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
-
-function worstBars(heat: number[], bars = game.song.bars.length): { a: number; b: number } | null {
-  let best = 0
-  let at = -1
-  for (let i = 0; i < heat.length; i++) {
-    const s = (heat[i] ?? 0) + (heat[i + 1] ?? 0)
-    if (s > best) {
-      best = s
-      at = i
-    }
-  }
-  if (at < 0) return null
-  return { a: at, b: Math.min(bars - 1, at + 1) }
 }
 
 async function onDone(r: Result) {
@@ -1633,7 +1547,7 @@ async function onDone(r: Result) {
 
 async function startCalibration() {
   closeDrawer()
-  calibrating = { prevOffset: settings.offset }
+  setCalibrating({ prevOffset: settings.offset })
   settings.offset = 0
   const song = fromSpec({ id: 'calibration', title: 'Calibration', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
   await openSong(song, 'perform')
@@ -1657,7 +1571,7 @@ function calibrated(r: Result) {
   </div></div>`
   const prev = calibrating!.prevOffset
   const end = () => {
-    calibrating = undefined
+    setCalibrating(undefined)
     resOpen(false)
     leave()
   }
@@ -1765,7 +1679,7 @@ const fromKeyboard = (m: MidiMsg) => {
   if (m.on) {
     chipFlash(m.p)
     if (!played) {
-      played = true
+      setPlayed(true)
       updateBanner()
     }
     if (!m.virtual && calNote(m.v)) return
