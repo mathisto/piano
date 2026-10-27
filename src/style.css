@@ -1760,11 +1760,6 @@ button.link {
   width: auto;
   flex: none;
 }
-@media (hover: none) {
-  .drawer .foot #sHelp {
-    display: none; /* no keyboard on the iPad: the shortcut list is useless, Credits stays */
-  }
-}
 .field {
   display: grid;
   gap: 6px;
@@ -2213,9 +2208,6 @@ dialog.sheet h3 {
 dialog.sheet .fine {
   margin: 0 0 14px;
   color: var(--ink-2);
-}
-dialog.sheet#help {
-  width: min(440px, 94vw);
 }
 
 dialog.sheet footer .grow {

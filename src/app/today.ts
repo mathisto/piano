@@ -12,6 +12,7 @@ import { nextRecipe, stateOf, SYLLABUS, type TechStats } from '../syllabus'
 import { exercise, PATTERNS } from '../technique'
 import { $, progressView, todayView } from '../ui'
 import { dayKey, improved, lastWeek, weekOf } from '../week'
+import { firstUse, type Go, guideDay, guideDid, guideSave, guideState } from '../guide'
 import { drillStats, hooks, stageById, worstBars } from './state'
 import { libraryData } from './library'
 import { fixBars, openById, openSong } from './play'
@@ -20,6 +21,7 @@ import { startDrill, startRun } from './drill'
 import { stageRows } from './read'
 import { startTheory, theoryLevels } from './theory-ui'
 import { startScale } from './scales-ui'
+import { memorise } from './memorise-ui'
 
 export async function showToday() {
   const [{ last, all }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
@@ -42,7 +44,9 @@ export async function showToday() {
   const prevKey = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 7 - ((new Date().getDay() + 6) % 7)))
   const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
+  const guide = await firstWeek(days)
   todayView($('#today'), {
+    guide,
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
     again: (() => {
       const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
@@ -72,7 +76,32 @@ export async function showToday() {
   }))
 }
 
+/** The first-week card: the plan records since first use say what is done. Null once hidden, finished or past day 8. */
+async function firstWeek(days: Record<string, number>) {
+  const st = guideState()
+  const t = new Date()
+  const today = dayNum()
+  const first = firstUse(days, today, st.first)
+  if (st.first === undefined) guideSave({ first })
+  if (st.off || today - first > 7) return null
+  const plans = await Promise.all(Array.from({ length: today - first + 1 }, (_, i) => store.getPlan(dayKey(new Date(t.getFullYear(), t.getMonth(), t.getDate() - i)))))
+  const mem = [...(await store.allProgress()).values()].some((p) => (p.memStage ?? 0) > 0 && (p.memDay ?? 0) >= first)
+  return guideDay(first, today, [...plans.flat(), ...st.did, ...(mem ? ['mem'] : [])], st.skip)
+}
+
+/** What a first-week Start opens: the same starts Today and the Path use. */
+const GUIDE_GO: Record<Go, () => void | Promise<void>> = {
+  read: () => startReq({ kind: 'read', id: 't-land' }),
+  scale: () => startScale({ tonic: 0, form: 'major', hands: 'R', oct: 1 }, 60),
+  theory: () => startReq({ kind: 'theory', trainer: 'chords', level: 1 }),
+  sight: () => readThrough(),
+  tech: () => startReq({ kind: 'tech', id: SYLLABUS[0].id }),
+  mem: () => memorise('starter-twinkle'),
+  progress: () => hooks.showSection('progress'),
+}
+
 export async function showProgress() {
+  guideDid('progress')
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
   const gp = gradePath(await pathCtx(ts))
@@ -112,6 +141,9 @@ $('#progress').addEventListener('click', (e) => {
   else if (b?.dataset.recipe) void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.recipe) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
 
+// a tab's one-line note closes for good: guide.ts already counted it as seen
+document.addEventListener('click', (e) => (e.target as HTMLElement).closest('button[data-guide=note]')?.parentElement?.remove())
+
 $('#today').addEventListener('click', (e) => {
   const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')
   if (g) {
@@ -119,9 +151,16 @@ $('#today').addEventListener('click', (e) => {
     save()
     return void showToday()
   }
+  const gd = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-guide]')
+  if (gd) {
+    if (gd.dataset.guide === 'hide') guideSave({ off: true })
+    else guideSave({ skip: [...guideState().skip, Number(gd.dataset.n)] })
+    return void showToday()
+  }
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
   if (!b) return
-  if (b.dataset.today === 'start') void startReq(JSON.parse(b.dataset.start!))
+  if (b.dataset.today === 'guide') void GUIDE_GO[b.dataset.go as Go]()
+  else if (b.dataset.today === 'start') void startReq(JSON.parse(b.dataset.start!))
   else if (b.dataset.today === 'run') void store.getRuns().then((r) => startRun({ ...DEFAULT_RUN, ...r.last }))
   else if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
   else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
