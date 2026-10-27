@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Judge, multiplier } from './judge'
+import { Judge } from './judge'
 import type { Note } from './song'
 
 const n = (id: number, t: number, p: number): Note => ({ id, t, d: 0.3, p, v: 0.7, h: 'R', bar: 0, beats: 1 })
@@ -58,11 +58,10 @@ describe('judge', () => {
     expect(j.press(60, 1.06)[0]).toMatchObject({ k: 'hit' })
   })
 
-  it('steps the multiplier at 10, 25, 50 combo', () => {
-    expect([0, 9, 10, 24, 25, 49, 50].map(multiplier)).toEqual([1, 1, 2, 2, 3, 3, 4])
+  it('scores a hit by its grade alone, however long the run', () => {
     const j = mk(Array.from({ length: 12 }, (_, i) => n(i, i, 60)))
     for (let i = 0; i < 12; i++) j.press(60, i)
-    expect(j.score).toBe(10 * 100 + 2 * 200)
+    expect(j.score).toBe(12 * 100)
   })
 
   it('scales windows with tempo: half speed doubles the song-time window', () => {

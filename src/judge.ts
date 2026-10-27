@@ -17,10 +17,8 @@ const POINTS = { perfect: 100, great: 80, good: 50 }
 const WAIT_EARLY = 0.6 // wait mode accepts a note this many song-seconds early
 const CLUSTER = 0.03 // notes this close together count as one chord when waiting
 
-export const multiplier = (combo: number) => (combo >= 50 ? 4 : combo >= 25 ? 3 : combo >= 10 ? 2 : 1)
-
 export type Ev =
-  | { k: 'hit'; i: number; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade }
+  | { k: 'hit'; i: number; grade: Grade; off: number; combo: number; vel?: VelGrade }
   | { k: 'ok'; i: number; vel?: VelGrade } // wait-mode hit, no timing grade
   | { k: 'miss'; i: number }
   | { k: 'wrong'; p: number }
@@ -164,8 +162,7 @@ export class Judge {
     const off = ((t - this.notes[best].t) / this.cfg.rate) * 1000
     const a = Math.abs(off) / (this.cfg.ease ?? 1)
     const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : 'good'
-    const mult = multiplier(this.combo)
-    this.pts[best] = POINTS[grade] * mult
+    this.pts[best] = POINTS[grade]
     this.score += this.pts[best]
     this.down.set(p, best)
     this.combo++
@@ -175,7 +172,7 @@ export class Judge {
     this.weightSum += WEIGHT[grade]
     this.grade[best] = grade
     this.off[best] = off
-    return [{ k: 'hit', i: best, grade, off, combo: this.combo, mult, vel: vg }]
+    return [{ k: 'hit', i: best, grade, off, combo: this.combo, vel: vg }]
   }
 
   /** A key came up at song time `t`. Grades it against the note's written end; the sustain pedal excuses an early release. */

@@ -3,7 +3,7 @@ import { ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
-import { articulation, fixedAt, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
+import { articulation, fixedAt, melodyHand, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
 import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
@@ -38,7 +38,7 @@ export interface Result {
 }
 
 export type GameEvent =
-  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade; v: number }
+  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; vel?: VelGrade; v: number }
   | { type: 'ok'; note: Note; rt: number; clean: boolean; vel?: VelGrade; v: number } // rt: ms the song waited on this card (0 if you were ahead)
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
@@ -359,7 +359,7 @@ export class Game {
       even: settings.coach === 'off' || this.mode === 'read' || !judged(this.song.id, this.song.dyn) ? null : evenness(j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach),
       timing: this.mode === 'read' ? null : timing(this.song.notes.flatMap((n, i) => (j.grade[i] && j.grade[i] !== 'miss' ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
       artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
-      voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES),
+      voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES, this.song.dyn === 'balance' ? 'R' : melodyHand(this.song.notes)),
       fixed: fixedAt(j.samples().map((x) => x.v)),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
@@ -387,7 +387,7 @@ export class Game {
         const note = this.song.notes[e.i]
         this.offs.push(e.off)
         this.quiet.note((e.grade === 'perfect' || e.grade === 'great') && e.vel !== 'low' && e.vel !== 'high')
-        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel, v: this.judge.velAt(e.i) })
+        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, vel: e.vel, v: this.judge.velAt(e.i) })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong

@@ -17,7 +17,7 @@ import { fluentMs, type Stage, type Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, type TCard, type Trainer } from './theory'
 import { earAsk, earBlock, type EarView } from './ear'
-import { degreeName, explain, fingering, keyLabels, keyName, unchecked, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
+import { checkNote, degreeName, explain, fingering, keyLabels, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
@@ -49,7 +49,7 @@ export function skeleton(app: HTMLElement) {
     </div>
     <div class="spacer"></div>
     <div class="hud" id="hud" hidden>
-      <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hScore">100%</b></div>
+      <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hScore">—</b></div>
       <div data-m="perform" class="combo" role="group" aria-label="In a row" title="Notes in a row"><small>In a row</small><b id="hCombo">0</b></div>
       <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
@@ -804,12 +804,11 @@ function quizBody(q: QuizState) {
     <h2>${esc(keyName(c.tonic, c.form))}, ${hand}</h2>
     <p class="line">Which degree takes the 4th finger? Press the note on your keyboard, or tap a number.</p>
     <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}${done && quizRight(c, d) ? ', the answer' : ''}">${d}${done && quizRight(c, d) ? icon('check') : ''}</button>`).join('')}</div>
-    ${done ? `<p class="line" role="status"><b>${right ? 'Yes.' : 'Not quite.'}</b> ${esc(why(c.tonic, c.form, c.hand))} Up the scale: <b>${fingering(c.tonic, c.form, c.hand).split('').join(' ')}</b>.</p><div class="row-actions run-go"><button class="btn primary" id="qNext">${q.i + 1 === q.cards.length ? 'Finish' : 'Next'}</button></div>` : ''}</section>`
+    ${done ? `<p class="line" role="status"><b>${right ? 'Yes.' : 'Not quite.'}</b> ${esc(why(c.tonic, c.form, c.hand))} Up the scale: <b>${fingering(c.tonic, c.form, c.hand).split('').join(' ')}</b>. ${esc(checkNote({ tonic: c.tonic, form: c.form, hands: c.hand, oct: 1 }, c.hand))}</p><div class="row-actions run-go"><button class="btn primary" id="qNext">${q.i + 1 === q.cards.length ? 'Finish' : 'Next'}</button></div>` : ''}</section>`
 }
 
 export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick' | 'quiz', p: ScalePick, quiz?: QuizState) {
   const ex = explain(p)
-  const shaky = unchecked(p)
   const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
   const body =
     tab === 'quiz' && quiz
@@ -834,7 +833,6 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     </div>
     <p class="line">${ex.lead}: right hand <b>${ex.r}</b>, left hand <b>${ex.l}</b>.</p>
     ${ex.why.map((w) => `<p class="fine">${esc(w)}</p>`).join('')}
-    ${shaky.length ? `<p class="fine">The ${shaky.map((h) => (h === 'R' ? 'right' : 'left')).join(' and ')}-hand fingering for this key is still to be checked against a printed book; your teacher or book wins.</p>` : ''}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
     ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}

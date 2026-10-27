@@ -298,6 +298,14 @@ export function unchecked(c: Card): Hand[] {
   return (['R', 'L'] as const).filter((h) => t(h) || (h === 'L' && c.hands === 'contrary' && contraryLeft(c.tonic, c.form, c.oct).derived))
 }
 
+/** One plain sentence when a card's fingering (of one hand, if `only`) is not from a checked book table; empty otherwise. */
+export function checkNote(c: Card, only?: Hand): string {
+  const u = unchecked(c).filter((h) => !only || h === only)
+  if (!u.length) return ''
+  const hs = u.length === 2 ? 'both hands' : u[0] === 'R' ? 'the right hand' : 'the left hand'
+  return `${isScale(c.form) ? `Fingering for ${hs}` : `The fingering for ${hs}`} is ${isScale(c.form) ? '' : 'rule-derived, '}not yet checked against a book; your teacher or book wins.`
+}
+
 /** What the Choose a scale card says about the fingering: the lead-in, each hand's fingers (the left hand going down in contrary motion), and the reasons. */
 export function explain(c: Card): { lead: string; r: string; l: string; why: string[] } {
   const j = (a: number[]) => a.join(' ')
@@ -312,7 +320,8 @@ export function explain(c: Card): { lead: string; r: string; l: string; why: str
     if (contrary) why_.push(contraryLeft(c.tonic, c.form, c.oct).mirror ? 'Contrary motion: the left hand uses the same fingers as the right, so the thumbs and the long fingers meet.' : 'Contrary motion: the left hand cannot copy the right here (its thumb would land on a black key), so each hand keeps its usual fingering.')
   } else if (c.form === 'chromatic')
     why_.push('The thumb on white keys, the 3rd finger on black keys. Where two white keys follow each other (E F, B C) the right hand plays 1 then 2 going up, the left hand 2 then 1. Coming down each hand retraces its fingers.')
-  else why_.push('The fingers repeat every octave, the thumb crossing under once; long fingers go on black keys and the thumb on a white key where it can. The left hand reads the same rule from the top down.')
+  else why_.push('One workable fingering from a rule, not a standard one: the fingers repeat every octave, the thumb crossing under once; long fingers go on black keys and the thumb on a white key where it can. The left hand reads the same rule from the top down.')
+  why_.push(checkNote(c))
   return { lead, r: j(r), l: j(l), why: why_.filter(Boolean) }
 }
 

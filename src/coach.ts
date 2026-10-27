@@ -101,23 +101,41 @@ export function articLine(a: Artic) {
 // ---------- voicing ----------
 
 export interface Voicing {
-  gap: number // mean right-hand velocity minus mean left
+  melody: Hand // the hand that carries the tune
+  gap: number // mean melody-hand velocity minus mean other hand
   aim: number // the melody hand should be at least this much louder
 }
 
 export const BALANCE_SHARE = 0.25 // of the calibrated soft-to-hard range: about 10 on the default bands
+const CLEAR_TOP = 0.75 // share of bars with both hands where one hand holds the highest note
 
-/** The right hand (the melody) over the left. Null without four notes in each hand. */
-export function voicing(samples: { v: number; h: Hand }[], e: Edges): Voicing | null {
-  const R = samples.filter((s) => s.h === 'R').map((s) => s.v)
-  const L = samples.filter((s) => s.h === 'L').map((s) => s.v)
-  if (R.length < 4 || L.length < 4) return null
-  return { gap: mean(R) - mean(L), aim: Math.max(3, Math.round((e.hard - e.soft) * BALANCE_SHARE)) }
+/** The hand with the highest note in most bars where both play; null when neither clearly leads (or too few bars to say). */
+export function melodyHand(notes: Note[]): Hand | null {
+  const top = new Map<number, { R: number; L: number }>()
+  for (const n of notes) {
+    const b = top.get(n.bar) ?? { R: 0, L: 0 }
+    b[n.h] = Math.max(b[n.h], n.p)
+    top.set(n.bar, b)
+  }
+  let r = 0
+  let l = 0
+  for (const b of top.values()) if (b.R && b.L && b.R !== b.L) b.R > b.L ? r++ : l++
+  return r + l >= 2 && Math.max(r, l) / (r + l) >= CLEAR_TOP ? (r > l ? 'R' : 'L') : null
+}
+
+/** The melody hand over the other. Null without a clear melody hand, or without four notes in each hand. */
+export function voicing(samples: { v: number; h: Hand }[], e: Edges, melody: Hand | null): Voicing | null {
+  if (!melody) return null
+  const M = samples.filter((s) => s.h === melody).map((s) => s.v)
+  const O = samples.filter((s) => s.h !== melody).map((s) => s.v)
+  if (M.length < 4 || O.length < 4) return null
+  return { melody, gap: mean(M) - mean(O), aim: Math.max(3, Math.round((e.hard - e.soft) * BALANCE_SHARE)) }
 }
 
 export function voiceLine(x: Voicing) {
   const g = Math.round(Math.abs(x.gap))
-  const said = g < 1 ? 'the hands came out level' : `the ${x.gap > 0 ? 'right' : 'left'} hand ran <b>${g}</b> louder than the ${x.gap > 0 ? 'left' : 'right'}`
+  const [m, o] = x.melody === 'R' ? ['right', 'left'] : ['left', 'right']
+  const said = g < 1 ? 'the hands came out level' : x.gap > 0 ? `the melody (${m} hand) ran <b>${g}</b> louder than the ${o}` : `the ${o} hand ran <b>${g}</b> louder than the melody (${m} hand)`
   return `Voicing: ${said}; aim for the melody at least <b>${x.aim}</b> louder.`
 }
 

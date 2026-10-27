@@ -138,7 +138,7 @@ async function commitNow(id: string, heat: number[], result?: { score: number; a
   }
   if (result) {
     p.plays++
-    if (!p.best || result.score > p.best.score) p.best = result
+    if (!p.best || result.acc > p.best.acc) p.best = result
   }
   await set(`prog:${id}`, p)
   return p
