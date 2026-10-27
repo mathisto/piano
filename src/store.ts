@@ -1,7 +1,7 @@
 import { del, get, keys, set } from 'idb-keyval'
 import type { Stats } from './drill'
 import type { RunSpec } from './run'
-import type { ScaleStats } from './scales'
+import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
@@ -221,4 +221,12 @@ export async function getScales(): Promise<ScaleStats> {
 
 export async function saveScales(s: ScaleStats) {
   await set('scale:stats', s)
+}
+
+export async function getQuiz(): Promise<QuizStats> {
+  return (await get<QuizStats>('scale:quiz')) ?? {}
+}
+
+export async function saveQuiz(s: QuizStats) {
+  await set('scale:quiz', s)
 }

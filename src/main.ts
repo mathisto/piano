@@ -8,7 +8,7 @@ import * as audio from './audio'
 import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
-import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, type Card as ScaleCard, type Form } from './scales'
+import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, award, bestKey, deal, goalMs, newArcade, over, runCards, widened, mult, type Arcade, type RunSpec } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -34,7 +34,7 @@ import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, cardName, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -391,13 +391,35 @@ async function saveRun(s: RunSpec) {
   await store.saveRuns({ ...saved, last: s })
 }
 
-let scaleTab: 'stages' | 'pick' = 'stages'
+let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
+let quiz: QuizState | undefined
+let quizStats: QuizStats = {}
+
+async function newQuiz() {
+  quizStats = await store.getQuiz()
+  quiz = { cards: quizDeal(quizStats, 10), i: 0, ok: 0, streak: 0, best: 0 }
+}
+
+/** A degree chosen, by tap or by pressing its note: score it, keep the stats, show the reason. */
+function answerQuiz(degree: number) {
+  if (!quiz || quiz.picked !== undefined || quiz.i >= quiz.cards.length) return
+  const ok = quizRight(quiz.cards[quiz.i], degree)
+  quiz.picked = degree
+  quiz.streak = ok ? quiz.streak + 1 : 0
+  quiz.best = Math.max(quiz.best, quiz.streak)
+  if (ok) quiz.ok++
+  quizRecord(quizStats, quiz.cards[quiz.i], ok)
+  void store.saveQuiz(quizStats)
+  void showScales()
+}
+const quizOpen = () => $('#scales').classList.contains('on') && scaleTab === 'quiz' && !!quiz
 let scalePick: ScalePick = { tonic: 0, form: 'major', hands: 'R', oct: 1, bpm: 60 }
 
 async function showScales() {
   const stats = await store.getScales()
   const f = nextScaleStage(stats)
-  scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick)
+  if (scaleTab === 'quiz' && !quiz) await newQuiz()
+  scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick, quiz)
 }
 
 const startScale = (c: ScaleCard, bpm: number) => void openSong(scaleSong(c, bpm), 'perform')
@@ -418,6 +440,12 @@ $('#scales').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
   if (!b) return
   if (b.id === 'sgStart') startScale(scalePick, scalePick.bpm)
+  else if (b.dataset.qd) answerQuiz(Number(b.dataset.qd))
+  else if (b.id === 'qNext' && quiz) {
+    quiz.i++
+    quiz.picked = undefined
+    void showScales()
+  } else if (b.id === 'qAgain') void newQuiz().then(showScales)
   else if (b.dataset.sstage) {
     const st = SCALE_STAGES.find((x) => x.id === b.dataset.sstage)!
     void store.getScales().then((stats) => startScale(nextCard(st, stats), st.bpm))
@@ -1340,6 +1368,12 @@ const fromKeyboard = (m: MidiMsg) => {
       updateBanner()
     }
     if (!m.virtual && calNote(m.v)) return
+    if (quizOpen()) {
+      const c = quiz!.cards[quiz!.i]
+      const d = c ? degreeOfPitch(c.tonic, c.form, m.p) : 0
+      if (d) answerQuiz(d)
+      return // the quiz owns the keyboard while it is open
+    }
     if (drill && game.phase === 'ready' && $('#res').hidden) game.toggle() // on a reading drill the first key is the Play button
     game.press(m.p, m.v, m.ts, m.virtual)
   } else game.release(m.p, m.ts, m.virtual)

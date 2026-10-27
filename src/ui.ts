@@ -13,7 +13,7 @@ import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
 import { LIMITS, type Arcade, type RunSpec } from './run'
-import { UNCHECKED, fingering, keyName, type Card, type Form, type Stage as ScaleStage } from './scales'
+import { UNCHECKED, degreeName, fingering, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
 import { band, DEFAULT_EDGES, type TouchStats } from './touch'
 import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
@@ -693,7 +693,33 @@ const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together' } as con
 const FORMS: Record<Form, string> = { major: 'Major', natural: 'Natural minor', harmonic: 'Harmonic minor', melodic: 'Melodic minor' }
 export const cardName = (c: Card) => `${keyName(c.tonic, c.form)}, ${HANDS[c.hands].toLowerCase()}, ${c.oct === 1 ? 'one octave' : 'two octaves'}`
 
-export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick', p: ScalePick) {
+export interface QuizState {
+  cards: QCard[]
+  i: number
+  ok: number
+  streak: number
+  best: number
+  picked?: number // set once the card is answered
+}
+
+const DEG = [1, 2, 3, 4, 5, 6, 7]
+
+/** One card of the quiz: which degree takes the 4th finger. After the answer it shows the reason. */
+function quizBody(q: QuizState) {
+  if (q.i >= q.cards.length)
+    return `<section class="tcard run" aria-label="Quiz results"><h2>${q.ok} of ${q.cards.length}</h2><p class="line">Best streak <b>${q.best}</b>. ${q.ok === q.cards.length ? 'Every key.' : 'The keys you missed come back sooner next time.'}</p><div class="row-actions run-go"><button class="btn primary" id="qAgain">${icon('restart')}Again</button></div></section>`
+  const c = q.cards[q.i]
+  const done = q.picked !== undefined
+  const right = done && quizRight(c, q.picked!)
+  const hand = c.hand === 'R' ? 'right hand' : 'left hand'
+  return `<section class="tcard run" aria-label="Quiz"><p class="fine">Card ${q.i + 1} of ${q.cards.length}${q.streak > 1 ? ` · streak ${q.streak}` : ''}</p>
+    <h2>${esc(keyName(c.tonic, c.form))}, ${hand}</h2>
+    <p class="line">Which degree takes the 4th finger? Press the note on your keyboard, or tap a number.</p>
+    <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}">${d}</button>`).join('')}</div>
+    ${done ? `<p class="line" role="status"><b>${right ? 'Yes.' : 'Not quite.'}</b> ${esc(why(c.tonic, c.form, c.hand))} Up the scale: <b>${fingering(c.tonic, c.form, c.hand).split('').join(' ')}</b>.</p><div class="row-actions run-go"><button class="btn primary" id="qNext">${q.i + 1 === q.cards.length ? 'Finish' : 'Next'}</button></div>` : ''}</section>`
+}
+
+export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick' | 'quiz', p: ScalePick, quiz?: QuizState) {
   const minor = p.form !== 'major'
   const names = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
   const mnames = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B']
@@ -701,7 +727,9 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
   const shaky = (['R', 'L'] as const).filter((h) => UNCHECKED.has(`${minor ? 'm' : 'M'}${p.tonic}:${h}`))
   const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
   const body =
-    tab === 'stages'
+    tab === 'quiz' && quiz
+      ? quizBody(quiz)
+      : tab === 'stages'
       ? `<table class="songs stages"><caption class="sr-only">Scale stages</caption>
       <colgroup><col><col style="width:250px"><col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Solid</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
@@ -721,9 +749,10 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
       ${field('sgBpm', 'Tempo', [50, 60, 66, 72, 80, 90, 100, 112, 120].map((b) => `<option value="${b}"${b === p.bpm ? ' selected' : ''}>${b}, eighth notes</option>`).join(''))}
     </div>
     <p class="line">Fingering up the scale: right hand <b>${f('R')}</b>, left hand <b>${f('L')}</b>.</p>
+    <p class="fine">${esc(why(p.tonic, p.form, 'R'))}</p><p class="fine">${esc(why(p.tonic, p.form, 'L'))}</p>
     ${shaky.length ? `<p class="fine">The ${shaky.map((h) => (h === 'R' ? 'right' : 'left')).join(' and ')}-hand fingering for this key is still to be checked against a printed book; your teacher or book wins.</p>` : ''}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
-    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
+    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
     ${body}`
 }

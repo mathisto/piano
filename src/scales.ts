@@ -1,3 +1,4 @@
+import { noteName } from './spell'
 import { build, type Bar, type Hand, type Raw, type Song } from './song'
 
 export type Form = 'major' | 'natural' | 'harmonic' | 'melodic'
@@ -49,7 +50,7 @@ const FINGERS: Record<string, { R: string; L: string }> = {
   m3: { R: '31234123', L: '21432132' },
   m10: { R: '41231234', L: '21321432' },
 }
-export const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'M11:L', 'm11:L'])
+export const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'm11:L'])
 export const fingering = (tonic: number, form: Form, h: Hand) => FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h]
 
 const mod = (a: number, n: number) => ((a % n) + n) % n
@@ -72,6 +73,7 @@ export function derive(d4: number, h: Hand, oct: number): number[] {
 }
 
 // Two octaves of the keys whose left hand runs 4-3-2-1 twice in an octave (B, B minor): the thumb has to land on E and B.
+// (Alfred's book: in the first octave B takes the 4th finger, then the thumb on every B after it.)
 const TWO_OCT: Record<string, string> = { 'M11:L': '432143213214321', 'm11:L': '432143213214321' }
 
 /** Fingers of a run up `oct` octaves, from the fourth-finger rule; where the printed octave disagrees with the rule, the printed one wins. */
@@ -171,3 +173,69 @@ export function record(stats: ScaleStats, c: Card, bpm: number, ok: boolean): Sc
   stats[k] = { n: s.n + 1, streak: streak >= CLEAN_RUNS ? 0 : streak, best: streak >= CLEAN_RUNS ? Math.max(s.best, bpm) : s.best }
   return stats
 }
+
+// ---------------------------------------------------------------- why this fingering, and the quiz on it
+
+/** The scale degrees that take the 4th finger: one a hand, except B's left hand, which has two. */
+export function fourth(tonic: number, form: Form, h: Hand): number[] {
+  const s = fingering(tonic, form, h)
+  const first = (s.indexOf('4') % 7) + 1
+  return h === 'L' && s === '43214321' ? [1, 5] : [first]
+}
+
+/** The name of a scale degree in a key, without its octave: A sharp, not A#4. */
+export const degreeName = (tonic: number, form: Form, degree: number) => noteName(60 + ((tonic + STEPS[form][degree - 1]) % 12), fifthsOf(tonic, form)).replace(/\d+$/, '')
+
+const list = (ds: number[]) => (ds.length === 1 ? `${ds[0]}` : `${ds.slice(0, -1).join(', ')} and ${ds[ds.length - 1]}`)
+const cyc = (from: number, n: number) => Array.from({ length: n }, (_, i) => mod(from - 1 + i, 7) + 1)
+
+/** The reason for a fingering, in the book's terms: where the 4th finger sits and the two groups it makes. */
+export function why(tonic: number, form: Form, h: Hand): string {
+  const [d] = fourth(tonic, form, h)
+  const at = fourth(tonic, form, h).map((x) => `${degreeName(tonic, form, x)} (degree ${x})`).join(' and ')
+  if (h === 'L' && fourth(tonic, form, h).length === 2)
+    return `Left hand: the 4th finger sits on ${at}, so each half of the octave runs 4-3-2-1, ending on the thumb at E and B. In the first octave B takes the 4th finger; after that B takes the thumb.`
+  if (h === 'R') return `Right hand: the 4th finger ends a group 1-2-3-4, on ${at}. That group is degrees ${list(cyc(d - 3, 4))}; the other is 1-2-3 on degrees ${list(cyc(d + 1, 3))}.`
+  return `Left hand: the 4th finger starts a group 4-3-2-1, on ${at}. That group is degrees ${list(cyc(d, 4))}; the other is 3-2-1 on degrees ${list(cyc(d + 4, 3))}.`
+}
+
+export interface QCard {
+  tonic: number
+  form: Form
+  hand: Hand
+}
+export type QuizStats = Record<string, { n: number; ok: number }>
+const qkey = (c: QCard) => `${c.form}:${c.tonic}:${c.hand}`
+
+/** `n` cards, the keys you miss or have not met dealt more often, never the same one twice running. */
+export function quizDeal(stats: QuizStats, n: number, rnd: () => number = Math.random): QCard[] {
+  const pool: QCard[] = (['major', 'harmonic'] as const).flatMap((form) => Array.from({ length: 12 }, (_, tonic) => (['R', 'L'] as const).map((hand) => ({ tonic, form, hand }))).flat())
+  const out: QCard[] = []
+  for (let i = 0; i < n; i++) {
+    const cand = pool.filter((c) => !out.length || qkey(c) !== qkey(out[out.length - 1]))
+    const w = cand.map((c) => {
+      const t = stats[qkey(c)]
+      return t ? 1 + 3 * (1 - t.ok / t.n) + (t.n < 2 ? 2 : 0) : 3
+    })
+    let r = rnd() * w.reduce((a, b) => a + b, 0)
+    let pick = cand[cand.length - 1]
+    for (let k = 0; k < cand.length; k++) {
+      r -= w[k]
+      if (r <= 0) {
+        pick = cand[k]
+        break
+      }
+    }
+    out.push(pick)
+  }
+  return out
+}
+
+export const quizRight = (c: QCard, degree: number) => fourth(c.tonic, c.form, c.hand).includes(degree)
+export function quizRecord(stats: QuizStats, c: QCard, ok: boolean): QuizStats {
+  const t = stats[qkey(c)] ?? { n: 0, ok: 0 }
+  stats[qkey(c)] = { n: t.n + 1, ok: t.ok + (ok ? 1 : 0) }
+  return stats
+}
+/** Which degree of the key a pressed note is, whatever its octave; 0 when it is not in the scale. */
+export const degreeOfPitch = (tonic: number, form: Form, p: number) => STEPS[form].findIndex((x) => (tonic + x) % 12 === p % 12) + 1
