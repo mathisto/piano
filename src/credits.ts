@@ -46,7 +46,7 @@ export async function loadManifest(fetchFn: typeof fetch = fetch, base?: string)
 export const licenceName = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
 
 export const SOURCE: Record<Piece['source'], string> = { mutopia: 'Mutopia Project', 'openscore-lieder': 'OpenScore Lieder Corpus', pdmx: 'PDMX', chopin: 'Fryderyk Chopin Institute (chopinscores.org)' }
-const CHANGES: Record<string, string> = { 'voice-folded': 'vocal line folded into the right hand', 'voice-dropped': 'voice part left out' }
+const CHANGES: Record<string, string> = { 'voice-folded': 'vocal line folded into the right hand', 'voice-dropped': 'voice part left out', 'tempo-estimated': 'tempo guessed from its tempo word', 'no-tempo': 'no tempo marked, so a default one' }
 
 const who = (c: Catalog['composers'][number]) => `${c.name}${c.died ? (c.born ? ` (${c.born}–${c.died})` : ` (d. ${c.died})`) : ''}`
 /** What we changed from the source, from the piece's flags; empty when it is as published. */

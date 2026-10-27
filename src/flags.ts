@@ -2,7 +2,7 @@ import type { Song } from './song'
 
 /**
  * Machine-readable notes on an imported song, for the ingestion pipeline's quality gates. From the importers:
- * 'dc-ds', 'repeats-unexpanded', 'double-accidental', 'no-tempo', 'three-track-midi'; read off the song:
+ * 'dc-ds', 'repeats-unexpanded', 'double-accidental', 'no-tempo' (nothing names a pace: 100 bpm), 'tempo-estimated' (only a tempo word does: the bpm is a guess), 'three-track-midi'; read off the song:
  * 'key-changes', 'irregular-tuplet' (anything but a triplet).
  */
 export function scoreFlags(song: Song): string[] {

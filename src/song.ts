@@ -49,7 +49,7 @@ export interface Song {
   fifths: number // key signature, -7..7
   lo: number
   hi: number
-  spb: number // seconds per quarter note, first bar
+  spb: number // seconds per beat in the first bar: a quarter, but a dotted quarter in 6/8, 9/8 and 12/8 (the count-in and the jump lead use it)
   artic?: 'legato' | 'staccato' // technique exercises: how long to hold each note
   keys?: { bar: number; fifths: number }[] // key changes estimated from the notes, first at bar 0; fifths is the best single key
   dyn?: string // technique exercises: soft, medium, hard, cresc, decresc or accent, drawn as dynamics on the staff
@@ -132,6 +132,8 @@ export function barAt(bars: Bar[], t: number): number {
 /** A rhythm written as 0.3333 is a third of a quarter; 0.2 (a quintuplet) is not 5/24. */
 const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 2e-3 ? Math.round(x * 24) / 24 : x)
 const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
+/** A beat in quarters: the denominator's note, but a dotted quarter in 6/8, 9/8 and 12/8. */
+export const beatQ = (b: Bar) => (b.den === 8 && b.n % 3 === 0 && b.n > 3 ? 1.5 : 4 / b.den)
 
 export function build(
   id: string,
@@ -171,7 +173,7 @@ export function build(
     fifths,
     lo: notes.reduce((m, n) => Math.min(m, n.p), 127),
     hi: notes.reduce((m, n) => Math.max(m, n.p), 0),
-    spb: (b0.t1 - b0.t0) / barQ(b0),
+    spb: ((b0.t1 - b0.t0) / barQ(b0)) * (beatQ(b0) === 1.5 ? 1.5 : 1), // ponytail: only the compound meters; cut time and 3/8 still count quarters
   }
 }
 

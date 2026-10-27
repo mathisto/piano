@@ -34,6 +34,7 @@ describe('library pipeline gates', () => {
     chord: (s) => [{ ...s, notes: [...s.notes, ...[60, 62, 64, 65, 67, 69].map((p, k) => ({ ...s.notes[0], id: 900 + k, p }))] }],
     span: (s) => [{ ...s, notes: s.notes.flatMap((n) => (n.h === 'R' ? [n, { ...n, id: n.id + 500, p: n.p - 14 }] : [n])) }],
     'no-tempo': (s) => [s, '', false],
+    'tempo-estimated': (s) => [{ ...s, flags: ['tempo-estimated'] }],
     'dc-ds': (s) => [s, 'Allegro D.C. al Fine'],
     repeats: (s) => [s, '\\repeat volta 2 { c4 }'],
     tuplets: (s) => [{ ...s, notes: s.notes.map((n, i) => (i === 3 ? { ...n, tuplet: { num: 5, den: 4 } } : n)) }],
