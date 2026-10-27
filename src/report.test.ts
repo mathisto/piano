@@ -102,7 +102,7 @@ Written 2026-10-27 by Piano Forte. Accuracy is the share of notes or answers rig
 - Songs: 2 sessions, average 93%, last five 93% (no trend yet)
 
 ## Reading
-- Stages solid: 1 of 21 (Treble landmarks)
+- Stages solid: 1 of ${STAGES.length} (Treble landmarks)
 - Working on: Treble five-finger, 44%
 - Weakest notes: E4, treble clef (50% right first time, 3.5 s)
 
