@@ -433,6 +433,7 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 
 ### Metronome
 - `.metro` in the dock, Perform and Learn only (hidden in Read drills). One button cycles Off, Beats, Eighths, labelled "Metronome: off", "Metronome: beats" or "Metronome: eighths" (`aria-pressed` when on; key B), with a row of beat dots beside it that follow the bar (`aria-hidden`; they carry no label, left as built). It is plain chrome, no Lamp. The click accents a full bar's first beat; 6/8, 9/8 and 12/8 count dotted quarters.
+- In a paced Sight Run the dock shows the beat dots with no Metronome button (the click is always on); the count-in lights the four dots in turn, the first beat's dot larger as in Perform. In portrait they sit in the dock, far from the staff.
 
 ### Start card
 - The ready card holds, top to bottom: the cover (168x112, starters and bundled open-library pieces only; hidden when the stage is 640px tall or less), title (54px; the card is the full `min(720px, 92%)` wide so titles and the Simplify labels do not wrap), a credit line for open-library pieces (with a quiet Report a problem link) (15px Ink Faint, with the changes made to the score when there are any), Perform | Learn with a one-line hint, the "You play" row (below), the "Notes shown" Label and four-level Simplify switch (only when Melody would drop at least 10% of notes), the "Ghost of last run" switch (below), the start hint, and the colour legend once per device. The hint hides only on a card under 260px tall. Background is near-opaque Ground (`--scrim-hi`). It sits above the keys (24% of the stage) and sits on them only when the strip is under 260px, or drops onto them while a banner shows on a stage 420px tall or less. Reading drills and calibration show only a title and the start hint.
@@ -511,6 +512,7 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 
 ### Library tools
 - The Open library on Songs: a Label "Open library" with the match count beside it, then one wrapped row of a search field (a 420px max pill-less input, 8px radius, a magnifier inside at the left; placeholder "Title, composer or opus"), a composer select ("Name (count)", sorted by surname, shown only with more than one composer) and the Level segment (All levels, 1 to n), so the tools take two rows at 820px. Rows are the Songs row: cover only for bundled pieces, the first-bars thumbnail only for files already on the device, otherwise key signature, metre and bars in 13px Ink Faint; name with "composer, Level n, licence" and the length; a Ready tag once played on two days; the same four ghost actions as the Songs row. Fifty rows a page; "Show 50 more" and a "n of m" count at the right. When a Level is chosen and some of it is not on the device a ghost "Save level n for offline" shows ("Saving 12 of 40", "Saved for offline", "n not saved. Try again"). An empty result says "No piece matches. Try fewer words".
+- A Skip button follows the Level filter, `.btn.ghost` visually hidden until it takes focus, then in the tools row at the right: "Skip the 50 pieces listed". It moves focus to the end of the list (the Show more row). Hidden when no piece is listed.
 
 ### Over time card
 - On Progress, one card per kind of practice with two or more sessions (Reading drills, Sight Run, Scales, Theory, Songs, Technique), in an auto-fill grid (260px min, 12px / 24px gaps): a Label, a 52px sparkline of accuracy over the last 24 sessions (a 40 to 100 percent axis, a dashed line at 100, a 2px Ink Soft line and no dots), then the average of the last five in 24px italic with "up 4 on the five before", "down n", "steady" or "n sessions" in 14px Ink Faint. Before any kind has two sessions one sentence says the charts start after two.
@@ -550,7 +552,7 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 - **Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.
 - **Do** mirror any new colour in `src/palette.ts` if Pixi draws it.
 - **Do** show mastery and effort as Ink meters, cells, charts and dots plus a number or word.
-- **Do** cap canvas effects to Calm and collapse CSS motion under `prefers-reduced-motion`.
+- **Do** collapse CSS motion under `prefers-reduced-motion`; on the canvas the hit glow fades at one size and the waiting ring and ghost key hold steady (Calm is the only tier).
 
 ### Don't:
 - **Don't** add synthwave sun, perspective grid, or glow on chrome.
@@ -621,7 +623,7 @@ HUD by mode: Perform shows Accuracy (a percentage, a dash until a note is judged
 - Ease `cubic-bezier(0.16, 1, 0.3, 1)`; buttons, switch thumb, ghost shift 0.14-0.22s; drawer slide 0.22s; bar fade 0.35s. Dialogs and the Aids popover appear without animation.
 - Staff: ignite 0.8s ease-out, miss fade 1.2s after 0.8s, grade word 1s, ghost snap 0.52s, ghost shake 0.5s, thud 0.35s.
 - Motion reports state or a state change, never decorates. Effects Off or Calm: Calm gives lane pulses, glows and sparks; Off gives none. A saved Arcade setting reads as Calm.
-- Reduced motion: CSS durations 0.01ms; canvas capped to Calm.
+- Reduced motion: CSS durations 0.01ms; the canvas glow does not swell and the waiting ring and ghost key do not pulse.
 
 ### Copy rules
 
