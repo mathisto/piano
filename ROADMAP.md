@@ -91,6 +91,7 @@ In rough order. Nothing locks.
 - **Fingerings against the Alfred book**: every arpeggio fingering and some contrary and chromatic ones are unchecked; the table is in `docs/changes/scales2.md` (Known gaps).
 - **Caddy header for the service worker**: add `@sw path /sw.js` and `header @sw Cache-Control "no-cache"` on quartz beside the corpus rules (`docs/changes/offline.md`); without it an edge may hold `sw.js` for hours, which only delays updates. The offline web app is merged, not yet deployed or checked outside headless Chrome.
 - **Catalogue tempo flags**: the importer now flags word-only tempos `tempo-estimated` and counts compound meters by the beat (`docs/changes/tempo.md`), and the app applies that when a piece opens; the published catalogue still holds the old `flags` and `bpm` until the sets are rebuilt without `--merge-with` (published pieces pass through untouched) and combined. Worth doing at the next library growth, not alone.
+- **Pedal**: built against synthetic CC64 only; thresholds and half-bar chord detection are guesses; written pedal in scores is not imported (`docs/changes/pedal.md`).
 - **Real-device checks**: the iPad and FP-10 list in Known gaps. Nothing in the newest features has been seen or heard on the device.
 
 ## Known gaps
