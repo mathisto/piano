@@ -84,3 +84,7 @@ body.zen #app {
   background: var(--R);
   box-shadow: inset 0 0 0 1px var(--R);
 }
+/* the strip answers 'no keyboard yet': the stage's Connect banner would only cover the music (the chip still connects) */
+#app:has(#osk:not([hidden])) .banner:has(#connectBtn) {
+  display: none;
+}

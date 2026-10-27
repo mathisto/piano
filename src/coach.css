@@ -1,6 +1,5 @@
 /* Touch coach: results lines, and live evenness marks that fade once the touch has been even for a while. */
 .coachlines {
-  grid-column: 2; /* with the other stats, beside the grade */
   display: grid;
   gap: 4px;
   color: var(--ink-2);
@@ -15,9 +14,24 @@
 #staff.marks-faint .devmark {
   opacity: 0.35;
 }
-/* the evenness strip stacks with the other stats too, so the stats column keeps its width */
-.card > div:has(> .hist.even) {
-  grid-column: 2;
+/* the results: the heading, the sentences and More stack beside the grade, which no longer has to span their rows */
+.song-res .big-grade {
+  grid-row: auto;
+}
+.song-res .stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.card .line.sub {
+  font-size: 15px;
+}
+.song-res .more {
+  margin: 0; /* the column's gap spaces it */
+}
+.more[open] > summary {
+  margin-bottom: 8px;
 }
 /* a tall results card scrolls instead of being cut off at the top and bottom of a short stage */
 .results {

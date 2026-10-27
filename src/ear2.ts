@@ -17,7 +17,7 @@ const stack = (pcs: number[], low: number) => {
 /** Arpeggiated slowly, then blocked. */
 const arpeggio = (ns: number[]): { p: number[]; at: number; dur: number }[] => [...ns.map((n, i) => ({ p: [n], at: i * 450, dur: 420 })), { p: ns, at: ns.length * 450 + 150, dur: 1700 }]
 
-const ASK_CHORD = 'Listen, then play the chord back (any octave, any order), or just its root.'
+const ASK_CHORD = 'Listen, then play the chord back in any octave and order, or just its root.'
 const VERBS = ['Listen: major or minor?', 'Listen: which chord?', 'Listen: which note is lowest?', 'Listen: a short progression', 'Listen: a seventh chord']
 
 /** 1 major or minor on C (three registers); 2 every root; 3 triad inversions (the lowest note matters); 4 I–IV–V–I and I–V–vi–IV in every key, a chord at a time; 5 dominant 7ths. */

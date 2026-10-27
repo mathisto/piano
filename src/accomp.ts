@@ -55,9 +55,10 @@ export function yourPart(song: Song, hands: Record<Hand, HandMode>, parts: Set<n
   const handName = (h: Hand) => (h === 'R' ? 'the right hand' : 'the left hand')
   const yours = (['R', 'L'] as const).filter((h) => hands[h] === 'play' && has(h))
   const app = (['R', 'L'] as const).filter((h) => hands[h] === 'listen' && has(h))
-  if (!theirs.length && yours.length !== 1) return null
+  const oneHand = yours.length === 1 && has('R') && has('L') // a one-hand piece played whole is the piece, not a part of it
+  if (!theirs.length && !oneHand) return null
   return {
-    you: [...mine, ...(yours.length === 1 ? [handName(yours[0])] : [])].join(', '),
+    you: [...mine, ...(oneHand ? [handName(yours[0])] : [])].join(', '),
     app: [...theirs, ...app.map(handName)].join(' and '), // '' when the rest is hidden, not played
   }
 }

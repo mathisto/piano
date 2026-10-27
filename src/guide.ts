@@ -126,7 +126,7 @@ export function tabNote(tab: string): string {
 
 /** Shown while no MIDI keyboard is connected; banner.ts hides it when one is and shows it again if it goes. */
 export const keyboardLine = (connected: boolean) =>
-  `<p class="kbline" role="status"${connected ? ' hidden' : ''}><span><b>No keyboard connected.</b> Without one, tap the on-screen keys, or use the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" data-connect>Connect keyboard</button></p>`
+  `<p class="kbline" role="status"${connected ? ' hidden' : ''}><span><b>No keyboard connected.</b> Without one, play the on-screen keys, or use the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" data-connect>Connect keyboard</button></p>`
 
 // ---------- the Help sheet ----------
 
