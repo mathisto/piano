@@ -77,3 +77,10 @@ describe('library manifest', () => {
     }
   })
 })
+
+describe('key signatures of MIDI pieces', () => {
+  it('a minor piece takes its signature, not three flats fewer: C minor has three flats, A minor none', () => {
+    expect(fromMidi(ab(bytes('mutopia-1613.mid')), 'x', 'x').fifths).toBe(-3)
+    expect(fromMidi(ab(bytes('mutopia-1612.mid')), 'x', 'x').fifths).toBe(0)
+  })
+})

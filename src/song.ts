@@ -168,9 +168,9 @@ const MAJOR_FIFTHS: Record<string, number> = {
   F: -1, Bb: -2, Eb: -3, Ab: -4, Db: -5, Gb: -6, Cb: -7,
 }
 
-function keyToFifths(key: string, scale: string): number {
-  const maj = MAJOR_FIFTHS[key] ?? 0
-  return scale === 'minor' ? maj - 3 : maj
+/** The MIDI reader names the major key that has the signature, for a minor piece too (C minor arrives as 'Eb'), so the scale needs no correction. */
+function keyToFifths(key: string): number {
+  return MAJOR_FIFTHS[key] ?? 0
 }
 
 const KS_MAJ = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
@@ -267,7 +267,7 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
   }))
   const ks = midi.header.keySignatures[0]
   raw.forEach((r, i) => Object.assign(r, { q: z.q[i], dq: z.dq[i], grace: z.grace[i] }))
-  const fifths = ks?.key ? keyToFifths(ks.key, ks.scale) : estimateFifths(raw.filter((r) => !r.grace))
+  const fifths = ks?.key ? keyToFifths(ks.key) : estimateFifths(raw.filter((r) => !r.grace))
   const acc = spellWindow(raw.map((r) => r.p), z.q, fifths)
   raw.forEach((r, i) => (r.acc = acc[i]))
   const song = build(id, title, raw, bars, fifths, split)
