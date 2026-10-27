@@ -315,6 +315,7 @@ export class Staff {
       this.barEls.push([barOf(o.sys, o.x1), el('path', { class: 'ottl', d: `M${o.x1 + o.label.length * 7 + 2},${o.y + dy} L${o.x2},${o.y + dy} L${o.x2},${o.y + dy + hook}` }, g)])
     }
     this.marks(g, L, barOf)
+    for (const c of L.syms) el('text', { class: 'cname', x: c.x, y: c.y + dyOf(c.sys) }, svg, c.name)
     this.timeline.sort((a, b) => a.t - b.t)
 
     this.dynamics()

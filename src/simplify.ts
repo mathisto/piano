@@ -1,7 +1,13 @@
+import { voiceOf } from './accomp'
+import { chordsOf } from './lead'
 import type { Hand, Note, Song } from './song'
 
-export type Level = 0 | 1 | 2 | 3
-export const LEVELS: Record<Level, string> = { 0: 'Full', 1: 'Thin chords', 2: 'Melody and bass', 3: 'Melody' }
+export type Level = 0 | 1 | 2 | 3 | 4
+export const LEVELS: Record<Level, string> = { 0: 'Full', 1: 'Thin chords', 2: 'Melody and bass', 3: 'Melody', 4: 'Lead sheet' }
+
+/** Chord symbols need a harmony to read: a piece with a left hand. */
+export const canLead = (s: Song) => s.notes.some((n) => n.h === 'L')
+const sung = (s: Song, n: Note) => !!voiceOf(s, n) || (n.also !== undefined && !!voiceOf(s, { ...n, part: n.also }))
 
 const CLUSTER = 0.03 // seconds: onsets this close are one chord
 const GRACE = 0.08 // seconds: shorter than this is an ornament
@@ -30,7 +36,7 @@ const hand = (notes: Note[], h: Hand) => notes.filter((n) => n.h === h)
 
 /**
  * A readable version of a song for a learner: 1 keeps both hands with at most three notes in a chord, 2 keeps the top line
- * and the bass, 3 keeps the top line. The notes keep their timing and notation fields; the original song is not changed.
+ * and the bass, 3 keeps the top line, 4 keeps the melody (a voice part when the score has one, else the top line) and adds chord symbols read from the harmony. The notes keep their timing and notation fields; the original song is not changed.
  */
 export function simplify(s: Song, level: Level): Song {
   if (level === 0) return s
@@ -44,11 +50,12 @@ export function simplify(s: Song, level: Level): Song {
         else keep.push(c[0], c[c.length - 1], c[Math.floor(c.length / 2)]) // lowest, highest and one in the middle
       }
   } else {
-    keep = clusters(hand(live, 'R')).map((c) => c[c.length - 1]) // the top line
+    const voice = level === 4 ? live.filter((n) => sung(s, n)) : []
+    keep = voice.length >= 8 ? voice : clusters(hand(live, 'R')).map((c) => c[c.length - 1]) // the sung line, or the top line
     if (level === 2) keep.push(...clusters(hand(live, 'L')).map((c) => c[0])) // the bass
   }
-  const notes = keep.sort((a, b) => a.t - b.t || a.p - b.p).map((n, id) => ({ ...n, id }))
-  return { ...s, notes, lo: notes.reduce((m, n) => Math.min(m, n.p), 127), hi: notes.reduce((m, n) => Math.max(m, n.p), 0) }
+  const notes = keep.sort((a, b) => a.t - b.t || a.p - b.p).map((n, id) => ({ ...n, id, ...(level === 4 && { part: undefined, also: undefined }) })) // a lead sheet is one line: no parts to choose between
+  return { ...s, notes, lo: notes.reduce((m, n) => Math.min(m, n.p), 127), hi: notes.reduce((m, n) => Math.max(m, n.p), 0), ...(level === 4 && { chords: chordsOf(s) }) }
 }
 
 /** The mildest level at which the busiest bars fit the staff. */

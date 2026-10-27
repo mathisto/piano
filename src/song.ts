@@ -40,6 +40,14 @@ export interface Bar {
   ql?: number // length in quarters when it is not n*4/den: a pickup bar
 }
 
+export interface Sym {
+  t: number // seconds at 100% tempo
+  d: number
+  bar: number
+  name: string // 'C', 'Am7', 'G/B': read from the harmony, not the composer's
+  keys: number[] // MIDI pitches of a block chord with its bass below: what the app plays when it plays the chords
+}
+
 export interface Song {
   id: string
   title: string
@@ -57,6 +65,7 @@ export interface Song {
   parts?: string[] // names of the source parts, indexed like Note.part
   curve?: number[] // a score with dynamics marks: the written level (0..1) of each bar, the mean of its notes' v
   wedges?: { t0: number; t1: number; up: boolean }[] // hairpins, by the first and last note under them (seconds); up is a crescendo
+  chords?: Sym[] // Lead sheet: the chord of each half bar, drawn above the staff
   marks?: { t: number; text: string }[] // the dynamic letters a score writes (p, mf, sfz), where it writes them
 }
 

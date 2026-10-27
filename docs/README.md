@@ -40,6 +40,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/touch.md`: timing evenness, legato and staccato, voicing, fading marks, key-touch setting.
 - `changes/realtouch.md`: touch coaching on real pieces: written dynamics and articulation followed or not.
 - `changes/marks.md`: staccato, tenuto, accents, slurs, hairpins and dynamic letters drawn on the staff.
+- `changes/lead.md`: the Lead sheet level of Notes shown: melody and chord symbols read from the harmony, the app playing the chords.
 - `changes/pedal.md`: the sustain pedal from CC64: the sampler, the results line, the Technique exercise.
 
 **Importer and library pipeline**

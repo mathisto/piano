@@ -95,6 +95,8 @@ export class Game {
   private anchorPerf = 0
   private anchorT = 0
   private autoI = 0
+  private compI = 0
+  comp = false // Lead sheet: the app plays the song's chords (a block chord on each half bar); kept until the page reloads
   private nextClick = 0
   private nextMetro = 0 // song time up to which the metronome has handed clicks to the audio clock
   private stallAt = 0
@@ -206,6 +208,8 @@ export class Game {
     this.wrongMark = 0
     this.autoI = this.song.notes.findIndex((n) => n.t >= this.t)
     if (this.autoI < 0) this.autoI = this.song.notes.length
+    this.compI = this.song.chords?.findIndex((c) => c.t >= this.t) ?? -1
+    if (this.compI < 0) this.compI = this.song.chords?.length ?? 0
   }
 
   /** Hand the trouble bars from this pass to whoever saves them, then start a fresh tally. */
@@ -328,6 +332,16 @@ export class Game {
       this.autoUntil.set(n.p, perf + ms)
       setTimeout(() => audio.noteOff(n.p), ms)
       this.emit({ type: 'auto', note: n })
+    }
+
+    for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t <= this.t; ) {
+      const c = ch[this.compI++]
+      const ms = ((c.d * 0.9) / this.rate) * 1000
+      if (this.comp)
+        for (const p of c.keys) {
+          audio.noteOn(p, 0.45, true) // like Listen: the app is the one playing
+          setTimeout(() => audio.noteOff(p), ms)
+        }
     }
 
     if (this.phase === 'playing') {
