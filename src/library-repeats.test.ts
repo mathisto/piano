@@ -2,7 +2,7 @@ import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
 import { analyse, type Input } from '../scripts/library/pipeline'
 import { encode, pickLy, unfold, withRepeats } from '../scripts/library/repeats'
-import { fromMidi } from './song'
+import { fromMidi } from './midi-tracks'
 
 // A LilyPond-like MIDI: 4/4, G major, one track; notes as [quarter, quarters, pitch]
 const midiOf = (notes: number[][]) => {

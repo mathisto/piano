@@ -1,7 +1,6 @@
 // Songs: the library page, the tracks dialog, importing files, and sharing them.
 import * as lib from '../catalog'
 import type { Piece } from '../catalog-types'
-import { autoSelect, inspectMidi } from '../midi-tracks'
 import { settings } from '../settings'
 import { fromSpec } from '../song'
 import { noteName } from '../spell'
@@ -23,6 +22,7 @@ export async function libraryData() {
         const song = await store.toSong(s, settings.split)
         let tracks
         if (s.kind !== 'xml') {
+          const { autoSelect, inspectMidi } = await import('../midi-tracks') // loaded by toSong above
           const r = inspectMidi(s.bytes)
           tracks = { all: r.tracks.filter((t) => !t.percussion).length, used: (s.pick ?? autoSelect(r)).tracks.length }
         }
@@ -61,6 +61,7 @@ export async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
   if (!s) return
   const midi = s.kind !== 'xml'
+  const { autoSelect, inspectMidi } = await import('../midi-tracks')
   const r = midi ? inspectMidi(s.bytes) : undefined
   let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
   const song = await store.toSong(s, settings.split)

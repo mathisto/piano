@@ -5,7 +5,8 @@ import { scoreFlags } from './flags'
 import { measure, mixed, oddTuplets, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
 import { notate, quantize, tiedSegments } from './quantize'
 import { fromMusicXml } from './musicxml'
-import { estimateFifths, fromMidi, fromSpec, type Note, type Song } from './song'
+import { fromMidi } from './midi-tracks'
+import { estimateFifths, fromSpec, type Note, type Song } from './song'
 import { spell, spellWindow } from './spell'
 
 const barQ = (s: Song, i: number) => s.bars[i].ql ?? (s.bars[i].n * 4) / s.bars[i].den

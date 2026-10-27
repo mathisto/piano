@@ -25,7 +25,7 @@ Today is up about 30% sooner and runs 38% less script. `nav` and `open` are with
 
 ## Ratchet
 `src/bundle.test.ts` builds in memory and fails if the entry is over 330 000 bytes or holds Pixi or any module above
-(seen red at a 300 000 budget and with `game.ts` listed). Lower `BUDGET` as the entry shrinks; the warning limit is 330.
+(seen red at a 300 000 budget and with `game.ts` listed). Lower `BUDGET` as the entry shrinks; the warning limit is 330. Round two changed it, below.
 
 ## iPad
 Chunks are imported by relative URL (`import("./highway-*.js")`); only preload hints use base `/`, as Pixi's own lazy
@@ -38,3 +38,30 @@ chunks already did on the iPad. `npx cap copy ios` puts every chunk in `ios/App/
 - Songs page: opening it fetches ~40 library files and `inspectMidi` (midi-tracks.ts:50) took ~1.2 s CPU at 4x in the
   profile of the next piece open, which it competes with (likely `library-view` `fill`; not traced to the line).
 - Report, OSK, memorise, readthrough, guide, ladder stay eager: `ui.ts`/`today.ts` need them for the first paint.
+
+# Round two: parsers, Theory decks, Songs thumbnails
+
+| interleaved A/B, 2 rounds, 4x CPU, median of 7 | today | script | task | nav | open | JS at Today | boot JS |
+|---|---|---|---|---|---|---|---|
+| main (0c1616c) | 332-382 ms | 197-222 | 311-353 | 325-332 | 2003-2092 | 303 kB | 308 718 B |
+| this branch | 276-290 ms | 149-152 | 261-273 | 277-278 | 1363-1412 | 252 kB | 258 430 B |
+
+The machine was shared: absolute numbers drift between rounds (main's `today` was 454-476 earlier), so compare within a round.
+Today -13 to -28%, script -23 to -33%, the first piece open -30% (the Songs page no longer parses 40 files beside it).
+- `plan.theoryDue` returns at once when no Theory card is due (exact: a deck can only count due cards). With cards due it
+  still builds every deck; memoise the deck ids if that shows up.
+- `fromMidi` moved from `song.ts` to `midi-tracks.ts` (`density`/`COMFORT` the other way, for `ui.ts`); `store.toSong` and
+  `app/library.ts` import `midi-tracks`/`musicxml` (with `@tonejs/midi`, `midi-file`) when a file is read. Every parse was
+  already async through `toSong`; the idle prefetch after Today fetches both. Tests and `scripts/library` import the new home.
+- Songs: thumbnails are parsed one file at a time and only for rows an IntersectionObserver sees (200 px margin); `meta`
+  keeps them across visits, a redraw drops the queue. Checked: 0 before scrolling, 6 after, 10 at once on a revisit.
+- `report` loads with the stage (`stageCode`; the start card only draws once the stage exists) and in the drawer's
+  Credits and Summary; `ladder` + `ladder-data` in `showProgress`.
+- Not moved: making `readthrough-ui` and `memorise-ui` lazy made Rolldown split the shared modules into 13 chunks
+  (boot JS 261 307 vs 259 774 B without them) for no gain, so they stay. OSK mounts at boot (it watches every view and the
+  Settings switch); `guide`, `memory` (`memTag`) and `readthrough` (`pickPiece`) draw Today, so they stay too.
+- Ratchet: `bundle.test.ts` now sums the entry and every chunk it imports statically (Rolldown can split the entry, see
+  above), budget 275 000, and names the parsers, `report` and `ladder` as lazy. Seen red with a static `musicxml` import.
+- Checked: CSS byte-identical; every `./chunk.js` and `/assets/` reference in `dist` exists (51); a `--base ./` build served
+  from `/sub/` boots and opens a library piece with all JS under `/sub/`. Wart, not new: `CORPUS` is `origin + /corpus/`,
+  so under a subpath the remote catalogue 404s (bundled pieces still work); the default build uses base `/`.

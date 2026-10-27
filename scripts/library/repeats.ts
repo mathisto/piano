@@ -4,7 +4,7 @@
 // with tempo, meter, key and pedal state carried to each jump. Simple cases only: one level of repeat, with or without
 // \alternative endings. Nested or overlapping repeats, D.C./D.S./Fine, \repeat segno and 2.24's \volta are left alone.
 import { Midi } from '@tonejs/midi'
-import { fromMidi } from '../../src/song'
+import { fromMidi } from '../../src/midi-tracks'
 
 type Ev = { k: 'on' | 'grace'; at: number } | { k: 'rep'; at: number; body: number; alts: number[]; n: number } | { k: 'bad'; at: number; why: string }
 type Rec = { len: number; ev: Ev[] }

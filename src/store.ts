@@ -5,9 +5,8 @@ import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
 import type { Seen } from './coach'
 import type { KeyTouch } from './settings'
-import { fromMusicXml, xmlText } from './musicxml'
-import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
-import { fromMidi, type Song } from './song'
+import type { Selection } from './midi-tracks'
+import type { Song } from './song'
 import { KEEP, type Take } from './take'
 
 export interface Stored {
@@ -91,8 +90,14 @@ export async function removeSong(id: string) {
   await del(`take:${id}`)
 }
 
+/** The parsers load with the first piece read, not at boot (docs/changes/perf.md). */
 export async function toSong(s: Stored, split: number): Promise<Song> {
-  return s.kind === 'xml' ? fromMusicXml(await xmlText(s.bytes), s.title, s.id) : fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)))
+  if (s.kind === 'xml') {
+    const { fromMusicXml, xmlText } = await import('./musicxml')
+    return fromMusicXml(await xmlText(s.bytes), s.title, s.id)
+  }
+  const { autoSelect, fromMidi, inspectMidi } = await import('./midi-tracks')
+  return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)))
 }
 
 export async function getProgress(id: string): Promise<Progress> {
