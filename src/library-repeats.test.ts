@@ -1,7 +1,7 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
 import { analyse, type Input } from '../scripts/library/pipeline'
-import { encode, pickLy, unfold, withRepeats } from '../scripts/library/repeats'
+import { encode, lyPickup, pickLy, unfold, withRepeats } from '../scripts/library/repeats'
 import { fromMidi } from './midi-tracks'
 
 // A LilyPond-like MIDI: 4/4, G major, one track; notes as [quarter, quarters, pitch]
@@ -122,5 +122,53 @@ describe('unfolding LilyPond volta repeats in the MIDI (scripts/library/repeats.
     const input = (bytes: Uint8Array, ly: string): Input => ({ id: 'mutopia-1', title: 't', composer: 'X (1700–1750)', source: 'mutopia', sourceUrl: '', licenceEvidence: '', licence: 'Public Domain', licenceUrl: '', edition: '', format: 'midi', bytes, upstreamSha: '', ly })
     expect((await analyse(withRepeats(input(simpleMidi, simple)))).flags).not.toContain('repeats')
     expect((await analyse(withRepeats(input(simpleMidi, simple.replace('c1', 'c1^"D.C."'))))).flags).toContain('repeats')
+  })
+})
+
+describe('the anacrusis a .ly states (lyPickup)', () => {
+  // quarters of 1: a pickup of one beat, then bars of four; `ly` is its source
+  const pick = [[0, 1, 60], ...quarters([62, 64, 65, 67, 69, 71, 72], 1), [8, 4, 74]]
+  const lyOf = (head: string, body = 'c4 | d e f g | a b c d | e1') => `\\version "2.18.2"\n{ ${head} ${body} }\n\\score { \\new Staff { ${head} ${body} } \\midi { } }\n`
+  const bar4 = (head: string) => lyPickup(midiOf(pick), lyOf(head))
+  it('reads \\partial in quarters: dotted, multiplied, in any meter', () => {
+    expect(bar4('\\time 4/4 \\partial 4')).toBe(1)
+    expect(bar4('\\partial 4')).toBe(1) // no \\time: LilyPond's 4/4
+    expect(bar4('\\partial 4 \\time 4/4')).toBe(1) // either order
+    expect(lyPickup(midiOf([[0, 0.5, 60], ...quarters([62, 64, 65, 67, 69, 71, 72, 74], 0.5)]), lyOf('\\partial 8', 'c8 | d4 e f g | a b c d | e1'))).toBe(0.5)
+    expect(lyPickup(midiOf([[0, 1.5, 60], ...quarters([62, 64, 65, 67, 69, 71, 72, 74], 1.5)]), lyOf('\\partial 4.', 'c4. | d4 e f g | a b c d | e1'))).toBe(1.5)
+    expect(lyPickup(midiOf([[0, 0.5, 60], [0.5, 0.5, 61], [1, 0.5, 62], ...quarters([62, 64, 65, 67, 69, 71, 72, 74], 1.5)]), lyOf('\\partial 8*3', 'c8 c c | d4 e f g | a b c d | e1'))).toBe(1.5)
+    const six = midiOf([[0, 0.5, 60], [0.5, 1.5, 62], [2, 1.5, 64], [3.5, 1.5, 65], [5, 1.5, 67], [6.5, 3, 69]], [6, 8])
+    expect(lyPickup(six, lyOf('\\time 6/8 \\partial 8', 'c8 | d4. e | f g | a2.'))).toBe(0.5)
+  })
+  it('reads Timing.measurePosition and Score.measurePosition set before the first note as the part of the bar already gone', () => {
+    for (const w of ['Timing', 'Score']) expect(bar4(`\\set ${w}.measurePosition = #(ly:make-moment 3 4)`)).toBe(1)
+  })
+  it('a pickup as long as the bar is no pickup', () => {
+    expect(lyPickup(midiOf([...quarters([60, 62, 64, 65, 67, 69, 71, 72]), [8, 4, 74]]), lyOf('\\partial 1', 'c4 d e f | g a b c | d1'))).toBe(0)
+  })
+  it('says nothing when the .ly is not this file, or its meter is not the file\'s, or the first bar is not the whole story', () => {
+    expect(lyPickup(midiOf(pick), lyOf('\\partial 4', 'c2 | d e | f g | a1'))).toBeUndefined() // another score
+    expect(lyPickup(midiOf(pick), lyOf('\\partial 4', 'c4 | d e f g | a b c d | e1 | f1 | g1 | a1'))).toBeUndefined() // covers the onsets, but is longer: a sibling movement
+    expect(bar4('\\time 3/4 \\partial 4')).toBeUndefined() // the MIDI is in 4/4
+  })
+  it('no \\partial: 0 when one meter and the bar counts agree, else nothing', () => {
+    const plain = [...quarters([60, 62, 64, 65, 67, 69, 71, 72]), [8, 4, 74]]
+    const ly = (body: string) => lyOf('\\time 4/4', body)
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1'))).toBe(0)
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 | r1'))).toBeUndefined() // the .ly counts a bar the MIDI does not
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 \\time 3/4 r2.'))).toBeUndefined() // a meter change after the first note
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c \\partial 4 | d1'))).toBeUndefined() // a \\partial later on
+    expect(lyPickup(midiOf(plain, [3, 4]), ly('c4 d e f | g a b c | d1'))).toBeUndefined() // another meter
+  })
+  it('a \\partial before the first note counts even when a later one follows it (the first bar is all that is read)', () => {
+    expect(lyPickup(midiOf(pick), lyOf('\\partial 4', 'c4 | d e f g | a b c d \\partial 4 | e1'))).toBe(1)
+  })
+  it('the catalogue entry carries it, and the bars follow', async () => {
+    const e = { id: 'x', title: 'x', format: 'midi', bytes: midiOf(pick), ly: lyOf('\\partial 4') } as Input
+    const a = await analyse(e)
+    expect(a.pickup).toBe(1)
+    expect(a.song!.bars[0].ql).toBe(1)
+    expect((await analyse({ ...e, ly: undefined })).pickup).toBeUndefined() // no .ly: the detector, unchanged
+    expect((await analyse({ ...e, ly: '{ c1 }' })).pickup).toBeUndefined()
   })
 })

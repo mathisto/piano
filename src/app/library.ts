@@ -53,7 +53,7 @@ export async function showLibrary(err = '') {
 }
 
 export async function libSong(p: Piece) {
-  return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick, tempo: p.tempo ? { bpm: p.tempo, guess: p.flags.includes('tempo-estimated') } : undefined }, settings.split)
+  return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick, tempo: p.tempo ? { bpm: p.tempo, guess: p.flags.includes('tempo-estimated') } : undefined, pickup: p.pickup }, settings.split)
 }
 
 /** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */

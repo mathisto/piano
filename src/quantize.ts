@@ -131,6 +131,7 @@ export interface QOpts {
   ppq: number
   sigs: { tick: number; n: number; den: number }[]
   tempos: { tick: number; bpm: number }[]
+  pickup?: number // quarters, known from the score (0 = none): replaces the detector
 }
 export interface QOut {
   q: number[] // snapped onset, quarters from tick 0
@@ -210,7 +211,8 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
   const limit = sigs[1] ? sigs[1].tick / ppq : Infinity
   const head = live.filter((c) => c.x < limit)
   let pickup = 0
-  if (head.length >= 6) {
+  if (o.pickup !== undefined && o.pickup >= 0 && o.pickup < B) pickup = o.pickup
+  else if (head.length >= 6) {
     const score = (u: number) => {
       const phase = (x: number) => (((x - u) % B) + B) % B
       const at = (x: number) => phase(x) < 0.15 || phase(x) > B - 0.15

@@ -8,9 +8,9 @@ import { fromMidi, inspectMidi, type Selection, type Tempo } from '../../src/mid
 import { fromMusicXml, tempoWord, xmlText } from '../../src/musicxml'
 import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
-import { plays, withRepeats } from './repeats'
+import { lyPickup, plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
-export { pickLy, unfold, withRepeats } from './repeats'
+export { lyPickup, pickLy, unfold, withRepeats } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
 export interface Input {
@@ -31,6 +31,7 @@ export interface Input {
   bytes: Uint8Array // as shipped: MIDI, or a piano-only .mxl
   upstreamSha: string // sha256 of the file as fetched, before normalising
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
+  noPickup?: true // leave the first bar to the detector, as before the .ly's \partial was read (reanalyse --pickup-only compares the two)
   matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
   voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
   alt?: Input // a folded song's piano-only version, shipped instead when the fold fails its gates (reach())
@@ -59,6 +60,7 @@ export interface Analysis {
   pick?: Selection
   tracks: number
   tempo?: number // quarter-note bpm the catalogue overrides the MIDI's own with (a tempo word of the .ly)
+  pickup?: number // quarters in the first bar, as the .ly states it
   fp: Set<string>
   note?: string // why a song ships piano-only, kept in the report
 }
@@ -184,7 +186,7 @@ export function lyPace(ly: string, compound = false): { given: boolean; bpm?: nu
 export async function analyse(e: Input): Promise<Analysis> {
   const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], tracks: 0, fp: new Set<string>() }
   try {
-    let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number, tempo: Tempo | undefined
+    let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number, tempo: Tempo | undefined, pickup: number | undefined
     if (e.format === 'midi') {
       pick = pinHands(ab(e.bytes))
       const midi = new Midi(ab(e.bytes))
@@ -199,14 +201,15 @@ export async function analyse(e: Input): Promise<Analysis> {
       const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)
       if (!pace.given && flat && pace.bpm) tempo = { bpm: pace.bpm, guess: !pace.exact }
       hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)
-      s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo)
+      pickup = e.ly && !e.noPickup ? lyPickup(e.bytes, e.ly, e.matched) : undefined // plays()'s test is inside: a .ly that is not this file's says nothing
+      s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)
     } else {
       marks = await xmlText(ab(e.bytes))
       s = fromMusicXml(marks, e.title, e.id)
       tracks = (marks.match(/<part id="/g) ?? []).length
       hasTempo = !s.flags?.includes('no-tempo') // a <sound tempo>, a <metronome> or a tempo word (that one flagged 'tempo-estimated')
     }
-    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, ...(tempo && { tempo: tempo.bpm }), fp: fingerprint(s) }
+    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, ...(tempo && { tempo: tempo.bpm }), ...(pickup !== undefined && { pickup }), fp: fingerprint(s) }
   } catch (err) {
     return { ...base, fails: ['parse'], error: String((err as Error).message ?? err) }
   }
@@ -377,6 +380,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       tracks: a.tracks,
       ...(a.pick && { pick: a.pick }),
       ...(a.tempo && { tempo: a.tempo }),
+      ...(a.pickup !== undefined && { pickup: a.pickup }),
       grade: a.grade,
       gradeWhy: a.gradeWhy,
       ...(go && { gradeOverride: go }),

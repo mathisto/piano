@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Re-analyse a published catalogue with the current pipeline, keeping every id, file and sha256: the published bytes (and for Mutopia
-// MIDI the cached .ly) go back through run(), and only the analysis fields of each entry are replaced (flags, bpm, tempo, grade, ...).
+// MIDI the cached .ly) go back through run(), and only the analysis fields of each entry are replaced (flags, bpm, tempo, pickup, grade, ...).
 // A from-scratch build cannot do this: dedupe, merge order and the unfold of repeats pick other files for some pieces (docs/changes/rebuild.md).
-//   npx vite build --config scripts/library/vite.config.mjs && node scripts/library/reanalyse.mjs [--from DIR] [--out DIR]
+//   npx vite build --config scripts/library/vite.config.mjs && node scripts/library/reanalyse.mjs [--from DIR] [--out DIR] [--pickup-only]
+// --pickup-only: analyse every piece twice, with and without the .ly's pickup, and put only the difference into the published entry (the
+// pickup, and what a different first bar moves: bars, sec, keys, flags, grade ...); other ways today's pipeline differs from what was published stay out.
 // --from: the published output (catalog.json, LICENSES.md, p/), read only. --out: catalog.json, LICENSES.md and a copy of p/ (deploy-library.sh's LIBRARY_OUT).
 // Offline: .ly pages and zips come from .cache/library/http (a miss is fetched, one request a second).
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
@@ -15,10 +17,11 @@ const FROM = arg('from', `${ROOT}.cache/library/out`)
 const OUT = arg('out', `${ROOT}.cache/library/out-rebuilt`)
 const { pickLy, run, withRepeats } = await import(`${ROOT}.cache/library/bin/pipeline.mjs`)
 const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8')).pieces.map((e) => e.id))
+const only = process.argv.includes('--pickup-only')
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
 
 // what analyse()/judge()/run() derive from the score; everything else (title, composer, licence, file, sha256, tags with the style) stays as published
-const ANALYSIS = new Set(['fifths', 'keys', 'meter', 'bars', 'sec', 'bpm', 'notes', 'lo', 'hi', 'tracks', 'pick', 'tempo', 'grade', 'gradeWhy', 'gradeOverride', 'quality', 'flags'])
+const ANALYSIS = new Set(['fifths', 'keys', 'meter', 'bars', 'sec', 'bpm', 'notes', 'lo', 'hi', 'tracks', 'pick', 'tempo', 'pickup', 'grade', 'gradeWhy', 'gradeOverride', 'quality', 'flags'])
 const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
 const tmp = mkdtempSync(`${tmpdir()}/reanalyse-`)
 const lost = []
@@ -41,6 +44,7 @@ for (const p of cat.pieces) {
     const w = pins.has(p.id) ? { ly } : withRepeats({ bytes: new Uint8Array(midi), ly })
     const same = !w.bytes || sha(w.bytes) === p.sha256
     e.ly = same ? w.ly : ly
+    e.matched = same && !!w.matched // as build.mjs has it: the .ly was read against the original MIDI before the unfold
     if (!same) skewed.push(p.id)
   }
   // pinned alone: no dedupe partner, no unfold, shipped at any grade (the published bytes stay)
@@ -51,9 +55,16 @@ for (const p of cat.pieces) {
     pieces.push(p)
     continue
   }
-  const r = {}
-  for (const k of Object.keys(q)) r[k] = ANALYSIS.has(k) ? q[k] : p[k]
-  for (const k of Object.keys(p)) if (!(k in r) && !ANALYSIS.has(k)) r[k] = p[k]
+  let r = {}
+  if (only) {
+    await run([{ ...e, noPickup: true }], tmp, { overrides, pinned: [p.id] })
+    const b = JSON.parse(readFileSync(`${tmp}/catalog.json`, 'utf8')).pieces[0]
+    r = { ...p }
+    for (const k of new Set([...Object.keys(q), ...Object.keys(b)])) if (k !== 'tags' && JSON.stringify(q[k]) !== JSON.stringify(b[k])) q[k] === undefined ? delete r[k] : (r[k] = q[k])
+  } else {
+    for (const k of Object.keys(q)) r[k] = ANALYSIS.has(k) ? q[k] : p[k]
+    for (const k of Object.keys(p)) if (!(k in r) && !ANALYSIS.has(k)) r[k] = p[k]
+  }
   pieces.push(r)
 }
 cat.pieces = pieces

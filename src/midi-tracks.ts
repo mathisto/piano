@@ -115,7 +115,7 @@ export interface Tempo {
   guess: boolean
 }
 
-export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection, tempo?: Tempo): Song {
+export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection, tempo?: Tempo, pickup?: number): Song {
   const midi = new Midi(buf)
   const h = midi.header
   if (tempo && !h.tempos.length) h.setTempo(tempo.bpm)
@@ -143,6 +143,7 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
       ppq,
       sigs: midi.header.timeSignatures.map((s) => ({ tick: s.ticks, n: s.timeSignature[0], den: s.timeSignature[1] })),
       tempos: midi.header.tempos.map((t) => ({ tick: t.ticks, bpm: t.bpm })),
+      pickup,
     },
   )
   const bars: Bar[] = z.bars.map((b, i) => ({
@@ -156,7 +157,7 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
   // key changes as the file states them: the reader repeats each event once per track, a key before its first event is C
   const keys: { bar: number; fifths: number }[] = []
   for (const k of [...midi.header.keySignatures].sort((a, b) => a.ticks - b.ticks)) {
-    const bar = z.bars.findLastIndex((b) => b.tick <= k.ticks + ppq / 8)
+    const bar = k.ticks ? z.bars.findLastIndex((b) => b.tick <= k.ticks + ppq / 8) : 0 // a key at the very start is bar 0's, even when a pickup there is shorter than the slack
     if (keys[keys.length - 1]?.bar === bar) keys.pop()
     if (keys[keys.length - 1]?.fifths !== keyToFifths(k.key)) keys.push({ bar, fifths: keyToFifths(k.key) })
   }

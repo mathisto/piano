@@ -16,6 +16,7 @@ export interface Stored {
   added: number
   kind?: 'midi' | 'xml' // absent on older saves: MIDI
   tempo?: Tempo // a library MIDI: the catalogue's pace in place of the file's own
+  pickup?: number // a library MIDI: quarters in the first bar, from the catalogue
   pick?: Selection // which MIDI tracks to import and the hand each is pinned to; absent = chosen automatically
 }
 
@@ -98,7 +99,7 @@ export async function toSong(s: Stored, split: number): Promise<Song> {
     return fromMusicXml(await xmlText(s.bytes), s.title, s.id)
   }
   const { autoSelect, fromMidi, inspectMidi } = await import('./midi-tracks')
-  return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)), s.tempo)
+  return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)), s.tempo, s.pickup)
 }
 
 export async function getProgress(id: string): Promise<Progress> {

@@ -5,6 +5,7 @@ import { scoreFlags } from './flags'
 import { measure, mixed, oddTuplets, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
 import { notate, quantize, tiedSegments } from './quantize'
 import { fromMusicXml } from './musicxml'
+import { encode } from '../scripts/library/repeats'
 import { fromMidi } from './midi-tracks'
 import { estimateFifths, fromSpec, type Note, type Song } from './song'
 import { spell, spellWindow } from './spell'
@@ -217,6 +218,20 @@ describe('quantize: pickup bars', () => {
     const s = imp(engraved(n, den, 0))
     expect(s.bars[0].ql).toBeUndefined()
     expect(s.bars).toHaveLength(13)
+  })
+  it('takes a pickup the caller knows, over what the notes suggest; undefined leaves the detector alone', () => {
+    const at = (buf: ArrayBuffer, pickup?: number) => fromMidi(buf, 't', 'id', 60, undefined, undefined, pickup).bars[0].ql
+    expect(at(engraved(4, 4, 1), 0)).toBeUndefined() // the detector finds one beat; the score says none
+    expect(at(engraved(4, 4, 0), 1)).toBe(1) // the detector finds none; the score says one beat
+    expect(at(engraved(6, 8, 0.5), 1.5)).toBe(1.5)
+    expect(at(engraved(4, 4, 1), undefined)).toBe(1)
+    expect(at(engraved(4, 4, 1), 4)).toBe(1) // not shorter than a bar: not a pickup, the detector decides
+    expect(at(engraved(4, 4, 0), -1)).toBeUndefined()
+    // a pickup shorter than the slack for a key written a little early: the key at tick 0 is still the first bar's
+    const tiny = engraved(4, 4, 0)
+    const m = new Midi(tiny)
+    m.header.keySignatures.push({ ticks: 0, key: 'Db', scale: 'minor' } as never)
+    expect(fromMidi(encode(m).buffer as ArrayBuffer, 't', 'id', 60, undefined, undefined, 1 / 16).fifths).toBe(-5)
   })
   it('leaves a file alone whose barlines are already right', () => {
     const s = imp(waltz(0, true))

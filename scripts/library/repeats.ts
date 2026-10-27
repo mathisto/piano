@@ -219,7 +219,7 @@ export function readLy(src: string): Rec[] {
         const a = p
         value()
         const m = /make-moment\s+(\d+)(?:\s+(\d+)|\/(\d+))?/.exec(words(a, p))
-        if (c === 'set' && name === 'Timing.measurePosition' && m) ev.push({ k: 'bar', at, pos: Number(m[1]) / Number(m[2] ?? m[3] ?? 1) })
+        if (c === 'set' && /^(Timing|Score)\.measurePosition$/.test(name) && m) ev.push({ k: 'bar', at, pos: Number(m[1]) / Number(m[2] ?? m[3] ?? 1) })
         return 0
       }
       case 'unset':
@@ -502,6 +502,38 @@ function score(midi: Midi, ly: string) {
 
 /** Whether this .ly's reading matches the MIDI's onsets, i.e. it is the score that plays this file (pickLy falls back to the first .ly when none is). */
 export const plays = (bytes: Uint8Array, ly: string) => score(new Midi(ab(bytes)), ly).ok
+
+/**
+ * The anacrusis the .ly states for this MIDI, in quarters (the app's unit, whatever the meter): `\partial N`, or a
+ * `Timing.measurePosition` set before the first note. 0 when the .ly states none and it is plainly one time signature that the
+ * MIDI shares and whose bar count the .ly's length reproduces. undefined when this .ly does not play the file (plays(), unless
+ * `matched`), or it
+ * is anything else: a \partial or \time after the first note, a meter the MIDI does not have, a bar count that disagrees.
+ * Only the first bar is read; a later \partial (after a repeat) does not move the barlines of the first.
+ */
+export function lyPickup(bytes: Uint8Array, ly: string, matched = false): number | undefined {
+  const midi = new Midi(ab(bytes))
+  const { r, ok, until, off } = score(midi, ly)
+  if (!r || !(ok || matched)) return undefined // matched: withRepeats read this .ly against the file before unfolding it (its alternatives read differently once unfolded)
+  const start = Math.min(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at] : [])))
+  const bars = r.ev.flatMap((e) => (e.k === 'bar' ? [e] : [])).sort((a, b) => a.at - b.at || Number(!a.len) - Number(!b.len))
+  const first = bars.filter((b) => b.at <= start + 1e-9)
+  const L = first.reduce((l, b) => b.len ?? l, 1) // wholes; LilyPond's default is 4/4
+  const sig = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
+  if (Math.abs(L - sig[0] / sig[1]) > 1e-6) return undefined
+  if (!matched && off > L * 4 * midi.header.ppq + 1) return undefined // a sibling movement's .ly can cover a sparse movement's onsets (pickLy's fallback); its length gives it away
+  const part = first.find((b) => b.d !== undefined || b.pos !== undefined)
+  if (part) {
+    const d = part.d ?? L - (part.pos! % L) // measurePosition is how far into the bar the music starts
+    return d < L - 1e-6 ? Math.round(d * 4 * 1e6) / 1e6 : 0
+  }
+  // nothing before the first note and nothing after it but this one meter: bars are the .ly's own, and the MIDI must lay as many
+  const sigs = new Set(midi.header.timeSignatures.map((t) => `${t.timeSignature}`))
+  if (bars.length !== first.length || sigs.size > 1) return undefined
+  const lyBars = Math.ceil((r.len - (r.delay ?? 0)) / L - 1e-6)
+  const midiBars = Math.ceil(until / (L * 4 * midi.header.ppq) - 1e-6)
+  return lyBars === midiBars ? 0 : undefined
+}
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
  * movement can cover a sparse one's onsets); the first when none matches. Zips may number the MIDI files by the master .ly's
