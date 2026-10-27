@@ -8,7 +8,6 @@ import * as audio from './audio'
 import * as lib from './catalog'
 import { creditBlock, libraryUrl } from './credits'
 import { cardKey, cards, dayNum, record, STAGES, type Stats } from './drill'
-import { type EarRun, earTap, earView, newEar, playCard, stopEar } from './ear-play'
 import type { Mode } from './game'
 import { type Ctx, nextOf, path as gradePath, type Start } from './grades'
 import { icon } from './icons'
@@ -24,14 +23,13 @@ import * as store from './store'
 import { streak as dayStreak } from './streak'
 import { nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
 import { exercise, type Opts, PATTERNS } from './technique'
-import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from './theory'
 import { thumb } from './thumb'
 import { calibrate } from './touch'
-import { $, CAL_NOTES, creditsDialog, drawer, progressView, type QuizState, type ScalePick, scalesView, setupDialog, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
+import { $, CAL_NOTES, creditsDialog, drawer, progressView, type QuizState, type ScalePick, scalesView, setupDialog, techniqueView, todayView, type TouchCal } from './ui'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { current, dock, drill, drillStats, game, highway, hooks, median, mem, played, run, say, type Section, setPlayed, stageById, starters, worstBars } from './app/state'
+import { current, dock, drill, drillStats, game, highway, hooks, mem, played, run, say, type Section, setPlayed, stageById, starters, worstBars } from './app/state'
 import { chipFlash, connectMidi, midiLine, midiState, updateBanner, updateChip } from './app/banner'
-import { flushPractice, practised, setView, setZoom, view, zen, ZOOM } from './app/stage'
+import { flushPractice, setView, setZoom, view, zen, ZOOM } from './app/stage'
 import { lens, libraryData, openTracks, shareFile, showLibrary } from './app/library'
 import { fixBars, leave, openById, openLibrary, openSong } from './app/play'
 import { readThrough, rtPieces } from './app/readthrough-ui'
@@ -39,6 +37,7 @@ import { memorise } from './app/memorise-ui'
 import { runFinish, startDrill, startRun } from './app/drill'
 import { showRead, stageRows } from './app/read'
 import { startCalibration } from './app/calibration'
+import { showTheory, startTheory, theoryLevels, theoryNote, theoryOpen } from './app/theory-ui'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -249,126 +248,6 @@ function calNote(vel: number) {
 }
 
 // ---------------------------------------------------------------- Theory trainers
-
-interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {
-  level: number
-  at: number
-  rts: number[]
-  missed: Set<string>
-  buf: number[]
-  timer: number
-  ears: EarRun
-}
-let theory: TheoryRun | undefined
-let theoryStats: Stats = {}
-const theoryLevels = Object.fromEntries(TRAINERS.map((t) => [t.id, 1])) as Record<Trainer, number>
-
-function showTheory() {
-  theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) })
-}
-
-async function startTheory(trainer: Trainer) {
-  theoryStats = await store.getTheory()
-  const level = theoryLevels[trainer]
-  if (theory) stopEar(theory.ears)
-  theory = { trainer, level, cards: dealTheory(deckOf(trainer, level), theoryStats, 15), i: 0, step: 0, ok: 0, streak: 0, best: 0, at: performance.now(), rts: [], missed: new Set(), buf: [], timer: 0, ears: newEar() }
-  showTheory()
-  promptTheory()
-}
-
-/** An ear or rhythm card sounds its prompt (the app's own piano and click, whatever the Sound setting); the keyboard is deaf until it ends. After a miss, only the answer is played again. */
-function promptTheory(demo = false) {
-  const t = theory
-  const c = t?.cards[t.i]
-  if (!t || !c?.play) return
-  t.step = 0
-  t.buf = []
-  t.at = playCard(t.ears, c, () => $('#theory').classList.contains('on'), finishTheory, demo)
-}
-
-const theoryOpen = () => $('#theory').classList.contains('on') && !!theory && theory.i < theory.cards.length && !theory.answered
-
-/** A key played on a Theory card: single-note answers are judged at once, chords when the hand has settled. */
-function theoryNote(p: number, ts: number) {
-  const t = theory!
-  if (ts < t.ears.deaf) return // a prompt is playing
-  const c = t.cards[t.i]
-  if (c.play?.kind === 'rhythm') return earTap(t.ears, c, ts) // any key is a tap
-  t.buf.push(p)
-  const step = c.steps[t.step]
-  clearTimeout(t.timer)
-  if (t.buf.length >= step.pcs.length) judgeTheory()
-  else t.timer = window.setTimeout(judgeTheory, 600)
-}
-
-function judgeTheory() {
-  const t = theory
-  if (!t || t.answered) return
-  clearTimeout(t.timer)
-  const c = t.cards[t.i]
-  const ok = checkAnswer(c.steps[t.step], t.buf)
-  t.buf = []
-  if (ok && t.step + 1 < c.steps.length) {
-    t.step++
-    return showTheory()
-  }
-  finishTheory(ok, performance.now() - t.at)
-}
-
-function finishTheory(ok: boolean, rt: number) {
-  const t = theory
-  if (!t || t.answered) return
-  const c = t.cards[t.i]
-  record(theoryStats, c.id, ok, rt)
-  practised(Math.min(30, rt / 1000)) // Theory has no song on the stage, so its time is counted here
-  void store.saveTheory(theoryStats)
-  t.rts.push(rt)
-  t.answered = ok ? 'ok' : 'miss'
-  if (ok) {
-    t.ok++
-    t.streak++
-    t.best = Math.max(t.best, t.streak)
-    setTimeout(nextTheory, c.play ? 1200 : 700)
-  } else {
-    t.streak = 0
-    t.missed.add(c.name ?? c.prompt)
-    promptTheory(true)
-  }
-  showTheory()
-}
-
-function nextTheory() {
-  const t = theory
-  if (!t) return
-  t.i++
-  t.step = 0
-  t.answered = undefined
-  t.at = performance.now()
-  if (t.i === t.cards.length) void store.markPlan(dayKey(), 'theory')
-  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: t.trainer === 'rhythm' ? undefined : median(t.rts) })
-  promptTheory()
-  showTheory()
-}
-
-$('#theory').addEventListener('change', (e) => {
-  const s = e.target as HTMLSelectElement
-  if (s.dataset.tlevel) theoryLevels[s.dataset.tlevel as Trainer] = Number(s.value)
-})
-$('#theory').addEventListener('click', (e) => {
-  const b = (e.target as HTMLElement).closest('button')
-  if (!b) return
-  if (b.dataset.trainer) void startTheory(b.dataset.trainer as Trainer)
-  else if (b.id === 'thNext') nextTheory()
-  else if (b.id === 'thReplay' && theory) {
-    theory.ears.replays++
-    promptTheory()
-    showTheory()
-  } else if (b.id === 'thMenu') {
-    if (theory) stopEar(theory.ears)
-    theory = undefined
-    showTheory()
-  } else if (b.id === 'thAgain' && theory) void startTheory(theory.trainer)
-})
 
 let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
 let quiz: QuizState | undefined
