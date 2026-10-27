@@ -1,5 +1,6 @@
 import * as audio from './audio'
 import { RHYTHM, beatMs, biasText, scoreTaps, type EarView, type Play } from './ear'
+import { checkQA } from './ear2'
 import type { TCard } from './theory'
 import './ear.css'
 
@@ -9,6 +10,7 @@ export interface EarRun {
   deaf: number // performance.now() before which the keyboard is ignored: a prompt is playing
   t0: number // when the player's bar starts, for rhythm
   taps: number[]
+  notes: { p: number; t: number }[] // question and answer: the player's notes, ms from the start of their two bars
   bias: number[] // per rhythm card, the mean offset from the click
   spread: number[]
   drift: number[] // per keep the beat card, ms a beat
@@ -17,7 +19,7 @@ export interface EarRun {
   judge: number
   finish?: (ok: boolean, rt: number) => void
 }
-export const newEar = (): EarRun => ({ replays: 0, deaf: 0, t0: 0, taps: [], bias: [], spread: [], drift: [], last: '', timer: 0, judge: 0 })
+export const newEar = (): EarRun => ({ replays: 0, deaf: 0, t0: 0, taps: [], notes: [], bias: [], spread: [], drift: [], last: '', timer: 0, judge: 0 })
 
 export function stopEar(e: EarRun) {
   clearInterval(e.timer)
@@ -48,16 +50,27 @@ export function playCard(e: EarRun, c: TCard, open: () => boolean, finish: (ok: 
   const t = performance.now() + 250
   const evs: { at: number; fn: (after: number) => void }[] = []
   e.taps = []
+  e.notes = []
   e.finish = finish
   if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__ear = { e, c }
-  if (p.kind === 'notes') {
+  if (p.kind !== 'rhythm') {
     for (const n of p.ev)
       for (const x of n.p) {
         evs.push({ at: t + n.at, fn: () => audio.noteOn(x, 0.7, true) })
         evs.push({ at: t + n.at + n.dur, fn: () => audio.noteOff(x) })
       }
+    if (p.kind === 'notes') {
+      schedule(e, evs, open)
+      return (e.deaf = t + Math.max(...p.ev.map((n) => n.at + n.dur)) + 250)
+    }
+    // question and answer: the phrase on a click, then the same click under the player's two bars
+    const B = beatMs()
+    for (let k = 0; k < (demoOnly ? 8 : 16); k++) evs.push({ at: t + k * B, fn: (a) => audio.click(k % 4 === 0, a, true) })
     schedule(e, evs, open)
-    return (e.deaf = t + Math.max(...p.ev.map((n) => n.at + n.dur)) + 250)
+    e.t0 = t + 8 * B
+    e.deaf = demoOnly ? Infinity : e.t0 - B / 2
+    if (!demoOnly) e.judge = window.setTimeout(() => judgeQA(e, c), e.t0 + 8 * B + RHYTHM.grace - performance.now())
+    return e.deaf
   }
   const B = beatMs()
   for (let k = 0; k < (demoOnly ? 4 : 8); k++) evs.push({ at: t + k * B, fn: (a) => audio.click(k % 4 === 0, a, true) })
@@ -79,6 +92,20 @@ export function earTap(e: EarRun, c: TCard, ts: number) {
     clearTimeout(e.judge)
     e.judge = window.setTimeout(() => judge(e, c), RHYTHM.grace)
   }
+}
+
+/** A note played in the answer window of a question-and-answer card; the two bars are judged when they end. */
+export function earNote(e: EarRun, p: number, ts: number) {
+  const t = ts - e.t0
+  if (t < 8 * beatMs()) e.notes.push({ p, t })
+}
+
+function judgeQA(e: EarRun, c: TCard) {
+  e.deaf = Infinity
+  const r = checkQA(c.play as Parameters<typeof checkQA>[0], e.notes)
+  if (e.notes.length > 1) e.bias.push(r.bias), e.spread.push(r.spread)
+  e.last = r.text
+  e.finish?.(r.ok, r.spread)
 }
 
 function judge(e: EarRun, c: TCard) {

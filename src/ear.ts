@@ -6,17 +6,18 @@ export type Play =
   | { kind: 'notes'; ev: { p: number[]; at: number; dur: number }[] } // pitches sounded together, ms from the start
   | { kind: 'rhythm'; onsets: number[] } // eighth notes from the downbeat of one bar of 4/4
   | PulsePlay // the pulse trainers (pulse.ts)
+  | { kind: 'qa'; ev: { p: number[]; at: number; dur: number }[]; cells: number[]; tonic: number; minor: boolean; end: 'tonic' | 'dominant'; echo: boolean } // a two-bar phrase, then two bars of the player's own (ear2.ts)
 
 /** Tunable: tempo, the half-width of a good tap, the biggest whole-bar offset still counted, a chord's keys count as one tap, the wait for a stray extra tap. */
 export const RHYTHM = { bpm: 80, window: 110, maxBias: 250, merge: 60, grace: 400 }
 export const NOTE_MS = 600 // a phrase note and the gap to the next
 
-const pc = (n: number) => ((n % 12) + 12) % 12
-const MAJOR = [0, 2, 4, 5, 7, 9, 11]
-const MINOR = [0, 2, 3, 5, 7, 8, 10]
+export const pc = (n: number) => ((n % 12) + 12) % 12
+export const MAJOR = [0, 2, 4, 5, 7, 9, 11]
+export const MINOR = [0, 2, 3, 5, 7, 8, 10]
 
 /** A small deterministic generator, so the same level always deals the same cards and the spaced review can find them again. */
-function seeded(seed: number) {
+export function seeded(seed: number) {
   let a = seed
   return () => {
     a = (a + 0x6d2b79f5) | 0
@@ -26,8 +27,8 @@ function seeded(seed: number) {
   }
 }
 
-const tonicMidi = (t: number) => 60 + (t > 6 ? t - 12 : t) // C4 up to F♯4, then B3 and below for the flat side
-const noteAt = (tonic: number, sc: number[], k: number) => tonicMidi(tonic) + 12 * Math.floor(k / 7) + sc[((k % 7) + 7) % 7]
+export const tonicMidi = (t: number) => 60 + (t > 6 ? t - 12 : t) // C4 up to F♯4, then B3 and below for the flat side
+export const noteAt = (tonic: number, sc: number[], k: number) => tonicMidi(tonic) + 12 * Math.floor(k / 7) + sc[((k % 7) + 7) % 7]
 
 const notes = (ps: number[], step = NOTE_MS): Play => ({ kind: 'notes', ev: ps.map((p, i) => ({ p: [p], at: i * step, dur: step - 50 })) })
 
@@ -208,7 +209,7 @@ export interface EarView {
 }
 
 /** What the player is told to do, and the controls and answer grid beside the prompt. */
-export const earAsk = (c: TCard) => (c.play?.kind === 'rhythm' ? 'Listen to the bar, then tap it back on the click, on any key.' : c.play?.kind === 'pulse' ? c.play.ask : 'Listen, then play it back on your keyboard, in any octave.')
+export const earAsk = (c: TCard) => c.ask ?? (c.play?.kind === 'rhythm' ? 'Listen to the bar, then tap it back on the click, on any key.' : c.play?.kind === 'pulse' ? c.play.ask : 'Listen, then play it back on your keyboard, in any octave.')
 
 /** The bar as eight cells counted 1 & 2 & 3 & 4 &, the taps filled in. */
 const cells = (onsets: number[]) => {
