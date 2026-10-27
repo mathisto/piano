@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 HOST=${DEPLOY_HOST:-quartz}
-SRC=.cache/library/out
+SRC=${LIBRARY_OUT:-.cache/library/out} # e.g. LIBRARY_OUT=.cache/library/out-lieder after a --merge-with run
 DEST=/opt/piano/corpus
 
 [ -f "$SRC/catalog.json" ] && [ -d "$SRC/p" ] || { echo "no $SRC/catalog.json or $SRC/p: run the library pipeline first" >&2; exit 1; }

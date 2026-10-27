@@ -2,7 +2,7 @@
 // Bundled by scripts/library/vite.config.mjs into .cache/library/bin/pipeline.mjs and driven by build.mjs, which fetches,
 // checks licences and normalises. Pure and deterministic: the same inputs give byte-identical output.
 import { createHash } from 'node:crypto'
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { Midi } from '@tonejs/midi'
 import { inspectMidi, type Selection } from '../../src/midi-tracks'
 import { fromMusicXml, xmlText } from '../../src/musicxml'
@@ -29,6 +29,9 @@ export interface Input {
   bytes: Uint8Array // as shipped: MIDI, or a piano-only .mxl
   upstreamSha: string // sha256 of the file as fetched, before normalising
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
+  voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
+  alt?: Input // a folded song's piano-only version, shipped instead when the fold fails its gates (reach())
+  why?: string // why the voice was left out
 }
 
 /** Gate names. fail: never shipped. review: minus 10 quality. flag: minus 3. */
@@ -52,6 +55,7 @@ export interface Analysis {
   pick?: Selection
   tracks: number
   fp: Set<string>
+  note?: string // why a song ships piano-only, kept in the report
 }
 
 const ab = (u: Uint8Array) => u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer
@@ -173,6 +177,26 @@ export async function analyse(e: Input): Promise<Analysis> {
   }
 }
 
+/** A folded song's right hand: 95% of its onsets reach 14 semitones or less and none holds more than 5 notes (as src/library.test.ts). */
+export function reach(s: Song) {
+  const at = new Map<string, Set<number>>()
+  for (const n of s.notes) if (n.h === 'R' && !n.grace) at.set(n.t.toFixed(3), (at.get(n.t.toFixed(3)) ?? new Set()).add(n.p))
+  const cs = [...at.values()].map((c) => [...c])
+  const span = p95(cs.map((c) => Math.max(...c) - Math.min(...c)))
+  const most = Math.max(0, ...cs.map((c) => c.length))
+  return { span, most, ok: span <= 14 && most <= 5 }
+}
+
+/** analyse(), and for a folded song the fold gate: one that fails it, or the normal gates, is analysed again piano-only. */
+async function voiced(e: Input): Promise<{ e: Input; a: Analysis }> {
+  const a = await analyse(e)
+  const r = a.song && reach(a.song)
+  const why = !e.alt ? '' : a.fails.length ? a.fails.join(' ') : !r!.ok ? `right-hand reach ${r!.span}, ${r!.most} at once` : a.quality < 70 ? `quality ${a.quality}` : ''
+  if (why) return voiced({ ...e.alt!, why: `voice dropped: folded ${why}` })
+  if (e.voice) a.flags.push(`voice-${e.voice}`) // after judge(), so quality is not docked
+  return { e, a: { ...a, ...(e.why && { note: e.why }) } }
+}
+
 // ---- dedupe ----
 
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -259,10 +283,10 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
   // LilyPond's MIDI plays a volta repeat once: play it out (repeats.ts), except in a pinned file, which stays the bundle's
   const all = inputs.map((e) => (pinned.has(e.id) ? e : withRepeats(e))).sort((a, b) => idOrder(a.id, b.id))
   const items: { e: Input; a: Analysis }[] = []
-  for (const e of all) items.push({ e, a: await analyse(e) })
+  for (const e of all) items.push(await voiced(e))
   const rows = new Map<string, Row>()
   const set = (id: string, stage: Row['stage'], why: string[], a?: Analysis) => {
-    rows.set(id, { id, stage, why, ...(a && a.grade && { grade: a.grade, d: r2(a.gradeWhy.reduce((x, y) => x + y, 0)), quality: a.quality }) })
+    rows.set(id, { id, stage, why: a?.note ? [...why, a.note] : why, ...(a && a.grade && { grade: a.grade, d: r2(a.gradeWhy.reduce((x, y) => x + y, 0)), quality: a.quality }) })
     return false
   }
   for (const { e, a } of items) {
@@ -341,16 +365,20 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
   const built = sha(JSON.stringify([composers, licences, aliases, pieces])).slice(0, 16)
   const cat: Catalog = { v: 1, built, composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces }
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
-  const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`].filter(Boolean).join(', ')
+  writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
+  return [...rows.values()].sort((a, b) => idOrder(a.id, b.id))
+}
+
+function licencesMd(cat: Catalog) {
+  const { composers, licences, pieces } = cat
+  const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`, p.flags.includes('voice-folded') && 'vocal line folded into the right hand', p.flags.includes('voice-dropped') && 'voice part left out'].filter(Boolean).join(', ')
   const who = (p: Piece) => {
     const c = composers[p.composer]
     return `${c.name} (${c.born ?? ''}–${c.died})`
   }
   const cell = (s: string) => s.replace(/\|/g, '/')
   const sa = pieces.filter((p) => /-SA-/.test(licences[p.licence].id))
-  writeFileSync(
-    `${out}/LICENSES.md`,
-    `# Licences of the score files in this folder
+  return `# Licences of the score files in this folder
 
 Generated by \`scripts/library/pipeline.ts\`. Do not edit by hand.
 
@@ -361,7 +389,30 @@ These files are **data**, not code. The app's source code is MIT-licensed; each 
 ${pieces.map((p) => `| \`${p.file}\` | ${cell(p.title)} | ${cell(who(p))} | [${lname(licences[p.licence].id)}](${licences[p.licence].url}) | ${cell(p.edition)} | ${cell(credit(p))} | [source](${p.sourceUrl}) |`).join('\n')}
 
 ${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((p) => `- \`${p.file}\`: ${lname(licences[p.licence].id)}, ${who(p)}, ${cell(p.title)}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder).
-`,
-  )
-  return [...rows.values()].sort((a, b) => idOrder(a.id, b.id))
+`
+}
+
+/** The published corpus plus this run's output in `out`: every base piece, file and table row as it was (same ids, same
+ * indexes), the new pieces after them with their composer and licence re-indexed into the base tables. A new id the base
+ * already has is skipped. Returns the ids added. */
+export function merge(base: string, out: string): string[] {
+  const b: Catalog = JSON.parse(readFileSync(`${base}/catalog.json`, 'utf8'))
+  const n: Catalog = JSON.parse(readFileSync(`${out}/catalog.json`, 'utf8'))
+  const composers = [...b.composers]
+  const licences = [...b.licences]
+  const at = <T,>(list: T[], item: T, key: (x: T) => string) => {
+    const i = list.findIndex((x) => key(x) === key(item))
+    return i >= 0 ? i : list.push(item) - 1
+  }
+  const who = (c: Catalog['composers'][0]) => composerKey(c.name) + c.died // surname and death year
+  const have = new Set([...b.pieces.map((p) => p.id), ...Object.keys(b.aliases ?? {})])
+  const added = n.pieces
+    .filter((p) => !have.has(p.id))
+    .map((p) => ({ ...p, composer: at(composers, n.composers[p.composer], who), licence: at(licences, n.licences[p.licence], (l) => l.id) }))
+  cpSync(`${base}/p`, `${out}/p`, { recursive: true })
+  const aliases = { ...b.aliases, ...Object.fromEntries(Object.entries(n.aliases ?? {}).filter(([k]) => !have.has(k))) }
+  const cat: Catalog = { v: 1, built: sha(`${b.built} ${n.built}`).slice(0, 16), composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces: [...b.pieces, ...added] }
+  writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
+  writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
+  return added.map((p) => p.id)
 }

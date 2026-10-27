@@ -46,4 +46,4 @@ Nothing to purge after a publish: piece names change when their content does, an
 
 ## Publishing
 
-`scripts/deploy-library.sh` (not run by CI) copies new `p/` files with `--ignore-existing`, then `LICENSES.md`, then writes `catalog.json` last by an atomic rename. It never deletes a piece. To withdraw one, remove it from the catalogue and publish; for a takedown, also delete its `p/` file on quartz by hand at once and purge that URL in Cloudflare (clients that hold an older catalogue then get a 404 for it and say it could not be loaded).
+`scripts/deploy-library.sh` (not run by CI) copies new `p/` files with `--ignore-existing`, then `LICENSES.md`, then writes `catalog.json` last by an atomic rename. It never deletes a piece. `LIBRARY_OUT=<dir>` publishes another output, for example a `--merge-with` build (docs/changes/lieder.md). To withdraw one, remove it from the catalogue and publish; for a takedown, also delete its `p/` file on quartz by hand at once and purge that URL in Cloudflare (clients that hold an older catalogue then get a 404 for it and say it could not be loaded).
