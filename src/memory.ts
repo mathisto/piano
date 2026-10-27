@@ -94,7 +94,7 @@ export const memTag = (p?: Progress) => (p?.memStage ? ` <span class="tag">Memor
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const stageSeg = (stage: number) =>
-  `<div class="seg mem-seg" role="radiogroup" aria-label="Stage">${STAGES.map((s, i) => `<label title="${s}"><input type="radio" name="memStage" value="${i}"${i === stage ? ' checked' : ''}><span>${i}</span></label>`).join('')}</div>`
+  `<div class="seg mem-seg" role="radiogroup" aria-label="Stage">${STAGES.map((s, i) => `<label title="${s}"><input type="radio" name="memStage" value="${i}" aria-label="Stage ${i}, ${s.toLowerCase()}"${i === stage ? ' checked' : ''}><span>${i}</span></label>`).join('')}</div>`
 
 /** The start card: the stage (set by hand too), then the facts to notice before you play. */
 export function startCard(o: { title: string; stage: number; facts: [string, string][]; go: string }) {

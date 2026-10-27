@@ -380,7 +380,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
       group = g
       const pct = Math.round(r.pct * 100)
       const speed = r.solid && !r.fast && !r.next // Solid, not yet Fluent: the button practises against the tighter clock
-      const sub = r.fast ? `Solid and fluent, under ${fluentMs(r.stage) / 1000} s` : r.solid ? `Solid · Fluent at ${fluentMs(r.stage) / 1000} s` : r.seen ? `${r.seen} of ${r.total} seen` : ''
+      const sub = r.fast ? '' : r.solid ? `Solid · Fluent at ${fluentMs(r.stage) / 1000} s` : r.seen ? `${r.seen} of ${r.total} seen` : ''
       return `${band}<tr>
         <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.fast ? ' <span class="tag">Fluent</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`, r.fluent)}<b>${r.solid ? Math.round(r.fluent * 100) : pct}%</b></div>${sub ? `<small style="color:var(--ink-3)">${sub}</small>` : ''}</td>
@@ -566,7 +566,7 @@ function overTime(h: HistoryEntry[]) {
       const before = xs.slice(-10, -5)
       const delta = before.length >= 3 ? Math.round((avg(recent) - avg(before)) * 100) : null
       return `<div class="otc"><small class="label">${KIND_NAME[k]}</small>
-        <svg class="hist spark" viewBox="0 0 ${W} 52" role="img" aria-label="${KIND_NAME[k]} accuracy over your last ${xs.length} sessions, now ${Math.round(avg(recent) * 100)} percent">
+        <svg class="hist spark" viewBox="0 0 ${W} 52" preserveAspectRatio="none" role="img" aria-label="${KIND_NAME[k]} accuracy over your last ${xs.length} sessions, now ${Math.round(avg(recent) * 100)} percent">
           <line class="mid" x1="6" x2="${W - 6}" y1="${Y(1)}" y2="${Y(1)}" stroke-dasharray="3 5"/><polyline points="${xs.map((e, i) => `${X(i)},${Y(e.acc)}`).join(' ')}"/></svg>
         <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} on the five before`}</span></div></div>`
     })
@@ -803,7 +803,7 @@ function quizBody(q: QuizState) {
   return `<section class="tcard run" aria-label="Quiz"><p class="fine">Card ${q.i + 1} of ${q.cards.length}${q.streak > 1 ? ` · streak ${q.streak}` : ''}</p>
     <h2>${esc(keyName(c.tonic, c.form))}, ${hand}</h2>
     <p class="line">Which degree takes the 4th finger? Press the note on your keyboard, or tap a number.</p>
-    <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}">${d}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}${done && quizRight(c, d) ? ', the answer' : ''}">${d}${done && quizRight(c, d) ? icon('check') : ''}</button>`).join('')}</div>
     ${done ? `<p class="line" role="status"><b>${right ? 'Yes.' : 'Not quite.'}</b> ${esc(why(c.tonic, c.form, c.hand))} Up the scale: <b>${fingering(c.tonic, c.form, c.hand).split('').join(' ')}</b>.</p><div class="row-actions run-go"><button class="btn primary" id="qNext">${q.i + 1 === q.cards.length ? 'Finish' : 'Next'}</button></div>` : ''}</section>`
 }
 

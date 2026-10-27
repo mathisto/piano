@@ -74,8 +74,8 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, loa
     <p class="label cap" id="libCap">Open library <span id="libCount"></span></p>
     <div class="libtools">
       <label class="libq">${SEARCH}<input type="search" id="libQ" placeholder="Title, composer or opus" aria-label="Search the open library" autocomplete="off" spellcheck="false" value="${esc(ui.q)}"></label>
-      <div class="seg" role="radiogroup" aria-label="Level">${radio('', 'All levels', ui.grade === undefined)}${grades.map((g) => radio(String(g), String(g), ui.grade === g)).join('')}</div>
       ${who.length > 1 ? `<select id="libWho" aria-label="Composer"><option value="">All composers</option>${who.map((c) => `<option value="${c}"${ui.composer === c ? ' selected' : ''}>${esc(catalog.composers[c].name)} (${per.get(c)})</option>`).join('')}</select>` : ''}
+      <div class="seg" role="radiogroup" aria-label="Level">${radio('', 'All levels', ui.grade === undefined)}${grades.map((g) => radio(String(g), String(g), ui.grade === g)).join('')}</div>
     </div>
     <table class="songs"><caption class="sr-only">Open library</caption><colgroup><col><col><col style="width:60px"><col class="acol"></colgroup><tbody id="libRows"></tbody></table>
     <div class="libmore"><p class="fine" id="libShown" role="status"></p><button class="btn ghost" id="libMore">Show ${PAGE} more</button><button class="btn ghost" id="libSave" hidden></button></div>
