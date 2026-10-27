@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // The big library, batch: fetch, licence check, normalise here; analyse, dedupe, emit in pipeline.ts (bundled first).
-//   npm run library:build -- [--set current|mutopia|lieder] [--grades 1-4] [--limit 500] [--out DIR] [--merge-with DIR]
+//   npm run library:build -- [--set current|mutopia|lieder] [--grades 1-4] [--limit N] [--out DIR] [--merge-with DIR]
 // current: the pieces in scripts/library-sources.json (ids unchanged). mutopia: every solo keyboard piece on Mutopia.
 // lieder: every OpenScore Lieder song, its vocal line folded into the right hand when that stays playable, else piano-only.
-// --merge-with: OUT also gets every piece of that (published) output, untouched, the new ones added after them.
+// --merge-with: OUT also gets every piece of that (published) output, untouched, the new ones added after them; its pieces
+// count as pinned here, so dedupe never ships a new duplicate of one.
 // Resumable and polite: every request is cached in .cache/library/http (one request a second on a miss), so a rerun is offline
 // and its output byte-identical. Output goes to .cache/library/out (never public/); the per-piece outcome to .cache/library/report-<set>.json.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { get, movements, mutopiaMeta, openscoreMeta, PIANO, refusals, scoreParts, sha, unzip } from './lib.mjs'
+import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, refusals, scoreParts, sha, unzip } from './lib.mjs'
 import { mutopiaIndex, soloKeyboard } from './mutopia-index.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
@@ -20,14 +21,18 @@ const arg = (k, d) => {
 const SET = arg('set', 'mutopia')
 const OUT = arg('out', `${CACHE}/out`)
 const MERGE = arg('merge-with')
-const grades = arg('grades', SET === 'current' ? undefined : '1-4')?.split('-').map(Number)
-const limit = Number(arg('limit', { mutopia: 500, lieder: 300 }[SET] ?? Infinity))
+const grades = arg('grades')?.split('-').map(Number) // default: every grade, every piece that passes the gates
+const limit = Number(arg('limit', Infinity))
 
 const sources = JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8'))
 // the project's allowlist (docs/library.md) plus Mutopia's own BSD-style licence; NC, ND and anything unknown are refused
 const ALLOW = [...sources.allow, 'MutopiaBSD']
 const licenceCheck = (x) => refusals(x, ALLOW)
 
+const bin = `${CACHE}/bin/pipeline.mjs`
+const { run, merge, pickLy } = await import(bin).catch(() => {
+  throw new Error(`${bin} missing: run npx vite build --config scripts/library/vite.config.mjs first (npm run library:build does)`)
+})
 const rows = [] // pieces refused before analysis: { id, stage, why }
 const inputs = []
 const refuse = (id, stage, why) => void rows.push({ id, stage, why: [].concat(why) })
@@ -43,7 +48,7 @@ async function mutopia(n, pin) {
   } catch (e) {
     return refuse(id, 'fetch', e.message)
   }
-  const why = licenceCheck({ licence: m.licence, composer: m.composer ?? '', edition: m.sourceEdition, date: m.date })
+  const why = licenceCheck({ id, licence: m.licence, composer: m.composer ?? '', edition: m.sourceEdition, date: m.date })
   if (pin && pin.licence !== m.licence) why.push(`page says ${m.licence}, sources say ${pin.licence}`)
   if (pin && !pin.composer.endsWith(m.lifespan ?? '?')) why.push(`composer dates ${m.lifespan} differ from the sources`)
   if (why.length) return refuse(id, 'licence', why)
@@ -53,14 +58,14 @@ async function mutopia(n, pin) {
     const ly = m.ly && (await get(m.ly, HTTP).catch(() => undefined))?.toString()
     if (m.midi) files = [[id, pin?.title ?? m.title, await get(m.midi, HTTP), ly]]
     else {
-      // multi-movement: mutopia-N-k, each with its own .ly when the -lys.zip has one of the same name, else the whole work's
+      // multi-movement: mutopia-N-k, each with the .ly of the -lys.zip (or the work's) whose reading matches its MIDI
       const lys = m.lys ? [...unzip(await get(m.lys, HTTP))] : []
       const base = m.mids.split('/').pop().slice(0, -'-mids.zip'.length)
       files = movements(await get(m.mids, HTTP), base).map((v, k) => [
         `${id}-${k + 1}`,
         `${m.title}: ${v.name}`,
         v.bytes,
-        lys.find(([f]) => f.split('/').pop() === `${v.stem}.ly`)?.[1].toString() ?? ly,
+        pickLy(v.bytes, lyCandidates(lys, v.stem, ly)), // the one whose reading matches the MIDI (BWV 827: -2.mid is the third score)
       ])
     }
   } catch (e) {
@@ -108,7 +113,7 @@ async function lieder(e) {
   } catch (err) {
     return refuse(e.id, 'licence', err.message)
   }
-  const why = licenceCheck({ licence: 'CC0-1.0', composer: e.composer, edition: m.sourceEdition })
+  const why = licenceCheck({ id: e.id, licence: 'CC0-1.0', composer: e.composer, edition: m.sourceEdition })
   if (why.length) return refuse(e.id, 'licence', why)
   const url = `https://github.com/OpenScore/Lieder/blob/main/${path}`
   return {
@@ -219,12 +224,9 @@ else {
   for (const r of solo) await mutopia(r.id, pins.get(`mutopia-${r.id}`))
 }
 
-const bin = `${CACHE}/bin/pipeline.mjs`
-const { run, merge } = await import(bin).catch(() => {
-  throw new Error(`${bin} missing: run npx vite build --config scripts/library/vite.config.mjs first (npm run library:build does)`)
-})
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
-const done = await run(inputs, OUT, { overrides, grades, limit, pinned: [...pins.keys()] })
+const shipped = MERGE ? JSON.parse(readFileSync(`${MERGE}/catalog.json`, 'utf8')).pieces.map((p) => p.id) : []
+const done = await run(inputs, OUT, { overrides, grades, limit, pinned: [...pins.keys(), ...shipped] })
 const all = [...rows, ...done].sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
 writeFileSync(`${CACHE}/report-${SET}.json`, JSON.stringify(all, null, 1) + '\n')
 

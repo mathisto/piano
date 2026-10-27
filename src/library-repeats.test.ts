@@ -1,7 +1,7 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
 import { analyse, type Input } from '../scripts/library/pipeline'
-import { encode, unfold, withRepeats } from '../scripts/library/repeats'
+import { encode, pickLy, unfold, withRepeats } from '../scripts/library/repeats'
 import { fromMidi } from './song'
 
 // A LilyPond-like MIDI: 4/4, G major, one track; notes as [quarter, quarters, pitch]
@@ -51,6 +51,12 @@ describe('unfolding LilyPond volta repeats in the MIDI (scripts/library/repeats.
     expect(unfold(simpleMidi, volta)).toMatchObject({ why: expect.stringMatching(/misses/) })
     const e = { bytes: simpleMidi, ly: nested }
     expect(withRepeats(e)).toBe(e)
+  })
+
+  it("picks the movement's .ly whose reading matches the MIDI, closest in length (a denser one covers its onsets too)", () => {
+    const dense = score(`${'c8 '.repeat(16)} c1 c1`)
+    expect(pickLy(simpleMidi, [volta, dense, simple])).toBe(simple)
+    expect(pickLy(simpleMidi, [volta])).toBe(volta) // none matches: the first, as before
   })
 
   it('an unfolded input is no longer flagged; one that cannot be unfolded still is', async () => {
