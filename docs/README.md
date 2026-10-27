@@ -58,6 +58,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/pickup2.md`: the second pickup detector (not merged: no clear gain).
 - `changes/partial.md`: `Piece.pickup` from the .ly `\partial`.
 - `changes/lyreader.md`: the .ly reader covers 648 of 748 Mutopia pieces (was 444): zip includes, tags, `\parallelMusic`, unfold in place; `reanalyse.mjs --ly-only`, 34 more pieces' repeats played out.
+- `changes/grace.md`: the two measured-and-left-out loosenings decided: a 1/64 onset tolerance from a reading's first grace on (the shift runs to the end of the voice, not beside the grace), 2 of 7 end-of-piece bar counts; 659 pickups (was 648), 276-3 played out.
 - `changes/formtempo.md`: a pace from the form for scores that name none.
 - `changes/rebuild.md`: re-analysing the published catalogue without changing an id, file or hash.
 

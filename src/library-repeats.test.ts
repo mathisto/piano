@@ -232,6 +232,40 @@ describe('what the .ly reader reads (readLy)', () => {
   })
 })
 
+describe('graces shift the voice after them (score, pickupWhy)', () => {
+  // ppq 480: W / 64 = 30 ticks. notes as [tick, duration in ticks]; the quarters of `c4 d e f | g a b c | d1`, a shift added to those at or after tick 1920 and to the end
+  const q = 480
+  const mid = (shift: number, extra: number[][] = [], endBy = 0, early = 0) => {
+    const m = new Midi()
+    m.header.tempos.push({ ticks: 0, bpm: 100 })
+    m.header.timeSignatures.push({ ticks: 0, timeSignature: [4, 4] })
+    const t = m.addTrack()
+    const at = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => i * q + (i >= 4 ? shift : early * (i === 1 ? 1 : 0)))
+    at.forEach((x, i) => t.addNote({ midi: 60 + i, ticks: x, durationTicks: q }))
+    t.addNote({ midi: 72, ticks: 8 * q + shift, durationTicks: 4 * q + endBy })
+    for (const [x, d] of extra) t.addNote({ midi: 50, ticks: x, durationTicks: d })
+    return encode(m)
+  }
+  const ly = (grace: string) => `\\version "2.18.2"\n{ \\time 4/4 c4 d e f | ${grace} g4 a b c | d1 }\n\\score { \\new Staff { \\time 4/4 c4 d e f | ${grace} g4 a b c | d1 } \\midi { } }\n`
+  const g = ly('\\grace f16')
+  const gm = [[4 * q - q / 4, q / 4]] // the grace note itself, a 16th before the bar
+  it('the onsets after a grace may be up to a 64th off; the piece then plays', () => {
+    expect(pickupWhy(mid(5, gm), g).pickup).toBe(0)
+    expect(pickupWhy(mid(-5, gm), g).pickup).toBe(0)
+    expect(pickupWhy(mid(30, gm), g).pickup).toBe(0) // exactly 1/64
+  })
+  it('not more than that, not before the first grace, not where the .ly has none', () => {
+    expect(pickupWhy(mid(40, gm), g).why).toMatch(/misses/)
+    expect(pickupWhy(mid(0, gm, 0, 5), g).why).toMatch(/misses/) // the second note is off, and it comes before the grace
+    expect(pickupWhy(mid(5), ly('')).why).toMatch(/misses/)
+  })
+  it('the last note may end past the barline by a grace\'s drift, not by more', () => {
+    expect(pickupWhy(mid(0, gm, 10), g).pickup).toBe(0)
+    expect(pickupWhy(mid(0, [], 10), ly('')).why).toBe('bar count differs') // no grace in the .ly: a bar off is a bar off
+    expect(pickupWhy(mid(0, gm, 40), g).why).toBe('bar count differs')
+  })
+})
+
 describe('\\include from a zip of .ly files (lib.mjs)', () => {
   const zip = (o: Record<string, string>) => new Map(Object.entries(o).map(([k, v]) => [k, Buffer.from(v)]))
   it('finds the file beside the including one, above it, or by its name alone; leaves what the zip does not hold; skips comments and cycles', () => {

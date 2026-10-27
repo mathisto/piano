@@ -2,7 +2,7 @@
 // What the .ly reader (repeats.ts) makes of each Mutopia piece of a published catalogue: how many get a pickup, and for the rest the
 // cause, grouped (a table). The same .ly the pipeline would see (reanalyse.mjs: the cached .ly, the movement's pickLy, the volta read as unfold).
 //   npx vite build --config scripts/library/vite.config.mjs && node scripts/library/ly-coverage.mjs [--from DIR] [--ids] [--id mutopia-N]
-// --ids: list the ids of each cause. --id: for one piece, the reading against its MIDI (misses, lengths) and the first onsets it has no note at.
+// --ids: list the ids of each cause. --id: for one piece, the reading against its MIDI (misses, lengths, the reading's last notes) and the first onsets it has no note at, and `near`: the onsets it has no note at within a tick, by their signed distance (ticks) to the nearest note of the reading (docs/changes/grace.md).
 import { readFileSync } from 'node:fs'
 import { sha, sourceOf } from './lib.mjs'
 

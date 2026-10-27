@@ -562,12 +562,18 @@ function score(midi: Midi, ly: string) {
   const tick = (x: number) => Math.round(x * W)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const until = Math.max(0, ...notes.map((n) => n.ticks + n.durationTicks))
-  // ponytail: one tick. LilyPond's MIDI runs up to a 64th off in the voice after a grace note; a tolerance of W / 64 where the reading has graces
-  // would take 11 more pieces (docs/changes/lyreader.md). Left strict until someone decides the safeguard may move.
+  // A grace shifts the voice after it: LilyPond's MIDI runs a few ticks (2 to 14 at ppq 384, more with each grace) off the music's grid, from the
+  // first grace to the end, not only beside it (docs/changes/grace.md). So an onset at or after the reading's first grace may be up to a 64th off;
+  // before it, one tick. ponytail: a reading dense in 64ths would match anything this way; the 2% budget and the length test are all that stop it.
   const lost = (r: Rec) => {
     const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
     const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
-    return notes.filter((n) => ![-1, 0, 1].some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
+    const first = Math.min(...grace)
+    return notes.filter((n) => {
+      const tol = n.ticks >= first ? Math.round(W / 64) : 1
+      for (let d = 0; d <= tol; d++) if (on.has(n.ticks + d) || on.has(n.ticks - d)) return false
+      return !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8)
+    })
   }
   const misses = (r: Rec) => lost(r).length
   // LilyPond starts the music late by the length of a grace note it opens with: the reading is tried delayed as well
@@ -581,13 +587,26 @@ function score(midi: Midi, ly: string) {
   const gap = (x: Rec) => Math.abs(tick(Math.max(0, ...x.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))) - until) // by the last sound: rests and spacers after it are no part of the music
   const [r, miss = Infinity] = readLyOnce(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => Number(x[1] > lim) - Number(y[1] > lim) || (x[1] > lim ? x[1] - y[1] : gap(x[0]) - gap(y[0]) || x[1] - y[1]))[0] ?? []
   const off = r ? gap(r) : Infinity // length mismatch, ticks
-  return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length, lost: r ? [...new Set(lost(r).map((n) => n.ticks / W))].sort((a, b) => a - b) : [] }
+  return { r, miss, off, until, W, notes: notes.length, ok: miss <= 0.02 * notes.length, lost: r ? [...new Set(lost(r).map((n) => n.ticks / W))].sort((a, b) => a - b) : [] }
 }
 
 /** The best reading of this .ly against the MIDI, for scripts/library/ly-coverage.mjs: the numbers `score` has, the first MIDI onsets (in whole notes) the reading has no note at, and the reading's length. */
 export function reading(bytes: Uint8Array, ly: string) {
-  const x = score(new Midi(ab(bytes)), ly)
-  return { ok: x.ok, miss: x.miss, notes: x.notes, off: x.off, until: x.until, len: x.r && x.r.len, missed: x.lost.slice(0, 12) }
+  const midi = new Midi(ab(bytes))
+  const x = score(midi, ly)
+  // The MIDI's onsets the reading has no note at (one tick) and no grace note just before, by the signed distance (ticks, reading minus MIDI) to the nearest note
+  // of the reading: what the grace tolerance of `score` is for. 'far': more than a 16th from any note.
+  const on = [...new Set((x.r?.ev ?? []).flatMap((e) => (e.k === 'on' ? [Math.round(e.at * x.W)] : [])))]
+  const gr = (x.r?.ev ?? []).flatMap((e) => (e.k === 'grace' ? [Math.round(e.at * x.W)] : []))
+  const near: Record<string, number> = {}
+  for (const k of new Set(midi.tracks.flatMap((t) => t.notes.map((n) => n.ticks)))) {
+    const d = on.reduce((m, o) => (Math.abs(o - k) < Math.abs(m) ? o - k : m), Infinity)
+    if (Math.abs(d) <= 1 || gr.some((g) => k < g && k >= g - x.W / 8)) continue
+    const key = Math.abs(d) > x.W / 16 ? 'far' : `${d > 0 ? '+' : ''}${d}${k < Math.min(...gr) ? ' before the first grace' : ''}`
+    near[key] = (near[key] ?? 0) + 1
+  }
+  const end = Math.max(0, ...(x.r?.ev ?? []).flatMap((e) => (e.k === 'on' ? [e.at + e.d] : []))) // where the reading's last note ends, whole notes
+  return { ok: x.ok, miss: x.miss, notes: x.notes, off: x.off, until: x.until, len: x.r && x.r.len, end, ng: gr.length, tail: (x.r?.ev ?? []).flatMap((e) => (e.k === 'on' ? [[+e.at.toFixed(4), +e.d.toFixed(4)]] : [])).sort((a, b) => a[0] + a[1] - b[0] - b[1]).slice(-4), missed: x.lost.slice(0, 12), near }
 }
 
 /** Whether this .ly's reading matches the MIDI's onsets, i.e. it is the score that plays this file (pickLy falls back to the first .ly when none is). */
@@ -638,7 +657,9 @@ export function pickupWhy(bytes: Uint8Array, ly: string, matched = false): { pic
     return n
   }
   const end = Math.max(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))
-  return count(end - shift) === count(until / W - shift) ? { pickup: 0 } : { why: 'bar count differs' } // (a bar of difference is 7 more pieces: docs/changes/lyreader.md)
+  // The MIDI's last note may end a grace's drift (up to 1/64) past the barline the .ly's ends on (1723-2, 1723-7); that is the one end-of-piece difference grace.md found explainable.
+  const slack = r.ev.some((e) => e.k === 'grace') ? 1 / 64 : 0
+  return count(end - shift) === count(until / W - shift - slack) ? { pickup: 0 } : { why: 'bar count differs' }
 }
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
