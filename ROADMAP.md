@@ -110,6 +110,8 @@ Beliefs the evidence does not support, so we do not build on them: more practice
 
 ## Known gaps
 
+- Found by the polish pass (see `docs/changes/polish.md`): the Five-finger warm-up draws whole rests in the treble over bars 1 and 2 in the fitted and staff views; Tab can leave the open drawer and Play is the ninth stop on the start card; Progress mastery cells are 30 px wide on touch; the results still offer 'Loop bars slowly' after a clean run. Arcade leftovers kept on purpose: 'In a row' and 'Streak' counters (they are accuracy runs, not points).
+
 - Sight Run: not yet tried on the iPad or with a real keyboard (headless Chrome with synthetic key presses only); the pace tightening is a scoring threshold, not an on-screen timer or a moving tempo; "widen when a set goes well" and "stay a note or two past comfort" are design bets, not research findings; intervals and triads are white-key only and ignore the key; the results strip is a bar chart per note, not a keyboard heatmap; Read's stage table is cramped at about 820px wide.
 
 Play and staff:
