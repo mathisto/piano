@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fromKern, kernToMusicXml } from './kern'
+import { fromMusicXml } from './musicxml'
 import type { Song } from './song'
 
 const k = (...lines: string[]) => lines.join('\n')
@@ -185,5 +186,76 @@ describe('kern: Chopin first editions', () => {
     expect(s.notes[0]).toMatchObject({ p: 66, v: 0.35, tieNext: true }) // tied into bar 1, so bar 1 starts no F sharp
     expect(at(s, 2)).toContain('2:66R') // the second voice of the split right hand
     expect(at(s, 3)).not.toContain('0:66R') // ... tied on, not struck again
+  })
+})
+
+// Op. 74 No. 2, Wiosna, bars 1 to 3 (kern/074-1-G-002.krn, Gebethner, Warsaw; CC BY 4.0, The Fryderyk Chopin Institute): a song, so a
+// **text spine and three staves, the top one the voice (staff1), then the piano (staff2 and staff3 in a split left hand)
+const WIOSNA = [
+  '!!!OTL: Wiosna',
+  '**kern\t**kern\t**dynam\t**kern\t**text\t**dynam',
+  '*part2\t*part2\t*part2\t*part1\t*\t*part1',
+  '*staff3\t*staff2\t*\t*staff1\t*\t*',
+  '*clefG2\t*clefG2\t*\t*clefG2\t*\t*',
+  '*k[b-e-]\t*k[b-e-]\t*\t*k[b-e-]\t*\t*',
+  '*M6/8\t*M6/8\t*\t*M6/8\t*\t*',
+  '*MM69\t*MM69\t*\t*MM69\t*\t*',
+  '=1\t=1\t=1\t=1\t=1\t=1',
+  '*^\t*\t*\t*\t*\t*',
+  '8B-L\t2.G\t4g\tp\t4g\tBły-\t.',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '8gJ\t.\t8dd\t.\t8dd\t-szczą\t.',
+  '8AL\t.\t4cc\t.\t4cc\tkro-\t.',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '8f#XJ\t.\t8dd\t.\t8dd\t-ple\t.',
+  '=2\t=2\t=2\t=2\t=2\t=2\t=2',
+  '8B-L\t2.G\t4.b-\t.\t4.b-\tro-\t.',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '8gJ\t.\t.\t.\t.\t.\t.',
+  '8cL\t.\t4.a\t.\t4.a\t-sy\t.',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '8f#XJ\t.\t.\t.\t.\t.\t.',
+  '=3\t=3\t=3\t=3\t=3\t=3\t=3',
+  '8B-L\t2.G\t8.gL\t<\t8.gL\tMru-\t<',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '.\t.\t16ak\t.\t16aJ\t.\t.',
+  '8gJ\t.\t8b-J\t.\t8b-\t-czy\t.',
+  '8AL\t.\t8.ccL\t.\t8.ccL\tzdróy\t.',
+  '8d\t.\t.\t.\t.\t.\t.',
+  '.\t.\t16ddk\t.\t16ddJ\t.\t.',
+  '8f#XJ\t.\t8ccJ\t[\t8cc\tpo\t[',
+  '==\t==\t==\t==\t==\t==\t==',
+].join('\n')
+
+describe('kern: a song (voice and piano)', () => {
+  const r = kernToMusicXml(WIOSNA)
+  const sung = fromMusicXml(r.sung!, 'x', 'x')
+  const piano = fromMusicXml(r.xml, 'x', 'x')
+
+  it('keeps the piano part alone, and adds the voice as a second part declared on two staves', () => {
+    expect(r.xml.match(/<part id=/g)).toHaveLength(1)
+    expect(r.sung!.match(/<score-part id="P\d"><part-name>(\w+)/g)).toEqual(['<score-part id="P1"><part-name>Piano', '<score-part id="P2"><part-name>Voice'])
+    expect(r.sung!.split('<part id="P2">')[1]).toMatch(/<staves>2<\/staves>/)
+    expect(r.skipped).toEqual({})
+    expect(piano.notes.filter((n) => n.h === 'L').map((n) => n.p).slice(0, 5)).toEqual([55, 58, 62, 67, 57]) // the left hand, split in two voices
+  })
+
+  it('gives each part its own dynamics, and the importer merges a voice that doubles the right hand', () => {
+    expect(r.sung!.match(/wedge type="crescendo"/g)).toHaveLength(2) // the piano's and the voice's own
+    expect(r.xml.match(/wedge type="crescendo"/g)).toHaveLength(1)
+    expect(sung.notes.length).toBe(piano.notes.length) // this voice is the top line of the right hand
+  })
+
+  it('plays a voice of its own with the right hand, on its own part', () => {
+    const t = kernToMusicXml(k('**kern\t**kern\t**kern\t**text', '*staff3\t*staff2\t*staff1\t*', '*M2/4\t*M2/4\t*M2/4\t*', '4C\t4e\t4gg\tla', '4D\t4f\t4aa\tla', '==\t==\t==\t=='))
+    const s = fromMusicXml(t.sung!, 'x', 'x')
+    expect(s.parts).toEqual(['Piano', 'Voice'])
+    expect(s.notes.filter((n) => n.part === 1).map((n) => `${n.p}${n.h}`)).toEqual(['79R', '81R'])
+    expect(s.notes.filter((n) => n.part === 0).map((n) => `${n.p}${n.h}`)).toEqual(['48L', '64R', '50L', '65R'])
+    expect(fromMusicXml(t.xml, 'x', 'x').notes).toHaveLength(4)
+  })
+
+  it('refuses three staves with no text', () => {
+    expect(() => kernToMusicXml(WIOSNA.replace('**text', '**fing'))).toThrow(/3 \*\*kern spines/)
   })
 })

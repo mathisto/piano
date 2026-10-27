@@ -211,6 +211,9 @@ const craw = (path) => `https://raw.githubusercontent.com/${CHOPIN}/main/${path}
 // before a later issue (Rink-Grabowski '1' before '1a', '1b'), then Paris (Chopin read the proofs of most French editions),
 // Leipzig or Berlin (engraved from their own manuscripts), London (Wessel mostly reprinted Paris), the rest (Vienna, Warsaw)
 const CITY = { Paris: 0, Leipzig: 1, Berlin: 1, London: 2 }
+// Op. 74, the 17 Polish songs in the order of Fontana's edition (Gebethner, 1859): the Polish title and the English one of en.wikipedia.org/wiki/Polish_songs_(Chopin).
+// The three first editions in the set (Warsaw, Berlin, London) number the songs alike, by the file number; the 17th was not in them.
+const SONGS = ['Życzenie (A Maiden’s Wish)', 'Wiosna (Spring)', 'Smutna rzeka (Troubled Waters)', 'Hulanka (Drinking Song)', 'Gdzie lubi (A Fickle Maid)', 'Precz z moich oczu (Remembrance)', 'Poseł (The Messenger)', 'Śliczny chłopiec (Handsome Lad)', 'Melodia (Melody)', 'Wojak (The Warrior)', 'Dwojaki koniec (The Double-End)', 'Moja pieszczotka (My Darling)', 'Nie ma czego trzeba (I Want What I Have Not)', 'Pierścień (The Ring)', 'Narzeczony (The Bridegroom’s Return)', 'Piosnka litewska (Lithuanian Song)']
 const DIGITAL = 'digital edition © The Fryderyk Chopin Institute (nifc.pl), chopinscores.org'
 
 /** Every Humdrum file of the Chopin Institute's first editions, converted to MusicXML (src/kern.ts) and shipped as .mxl.
@@ -249,7 +252,7 @@ async function chopinSet() {
       refuse(id, 'normalise', `${lost} unreadable tokens for ${k.notes} notes`)
       continue
     }
-    if (!/chopin/i.test(k.refs.COM ?? '')) {
+    if (!/chop/i.test(k.refs.COM ?? '')) { // 'Chopipn' is in two Op. 74 files
       refuse(id, 'licence', `composer ${k.refs.COM}`)
       continue
     }
@@ -262,7 +265,12 @@ async function chopinSet() {
     const R = r.k.refs
     const w = work(r)
     const shared = w && read.filter((x) => edition(x) === edition(r) && work(x) === w).length > 1 // movements of one sonata or concerto
-    const title = w ? (shared ? `${w}: Movement ${Number(/-(\d+)[a-z-]*$/.exec(r.file)?.[1] ?? R.OMV)}` : w) : `${cut(R.OTL)?.replace(/[.,\s]+$/, '') ?? r.file}${R.OPS && !/op\./i.test(R.OTL ?? '') ? `, ${cut(R.OPS).replace(/\.$/, '')}` : ''}`
+    const n = r.k.sung && Number(/-(\d+)$/.exec(r.file)?.[1])
+    if (r.k.sung && !(n >= 1 && n <= SONGS.length && r.file.startsWith('074-'))) {
+      refuse(r.id, 'normalise', 'a song outside Op. 74: no title for it')
+      continue
+    }
+    const title = n ? `${SONGS[n - 1]}, Op. 74 No. ${n}` : w ? (shared ? `${w}: Movement ${Number(/-(\d+)[a-z-]*$/.exec(r.file)?.[1] ?? R.OMV)}` : w) : `${cut(R.OTL)?.replace(/[.,\s]+$/, '') ?? r.file}${R.OPS && !/op\./i.test(R.OTL ?? '') ? `, ${cut(R.OPS).replace(/\.$/, '')}` : ''}`
     const opus = cut(R['rism-opus'])?.replace(/^op\. (\S+?)(?:, no\.? ?(\d+))?$/i, (_, o, n) => `Op. ${o}${n ? `, No. ${n}` : ''}`) ?? cut(R.OPS)?.replace(/\.$/, '')
     const composer = 'Frédéric Chopin (1810–1849)'
     const ed = `First edition: ${[R.PPR, R.PPP].filter(Boolean).join(', ')}${R.PTL ? ` (${cut(R.PTL)})` : ''}; ${DIGITAL}`
@@ -274,11 +282,12 @@ async function chopinSet() {
     const [, sub = ''] = /-\d+([a-z]*)-[A-Za-z]+(?:-|$)/.exec(r.file) ?? []
     const container = '<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="score.xml"/></rootfiles></container>\n'
     const url = `https://github.com/${CHOPIN}/blob/main/${r.path}`
-    inputs.push({
+    const mxl = (xml) => new Uint8Array(zip([['META-INF/container.xml', Buffer.from(container)], ['score.xml', Buffer.from(xml)]]))
+    const solo = {
       id: r.id,
       title,
       composer,
-      ...(opus && { opus }),
+      ...(opus && { opus: n ? `Op. 74, No. ${n}` : opus }),
       source: 'chopin',
       sourceUrl: url,
       licenceEvidence: `https://github.com/${CHOPIN}/blob/main/LICENSE.txt`,
@@ -287,10 +296,16 @@ async function chopinSet() {
       edition: ed,
       typesetter: R.ENC?.replace(/; /g, ', ') ?? 'Fryderyk Chopin Institute', // the encoders; source and edition name the Institute
       format: 'musicxml',
-      bytes: new Uint8Array(zip([['META-INF/container.xml', Buffer.from(container)], ['score.xml', Buffer.from(r.k.xml)]])),
+      bytes: mxl(r.k.xml),
       upstreamSha: sha(r.src),
-      rank: (sub ? 10 : 0) + (CITY[R.PPP] ?? 3),
-    })
+      rank: (sub ? 10 : 0) + (n && R.PPP === 'Warsaw' ? -1 : (CITY[R.PPP] ?? 3)), // a song: the Polish text, Gebethner's, before the translations
+    }
+    // a song as in liederSet: the voice folded into the right hand (title ': melody and piano'), its piano-only version as the fallback
+    if (!n) inputs.push(solo)
+    else {
+      const alone = { ...solo, title: `${title}: piano part`, voice: 'dropped' }
+      inputs.push({ ...solo, title: `${title}: melody and piano`, bytes: mxl(r.k.sung), voice: 'folded', alt: alone })
+    }
   }
   if (!MERGE) return
   // the published Chopin pieces, pinned, so a first edition of the same work is a duplicate of one of them

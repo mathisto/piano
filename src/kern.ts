@@ -1,6 +1,9 @@
 // Humdrum **kern -> MusicXML: a partwise score, one piano part on (at most) two staves. The app reads that with its own
 // importer (fromMusicXml), so a kern file plays exactly as the .mxl the library ships from it (build.mjs --set chopin).
-// Strict: more than two **kern spines (staves), *+ or *x, a line whose tokens do not match its spines, a section label
+// A song (three **kern and a **text spine: the top staff is the voice, as in Chopin's Op. 74) also gives `sung`: the same score
+// with the voice as a second part on its own, to be folded into the right hand as the OpenScore Lieder songs are. Its **dynam
+// belongs to the staff of the **kern on its left. The lyrics are not read (the app has no use for them).
+// Strict: more than two **kern spines (staves; three with a **text spine), *+ or *x, a line whose tokens do not match its spines, a section label
 // inside a bar or an expansion label with no bars is an error. A note token it cannot read is skipped and counted.
 // Kept: pitch and spelling, durations (dots, tuplets as reciprocals, N%M), rests, chords, ties, grace notes, slurs,
 // articulations, *k[] keys, *M meters, *MM and !!!OMD tempo, *clef, **dynam letters and hairpins, spine splits and joins
@@ -43,13 +46,14 @@ interface Bar {
   sec: string
   clefs: Record<number, string>
   evs: Ev[]
-  dirs: { q: number; xml: string }[]
+  dirs: { q: number; xml: string; v?: boolean }[] // v: written for the vocal staff
   on?: boolean // has data: its meter, key and section are fixed
   fwd?: boolean
   bwd?: boolean
 }
 export interface Kern {
-  xml: string
+  xml: string // the piano part
+  sung?: string // a song (a **text spine, three staves): that score with the vocal staff as a second part, to be folded into the right hand
   refs: Record<string, string> // the !!! reference records before the data, repeats joined with '; ' (OTL, OPS, COM, OMD...)
   notes: number
   skipped: Record<string, number> // why -> how many
@@ -112,8 +116,10 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const refs: Record<string, string> = {}
   const skipped: Record<string, number> = {}
   const skip = (why: string) => void (skipped[why] = (skipped[why] ?? 0) + 1)
-  let spines: { kind: string; staff: number; voice: number; end: number }[] | undefined
+  let spines: { kind: string; staff: number; voice: number; end: number; of: number }[] | undefined
+  const hs: number[] = [] // staff of each **kern column of the header: a **dynam belongs to the staff of the **kern on its left
   let voices = 0
+  let song = false
   let notes = 0
   const st = { n: 4, den: 4, fifths: 0, sec: '', clefs: {} as Record<number, string> }
   let expand: string[] | undefined
@@ -123,10 +129,11 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const fresh = (): Bar => ({ t0: t, len: 0, n: 4, den: 4, fifths: 0, sec: '', clefs: {}, evs: [], dirs: [] })
   let bar = fresh()
   const start = () => !bar.on && Object.assign(bar, { n: st.n, den: st.den, fifths: st.fifths, sec: st.sec, clefs: { ...st.clefs }, on: true })
-  const dir = (xml: string) => {
+  const dir = (xml: string, v = false) => {
     const q = t - bar.t0
-    if (!bar.dirs.some((d) => d.xml === xml && Math.abs(d.q - q) < 1e-9)) bar.dirs.push({ q, xml }) // each spine states it
+    if (!bar.dirs.some((d) => d.xml === xml && !d.v === !v && Math.abs(d.q - q) < 1e-9)) bar.dirs.push({ q, xml, ...(v && { v }) }) // each spine states it
   }
+  const sing = (of: number) => song && hs[of] === Math.min(...hs) // is that column the vocal staff
   const words = (w: string) => `<direction placement="above"><direction-type><words>${esc(w)}</words></direction-type></direction>`
   const close = () => {
     bar.len = t - bar.t0
@@ -155,9 +162,14 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     if (!spines) {
       if (!tk[0].startsWith('**')) throw new Error(`${at}: data before the ** header`)
       const kern = tk.filter((x) => x === '**kern').length
-      if (kern < 1 || kern > 2) throw new Error(`${kern} **kern spines: a piano score has one or two staves`)
+      song = kern === 3 && tk.includes('**text') // a voice and a piano: the top staff is the voice
+      if (kern < 1 || kern > (song ? 3 : 2)) throw new Error(`${kern} **kern spines: a piano score has one or two staves`)
       let s = kern // spines run from the lowest staff up: the last **kern is staff 1
-      spines = tk.map((kind) => ({ kind, staff: kind === '**kern' ? s-- : 0, voice: voices++, end: 0 }))
+      let of = -1
+      spines = tk.map((kind) => {
+        if (kind === '**kern') hs[++of] = s
+        return { kind, staff: kind === '**kern' ? s-- : 0, voice: voices++, end: 0, of: Math.max(of, 0) }
+      })
       continue
     }
     if (tk.length !== spines.length) throw new Error(`${at}: ${tk.length} tokens for ${spines.length} spines`)
@@ -190,7 +202,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
         const s = spines![i]
         if (s.kind !== '**kern') return
         let m: RegExpExecArray | null
-        if ((m = /^\*staff(\d+)$/.exec(x))) s.staff = Number(m[1])
+        if ((m = /^\*staff(\d+)$/.exec(x))) hs[s.of] = s.staff = Number(m[1])
         else if ((m = /^\*k\[(.*)\]$/.exec(x))) st.fifths = (m[1].match(/#/g)?.length ?? 0) - (m[1].match(/-/g)?.length ?? 0)
         else if ((m = /^\*M(\d+)\/(\d+)$/.exec(x))) [st.n, st.den] = [Number(m[1]), Number(m[2])]
         else if ((m = /^\*MM(\d+(?:\.\d+)?)$/.exec(x))) dir(`<sound tempo="${m[1]}"/>`)
@@ -217,9 +229,9 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
       }
       if (s.kind === '**dynam') {
         for (const d of x.split(' '))
-          if (DYNS.has(d)) dir(`<direction placement="below"><direction-type><dynamics><${d}/></dynamics></direction-type></direction>`)
-          else if (d === '<' || d === '>') dir(`<direction><direction-type><wedge type="${d === '<' ? 'crescendo' : 'diminuendo'}"/></direction-type></direction>`)
-          else if (/^[[\]]+$/.test(d)) dir('<direction><direction-type><wedge type="stop"/></direction-type></direction>')
+          if (DYNS.has(d)) dir(`<direction placement="below"><direction-type><dynamics><${d}/></dynamics></direction-type></direction>`, sing(s.of))
+          else if (d === '<' || d === '>') dir(`<direction><direction-type><wedge type="${d === '<' ? 'crescendo' : 'diminuendo'}"/></direction-type></direction>`, sing(s.of))
+          else if (/^[[\]]+$/.test(d)) dir('<direction><direction-type><wedge type="stop"/></direction-type></direction>', sing(s.of))
         return
       }
       if (s.kind !== '**kern') return
@@ -278,10 +290,11 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     else merged.push(b)
   }
 
-  // staves: the kern staff numbers in use, top first, as 1 and 2
-  const used = [...new Set(merged.flatMap((b) => b.evs.map((e) => e.staff)))].sort((a, b) => a - b)
+  // staves: the kern staff numbers in use, top first. A song's top staff is its voice, the rest the piano as 1 and 2
+  const all = [...new Set(merged.flatMap((b) => b.evs.map((e) => e.staff)))].sort((a, b) => a - b)
+  const vocal = song && all.length > 1 && all[0] === Math.min(...hs) ? all[0] : 0
+  const used = all.filter((s) => s !== vocal)
   if (used.length > 2) throw new Error(`${used.length} staves`)
-  const staffOf = (s: number) => used.indexOf(s) + 1
   // divisions: every value is a whole number of them
   let D = 1
   for (const b of merged) for (const e of b.evs) for (const n of e.notes) if (n.q) D = (D / gcd(D, n.u[1] * 2 ** n.dots)) * n.u[1] * 2 ** n.dots
@@ -291,7 +304,10 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const omd = mm ? Number(mm[2]) * ({ quarter: 1, half: 2, 'half-note': 2, 'half note': 2, 'half-dot': 3, 'dotted-half': 3, 'quarter-dot': 1.5, eighth: 0.5 }[mm[1]] ?? 0) : 0
   if (refs.OMD && merged.length) merged[0] = { ...merged[0], dirs: [{ q: 0, xml: words(refs.OMD) }, ...(!tempo && omd ? [{ q: 0, xml: `<sound tempo="${omd}"/>` }] : []), ...merged[0].dirs] }
 
-  const measures = merged.map((b, i) => {
+  // one part's measures: the piano on `used`, or the voice on its staff, which declares two staves so that the importer
+  // plays it with the right hand (the fold of scripts/library/build.mjs, as in OpenScore Lieder)
+  const measuresOf = (used: number[], voice: boolean) => merged.map((b, i) => {
+    const staffOf = (s: number) => used.indexOf(s) + 1
     const prev = merged[i - 1]
     const x: string[] = []
     if (b.fwd) x.push('<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>')
@@ -299,7 +315,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
       !prev && `<divisions>${D}</divisions>`,
       (!prev || prev.fifths !== b.fifths) && `<key><fifths>${b.fifths}</fifths></key>`,
       (!prev || prev.n !== b.n || prev.den !== b.den) && `<time><beats>${b.n}</beats><beat-type>${b.den}</beat-type></time>`,
-      !prev && used.length > 1 && '<staves>2</staves>',
+      !prev && (voice || used.length > 1) && '<staves>2</staves>',
       ...used.map((s) => b.clefs[s] && (!prev || prev.clefs[s] !== b.clefs[s]) && `<clef number="${staffOf(s)}"><sign>${b.clefs[s][0]}</sign><line>${b.clefs[s][1]}</line></clef>`),
     ].filter(Boolean)
     if (att.length) x.push(`<attributes>${att.join('')}</attributes>`)
@@ -309,9 +325,10 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
       if (to < cur) x.push(`<backup><duration>${cur - to}</duration></backup>`)
       cur = to
     }
+    const dirs = b.dirs.filter((d) => !d.v === !voice)
     const streams = used.flatMap((s) => [...new Set(b.evs.filter((e) => e.staff === s).map((e) => e.voice))].map((v, k) => ({ s, v, no: (staffOf(s) - 1) * 4 + k + 1 })))
     streams.forEach(({ s, v, no }, k) => {
-      const items = [...(k === 0 ? b.dirs : []), ...b.evs.filter((e) => e.staff === s && e.voice === v)].map((e, j) => ({ e, j })).sort((a, b) => a.e.q - b.e.q || +('notes' in a.e) - +('notes' in b.e) || a.j - b.j)
+      const items = [...(k === 0 ? dirs : []), ...b.evs.filter((e) => e.staff === s && e.voice === v)].map((e, j) => ({ e, j })).sort((a, b) => a.e.q - b.e.q || +('notes' in a.e) - +('notes' in b.e) || a.j - b.j)
       for (const { e } of items) {
         move(I(e.q))
         if (!('notes' in e)) {
@@ -336,23 +353,24 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
         if (!e.grace) cur += I(Math.min(e.notes[0].q, b.len - e.q))
       }
     })
-    if (!streams.length) for (const d of b.dirs) x.push(d.xml)
+    if (!streams.length) for (const d of dirs) x.push(d.xml)
     move(Math.max(cur, I(b.len)))
     if (b.bwd) x.push('<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline>')
     return `<measure number="${i + 1}"${b.len < nom(b) - 1e-9 ? ' implicit="yes"' : ''}>${x.join('')}</measure>`
   })
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  const score = (...parts: [string, string, string][]) => `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
 ${refs.OTL ? `<work><work-title>${esc(refs.OTL)}</work-title></work>\n` : ''}<identification>${refs.COM ? `<creator type="composer">${esc(refs.COM)}</creator>` : ''}${rights ? `<rights>${esc(rights)}</rights>` : ''}<encoding><software>Piano Forte src/kern.ts</software></encoding></identification>
-<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
-<part id="P1">
-${measures.join('\n')}
-</part>
+<part-list>${parts.map(([id, name]) => `<score-part id="${id}"><part-name>${name}</part-name></score-part>`).join('')}</part-list>
+${parts.map(([id, , ms]) => `<part id="${id}">\n${ms}\n</part>`).join('\n')}
 </score-partwise>
 `
-  return { xml, refs, notes, skipped }
+  const piano = measuresOf(used, false).join('\n')
+  const xml = score(['P1', 'Piano', piano])
+  const sung = vocal ? score(['P1', 'Piano', piano], ['P2', 'Voice', measuresOf([vocal], true).join('\n')]) : undefined
+  return { xml, ...(sung && { sung }), refs, notes, skipped }
 }
 
 /** A **kern file as a Song, through the MusicXML it converts to (so it is the Song of the shipped .mxl). */

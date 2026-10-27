@@ -273,7 +273,9 @@ export function dedupe(items: { e: Input; a: Analysis }[], pinned = new Set<stri
         const cx = catKey(x.e)
         // movements of one Mutopia page share a page, so a zip that holds a movement twice is caught whatever the file names
         const same = x.e.sourceUrl === y.e.sourceUrl || (cx && cx === catKey(y.e)) || jaccard(words(x.e.title), words(y.e.title)) >= 0.6
-        if (same && jaccard(x.a.fp, y.a.fp) >= 0.6) parent[find(idx[j])] = find(idx[i])
+        // editions of one song under one catalogue number: one folds and another falls back to piano-only, so their top lines differ
+        const song = x.e.voice && y.e.voice && cx && cx === catKey(y.e)
+        if (same && (song || jaccard(x.a.fp, y.a.fp) >= 0.6)) parent[find(idx[j])] = find(idx[i])
       }
   const groups = new Map<number, number[]>()
   items.forEach((_, i) => groups.set(find(i), [...(groups.get(find(i)) ?? []), i]))
