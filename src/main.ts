@@ -26,18 +26,21 @@ import { current, drillStats, game, highway, hooks, mem, run, type Section, stag
 import { connectMidi, updateChip } from './app/banner'
 import { flushPractice, setView, view } from './app/stage'
 import { openTracks, showLibrary } from './app/library'
-import { leave, openById, openLibrary, openSong } from './app/play'
+import { leave, openById, openLibrary, openSong, stageCode } from './app/play'
 import { readThrough } from './app/readthrough-ui'
 import { memorise } from './app/memorise-ui'
 import { runFinish, startDrill } from './app/drill'
 import { showRead } from './app/read'
 import './app/results' // nothing names it: it registers hooks.onDone
-import { currentTheory, showTheory } from './app/theory-ui'
+import { theory, theoryUi } from './app/lazy'
 import { showScales } from './app/scales-ui'
 import { showTechnique } from './app/technique-ui'
 import { showProgress, showToday } from './app/today'
 import { openSetup } from './app/drawer'
 import { fromKeyboard } from './app/input'
+// last, where the cascade had them: their modules now load lazily, their styles stay in the one stylesheet
+import './take.css'
+import './pulse.css'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -49,7 +52,7 @@ async function showSection(name: Section, err = '') {
   else if (name === 'songs') await showLibrary(err)
   else if (name === 'read') await showRead()
   else if (name === 'scales') await showScales()
-  else if (name === 'theory') showTheory()
+  else if (name === 'theory') (await theory()).showTheory()
   else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
@@ -86,6 +89,8 @@ void (async () => {
     if ($('#library').classList.contains('on')) void showLibrary()
   })
   await showSection('today')
+  // Today is up: fetch what a first tap wants while the app is idle, so a piece or a tab opens without waiting on the network
+  ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view')]).catch(() => {}))
   updateChip()
   try {
     const p = await navigator.permissions?.query({ name: 'midi' as PermissionName })
@@ -101,5 +106,5 @@ void (async () => {
 
 if (import.meta.env.DEV) {
   ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), up: (p: number) => fromKeyboard({ on: false, p, v: 0, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), memorise, mem: () => mem, drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
-  Object.assign((window as unknown as { __piano: object }).__piano, { theory: currentTheory }) // e2e: the Theory session in progress, to answer its cards
+  Object.assign((window as unknown as { __piano: object }).__piano, { theory: () => theoryUi?.currentTheory() }) // e2e: the Theory session in progress, to answer its cards
 }

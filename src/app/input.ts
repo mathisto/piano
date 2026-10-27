@@ -7,7 +7,7 @@ import { current, dock, drill, game, played, setPlayed } from './state'
 import { chipFlash, updateBanner } from './banner'
 import { setView, setZoom, zen, ZOOM } from './stage'
 import { leave } from './play'
-import { theoryNote, theoryOpen } from './theory-ui'
+import { theoryUi } from './lazy'
 import { answerQuiz, quiz, quizOpen } from './scales-ui'
 import { calNote } from './technique-ui'
 import { closeDrawer } from './drawer'
@@ -22,9 +22,9 @@ export const fromKeyboard = (m: MidiMsg) => {
     }
     if (!m.virtual && calNote(m.v)) return
     const sound = () => (settings.sound || m.virtual) && audio.noteOn(m.p, m.v, true) // the screen and computer keys have no speaker of their own
-    if (theoryOpen()) {
+    if (theoryUi?.theoryOpen()) {
       sound()
-      theoryNote(m.p, m.ts)
+      theoryUi.theoryNote(m.p, m.ts)
       return // the trainer owns the keyboard while a card is open
     }
     if (quizOpen()) {

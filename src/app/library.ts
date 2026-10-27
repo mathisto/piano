@@ -1,7 +1,6 @@
 // Songs: the library page, the tracks dialog, importing files, and sharing them.
 import * as lib from '../catalog'
 import type { Piece } from '../catalog-types'
-import { mountLibrary } from '../library-view'
 import { autoSelect, inspectMidi } from '../midi-tracks'
 import { settings } from '../settings'
 import { fromSpec } from '../song'
@@ -49,7 +48,8 @@ export async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
   library($('#library'), starts, mine, err)
-  mountLibrary($('#library'), await store.allProgress(), libSong)
+  const [{ mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()])
+  mountLibrary($('#library'), prog, libSong)
 }
 
 export async function libSong(p: Piece) {

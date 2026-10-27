@@ -4,9 +4,7 @@ import { chooserHtml, choices } from '../accomp'
 import * as lib from '../catalog'
 import * as coach from '../coach'
 import { creditLine } from '../credits'
-import { Dock } from '../dock'
 import type { GameEvent, Mode } from '../game'
-import { Highway } from '../highway'
 import { facts, startCard } from '../memory'
 import { knownPitches } from '../quiet'
 import { lookCard } from '../readthrough'
@@ -14,7 +12,6 @@ import { reportLink } from '../report'
 import { settings } from '../settings'
 import { autoLevel, type Level, LEVELS, simplify } from '../simplify'
 import { barAt, type Song } from '../song'
-import { Staff } from '../staff'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { writtenTargets } from '../touch'
@@ -35,10 +32,16 @@ export async function fixBars(id: string, a: number, b: number) {
   onPhase()
 }
 
-async function ensureStage() {
-  if (highway) return
-  await Promise.all([document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
-  const h = setHighway(new Highway($('#stage'), game)) // the guard above narrows `highway`, so the new one is read through `h`
+/** The play screen's code (Pixi, the staff, the dock, the recorder): fetched at idle after boot, awaited by the first piece. */
+export const stageCode = () => Promise.all([import('../highway'), import('../staff'), import('../dock'), import('./take-ui')])
+
+// one build, shared by pieces opened at once; a failed one (offline, chunk not fetched) is tried again by the next piece
+let staging: Promise<void> | undefined
+const ensureStage = () => (staging ??= buildStage().catch((e) => ((staging = undefined), Promise.reject(e))))
+
+async function buildStage() {
+  const [[{ Highway }, { Staff }, { Dock }]] = await Promise.all([stageCode(), document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
+  const h = setHighway(new Highway($('#stage'), game))
   await h.init()
   h.onFrame = frame
   screenKeys(h.app.canvas)
