@@ -1,4 +1,4 @@
-/* ---------- Memorise: the start card's facts, the strip over the staff, hidden bars ---------- */
+/* ---------- Memorise: the start card's facts, the strip above the staff, hidden bars ---------- */
 body.memorise #modeSeg {
   display: none; /* Learn only: the stage is the choice */
 }
@@ -8,20 +8,23 @@ body.memorise #modeSeg {
 #staff.mem-blind > svg {
   visibility: hidden; /* stage 4: no staff, only the keys and how the pass is going */
 }
+/* the strip is a row of its own above the staff, so it never covers notation */
+#play:has(> #memBar) {
+  grid-template-rows: auto var(--rows);
+}
 .mem-bar {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px 16px;
-  padding: 4px 4px 4px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-2);
-  background: var(--scrim);
+  gap: 4px 16px;
+  min-height: calc(var(--control) + 8px); /* the same height with or without Peek, so the staff does not jump */
+  padding: 4px 8px 4px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
   font-size: 13px;
   color: var(--ink-2);
+}
+.mem-bar .mem-live {
+  margin-left: auto;
 }
 .mem-bar b {
   color: var(--ink);
@@ -30,19 +33,6 @@ body.memorise #modeSeg {
 .mem-bar .mem-st {
   color: var(--ink);
   font-weight: 650;
-}
-.mem-bar:not(:has(.btn)) {
-  padding-right: 14px;
-  min-height: 44px;
-}
-#staff.mem-blind .mem-bar {
-  inset: 0;
-  margin: auto;
-  width: fit-content;
-  height: fit-content;
-  flex-direction: column;
-  padding: 20px 28px;
-  font-size: 15px;
 }
 .ready .mem-seg span {
   min-width: 44px;

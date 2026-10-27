@@ -104,7 +104,7 @@ export function startCard(o: { title: string; stage: number; facts: [string, str
     <div class="mem-facts"><span class="cap">Look first</span><dl>${o.facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></div>`
 }
 
-/** The strip over the staff while playing: stage, how this pass is going, and Peek. */
+/** The strip above the staff while playing: stage, how this pass is going, and Peek. */
 export const barHtml = (o: { stage: number; clean: number; right: number; slips: number; peeking: boolean }) =>
   `<span class="mem-st">Stage ${o.stage} · ${STAGES[o.stage]}</span><span class="mem-live" role="status"><b>${o.right}</b> right · <b>${o.slips}</b> ${o.slips === 1 ? 'slip' : 'slips'} · clean ${o.clean} of ${CLEAN_TO_ADVANCE}</span>${o.stage ? `<button class="btn sm" id="memPeek"${o.peeking ? ' disabled' : ''}>${icon('page')}Peek</button>` : ''}`
 

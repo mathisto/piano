@@ -36,10 +36,8 @@ function memShow() {
   $('#staff').classList.toggle('mem-blind', !!m && m.stage === TOP && m.peek < 0)
   let bar = document.querySelector<HTMLElement>('#memBar')
   if (!m) return bar?.remove()
-  if (!bar) {
-    bar = Object.assign(document.createElement('div'), { id: 'memBar', className: 'mem-bar' })
-    $('#staff').append(bar)
-  }
+  if (!bar) bar = Object.assign(document.createElement('div'), { id: 'memBar', className: 'mem-bar' })
+  if (!bar.isConnected) $('#play').prepend(bar) // a row above the staff, so it never covers notation
   bar.innerHTML = barHtml({ ...m, peeking: m.peek >= 0 })
   bar.querySelector('#memPeek')?.addEventListener('click', memPeek)
 }

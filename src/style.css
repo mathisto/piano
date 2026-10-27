@@ -163,7 +163,7 @@ table.songs caption,
   outline-offset: 2px;
 }
 .song-title {
-  flex: 1 1 60px;
+  flex: 0 1 auto; /* its own width, then the spacer takes the rest: half the free room is not kept back from a long title */
   min-width: 60px;
   font-weight: 600;
   color: var(--ink-2);
@@ -633,6 +633,12 @@ table.songs td.thumb {
   border-color: transparent;
   padding-inline: 0;
 }
+@media (max-width: 640px) {
+  table.stages .tag.next {
+    display: block; /* the name column is too narrow to hold it beside the name: under it, flush with the name, not 10px in */
+    margin: 6px 0 0;
+  }
+}
 table.songs tr.band th {
   padding-top: 24px;
   color: var(--ink-2);
@@ -768,16 +774,17 @@ table.stages col.mcol {
 /* ---------- play: layout by view ---------- */
 #play {
   position: relative;
-  grid-template-rows: minmax(0, var(--pa, 40fr)) 18px minmax(0, var(--pb, 60fr)) auto;
+  --rows: minmax(0, var(--pa, 40fr)) 18px minmax(0, var(--pb, 60fr)) auto;
+  grid-template-rows: var(--rows);
 }
 #play.v-sheet {
-  grid-template-rows: minmax(0, 1fr) 18px clamp(96px, 15vh, 150px) auto;
+  --rows: minmax(0, 1fr) 18px clamp(96px, 15vh, 150px) auto;
 }
 #play.v-falling {
-  grid-template-rows: 18px minmax(0, 1fr) auto;
+  --rows: 18px minmax(0, 1fr) auto;
 }
 #play.drill {
-  grid-template-rows: minmax(0, 1fr) clamp(150px, 24vh, 230px) auto;
+  --rows: minmax(0, 1fr) clamp(150px, 24vh, 230px) auto;
 }
 /* a short stage (the staff-only view, a portrait window with the dock under it) is only a strip of keys: the card shrinks to title and mode, over the keys, off the music */
 @container stage (max-height: 420px) {
@@ -1386,6 +1393,9 @@ kbd {
 .legend .sw.lamp {
   background: var(--lamp);
 }
+#stage:has(#count:not([hidden])) .banner:has(#connectBtn) {
+  display: none; /* the count-in numeral sits under the banner's spot; the chip still connects */
+}
 .countin {
   position: absolute;
   left: 50%;
@@ -1826,6 +1836,8 @@ button.link {
   }
   .chip {
     padding: 0 12px;
+    min-width: var(--control); /* the dot alone is a button too */
+    justify-content: center;
   }
   #devName {
     display: none; /* the dot says whether a keyboard is in; the name is in Settings */

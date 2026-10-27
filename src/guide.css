@@ -78,6 +78,7 @@
   font-size: 15px;
 }
 .gact .link {
+  min-width: var(--control);
   min-height: var(--control);
   padding: 0 4px;
 }

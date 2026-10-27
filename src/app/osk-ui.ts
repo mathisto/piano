@@ -2,7 +2,8 @@
 import * as audio from '../audio'
 import { icon } from '../icons'
 import { inputs, type MidiMsg } from '../midi'
-import { clampLow, defaultLow, keyAt, label, layout, type OKey, octavesFor, shown } from '../osk'
+import { clampLow, defaultLow, keyAt, label, layout, type OKey, shown, whitesFor } from '../osk'
+import { noteName } from '../spell'
 import { save, settings } from '../settings'
 import { $ } from '../ui'
 import '../osk.css'
@@ -11,7 +12,7 @@ import { drill } from './state' // also builds the page the keys go into
 const VEL = 0.75
 let send: (m: MidiMsg) => void = () => {}
 let keys: OKey[] = []
-let octaves = 0
+let whites = 0
 let low = 0
 const down = new Map<number, number>() // pointer id -> pitch held
 
@@ -29,24 +30,24 @@ const midi = (on: boolean, p: number): MidiMsg => ({ on, p, v: on ? VEL : 0, ts:
 
 function draw() {
   board.innerHTML = keys.map((k) => `<i class="${k.black ? 'b' : 'w'}" data-p="${k.p}" style="left:${k.x * 100}%;width:${k.w * 100}%">${label(k.p, !!settings.oskNames)}</i>`).join('')
-  $('.osk-range', box).textContent = `${label(low, false)} to ${label(low + 12 * octaves, false)}`
+  $('.osk-range', box).textContent = `${noteName(low)} to ${noteName(keys[keys.length - 1].p)}`
   $('.osk-names', box).setAttribute('aria-pressed', String(!!settings.oskNames))
-  box.querySelectorAll<HTMLButtonElement>('[data-oct]').forEach((b) => (b.disabled = clampLow(low + Number(b.dataset.oct) * 12, octaves) === low))
+  box.querySelectorAll<HTMLButtonElement>('[data-oct]').forEach((b) => (b.disabled = clampLow(low + Number(b.dataset.oct) * 12, whites) === low))
 }
 
 /** (Re)build the keys; a change of range lets go of any held key first. */
 function build(n: number, l: number) {
-  if (n === octaves && l === low) return
+  if (n === whites && l === low) return
   for (const p of new Set(down.values())) send(midi(false, p))
   down.clear()
-  octaves = n
+  whites = n
   low = l
-  keys = layout(low, octaves)
+  keys = layout(low, whites)
   draw()
 }
 const fit = () => {
-  const n = octavesFor(box.clientWidth)
-  build(n, n === octaves ? low : defaultLow(n))
+  const n = whitesFor(board.clientWidth)
+  build(n, n === whites ? low : defaultLow(n, drill ? Math.min(...drill.cards.flatMap((c) => c.pitches)) : undefined))
 }
 
 const light = () => {
@@ -92,7 +93,7 @@ box.addEventListener('click', (e) => {
     settings.osk = false
     save()
     syncOsk()
-  } else if (b.dataset.oct) build(octaves, clampLow(low + Number(b.dataset.oct) * 12, octaves))
+  } else if (b.dataset.oct) build(whites, clampLow(low + Number(b.dataset.oct) * 12, whites))
   else {
     settings.oskNames = !settings.oskNames
     save()
@@ -106,6 +107,7 @@ export function syncOsk() {
   const on = shown(settings.osk, inputs().length, needed)
   if (box.hidden !== !on) box.hidden = !on
   if (on) fit()
+  else whites = 0 // the next card or drill starts on its own range, not wherever the last was shifted to
   document.querySelectorAll<HTMLInputElement>('input[data-osk-sw]').forEach((c) => (c.checked = settings.osk ?? inputs().length === 0))
 }
 
