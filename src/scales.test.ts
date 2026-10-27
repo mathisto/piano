@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLEAN_RUNS, degreeName, degreeOfPitch, quizDeal, quizRecord, quizRight, derive, fourth, why, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
+import { CLEAN_RUNS, contraryLeft, explain, unchecked, keyName, cardKey, degreeName, degreeOfPitch, quizDeal, quizRecord, quizRight, derive, fourth, why, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
 
 const c = (o: Partial<Card> = {}): Card => ({ tonic: 0, form: 'major', hands: 'R', oct: 1, ...o })
 
@@ -157,5 +157,165 @@ describe('the fourth-finger quiz', () => {
   it('records a result', () => {
     const st = quizRecord({}, { tonic: 0, form: 'major', hand: 'R' }, true)
     expect(st['major:0:R']).toEqual({ n: 1, ok: 1 })
+  })
+})
+
+const BLK = [1, 3, 6, 8, 10]
+const pcs = (n: { p: number }[]) => n.map((x) => x.p % 12)
+const hand = (s: ReturnType<typeof scaleSong>, h: 'R' | 'L') => s.notes.filter((n) => n.h === h)
+
+describe('contrary motion', () => {
+  it('C major, one octave: both hands leave middle C, the unison is one note, the left hand copies the right hand fingers', () => {
+    const s = scaleSong(c({ hands: 'contrary' }), 60)
+    expect(s.notes).toHaveLength(15 + 13) // two hands of 15, the unison at each end counted once
+    expect(hand(s, 'R').map((n) => n.p)).toEqual([60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60])
+    const L = hand(s, 'L')
+    expect(L.map((n) => n.p)).toEqual([59, 57, 55, 53, 52, 50, 48, 50, 52, 53, 55, 57, 59])
+    expect(L.map((n) => n.f)).toEqual([2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2]) // B A G F E D C, and back
+    expect(fingers(0, 'major', 'R', 1)).toEqual([...contraryLeft(0, 'major', 1).f].reverse())
+  })
+  it('the hands move apart, then back, in every major and harmonic minor key, one and two octaves', () => {
+    for (const form of ['major', 'harmonic', 'melodic'] as const)
+      for (let t = 0; t < 12; t++)
+        for (const oct of [1, 2] as const) {
+          const s = scaleSong(c({ tonic: t, form, hands: 'contrary', oct }), 60)
+          const R = hand(s, 'R')
+          const L = hand(s, 'L')
+          const n = 7 * oct
+          expect(R).toHaveLength(2 * n + 1)
+          expect(L).toHaveLength(2 * n - 1)
+          expect(R[n].p - R[0].p).toBe(12 * oct)
+          expect(L[n - 1].p).toBe(R[0].p - 12 * oct) // the left hand's lowest note, as far below as the right hand's highest is above
+          expect(R.every((x) => x.f! >= 1 && x.f! <= 5) && L.every((x) => x.f! >= 1 && x.f! <= 5)).toBe(true)
+          // the left hand never puts its thumb on a black key where the table has it on a white one
+          if (form !== 'melodic') expect(L.filter((x) => x.f === 1 && BLK.includes(x.p % 12))).toEqual([])
+        }
+  })
+  it('melodic minor: the right hand rises with the raised 6th and 7th, the left hand falls on the natural minor', () => {
+    const s = scaleSong(c({ tonic: 9, form: 'melodic', hands: 'contrary' }), 60)
+    expect(hand(s, 'R').slice(0, 8).map((n) => n.p)).toEqual([57, 59, 60, 62, 64, 66, 68, 69])
+    expect(hand(s, 'L').slice(0, 7).map((n) => n.p)).toEqual([55, 53, 52, 50, 48, 47, 45]) // down from A: G F E D C B A, the natural minor (the unison A is the right hand's)
+  })
+  it('where the left hand cannot copy (thumb on a black key) it keeps its own fingering; the copied ones are flagged unchecked', () => {
+    expect(contraryLeft(5, 'major', 1)).toEqual({ f: fingers(5, 'major', 'L', 1), mirror: false, derived: false }) // F major
+    expect(contraryLeft(0, 'major', 1).mirror).toBe(true)
+    expect(unchecked(c({ hands: 'contrary' }))).toEqual([]) // C: the copy is the table fingering reversed
+    expect(unchecked(c({ tonic: 1, form: 'harmonic', hands: 'contrary' }))).toEqual(['L']) // C sharp minor: a copy that is not in the table
+    expect(unchecked(c({ tonic: 5, hands: 'contrary' }))).toEqual([])
+  })
+  it('the id reads back and its stats key extends the old one', () => {
+    const s = scaleSong(c({ tonic: 2, hands: 'contrary', oct: 2 }), 72)
+    expect(parseId(s.id)).toEqual({ card: c({ tonic: 2, hands: 'contrary', oct: 2 }), bpm: 72 })
+    expect(cardKey(c({ hands: 'contrary' }))).toBe('major:0:contrary:1')
+  })
+})
+
+describe('the chromatic scale', () => {
+  const f = (t: number, h: 'R' | 'L', oct = 1) => fingers(t, 'chromatic', h, oct).join(' ')
+  it('from C: the standard fingering, thumb on white keys, 3 on black, 1-2 and 2-1 at E F and B C', () => {
+    expect(f(0, 'R')).toBe('1 3 1 3 1 2 3 1 3 1 3 1 2')
+    expect(f(0, 'L')).toBe('1 3 1 3 2 1 3 1 3 1 3 2 1')
+  })
+  it('by rule from any note: black keys take 3, white keys 1 or 2, two octaves count 25', () => {
+    for (let t = 0; t < 12; t++)
+      for (const h of ['R', 'L'] as const) {
+        const fs = fingers(t, 'chromatic', h, 2)
+        expect(fs).toHaveLength(25)
+        fs.forEach((x, i) => expect(BLK.includes((t + i) % 12) ? x === 3 : x === 1 || x === 2).toBe(true))
+        // two white keys in a row are never both the thumb
+        fs.slice(1).forEach((x, i) => expect(!(x === 1 && fs[i] === 1 && !BLK.includes((t + i) % 12) && !BLK.includes((t + i + 1) % 12))).toBe(true))
+      }
+  })
+  it('starting on a black key: D flat right hand begins on 3', () => {
+    expect(f(1, 'R').split(' ')[0]).toBe('3')
+  })
+  it('sharps going up, flats coming down; hands an octave apart; no key signature', () => {
+    const s = scaleSong(c({ form: 'chromatic', hands: 'both', oct: 2 }), 60)
+    expect(s.fifths).toBe(0)
+    expect(s.notes).toHaveLength(2 * 49)
+    const R = hand(s, 'R')
+    expect(R.slice(0, 25).map((n) => n.p)).toEqual(Array.from({ length: 25 }, (_, i) => 60 + i))
+    expect(R.slice(0, 25).filter((n) => BLK.includes(n.p % 12)).every((n) => n.acc === 1 && !n.flat)).toBe(true)
+    expect(R.slice(25).filter((n) => BLK.includes(n.p % 12)).every((n) => n.acc === -1 && n.flat)).toBe(true)
+    expect(hand(s, 'L')[0].p).toBe(48)
+  })
+  it('contrary motion: the left hand goes down from the same note', () => {
+    const s = scaleSong(c({ tonic: 2, form: 'chromatic', hands: 'contrary' }), 60)
+    expect(hand(s, 'L').slice(0, 3).map((n) => n.p)).toEqual([61, 60, 59]) // from D down; the unison itself belongs to the right hand
+    expect(hand(s, 'R')[0].p).toBe(62)
+  })
+  it('names: C chromatic', () => {
+    expect(keyName(1, 'chromatic')).toBe('C♯ chromatic')
+  })
+})
+
+describe('arpeggios', () => {
+  const FORMS = ['arpMajor', 'arpMinor', 'dom7', 'dim7'] as const
+  const per = { arpMajor: 3, arpMinor: 3, dom7: 4, dim7: 4 }
+  it('every root, hand and octave count: the right number of notes, fingers 1 to 5, thumb on black only where no other rule fits', () => {
+    for (const form of FORMS)
+      for (let t = 0; t < 12; t++)
+        for (const oct of [1, 2] as const)
+          for (const h of ['R', 'L'] as const) {
+            const fs = fingers(t, form, h, oct)
+            expect(fs).toHaveLength(per[form] * oct + 1)
+            expect(fs.every((x) => x >= 1 && x <= 5)).toBe(true)
+            const pcsUp = fs.map((_, i) => (t + [0, 4, 7, 10][i % per[form]]) % 12) // only used for major/dom7 below
+            if ((form === 'arpMajor' && t !== 6) || form === 'dom7') expect(fs.filter((x, i) => x === 1 && BLK.includes(pcsUp[i]))).toEqual([]) // no thumb on a black key, except F sharp major, which is black from root to fifth
+            if (h === 'L') expect(fs[0]).not.toBe(1) // the left hand does not start on its thumb
+          }
+  })
+  it('white-key shapes: C major right hand 1 2 3 1 2 3 5, left hand 5 4 2 1 2 4 5 (one octave 5 4 2 1)', () => {
+    expect(fingers(0, 'arpMajor', 'R', 2)).toEqual([1, 2, 3, 1, 2, 3, 5])
+    expect(fingers(0, 'arpMajor', 'L', 2)).toEqual([5, 4, 2, 1, 2, 4, 5])
+    expect(fingers(0, 'arpMajor', 'L', 1)).toEqual([5, 4, 2, 1])
+    expect(fingers(7, 'dom7', 'R', 1)).toEqual([1, 2, 3, 4, 5])
+  })
+  it('black-key roots avoid the thumb: D flat major right hand puts a long finger on D flat and A flat', () => {
+    const fs = fingers(1, 'arpMajor', 'R', 1)
+    expect(fs[0]).not.toBe(1)
+    expect(fs[1]).toBe(1) // F, the white key between them
+  })
+  it('the song: 13 notes for two octaves of a triad, up and down; 17 for a seventh', () => {
+    expect(scaleSong(c({ form: 'arpMajor', oct: 2 }), 60).notes.map((n) => n.p)).toEqual([60, 64, 67, 72, 76, 79, 84, 79, 76, 72, 67, 64, 60])
+    expect(scaleSong(c({ form: 'dom7', oct: 2 }), 60).notes).toHaveLength(17)
+    expect(scaleSong(c({ form: 'dim7' }), 60).notes.map((n) => n.p)).toEqual([60, 63, 66, 69, 72, 69, 66, 63, 60])
+    expect(scaleSong(c({ form: 'arpMinor', tonic: 9 }), 60).notes.slice(0, 4).map((n) => n.p)).toEqual([69, 72, 76, 81])
+  })
+  it('every arpeggio is unchecked, in both hands, and says so', () => {
+    for (const form of FORMS) expect(unchecked(c({ form, tonic: 4, hands: 'both' }))).toEqual(['R', 'L'])
+    expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/thumb/)
+  })
+  it('keys: key signatures and names', () => {
+    expect(fifthsOf(0, 'dom7')).toBe(-1) // C7 is the dominant of F
+    expect(fifthsOf(9, 'arpMinor')).toBe(0)
+    expect(keyName(0, 'dom7')).toBe('C dominant 7th arpeggio')
+    expect(keyName(3, 'arpMajor')).toBe('E♭ major arpeggio')
+  })
+})
+
+describe('stages and stats still fit the old ones', () => {
+  it('the first six stages are as they were; the new ones come after', () => {
+    expect(STAGES.slice(0, 6).map((s) => s.id)).toEqual(['s1', 's2', 's3', 's4', 's5', 's6'])
+    expect(STAGES.slice(6).map((s) => s.id)).toEqual(['s7', 's8', 's9', 's10', 's11', 's12', 's13'])
+    expect(cardsOf(STAGES[4])).toHaveLength(24)
+  })
+  it('old stats keep their key and meaning; a new kind of scale just adds a key', () => {
+    const old: ScaleStats = { 'major:0:R:1': { streak: 1, best: 60, n: 4 } }
+    expect(solid(old, c(), 60)).toBe(true)
+    record(old, c({ form: 'chromatic', hands: 'contrary' }), 60, true)
+    expect(Object.keys(old).sort()).toEqual(['chromatic:0:contrary:1', 'major:0:R:1'])
+    expect(old['major:0:R:1']).toEqual({ streak: 1, best: 60, n: 4 })
+  })
+  it('every card of every stage plays: ids read back and notes are in range', () => {
+    for (const st of STAGES)
+      for (const card of cardsOf(st)) {
+        const s = scaleSong(card, st.bpm)
+        expect(parseId(s.id)?.card).toEqual(card)
+        expect(s.notes.length).toBeGreaterThan(5)
+        expect(s.lo).toBeGreaterThanOrEqual(21)
+        expect(s.hi).toBeLessThanOrEqual(108)
+        expect(s.notes.every((n) => n.f! >= 1 && n.f! <= 5)).toBe(true)
+      }
   })
 })

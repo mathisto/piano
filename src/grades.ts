@@ -91,7 +91,6 @@ const theory = (level: number, name: string, detail: string, trainer: Trainer, l
   }
 }
 
-const coming = (level: number, name: string, detail: string): Req => ({ level, name, detail })
 
 export const REQS: Req[] = [
   scale(1, 's1', 'Scales: the easy keys'),
@@ -111,15 +110,15 @@ export const REQS: Req[] = [
   scale(3, 's3', 'Scales: D, A, E and the minors'),
   tech(3, 'Arpeggios, minor', 'A minor broken chords.', (o) => o.pattern === 'arp' && !!o.minor),
   tech(3, 'Minor scales', 'A, E and D minor, hand by hand.', (o) => o.pattern === 'scale' && !!o.minor),
-  coming(3, 'Chromatic scale', 'Needs its own trainer; it is not in Scales yet.'),
+  scale(3, 's9', 'Scales: the chromatic scale'),
   theory(3, 'Triads with inversions', 'Major and minor, root position and the two inversions.', 'chords', 3, /^chord:(maj|min):\d+:[12]$/),
   theory(3, 'Intervals, second to fifth', 'Play the note above or below.', 'intervals', 1, /^iv:(1|2|3|4|5|7):/),
   read(3, 'Reading: four-note tunes and accidentals', 'Short lines in C, G and F; sharps and flats.', ['tune-c', 'tune-g', 'tune-f', 'sharps', 'flats']),
   theory(3, 'Cadence ii–V–I', 'Adds the dominant preparation.', 'cadences', 2),
 
   scale(4, 's4', 'Scales: the black-key keys'),
-  coming(4, 'Contrary motion in other keys', 'Technique has contrary motion in C only.'),
-  coming(4, 'Chromatic scale, hands together', 'Needs its own trainer; it is not in Scales yet.'),
+  scale(4, 's7', 'Scales: contrary motion'),
+  scale(4, 's10', 'Scales: chromatic from every note'),
   theory(4, 'Dominant sevenths', 'The chord on the fifth, played from its name.', 'chords', 4, /^chord:dom7:/),
   theory(4, 'Cadences, all four', 'Adds I–V–vi–IV and I–vi–IV–V.', 'cadences', 3),
   theory(4, 'Key signatures', 'The chord of a signature, and the sharps or flats of a key.', 'keys', 1),
@@ -127,7 +126,9 @@ export const REQS: Req[] = [
 
   scale(5, 's5', 'Scales: all 24 keys together'),
   scale(5, 's6', 'Scales: up to speed'),
-  coming(5, 'Arpeggios in every key', 'Technique has arpeggios in C and A minor only.'),
+  scale(5, 's11', 'Scales: triad arpeggios'),
+  scale(5, 's12', 'Scales: arpeggios in all keys'),
+  scale(5, 's13', 'Scales: seventh arpeggios'),
   theory(5, 'Seventh chords', 'Major, dominant, minor and half-diminished sevenths.', 'chords', 4),
   theory(5, 'Intervals, all', 'Every interval above and below, any note.', 'intervals', 1),
   theory(5, 'Scale degrees', 'The 2nd to 7th note of any major key.', 'degrees', 1),
