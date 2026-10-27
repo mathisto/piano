@@ -28,7 +28,7 @@ Open, free, no-account, in-browser. Combines what is split across other tools: S
 - No lit keys, no hardware lighting. "Lighting" means on-screen visual effects only.
 - iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app is dark-only by decision (Apple allows it for immersive apps). The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
 - Audio and display latency are real; a one-time calibration sets a user offset. Screen mirroring to an iPad adds display lag.
-- Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 1,988 pieces (about 750 from Mutopia, about 1,060 OpenScore Lieder), graded 1 to 5, is served at pianoforte.mattkelly.io/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
+- Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 2,004 pieces (about 750 from Mutopia, about 1,060 OpenScore Lieder), graded 1 to 5, is served at pianoforte.mattkelly.io/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
 
 ## Capabilities and Constraints
 
