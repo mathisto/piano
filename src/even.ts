@@ -15,7 +15,7 @@ export type Coach = 'off' | 'gentle' | 'steady' | 'strict'
 const SHARE = { gentle: 0.3, steady: 0.2, strict: 0.12 } as const
 export const tolerance = (e: Edges, c: Exclude<Coach, 'off'>) => Math.max(3, Math.round((e.hard - e.soft) * SHARE[c]))
 
-const MIN_V = 15 // softer than this the sensor is noise, not touch
+export const MIN_V = 15 // softer than this the sensor is noise, not touch
 export const MIN_RUN = 6 // a line shorter than this says nothing about evenness
 const NEAR = 3 // neighbours either side that make the reference
 

@@ -103,7 +103,16 @@ interface Ev {
   tuplet?: { num: number; den: number }
   gn?: number // a grace note: how many graces before its main note it is played (1 = just before)
   also?: number // another part wrote this note too (a voice doubled by the piano): it belongs to both
+  at: number // quarters from the start of its part, for hairpins
+  art?: 'stac' | 'ten' | 'acc'
+  slur?: boolean
+  wg?: number // the hairpin it sits under (index into W)
+  wp?: number // which pass through that hairpin: the played index of its first measure
 }
+
+const ART: Record<string, Ev['art']> = { staccato: 'stac', staccatissimo: 'stac', accent: 'acc', 'strong-accent': 'acc', tenuto: 'ten' }
+const ART_RANK = ['stac', 'acc', 'ten'] // a note marked twice keeps the first: length is the surer thing to judge
+const WEDGE_STEP = 0.15 // a hairpin with no dynamic at its end rises or falls about one mark (p to mp)
 
 const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
 
@@ -239,12 +248,19 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const worded: typeof tempos = [] // Allegro, Andante ...: only when no part gives a number
   const keyM: (number | undefined)[] = [] // key signature stated in each measure
   const flags: string[] = []
+  const W: { a: number; b: number; up: boolean; m0: number; v0: number }[] = [] // hairpins, in part quarters
+  let marked = false // the score writes any dynamics
 
   parts.forEach((part, pi) => {
     let div = 1
     let staves = 1
     const open = new Map<string, Ev>() // tied notes still sounding, across barlines
     let curV = 0.7 // velocity from the last dynamics mark
+    let base = 0 // quarters before this measure, in this part
+    const marks: { at: number; v: number }[] = []
+    const wOpen = new Map<string, (typeof W)[number]>()
+    const slurs = new Map<string, number>() // open slurs per voice
+    const [evFrom, wFrom] = [evs.length, W.length]
     kids(part, 'measure').forEach((meas, m) => {
       for (const a of kids(meas, 'attributes')) {
         div = num(a, 'divisions') ?? div
@@ -287,8 +303,16 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
           const ties = grace ? [] : kids(e, 'tie').map((t) => t.a.type)
           const key = `${track}:${p}`
           const held = open.get(key)
+          const nots = kids(e, 'notations')
+          const sl = nots.flatMap((x) => kids(x, 'slur')).map((x) => x.a.type)
+          const vk = kid(e, 'voice')?.t.trim() ?? String(staff)
+          slurs.set(vk, Math.max(0, (slurs.get(vk) ?? 0) + sl.filter((x) => x === 'start').length - sl.filter((x) => x === 'stop').length))
+          const slur = !grace && slurs.get(vk)! > 0
+          const arts = nots.flatMap((x) => kids(x, 'articulations')).flatMap((a) => a.c.map((x) => ART[x.n]))
+          const art = ART_RANK.find((x) => arts.includes(x as Ev['art'])) as Ev['art']
           if (ties.includes('stop') && held) {
             held.dq += dur / div
+            held.slur = slur || undefined
             if (!ties.includes('start')) open.delete(key)
             continue
           }
@@ -297,6 +321,9 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
             m,
             q: s / div,
             dq: dur / div,
+            at: base + s / div,
+            ...(!grace && art && { art }),
+            ...(slur && { slur }),
             p,
             track,
             v: curV,
@@ -314,7 +341,21 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
           const q = cur / div
           const told = kids(e, 'sound').some((s) => Number(s.a.tempo) > 0)
           for (const dt of kids(e, 'direction-type')) {
-            for (const d of kids(dt, 'dynamics')) if (d.c[0] && d.c[0].n in DYN) curV = DYN[d.c[0].n]
+            for (const d of kids(dt, 'dynamics'))
+              if (d.c[0] && d.c[0].n in DYN) {
+                curV = DYN[d.c[0].n]
+                marks.push({ at: base + q, v: curV })
+                marked = true
+              }
+            for (const w of kids(dt, 'wedge')) {
+              const k = w.a.number ?? '1'
+              if (w.a.type === 'crescendo' || w.a.type === 'diminuendo') wOpen.set(k, { a: base + q, b: 0, up: w.a.type === 'crescendo', m0: m, v0: curV })
+              else if (w.a.type === 'stop' && wOpen.has(k)) {
+                W.push({ ...wOpen.get(k)!, b: base + q })
+                wOpen.delete(k)
+                marked = true
+              }
+            }
             const mt = kid(dt, 'metronome')
             const pm = num(mt, 'per-minute')
             if (pm && !told) tempos.push({ pi, m, q, bpm: pm * (UNIT[kid(mt, 'beat-unit')?.t.trim() ?? ''] ?? 1) * (kid(mt, 'beat-unit-dot') ? 1.5 : 1) })
@@ -338,7 +379,22 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
       }
       land()
       put(Math.max(top, cur) / div)
+      base += Math.max(top, cur) / div
     })
+    // hairpins: the level moves from the mark before to the mark at the end (or one step), note by note
+    const mine = evs.slice(evFrom)
+    for (let wi = wFrom; wi < W.length; wi++) {
+      const w = W[wi]
+      const end = marks.find((k) => k.at >= w.b - 1e-6 && k.at <= w.b + 4)
+      const made = !end || end.v === w.v0 || end.v > w.v0 !== w.up
+      const v1 = made ? Math.min(1, Math.max(0.1, w.v0 + (w.up ? WEDGE_STEP : -WEDGE_STEP))) : end.v
+      const next = marks.find((k) => k.at > w.b + 1e-6)?.at ?? Infinity
+      for (const ev of mine)
+        if (ev.at >= w.a - 1e-6 && ev.at <= w.b + 1e-6) {
+          ev.v = w.v0 + (v1 - w.v0) * (w.b > w.a ? (ev.at - w.a) / (w.b - w.a) : 1)
+          if (!ev.gn && ev.at < w.b - 1e-6) ev.wg = wi // the note the hairpin lands on is not under it
+        } else if (made && ev.at > w.b && ev.at < next) ev.v = v1 // no mark after: the new level holds until the next one
+    }
   })
 
   // the same note written twice for one hand (a voice line doubled by the piano) is one note: keep the longer
@@ -370,7 +426,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   if (order.some((o, i) => o !== i)) {
     const at = new Map<number, number[]>()
     order.forEach((o, k) => at.set(o, [...(at.get(o) ?? []), k]))
-    const moved = evs.flatMap((ev) => (at.get(ev.m) ?? []).map((k) => ({ ...ev, m: k })))
+    const moved = evs.flatMap((ev) => (at.get(ev.m) ?? []).map((k) => ({ ...ev, m: k, wp: ev.wg === undefined ? undefined : k - ev.m + W[ev.wg].m0 })))
     evs.length = 0
     evs.push(...moved)
     const pick = <T,>(a: T[]) => order.map((o) => a[o])
@@ -419,7 +475,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
 
   const raw: Raw[] = evs.map((e) => {
     const t = secAt(mq[e.m] + e.q)
-    const r: Raw = { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: e.v ?? 0.7, track: e.track, h: e.h, q: mq[e.m] + e.q, dq: e.dq, acc: e.acc, tuplet: e.tuplet }
+    const r: Raw = { t, d: Math.max(secAt(mq[e.m] + e.q + e.dq) - t, 0.03) * 0.96, p: e.p, v: e.v ?? 0.7, track: e.track, h: e.h, q: mq[e.m] + e.q, dq: e.dq, acc: e.acc, tuplet: e.tuplet, art: e.art, slur: e.slur }
     return e.gn ? { ...r, t: Math.max(0, t - e.gn * GRACE_S), d: GRACE_S * 0.9, dq: 0.125, grace: true, tuplet: undefined } : r
   })
   if (!raw.length) throw new Error('No notes found in this score.')
@@ -436,6 +492,24 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   if (sounding.size >= 2) {
     const names = new Map(kids(kid(root, 'part-list'), 'score-part').map((sp) => [sp.a.id, kid(sp, 'part-name')?.t.trim() ?? '']))
     song.parts = parts.map((pt, i) => names.get(pt.a.id) || `Part ${i + 1}`)
+  }
+  if (marked) {
+    const sum = song.bars.map(() => [0, 0])
+    for (const n of song.notes)
+      if (!n.grace) {
+        sum[n.bar][0] += n.v
+        sum[n.bar][1]++
+      }
+    let last = 0.7
+    song.curve = sum.map(([v, c]) => (last = c ? Math.round((v / c) * 100) / 100 : last))
+    const ws = new Map<string, { t0: number; t1: number; up: boolean }>()
+    evs.forEach((e, i) => {
+      if (e.wg === undefined) return
+      const k = `${e.wg}:${e.wp ?? W[e.wg].m0}`
+      const w = ws.get(k) ?? { t0: raw[i].t, t1: raw[i].t, up: W[e.wg].up }
+      ws.set(k, { ...w, t0: Math.min(w.t0, raw[i].t), t1: Math.max(w.t1, raw[i].t) })
+    })
+    if (ws.size) song.wedges = [...ws.values()].sort((a, b) => a.t0 - b.t0)
   }
   return song
 }
