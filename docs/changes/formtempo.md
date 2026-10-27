@@ -85,7 +85,7 @@ Spot checks of the new paces: mutopia-99-2 Bourrée 241 s -> 86 s, mutopia-1682 
 - Old clients: `fromMusicXml` before this change ignores `tempo`, so a client on the old app that fetches the new catalogue plays those 6 MusicXML pieces at 100 as it does today (with the new flag); a client on the new app plays them at 140 or 150. Deploy the app first.
 - The stated-pace set is mostly Lieder (62%), and for the forms the number of independent *works* is small (mazurka 7: the Chopin opus groups). The held-out figures are an estimate with that much slack.
 
-## Publish steps (not run)
+## Publish steps (run 2026-10-27, catalogue built 6eda6e669ed6568d; mutopia-1029 kept at its old pace)
 
 1. Rebuild the candidate from whatever is live at the time (another candidate may be published first: `partial.md`'s pickups, `rebuild.md`, ...). The run takes about 5 s from a downloaded copy:
    ```
