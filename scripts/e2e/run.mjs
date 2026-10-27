@@ -9,7 +9,8 @@ const { chromium } = await import('playwright-core')
 const AXE = readFileSync(new URL('../../node_modules/axe-core/axe.min.js', import.meta.url), 'utf8')
 const OUT = mkdtempSync(join(tmpdir(), 'piano-e2e-'))
 const T0 = Date.now()
-setTimeout(() => (console.log('e2e: watchdog, over 8 minutes'), process.exit(2)), 8 * 60e3).unref()
+const running = new Set() // the features in flight, named by the watchdog
+setTimeout(() => (console.log(`e2e: watchdog, over 8 minutes; still running: ${[...running].join(' | ') || 'none'}`), process.exit(2)), 8 * 60e3).unref()
 
 let server
 if (!process.env.E2E_URL) {
@@ -53,6 +54,9 @@ const INIT = `
         window.__last = undefined
         let started = false
         window.__marks = 0
+        // a mark lives only until the staff window moves on: count the ones added, not the ones standing when polled
+        const mo = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && (n.classList.contains('devmark') || n.querySelector?.('.devmark')) && window.__marks++)))
+        mo.observe(document.querySelector('#staff'), { childList: true, subtree: true })
         const id = setInterval(() => {
           if (!started && (g.phase === 'countin' || g.phase === 'playing')) {
             started = true
@@ -64,8 +68,7 @@ const INIT = `
               setTimeout(() => P().up(n.p), at + (n.d / g.rate) * 970)
             })
           }
-          window.__marks = Math.max(window.__marks, document.querySelectorAll('#staff .devmark').length)
-          if (g.phase === 'done' && window.__last) clearInterval(id), res(window.__last)
+          if (g.phase === 'done' && window.__last) clearInterval(id), mo.disconnect(), res(window.__last)
         }, 5)
       })
     },
@@ -138,6 +141,7 @@ const ok = (cond, msg) => {
 const ONLY = new RegExp(process.env.E2E_ONLY ?? '') // run a subset while debugging: E2E_ONLY='^3 |rhythm'
 async function feature(name, page, fn) {
   if (!ONLY.test(name)) return
+  running.add(name)
   const t = Date.now()
   const e0 = page.errs.length
   let err = ''
@@ -151,6 +155,7 @@ async function feature(name, page, fn) {
   }
   const errs = page.errs.slice(e0)
   if (!err && errs.length) err = errs[0]
+  running.delete(name)
   rows.push({ name, ok: !err, s: (Date.now() - t) / 1000, err })
   console.log(`${err ? 'FAIL' : 'ok  '} ${name} (${((Date.now() - t) / 1000).toFixed(1)} s)${err ? `: ${err}` : ''}`)
 }
@@ -180,13 +185,15 @@ const leave = async (page, back) => {
 
 async function mainFlow() {
   const page = await open()
-  await feature('0 first run: Set up sheet', page, async () => {
-    await page.goto(`${URL_}?setup`) // automation never gets the sheet unprompted; ?setup asks for it
-    await page.waitForSelector('dialog#setup[open]', { timeout: 5000 })
-    await axe(page, 'Set up sheet', '#setup')
-    await page.keyboard.press('Escape')
-    ok(!(await page.isVisible('dialog#setup[open]')), 'Set up did not close on Escape')
+  const first = await open() // its own page: ?setup stays in that URL and would reopen the sheet on every reload
+  await feature('0 first run: Set up sheet', first, async () => {
+    await first.goto(`${URL_}?setup`) // automation never gets the sheet unprompted; ?setup asks for it
+    await first.waitForSelector('dialog#setup[open]', { timeout: 5000 })
+    await axe(first, 'Set up sheet', '#setup')
+    await first.keyboard.press('Escape')
+    ok(!(await first.isVisible('dialog#setup[open]')), 'Set up did not close on Escape')
   })
+  await first.context().close()
   if (await page.isVisible('dialog#setup[open]')) await page.keyboard.press('Escape') // when 0 was filtered out
   await feature('0b a key played before any song is open', page, async () => {
     await ev(page, () => (window.__piano.key(60, 0.5), window.__piano.up(60))) // only an error can fail this
@@ -468,7 +475,9 @@ async function songsFlow() {
   })
 }
 
-const [page] = await Promise.all([mainFlow(), songsFlow(), side(['keys', 'intervals', 'degrees']), side(['earplay']), side(['earint']), side(['eardeg']), side(['rhythm'])])
+// three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
+const lane = async (...fs) => { for (const f of fs) await f() }
+const [page] = await Promise.all([mainFlow(), lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint'])), lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']))])
 await feature('11 accessibility: every page and the drawer', page, async () => {
   for (const tab of ['today', 'songs', 'read', 'scales', 'theory', 'technique', 'progress']) {
     await nav(page, tab)
