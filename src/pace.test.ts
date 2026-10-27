@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { nextStep, Pace } from './pace'
+import { cool } from './store'
 
 describe('pace', () => {
   it('raises the tempo 5% after three clean passes in a row', () => {
@@ -63,5 +64,17 @@ describe('next step after a run', () => {
   })
   it('has nothing to say about a messy run with no trouble spot', () => {
     expect(nextStep({ clean: false, wait: false, rate: 1, worst: null })).toBeNull()
+  })
+})
+
+describe('trouble spots cool out', () => {
+  it('one missed note is gone after four clean sessions, so no loop is offered for it', () => {
+    let heat = cool([], [0, 1])
+    for (let i = 0; i < 3; i++) heat = cool(heat, [])
+    expect(heat[1]).toBeGreaterThan(0)
+    expect(cool(heat, [])).toEqual([0, 0])
+  })
+  it('a clean run never offers the loop, whatever the heat', () => {
+    expect(nextStep({ clean: true, wait: false, rate: 1, worst: { a: 0, b: 1 } })).toBeNull()
   })
 })

@@ -279,8 +279,8 @@ export function results(r: Result, next: Next | null, note = '') {
   const perform = r.mode === 'perform'
   return `
   <div class="results"><div class="card" role="dialog" aria-label="Results">
-    <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : icon('check')}</div>
-    <h2>${perform ? 'Song complete' : 'Cleared'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
+    <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : r.clean ? icon('check') : icon('loop')}</div>
+    <h2>${perform ? 'Song complete' : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
     <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${
       perform
