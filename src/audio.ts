@@ -249,13 +249,15 @@ function synthVoice(c: AudioContext, p: number, vel: number): Voice {
   return { g, end: (t) => (a.stop(t), b.stop(t)), release: 0.3 }
 }
 
-export function noteOn(p: number, vel: number, force = false) {
+/** `as` is another instrument for this one note (the app's voice line on strings); until it has loaded the chosen instrument plays it. */
+export function noteOn(p: number, vel: number, force = false, as?: string) {
   if (!settings.sound && !force) return
   const c = ready()
   noteOff(p, true)
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
-  const inst = instrument(settings.instrument)
+  let inst = instrument(as ?? settings.instrument)
   if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note
+  if (as && loadState(inst.id) !== 'ready') inst = instrument(settings.instrument)
   const v = sampleVoice(c, inst, p, vel) ?? synthVoice(c, p, vel)
   voices.set(p, v)
 }

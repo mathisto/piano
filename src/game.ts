@@ -1,4 +1,4 @@
-import { byApp } from './accomp'
+import { byApp, voiceOf } from './accomp'
 import * as audio from './audio'
 import { ticks } from './metronome'
 import { Pace } from './pace'
@@ -153,6 +153,7 @@ export class Game {
     this.you = { ...hands }
     this.hands = { ...hands }
     this.parts = new Set(parts)
+    if (this.song.notes.some((n) => this.modeOf(n) === 'listen' && voiceOf(this.song, n))) void audio.preload('strings') // the app is about to sing
     this.rescore()
   }
 
@@ -314,7 +315,7 @@ export class Game {
     while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
       const n = this.song.notes[this.autoI++]
       if (this.modeOf(n) !== 'listen') continue
-      audio.noteOn(n.p, n.v, true) // Listen always sounds: the app is the one playing this hand
+      audio.noteOn(n.p, n.v, true, voiceOf(this.song, n)) // Listen always sounds: the app is the one playing this hand
       const ms = (n.d / this.rate) * 1000
       this.autoUntil.set(n.p, perf + ms)
       setTimeout(() => audio.noteOff(n.p), ms)

@@ -114,6 +114,8 @@ const ART: Record<string, Ev['art']> = { staccato: 'stac', staccatissimo: 'stac'
 const ART_RANK = ['stac', 'acc', 'ten'] // a note marked twice keeps the first: length is the surer thing to judge
 const WEDGE_STEP = 0.15 // a hairpin with no dynamic at its end rises or falls about one mark (p to mp)
 
+const HAIRPIN_WORD = /(?<!\p{L})(?:(cresc)|(decresc|dim)(?:in)?)(?:u?endo|\.)?(?!\p{L})/iu // 'cresc.' 'crescendo' 'dim.' 'diminuendo' 'decresc.': a hairpin in words
+const WORD_BARS = 4 // a word with no dynamic after it reaches this far
 const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
 
 // Quarter-note bpm for a tempo word when the score gives no number.
@@ -260,6 +262,8 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     let base = 0 // quarters before this measure, in this part
     const marks: { at: number; v: number }[] = []
     const wOpen = new Map<string, (typeof W)[number]>()
+    const said: (typeof W)[number][] = [] // hairpins written as words, their ends found when the part is read
+    const starts: number[] = [] // where each measure begins, in part quarters
     const slurs = new Map<string, number>() // open slurs per voice
     const [evFrom, wFrom] = [evs.length, W.length]
     kids(part, 'measure').forEach((meas, m) => {
@@ -272,6 +276,7 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
         if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
       }
       if (pi === 0) implicit[m] = meas.a.implicit === 'yes'
+      starts[m] = base
       let cur = 0 // divisions into the measure
       let start = 0 // where the last note began, for chords
       let top = 0
@@ -362,6 +367,8 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
             const pm = num(mt, 'per-minute')
             if (pm && !told) tempos.push({ pi, m, q, bpm: pm * (UNIT[kid(mt, 'beat-unit')?.t.trim() ?? ''] ?? 1) * (kid(mt, 'beat-unit-dot') ? 1.5 : 1) })
             for (const w of kids(dt, 'words')) {
+              const h = HAIRPIN_WORD.exec(w.t)
+              if (h) said.push({ a: base + q, b: 0, up: !!h[1], m0: m, v0: curV })
               const t = TEMPO_RE.exec(w.t)?.[1].toLowerCase()
               if (t) worded.push({ pi, m, q, bpm: TEMPI[t] })
             }
@@ -382,6 +389,14 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
       land()
       put(Math.max(top, cur) / div)
       base += Math.max(top, cur) / div
+    })
+    // 'cresc.' and 'dim.' run to the next dynamic, else four bars, else the end of the part; a written hairpin or an earlier word already covers its own stretch
+    said.forEach((w, i) => {
+      const drawn = W.slice(wFrom).filter((x) => x.b > 0)
+      if (drawn.some((x) => w.a >= x.a - 1e-6 && w.a <= x.b + 1e-6)) return
+      const stops = [...marks.map((k) => k.at), ...drawn.map((x) => x.a), ...said.slice(i + 1).map((x) => x.a)].filter((at) => at > w.a + 1e-6)
+      w.b = Math.min(starts[w.m0 + WORD_BARS] ?? base, ...stops)
+      if (w.b > w.a + 1e-6) (W.push(w), (marked = true))
     })
     // hairpins: the level moves from the mark before to the mark at the end (or one step), note by note
     const mine = evs.slice(evFrom)
