@@ -167,9 +167,9 @@ async function axe(page, where, sel) {
   const v = await ev(page, (s) => window.__e2e.axe(s), sel)
   if (v.length) axeFound.push(`${where}: ${v.join(', ')}`)
 }
+// the Set up sheet never opens for automation (navigator.webdriver) unless asked: close it if it did
 const skipSetup = async (page) => {
-  await page.waitForSelector('dialog#setup[open]', { timeout: 5000 })
-  await page.keyboard.press('Escape')
+  if (await page.waitForSelector('dialog#setup[open]', { timeout: 1500 }).catch(() => null)) await page.keyboard.press('Escape')
 }
 const leave = async (page, back) => {
   await page.keyboard.press('Escape')
@@ -181,6 +181,7 @@ const leave = async (page, back) => {
 async function mainFlow() {
   const page = await open()
   await feature('0 first run: Set up sheet', page, async () => {
+    await page.goto(`${URL_}?setup`) // automation never gets the sheet unprompted; ?setup asks for it
     await page.waitForSelector('dialog#setup[open]', { timeout: 5000 })
     await axe(page, 'Set up sheet', '#setup')
     await page.keyboard.press('Escape')
