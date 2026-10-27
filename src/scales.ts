@@ -116,30 +116,26 @@ function chromaticFingers(tonic: number, h: Hand, oct: number): number[] {
 }
 
 /**
- * Arpeggio fingering, a rule and not a table: nobody has checked these against a book (all are in UNCHECKED).
- * Right hand: the fingers repeat every octave as a rotation of 1-a-b(-c), the thumb crossing under once; the top note
- * takes the 5th finger, or restarts the cycle. 1 2 3 1 2 3 5 is the white-key shape. Left hand: the same rule read from
- * the top down (so 5 3 2 1 3 2 1), plus for triads the open shape 5 4 2 1 (2 4 5), which wins a tie.
- * Each candidate costs: thumb on a black key 10, 5th finger on a black key 3, 2nd to 4th finger on a black key
- * -0.5, 1.5 per rotation away from the plain shape, a left hand starting on its thumb 10. The cheapest is used.
+ * Arpeggio fingering from published group tables (docs/changes/fingers.md lists the sources): two octaves up as one string
+ * per group, a code per root (C to B) picking the group. Triads: the white-key shape, the black-white-black keys with the
+ * thumb on the white key, B flat's own left hand; sevenths: the thumb on a white key, 4th finger on a black one. One octave
+ * is the first notes of it, a right hand ending in 5 keeping the 5.
  */
-const SETS: Record<number, number[][]> = { 3: [[1, 2, 3], [1, 2, 4], [1, 3, 4], [1, 2, 5], [1, 3, 5], [1, 4, 5]], 4: [[1, 2, 3, 4], [1, 2, 3, 5], [1, 2, 4, 5], [1, 3, 4, 5]] }
+const ARP: Record<string, { pat: Record<string, string>; code: string }> = {
+  'arpMajor:R': { pat: { w: '1231235', x: '2124124' }, code: 'wxwxwwwwxwxw' },
+  'arpMajor:L': { pat: { a: '5421421', b: '5321321', c: '2142142', d: '3213213' }, code: 'acbcbaaacbdb' },
+  'arpMinor:R': { pat: { w: '1231235', x: '2124124', y: '2312312' }, code: 'wxwwwwxwxwyw' },
+  'arpMinor:L': { pat: { a: '5421421', c: '2142142', d: '3213213' }, code: 'acaaaacacada' },
+  'dom7:R': { pat: { w: '123412345', f: '234123412', x: '412341234' }, code: 'wxwxwwfwxwxw' },
+  'dom7:L': { pat: { w: '543214321', f: '432143214', x: '214321432', b: '321432143' }, code: 'wxwxwwfwxwbw' },
+  'dim7:R': { pat: { w: '123412345', x: '412341234', y: '341234123' }, code: 'wxwywwxwxwyw' },
+  'dim7:L': { pat: { w: '543214321', x: '321432143', y: '432143214' }, code: 'wxwywwxwywyw' },
+}
 function arpeggioFingers(tonic: number, form: Form, h: Hand, oct: number): number[] {
-  const st = STEPS[form]
-  const k = st.length
-  const n = k * oct + 1
-  const black = Array.from({ length: n }, (_, i) => BLACK.includes((tonic + st[i % k]) % 12))
-  const cands: { f: number[]; pen: number }[] = []
-  SETS[k].forEach((set, si) =>
-    set.forEach((_, r) => {
-      const cyc = [...set.slice(r), ...set.slice(0, r)]
-      const f = Array.from({ length: n }, (_, i) => (i < n - 1 ? cyc[i % k] : r === 0 && set[k - 1] < 5 ? 5 : cyc[0]))
-      cands.push({ f: h === 'R' ? f : f.reverse(), pen: 1.5 * r + 0.1 * si })
-    }),
-  )
-  if (h === 'L' && k === 3) cands.push({ f: oct === 1 ? [5, 4, 2, 1] : [5, 4, 2, 1, 2, 4, 5], pen: -0.05 })
-  const cost = (c: { f: number[]; pen: number }) => c.pen + (h === 'L' && c.f[0] === 1 ? 10 : 0) + c.f.reduce((a, f, i) => a + (!black[i] ? 0 : f === 1 ? 10 : f === 5 ? 3 : -0.5), 0)
-  return cands.reduce((best, c) => (cost(c) < cost(best) ? c : best)).f
+  const { pat, code } = ARP[`${form}:${h}`]
+  const s = pat[code[tonic]]
+  const k = STEPS[form].length
+  return [...(oct === 2 ? s : h === 'R' && s.endsWith('5') ? s.slice(0, k) + '5' : s.slice(0, k + 1))].map(Number)
 }
 
 /** Contrary motion, left hand, as the run up from its lowest note: it copies the right hand's fingers unless that puts its thumb on a black key; then it keeps its own fingering. */
@@ -303,7 +299,7 @@ export function checkNote(c: Card, only?: Hand): string {
   const u = unchecked(c).filter((h) => !only || h === only)
   if (!u.length) return ''
   const hs = u.length === 2 ? 'both hands' : u[0] === 'R' ? 'the right hand' : 'the left hand'
-  return `${isScale(c.form) ? `Fingering for ${hs}` : `The fingering for ${hs}`} is ${isScale(c.form) ? '' : 'rule-derived, '}not yet checked against a book; your teacher or book wins.`
+  return `${isScale(c.form) ? `Fingering for ${hs}` : `The fingering for ${hs}`} is ${isScale(c.form) ? '' : 'from teaching tables, '}not yet checked against a book; your teacher or book wins.`
 }
 
 /** What the Choose a scale card says about the fingering: the lead-in, each hand's fingers (the left hand going down in contrary motion), and the reasons. */
@@ -320,7 +316,7 @@ export function explain(c: Card): { lead: string; r: string; l: string; why: str
     if (contrary) why_.push(contraryLeft(c.tonic, c.form, c.oct).mirror ? 'Contrary motion: the left hand uses the same fingers as the right, so the thumbs and the long fingers meet.' : 'Contrary motion: the left hand cannot copy the right here (its thumb would land on a black key), so each hand keeps its usual fingering.')
   } else if (c.form === 'chromatic')
     why_.push('The thumb on white keys, the 3rd finger on black keys. Where two white keys follow each other (E F, B C) the right hand plays 1 then 2 going up, the left hand 2 then 1. Coming down each hand retraces its fingers.')
-  else why_.push('One workable fingering from a rule, not a standard one: the fingers repeat every octave, the thumb crossing under once; long fingers go on black keys and the thumb on a white key where it can. The left hand reads the same rule from the top down.')
+  else why_.push('The group fingering several teaching tables agree on: the fingers repeat every octave, the thumb crosses under once and goes on a white key where it can, the long fingers on the black keys.')
   why_.push(checkNote(c))
   return { lead, r: j(r), l: j(l), why: why_.filter(Boolean) }
 }

@@ -276,9 +276,9 @@ describe('arpeggios', () => {
             if (h === 'L') expect(fs[0]).not.toBe(1) // the left hand does not start on its thumb
           }
   })
-  it('white-key shapes: C major right hand 1 2 3 1 2 3 5, left hand 5 4 2 1 2 4 5 (one octave 5 4 2 1)', () => {
+  it('white-key shapes: C major right hand 1 2 3 1 2 3 5, left hand 5 4 2 1 4 2 1 (one octave 5 4 2 1)', () => {
     expect(fingers(0, 'arpMajor', 'R', 2)).toEqual([1, 2, 3, 1, 2, 3, 5])
-    expect(fingers(0, 'arpMajor', 'L', 2)).toEqual([5, 4, 2, 1, 2, 4, 5])
+    expect(fingers(0, 'arpMajor', 'L', 2)).toEqual([5, 4, 2, 1, 4, 2, 1])
     expect(fingers(0, 'arpMajor', 'L', 1)).toEqual([5, 4, 2, 1])
     expect(fingers(7, 'dom7', 'R', 1)).toEqual([1, 2, 3, 4, 5])
   })
@@ -286,6 +286,18 @@ describe('arpeggios', () => {
     const fs = fingers(1, 'arpMajor', 'R', 1)
     expect(fs[0]).not.toBe(1)
     expect(fs[1]).toBe(1) // F, the white key between them
+  })
+  it('published group tables (docs/changes/fingers.md): two octaves up, each hand', () => {
+    const f = (t: number, form: 'arpMajor' | 'arpMinor' | 'dom7' | 'dim7', h: 'R' | 'L') => fingers(t, form, h, 2).join('')
+    expect([f(6, 'arpMajor', 'R'), f(3, 'arpMinor', 'R'), f(3, 'arpMinor', 'L')]).toEqual(['1231235', '1231235', '5421421']) // F sharp major, E flat minor: the white-key shape
+    expect([f(1, 'arpMajor', 'R'), f(3, 'arpMajor', 'L'), f(8, 'arpMajor', 'R')]).toEqual(['2124124', '2142142', '2124124']) // the black-white-black keys
+    expect([f(6, 'arpMinor', 'R'), f(1, 'arpMinor', 'L')]).toEqual(['2124124', '2142142'])
+    expect([f(10, 'arpMajor', 'R'), f(10, 'arpMajor', 'L'), f(10, 'arpMinor', 'R'), f(10, 'arpMinor', 'L')]).toEqual(['2124124', '3213213', '2312312', '3213213'])
+    expect([f(2, 'arpMajor', 'L'), f(11, 'arpMajor', 'L')]).toEqual(['5321321', '5321321']) // D A E B left hand takes the 3rd finger
+    expect([f(10, 'dom7', 'R'), f(10, 'dom7', 'L'), f(1, 'dom7', 'R')]).toEqual(['412341234', '321432143', '412341234'])
+    expect([f(3, 'dim7', 'R'), f(3, 'dim7', 'L'), f(8, 'dim7', 'R'), f(8, 'dim7', 'L'), f(1, 'dim7', 'R'), f(1, 'dim7', 'L')]).toEqual(['341234123', '432143214', '412341234', '432143214', '412341234', '321432143'])
+    expect(fingers(10, 'arpMajor', 'R', 1).join('')).toBe('2124')
+    expect(fingers(1, 'dom7', 'L', 1).join('')).toBe('21432')
   })
   it('the song: 13 notes for two octaves of a triad, up and down; 17 for a seventh', () => {
     expect(scaleSong(c({ form: 'arpMajor', oct: 2 }), 60).notes.map((n) => n.p)).toEqual([60, 64, 67, 72, 76, 79, 84, 79, 76, 72, 67, 64, 60])
@@ -296,7 +308,7 @@ describe('arpeggios', () => {
   it('every arpeggio is unchecked, in both hands, and says so', () => {
     for (const form of FORMS) expect(unchecked(c({ form, tonic: 4, hands: 'both' }))).toEqual(['R', 'L'])
     expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/thumb/)
-    expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/rule-derived, not yet checked against a book/)
+    expect(explain(c({ form: 'arpMajor' })).why.join(' ')).toMatch(/from teaching tables, not yet checked against a book/)
     expect(explain(c({ form: 'arpMajor' })).why.join(' ')).not.toMatch(/standard fingering/)
   })
   it('keys: key signatures and names', () => {
