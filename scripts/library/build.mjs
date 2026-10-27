@@ -359,7 +359,7 @@ if (SET === 'current') {
   const cov = a.reduce((s, x, i) => s + (x - ma) * (b[i] - mb), 0)
   const rho = cov / Math.sqrt(a.reduce((s, x) => s + (x - ma) ** 2, 0) * b.reduce((s, x) => s + (x - mb) ** 2, 0))
   console.log(`Spearman(hand level, D) over ${xs.length} pieces: ${rho.toFixed(2)}`)
-  for (const [lv, k] of Object.entries(rank)) console.log(lv, count(done.filter((r) => level[r.id] === lv && r.grade).map((r) => r.grade)).sort())
+  for (const lv of Object.keys(rank)) console.log(lv, count(done.filter((r) => level[r.id] === lv && r.grade).map((r) => r.grade)).sort())
 }
 if (MERGE) {
   const added = merge(MERGE, OUT)

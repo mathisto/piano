@@ -26,7 +26,7 @@ export function partsOf(song: Song): number[] {
   return [...new Set(song.notes.flatMap((n) => [n.part, n.also].filter((p) => p !== undefined)))].sort((a, b) => a - b)
 }
 
-export const partName = (song: Song, p: number) => song.parts?.[p]?.trim() || `Part ${p + 1}`
+const partName = (song: Song, p: number) => song.parts?.[p]?.trim() || `Part ${p + 1}`
 
 /** What you can play while the app plays the rest. Empty when there is only one thing to play. */
 export function choices(song: Song): Choice[] {

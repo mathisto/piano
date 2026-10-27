@@ -131,7 +131,7 @@ export function barAt(bars: Bar[], t: number): number {
 
 /** A rhythm written as 0.3333 is a third of a quarter; 0.2 (a quintuplet) is not 5/24. */
 const onLattice = (x: number) => (Math.abs(Math.round(x * 24) / 24 - x) < 2e-3 ? Math.round(x * 24) / 24 : x)
-const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
+export const barQ = (b: { n: number; den: number; ql?: number }) => b.ql ?? (b.n * 4) / b.den
 /** A beat in quarters: the denominator's note, but a dotted quarter in 6/8, 9/8 and 12/8. */
 export const beatQ = (b: Bar) => (b.den === 8 && b.n % 3 === 0 && b.n > 3 ? 1.5 : 4 / b.den)
 

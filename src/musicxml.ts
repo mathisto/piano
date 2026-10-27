@@ -161,7 +161,7 @@ const JUMP: Record<string, RegExp> = { dc: /\bD\.\s?C\.|\bda\s+capo\b/i, ds: /\b
  * (no repeats on the way back, last ending only). A jump it cannot place (no segno, a To Coda with no Coda, two jumps)
  * is left out and flagged 'repeats-unexpanded'. A Fine with no jump ends the last pass of a repeat (a strophic song's postlude).
  */
-export function playOrder(parts: El[], flags: string[] = []): number[] {
+function playOrder(parts: El[], flags: string[] = []): number[] {
   const ms = kids(parts[0], 'measure')
   const marks = ms.map(() => new Set<string>())
   for (const part of parts)

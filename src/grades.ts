@@ -140,7 +140,7 @@ export const REQS: Req[] = [
   read(5, 'Reading at speed', 'The staff in both clefs, fluent: every note first try in about 1.5 s.', ['t-staff', 'b-staff', 'mixed'], true),
 ]
 
-export function rowOf(r: Req, c: Ctx): Row {
+function rowOf(r: Req, c: Ctx): Row {
   const { check, ...rest } = r
   if (!check) return { ...rest, state: 'coming', pct: 0 }
   const g = check(c)

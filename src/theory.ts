@@ -1,7 +1,7 @@
 import { dayNum, type NoteStat, type Stats } from './drill'
 import { isPulse, pulseDeck, type PulseId } from './pulse'
 import { chordEarCards, qaCards } from './ear2'
-import { degreeCards as earDegrees, intervalCards as earIntervals, playCards, rhythmCards, type Play } from './ear'
+import { MAJOR, degreeCards as earDegrees, intervalCards as earIntervals, pc, playCards, rhythmCards, type Play } from './ear'
 
 /** Theory trainers answered on the keyboard: a prompt, and a played answer checked as sets of pitch classes. */
 export type Trainer = 'chords' | 'keys' | 'intervals' | 'cadences' | 'degrees' | 'earplay' | 'earint' | 'eardeg' | 'rhythm' | 'earchord' | 'earqa' | PulseId
@@ -23,7 +23,6 @@ export interface TCard {
 }
 
 export const NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
-const pc = (n: number) => ((n % 12) + 12) % 12
 const names = (pcs: number[]) => pcs.map((p) => NAMES[p]).join(' ')
 
 export const QUAL: Record<string, [string, number[]]> = {
@@ -87,7 +86,6 @@ export function intervalCards(): TCard[] {
   return out
 }
 
-const MAJOR = [0, 2, 4, 5, 7, 9, 11]
 const TRIAD_Q = ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim']
 const ROMAN = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°']
 const PROGRESSIONS: [string, number[]][] = [['I–IV–V–I', [0, 3, 4, 0]], ['I–V–vi–IV', [0, 4, 5, 3]], ['ii–V–I', [1, 4, 0]], ['I–vi–IV–V', [0, 5, 3, 4]]]

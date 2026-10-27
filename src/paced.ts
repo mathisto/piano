@@ -9,8 +9,8 @@ import { median } from './util'
 export const PACE = { min: 30, max: 100, start: 50, step: 4 } // bpm
 export const PACED_CARDS = 16 // an endless spec still has an end: a paced run is one unbroken pulse
 const SLACK = 1.25 // the beat is a quarter longer than your usual time on a card
-export const CLEAN = 0.9 // share of cards on the beat for a clean run
-export const ROUGH = 0.6 // under this a run is rough
+const CLEAN = 0.9 // share of cards on the beat for a clean run
+const ROUGH = 0.6 // under this a run is rough
 export const MIN_CARDS = 12 // a shorter run says too little to move the tempo
 
 export interface Pace {

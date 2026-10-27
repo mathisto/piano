@@ -11,7 +11,7 @@ const HOLD_FLOOR = 0.5 // a cut-short note still keeps half its points
 const LONG_KEEP = 0.75
 
 // Real-time windows in ms, either side of the note. Tune by feel.
-export const WIN = { perfect: 45, great: 80, good: 125 }
+const WIN = { perfect: 45, great: 80, good: 125 }
 export const WEIGHT: Record<Grade, number> = { perfect: 1, great: 0.8, good: 0.5, miss: 0 }
 const POINTS = { perfect: 100, great: 80, good: 50 }
 const WAIT_EARLY = 0.6 // wait mode accepts a note this many song-seconds early

@@ -2,8 +2,8 @@ import { dayNum } from './drill'
 
 /** A day counts as practised from this many seconds (the week strip uses the same line). */
 export const MIN_SEC = 60
-export const EARN_EVERY = 7 // a freeze for each week of practised days in a row
-export const MAX_FREEZES = 2
+const EARN_EVERY = 7 // a freeze for each week of practised days in a row
+const MAX_FREEZES = 2
 
 /** The local day number of a 'YYYY-MM-DD' key, via dayNum at local noon so DST and time zones cannot shift it. */
 export const dayOfKey = (k: string) => {

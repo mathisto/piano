@@ -13,8 +13,8 @@ import { esc } from './util'
 
 export const TOP = 4 // stage 4: no staff at all
 export const STAGES = ['Full score', 'Every 4th bar hidden', 'Every 2nd bar hidden', 'Barlines only', 'No staff']
-export const CLEAN_TO_ADVANCE = 2 // clean passes in a row at a stage move you on
-export const DROP_OVER = 3 // more slips than this in one pass step you back
+const CLEAN_TO_ADVANCE = 2 // clean passes in a row at a stage move you on
+const DROP_OVER = 3 // more slips than this in one pass step you back
 
 /** Whether a bar's notes are hidden at a stage (bars 0-based): stage 1 hides bars 4, 8, 12..., stage 2 every even bar, 3 and up all. */
 export const hidden = (stage: number, bar: number) => (stage >= 3 ? true : stage === 2 ? bar % 2 === 1 : stage === 1 ? bar % 4 === 3 : false)

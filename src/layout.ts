@@ -1,16 +1,16 @@
 // Pure staff layout: the notation layer (bar, qb, qd, voice, ties, tuplets, graces) in, placed glyph descriptions out.
 // No DOM. staff.ts paints the result; everything that can collide or clip is decided here and tested in layout.test.ts.
 import { tiedSegments } from './quantize'
-import type { Note, Song } from './song'
+import { barQ, type Note, type Song } from './song'
 import { BOTTOM_STEP, clefFor, keyAcc, keySigSteps, spell, type Spelled } from './spell'
 
 export type Clef = 'treble' | 'bass'
 export const S = 10 // one staff space, viewBox units
-export const GRAND = { h: 166, base: { treble: 64, bass: 134 } } // 166 leaves room for stems below the bass staff
+const GRAND = { h: 166, base: { treble: 64, bass: 134 } } // 166 leaves room for stems below the bass staff
 export const SOLO = { h: 104, base: { treble: 72, bass: 72 } }
 export const GAP = 26 // between systems in sheet view
-export const MID_STEP = { treble: 34, bass: 22 } // B4, D3: the middle line of each clef
-export const MIN_GAP = 14 // least distance between two onset columns
+const MID_STEP = { treble: 34, bass: 22 } // B4, D3: the middle line of each clef
+const MIN_GAP = 14 // least distance between two onset columns
 const TOP_STEP = { treble: BOTTOM_STEP.treble + 8, bass: BOTTOM_STEP.bass + 8 }
 const HEAD = 5.9 // half a notehead
 const SECOND = 11.4 // a displaced second
@@ -21,7 +21,6 @@ const COMFORT = 1.15 // gaps wanted when deciding how many bars share a system
 const ZOOMS = [1, 1.2, 1.45, 1.75] // sheet pages shrink the glyphs this much before a bar is called too dense
 const near = (a: number, b: number, e = 0.02) => Math.abs(a - b) < e
 const qk = (q: number) => Math.round(q * 48)
-const barQ = (b: { n: number; den: number; ql?: number }) => b.ql ?? (b.n * 4) / b.den
 
 // ---- written values ----
 

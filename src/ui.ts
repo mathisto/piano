@@ -191,7 +191,7 @@ export function creditsDialog(blocks: string[], licences: { app: string; corpus:
     <footer><button class="btn" data-close>Close</button></footer>`
 }
 
-export const FREE = 'Free, no subscription, no ads, no account.'
+const FREE = 'Free, no subscription, no ads, no account.'
 const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evenness.'
 const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
@@ -425,7 +425,7 @@ export interface TouchCal {
   got: number // notes played in this step
 }
 
-export const CAL_STEPS = ['soft', 'medium', 'hard'] as const
+const CAL_STEPS = ['soft', 'medium', 'hard'] as const
 export const CAL_NOTES = 10
 
 /** The player's soft, medium and hard edges, and the ten-notes-each calibration that sets them. */
@@ -720,7 +720,7 @@ const RANGES: Record<RunSpec['clef'], [string, number, number][]> = {
 export const RUN_START: Record<RunSpec['clef'], [number, number]> = { treble: [60, 72], bass: [48, 60], grand: [43, 77] }
 const WHITE = (p: number) => ![1, 3, 6, 8, 10].includes(p % 12)
 const KEYS_RUN: [number, string][] = [[1, 'Key of G'], [2, 'Key of D'], [3, 'Key of A'], [4, 'Key of E'], [-1, 'Key of F'], [-2, 'Key of B♭'], [-3, 'Key of E♭'], [-4, 'Key of A♭']]
-export const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
+const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
 export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
 const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)}${s.length ? ` · ${s.length} cards` : ''}${s.pace ? ` · paced, ${s.pace} bpm` : ''}`
 

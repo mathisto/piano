@@ -78,7 +78,7 @@ const HAND_NAME: [RegExp, 'R' | 'L'][] = [
 ]
 
 /** Three or more MIDI tracks: pin each to a hand by its name, else by its middle pitch (the app would split them all at middle C). */
-export function pinHands(buf: ArrayBuffer): Selection | undefined {
+function pinHands(buf: ArrayBuffer): Selection | undefined {
   const live = inspectMidi(buf).tracks.filter((t) => !t.percussion)
   if (live.length < 3) return undefined
   const hands: Record<number, 'R' | 'L'> = {}
@@ -154,7 +154,7 @@ export function judge(s: Song, marks = '', hasTempo = true) {
 }
 
 /** 4-grams of the intervals of the top line (highest note at each onset). */
-export function fingerprint(s: Song): Set<string> {
+function fingerprint(s: Song): Set<string> {
   const top = new Map<number, number>()
   for (const n of s.notes) if (!n.grace) top.set(Math.round(n.t * 50), Math.max(top.get(Math.round(n.t * 50)) ?? 0, n.p))
   const line = [...top.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])
@@ -257,14 +257,14 @@ async function voiced(e: Input): Promise<{ e: Input; a: Analysis }> {
 
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 // surname and dates: 'F. F. Chopin (1810–1849)' and 'Frédéric Chopin (1810–1849)' are one composer
-export const composerKey = (c: string) => fold(c.replace(/\(.*\)/, '')).trim().split(/[\s.]+/).pop()!.replace(/[^a-z]/g, '') + (c.match(/\d{4}/g) ?? []).join('')
+const composerKey = (c: string) => fold(c.replace(/\(.*\)/, '')).trim().split(/[\s.]+/).pop()!.replace(/[^a-z]/g, '') + (c.match(/\d{4}/g) ?? []).join('')
 const CAT = /\b(BWV\s*(?:Anh\.?\s*)?\d+[a-z]?|K(?:V|\.)?\s*\d+[a-z]?|Anh\.?\s*\d+|WoO\s*\d+|Op\.?\s*\d+[a-z]?(?:,?\s*No\.?\s*\d+)?)/i
-export const catKey = (e: Pick<Input, 'title' | 'opus'>) => {
+const catKey = (e: Pick<Input, 'title' | 'opus'>) => {
   const m = CAT.exec(`${e.opus ?? ''} ${e.title}`)
   return m ? fold(m[1]).replace(/[^a-z0-9]/g, '') : ''
 }
 const words = (t: string) => new Set(fold(t.replace(CAT, '')).split(/[^a-z0-9]+/).filter((w) => w.length > 1))
-export const jaccard = <T,>(a: Set<T>, b: Set<T>) => {
+const jaccard = <T,>(a: Set<T>, b: Set<T>) => {
   let n = 0
   for (const x of a) if (b.has(x)) n++
   return a.size + b.size ? n / (a.size + b.size - n) : 0

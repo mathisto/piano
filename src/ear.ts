@@ -10,7 +10,7 @@ export type Play =
 
 /** Tunable: tempo, the half-width of a good tap, the biggest whole-bar offset still counted, a chord's keys count as one tap, the wait for a stray extra tap. */
 export const RHYTHM = { bpm: 80, window: 110, maxBias: 250, merge: 60, grace: 400 }
-export const NOTE_MS = 600 // a phrase note and the gap to the next
+const NOTE_MS = 600 // a phrase note and the gap to the next
 
 export const pc = (n: number) => ((n % 12) + 12) % 12
 export const MAJOR = [0, 2, 4, 5, 7, 9, 11]

@@ -275,7 +275,7 @@ export function weakest(stats: Stats, n = 3): { name: string; clean: number; rt:
     .slice(0, n)
 }
 
-export const BPM = 60
+const BPM = 60
 
 /** Where each note of a deck sits: a chord card on one beat, a melodic fragment on consecutive beats. `every` spaces the cards (a paced run at two beats a card). */
 export function layout(d: Card[], every = 1): { beat: number; card: number; p: number; c: Card }[] {

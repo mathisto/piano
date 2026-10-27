@@ -15,9 +15,9 @@ declare const __COMMIT__: string | undefined // set in vite.config.ts; absent un
  * Where a problem report goes. An address (contains @) opens the mail app; a URL opens that page with title and body in the query.
  * Nothing is sent by the app: the link only opens the user's mail or browser. The owner may swap in a mailto address here.
  */
-export const REPORT_TO = 'https://github.com/mathisto/piano/issues/new'
+const REPORT_TO = 'https://github.com/mathisto/piano/issues/new'
 
-export const PROMPT = 'What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, other)'
+const PROMPT = 'What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, other)'
 
 /** The text of a report for one library piece, from its catalogue row. `bar` is the 1-based bar the player was at, if known. */
 export function reportText(cat: Catalog, p: Piece, bar?: number, version = typeof __COMMIT__ === 'string' ? __COMMIT__ : ''): { title: string; body: string } {

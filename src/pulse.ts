@@ -3,7 +3,7 @@ import type { TCard } from './theory'
 import { mean, plural } from './util'
 
 /** Pulse trainers: tap a steady beat, the subdivisions of one, or a written rhythm, on any key, against a quarter-note click. Pure scheduling and scoring; the sound is in pulse-play.ts. Time is in quarter-note beats from the start of the card. */
-export const PULSE_IDS = ['keepbeat', 'subdiv', 'holdrhythm'] as const
+const PULSE_IDS = ['keepbeat', 'subdiv', 'holdrhythm'] as const
 export type PulseId = (typeof PULSE_IDS)[number]
 export const isPulse = (t: string): t is PulseId => (PULSE_IDS as readonly string[]).includes(t)
 
@@ -25,7 +25,7 @@ export interface PulsePlay {
 
 /** Tunables. Keep the beat: no tap in the silent bars may be further than `window` ms from the true grid (the bias is not taken out, it is measured), and the drift may not pass `maxDrift` ms a beat; under `steady` ms a beat is called steady. Subdivisions: each tap's window is `frac` of the gap to its nearest neighbour, never more than RHYTHM.window; the player's mean offset is taken out first. */
 export const KEEP = { lead: 2, window: 150, maxDrift: 10, steady: 2 }
-export const SUB = { frac: 0.35, bars: 2, lead: 1 }
+const SUB = { frac: 0.35, bars: 2, lead: 1 }
 export const SWING = 2 / 3 // swung eighths: the second one sits two thirds of the way through the beat
 
 const range = (a: number, z: number, step: number) => Array.from({ length: Math.floor((z - a) / step) + 1 }, (_, i) => a + i * step)
