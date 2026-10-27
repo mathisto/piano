@@ -31,6 +31,18 @@ One file per feature branch: what it built, how it was checked, what is open.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/lieder.md`: OpenScore Lieder in the pipeline, the fold gate and the 36 held-back songs.
 - `changes/e2e.md`: the end-to-end suite and the bugs it found.
+- `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
+- `changes/split.md`: `main.ts` split into the `src/app/` modules, and the rules to keep.
+- `changes/libgrow.md`: the 1930 publication rule with an evidence allow-list, no ceiling on the library, movement `.ly` matching, and the grown 1,817-piece run.
+- `changes/ladder.md`: the repertoire ladder on the Path.
+- `changes/guide.md`: the Start here card, tab notes, the Help sheet and the Connect line.
+- `changes/pulse.md`: the pulse trainers: keep the beat, subdivisions, hold a rhythm against the beat.
+- `changes/chordear.md`: the chord ear and question-and-answer trainers.
+- `changes/osk.md`: on-screen keys for Theory, the Quiz, Sight Run and reading drills.
+- `changes/accomp.md`: accompaniment practice: you play one part, the app plays the rest.
+- `changes/recorder.md`: takes, Listen back, Compare with last time and the Ghost.
+- `changes/realtouch.md`: touch coaching on real pieces: written dynamics and articulation followed or not.
+- `changes/marks.md`: staccato, tenuto, accents, slurs, hairpins and dynamic letters drawn on the staff.
 
 ## Research (`research/`)
 

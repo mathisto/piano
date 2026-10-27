@@ -18,4 +18,4 @@ Branch `feature/marks`. The touch results named marks the staff did not draw; no
 
 - Real library scores only through tests. If the gap between the staves is crowded (a ledger note with a mark over a left-hand stem pointing up), a letter can cross a stem. Slurs and beams in that gap are not avoided.
 - A slur whose two ends are both off the page is not drawn. A slur's end on a tied note is drawn at the note's first head.
-- Pre-existing, not from this branch: `dock.ts` `drawMap` can throw "Cannot destructure property 'bars' of 'this.song'" when `liveHeat` fires before a song is set (seen once on a reload in portrait).
+- Pre-existing, not from this branch, fixed on merge: `dock.ts` `drawMap` threw when `liveHeat` fired before a song was set; it now returns early.

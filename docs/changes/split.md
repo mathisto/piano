@@ -11,6 +11,7 @@ same function names, DOM ids and listeners; only shared-state writes and upward 
 - `readthrough-ui.ts`, `memorise-ui.ts`, `drill.ts` (drills and Sight Run), `read.ts`, `calibration.ts`, `results.ts`.
 - `theory-ui.ts`, `scales-ui.ts`, `technique-ui.ts` (with touch calibration), `today.ts` (Today, Progress, Path).
 - `drawer.ts` settings drawer, Set up, Credits. `input.ts` MIDI/computer-key routing and the keyboard shortcuts.
+- Added since the split, both importing only `state.ts`: `osk-ui.ts` (the on-screen keys, `osk.md`) and `take-ui.ts` (the recorder glue, `recorder.md`); `results.ts` calls `take-ui`, `banner.ts` calls `osk-ui`.
 
 ## Rules to keep
 - Shared `let`s live in `state.ts`; assign them through their setter (`setCurrent(x)`), since another module cannot.
@@ -24,6 +25,5 @@ same function names, DOM ids and listeners; only shared-state writes and upward 
 - A headless walk (every tab, drill, Sight Run set, scale run, Theory, Read-through, Memorise, calibration, technique,
   Perform song) prints the same text on the old and new code.
 
-## Found, not fixed (pre-existing, also on main)
-- A key release while no piece has been opened yet (e.g. playing on a Theory card straight after boot) throws in
-  `chordUpdate`: `game.song` is undefined. One guard there fixes it.
+## Found, then fixed
+- A key release while no piece had been opened (e.g. playing on a Theory card straight after boot) threw in `chordUpdate` because `game.song` was undefined. `stage.ts` now returns early (969a5c1).

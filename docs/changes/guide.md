@@ -19,5 +19,5 @@ The Shortcuts sheet is now Help (`?` or Settings > Help): what each tab is for, 
 `.kbline` (No keyboard connected, Connect keyboard, computer-key hint) heads Theory, Scales Quiz and Sight Run. `updateChip` hides it when a MIDI input appears and shows it again when it goes.
 
 ## Known gaps
-- There is no on-screen piano, so an iPad with no MIDI keyboard and no hardware keyboard still cannot answer a Theory card. The hint names the computer keys only. Tappable keys are the real fix (file in ROADMAP).
+- There was no on-screen piano when this was written; `osk.md` closed that, and the Connect line now names the on-screen keys.
 - Verified in headless Chrome with a fake MIDI input, not on the iPad or a real keyboard.
