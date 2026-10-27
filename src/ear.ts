@@ -1,9 +1,11 @@
+import type { PulsePlay } from './pulse'
 import { NAMES, type TCard } from './theory'
 
 /** Ear trainers: the app plays, the player plays it back. Pure logic only; the sound is in ear-play.ts. */
 export type Play =
   | { kind: 'notes'; ev: { p: number[]; at: number; dur: number }[] } // pitches sounded together, ms from the start
   | { kind: 'rhythm'; onsets: number[] } // eighth notes from the downbeat of one bar of 4/4
+  | PulsePlay // the pulse trainers (pulse.ts)
 
 /** Tunable: tempo, the half-width of a good tap, the biggest whole-bar offset still counted, a chord's keys count as one tap, the wait for a stray extra tap. */
 export const RHYTHM = { bpm: 80, window: 110, maxBias: 250, merge: 60, grace: 400 }
@@ -179,16 +181,18 @@ export interface TapScore {
   note?: string
 }
 
-/** Score taps against a bar. The mean offset is the player's bias (and the speaker's lag); what is judged is each tap's distance from the grid once that is taken away. */
-export function scoreTaps(onsets: number[], taps: number[], win = RHYTHM.window): TapScore {
-  const at = onsets.map((o) => (o * beatMs()) / 2)
+/** Score taps against moments in ms (`win` is one half-width for all, or one per moment). The mean offset is the player's bias (and the speaker's lag); what is judged is each tap's distance from the grid once that is taken away. */
+export function scoreAt(at: number[], taps: number[], win: number | number[] = RHYTHM.window): TapScore {
   if (taps.length !== at.length) return { ok: false, bias: 0, spread: 0, note: `You tapped ${taps.length} of ${at.length}.` }
   const err = taps.map((t, i) => t - at[i])
   const bias = err.reduce((a, b) => a + b, 0) / err.length
   const dev = err.map((e) => e - bias)
   const spread = Math.sqrt(dev.reduce((a, d) => a + d * d, 0) / Math.max(1, err.length - 1))
-  return { ok: dev.every((d) => Math.abs(d) <= win) && Math.abs(bias) <= RHYTHM.maxBias, bias, spread }
+  return { ok: dev.every((d, i) => Math.abs(d) <= (typeof win === 'number' ? win : win[i])) && Math.abs(bias) <= RHYTHM.maxBias, bias, spread }
 }
+
+/** Score taps against a bar of eighth-note onsets. */
+export const scoreTaps = (onsets: number[], taps: number[], win = RHYTHM.window) => scoreAt(onsets.map((o) => (o * beatMs()) / 2), taps, win)
 
 /** "Bias 12 ms late, spread 18 ms": the offset of the bar from the click, and how even the taps were inside it, kept apart. */
 export function biasText(bias: number, spread: number) {
@@ -204,7 +208,7 @@ export interface EarView {
 }
 
 /** What the player is told to do, and the controls and answer grid beside the prompt. */
-export const earAsk = (c: TCard) => (c.play?.kind === 'rhythm' ? 'Listen to the bar, then tap it back on the click, on any key.' : 'Listen, then play it back on your keyboard, in any octave.')
+export const earAsk = (c: TCard) => (c.play?.kind === 'rhythm' ? 'Listen to the bar, then tap it back on the click, on any key.' : c.play?.kind === 'pulse' ? c.play.ask : 'Listen, then play it back on your keyboard, in any octave.')
 
 /** The bar as eight cells counted 1 & 2 & 3 & 4 &, the taps filled in. */
 const cells = (onsets: number[]) => {

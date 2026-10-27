@@ -1,0 +1,15 @@
+# Pulse trainers (feature/pulse)
+
+Three trainers in the Theory tab, answered by tapping any key(s), in the same 15-card session as the ear trainers (spaced review via `record()`, results, `logHistory` kind `theory`, no `ms`). Every prompt is a quarter-note click through `audio.click(..., force)`, whatever `settings.click` says. No points or ranks; numbers are reported in plain words.
+
+- **Keep the beat** (3 levels: 1, 2, 4 silent bars): 2 bars of click, the silence, then the click returns for a bar. Taps in the silent bars are measured against the true grid: drift (ms a beat, the slope: "You sped up by 6 ms a beat."), bias (offset on the first silent beat) and spread (what is left around that line), kept apart. Bias is not taken out. Pass = every tap within `KEEP.window` (150 ms) and drift within `KEEP.maxDrift` (10 ms a beat); under `KEEP.steady` (2) it says "held the beat steady". Judged when the click has come back. 13 tempi, 60 to 108.
+- **Subdivisions** (4 levels: eighths, triplets, sixteenths, mixed): a bar of click, then two bars of taps against it. Mixed pairs two different kinds from eighths, triplets, sixteenths and swung eighths (second note 2/3 through the beat, `SWING`). Each tap is scored against its grid position after the player's mean offset is removed (`scoreAt`, shared with the rhythm echo); a tap's window is `SUB.frac` (35%) of the gap to its nearest neighbour, never above `RHYTHM.window`, so sixteenths are tighter than eighths.
+- **Hold a rhythm against the beat** (4 levels, the rhythm echo's bars): the bar is drawn as dots on a four-beat grid and tapped twice through after a bar of click. `RHYTHM.window`, `RHYTHM.maxBias` as in the echo.
+
+Cards are deterministic (ids `pulse:keep|sub|hold:...`), so spaced review finds them again. After a miss the answer is clapped on the click (subdivisions, hold); a keep the beat miss is the text. Replay restarts the card. A wrong tap count is a note ("You tapped 15 of 16."), not a score. The session results add the mean bias and spread, and for keep the beat the mean drift.
+
+## Files
+New: `src/pulse.ts` (decks, scoring, markup), `src/pulse.test.ts`, `src/pulse-play.ts` (click schedule, taps, judging), `src/pulse.css`. Small edits: `ear.ts` (`Play` union, `scoreAt` split out of `scoreTaps`, `earAsk`), `ear-play.ts` (`schedule` exported, `drift`, session summary), `theory.ts` (3 ids, 3 `TRAINERS` entries, deck dispatch), `app/theory-ui.ts` (dispatch to `playPulse` and `pulseTap`, no `ms` in history), `ui.ts` (bars on the card, no median on results), `scripts/e2e/run.mjs` (taps pulse cards; the three trainers added to the side lanes).
+
+## Not verified
+Real sound and a real keyboard on the iPad; Bluetooth or speaker latency shows as bias by design. Synthetic taps in headless Chrome only. Dev-only `window.__ear` exposes the live card and tap clock (`e.t0`, `c.play.want` in beats, `c.play.bpm`).
