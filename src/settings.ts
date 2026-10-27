@@ -34,6 +34,8 @@ export interface Settings {
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
   readBest?: number // Read through: the fastest tempo of a clean read-through, so the next one does not start faster
+  osk?: boolean // on-screen keys under Theory and the Quiz: unset follows whether a MIDI keyboard is connected
+  oskNames?: boolean // a letter on every white key of the on-screen keys, not just the Cs
   readAhead?: boolean // Read through: only the next two bars show once the music moves
 }
 

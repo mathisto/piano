@@ -170,7 +170,8 @@ export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
 
-const noKeyboard = () => keyboardLine(inputs().length > 0)
+/** The Connect line, and with `osk` the switch for the on-screen keys (app/osk-ui.ts). */
+const noKeyboard = (osk = false) => keyboardLine(inputs().length > 0) + (osk ? `<label class="switch osk-sw"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs().length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>` : '')
 
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
@@ -393,7 +394,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
     .join('')
   el.innerHTML = `
     ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
-    ${tab === 'run' ? noKeyboard() + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
+    ${tab === 'run' ? noKeyboard(true) + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
       <colgroup><col><col class="mcol">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`}`
@@ -806,7 +807,7 @@ function quizBody(q: QuizState) {
   const done = q.picked !== undefined
   const right = done && quizRight(c, q.picked!)
   const hand = c.hand === 'R' ? 'right hand' : 'left hand'
-  return `<section class="tcard run" aria-label="Quiz"><p class="fine">Card ${q.i + 1} of ${q.cards.length}${q.streak > 1 ? ` · streak ${q.streak}` : ''}</p>
+  return `<section class="tcard run" aria-label="Quiz" data-osk><p class="fine">Card ${q.i + 1} of ${q.cards.length}${q.streak > 1 ? ` · streak ${q.streak}` : ''}</p>
     <h2>${esc(keyName(c.tonic, c.form))}, ${hand}</h2>
     <p class="line">Which degree takes the 4th finger? Press the note on your keyboard, or tap a number.</p>
     <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}${done && quizRight(c, d) ? ', the answer' : ''}">${d}${done && quizRight(c, d) ? icon('check') : ''}</button>`).join('')}</div>
@@ -842,7 +843,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
     ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
-    ${tab === 'quiz' ? noKeyboard() : ''}${body}`
+    ${tab === 'quiz' ? noKeyboard(true) : ''}${body}`
 }
 
 // ---------------------------------------------------------------- Theory
@@ -878,12 +879,12 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
   } else {
     const c = run.cards[run.i]
     const t = TRAINERS.find((x) => x.id === run.trainer)!
-    body = `<section class="tcard run" aria-label="${esc(t.name)}"><p class="fine">${esc(t.name)} · card ${run.i + 1} of ${run.cards.length}${run.streak > 1 ? ` · streak ${run.streak}` : ''}</p>
+    body = `<section class="tcard run" aria-label="${esc(t.name)}" data-osk><p class="fine">${esc(t.name)} · card ${run.i + 1} of ${run.cards.length}${run.streak > 1 ? ` · streak ${run.streak}` : ''}</p>
       <h2>${esc(c.prompt)}</h2>
       ${c.steps.length > 1 ? `<p class="line">${c.steps[0].pcs.length > 1 ? 'Chord' : 'Note'} <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
       <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : c.play ? earAsk(c) : 'Play it on your keyboard.'}</p>
       ${c.play?.kind === 'pulse' ? pulseBars(c.play) : ''}${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
-  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${noKeyboard()}${body}`
+  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${noKeyboard(true)}${body}`
 }

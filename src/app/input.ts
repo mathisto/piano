@@ -11,6 +11,7 @@ import { theoryNote, theoryOpen } from './theory-ui'
 import { answerQuiz, quiz, quizOpen } from './scales-ui'
 import { calNote } from './technique-ui'
 import { closeDrawer } from './drawer'
+import { mountOsk } from './osk-ui'
 
 export const fromKeyboard = (m: MidiMsg) => {
   if (m.on) {
@@ -20,12 +21,14 @@ export const fromKeyboard = (m: MidiMsg) => {
       updateBanner()
     }
     if (!m.virtual && calNote(m.v)) return
+    const sound = () => (settings.sound || m.virtual) && audio.noteOn(m.p, m.v, true) // the screen and computer keys have no speaker of their own
     if (theoryOpen()) {
-      if (settings.sound) audio.noteOn(m.p, m.v, true)
+      sound()
       theoryNote(m.p, m.ts)
       return // the trainer owns the keyboard while a card is open
     }
     if (quizOpen()) {
+      sound()
       const c = quiz!.cards[quiz!.i]
       const d = c ? degreeOfPitch(c.tonic, c.form, m.p) : 0
       if (d) answerQuiz(d)
@@ -36,6 +39,7 @@ export const fromKeyboard = (m: MidiMsg) => {
   } else game.release(m.p, m.ts, m.virtual)
 }
 onMidi(fromKeyboard)
+mountOsk(fromKeyboard)
 onPedal((d) => game.sustain(d))
 typingKeyboard()
 

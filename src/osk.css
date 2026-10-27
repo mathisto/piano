@@ -1,0 +1,86 @@
+/* The on-screen keys: a strip under Theory and the Quiz. Ink keys on the panel, the player's cyan where a finger is. */
+#app {
+  grid-template-rows: 56px minmax(0, 1fr) auto;
+}
+body.zen #app {
+  grid-template-rows: minmax(0, 1fr);
+}
+#osk[hidden] {
+  display: none;
+}
+#osk {
+  display: grid;
+  gap: 6px;
+  padding: 6px clamp(8px, 2vw, 24px) 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--line-2);
+  touch-action: none;
+}
+.osk-sw {
+  margin: 0 0 16px;
+}
+.osk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.osk-bar .btn.sm {
+  min-width: var(--control);
+  min-height: var(--control);
+}
+.osk-bar .flip svg {
+  transform: scaleX(-1);
+}
+.osk-range {
+  min-width: 7ch;
+  text-align: center;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.osk-names {
+  margin-left: auto;
+}
+.osk-names[aria-pressed='true'] {
+  background: var(--panel-3);
+  box-shadow: inset 0 0 0 2px var(--ink-2);
+}
+.osk-keys {
+  position: relative;
+  height: clamp(124px, 22dvh, 190px);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.osk-keys i {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font: 700 13px/1 var(--ui);
+  font-style: normal;
+  transition: background 0.06s;
+}
+.osk-keys .w {
+  bottom: 0;
+  z-index: 1;
+  padding-bottom: 8px;
+  color: var(--line-2);
+  background: var(--ink);
+  border-radius: 0 0 var(--r-2) var(--r-2);
+  box-shadow: inset -2px 0 var(--panel), inset 2px 0 var(--panel);
+}
+.osk-keys .b {
+  z-index: 2;
+  height: 62%;
+  background: var(--ground);
+  border-radius: 0 0 var(--r-1) var(--r-1);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+.osk-keys .w.on {
+  background: var(--R);
+}
+.osk-keys .b.on {
+  background: var(--R);
+  box-shadow: inset 0 0 0 1px var(--R);
+}
