@@ -4,6 +4,7 @@ import { settings } from '../settings'
 import { noteName } from '../spell'
 import { $ } from '../ui'
 import { current, esc, game, hooks, played } from './state'
+import { syncOsk } from './osk-ui'
 
 export let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
 let noteTimer = 0
@@ -42,6 +43,7 @@ export function updateChip() {
   $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
   $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
   document.querySelectorAll<HTMLElement>('.kbline').forEach((e) => (e.hidden = list.length > 0)) // the Connect line on Theory, the Quiz and Sight Run
+  syncOsk() // the on-screen keys follow it
   const su = document.querySelector('#suMidi')
   if (su) {
     su.textContent = midiLine()
