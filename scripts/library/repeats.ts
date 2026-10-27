@@ -19,7 +19,7 @@ type Rec = { len: number; ev: Ev[]; unfolded?: boolean; delay?: number } // unfo
 type Tok = { t: string; v: string; d?: string }
 
 const DUR = String.raw`(?:\d+|\\breve|\\longa)\.*(?:\*\d+(?:/\d+)?)*(?::\d*)?`
-const TOK = new RegExp(String.raw`\s+|\x01(\d+)\x01|(<<|>>|\\\\|[{}<>=])|\\([a-zA-Z]+)|\\.|[-^_](?:\d+|[.>^+!_|-])?|([a-zA-Z]+(?:[.-][a-zA-Z]+)*)[',]*[!?]?(?:=(?:[',]+|(?=\d)))?(${DUR})?|(\d+(?:/\d+)?\.*(?:\*\d+(?:/\d+)?)*(?::\d*)?)|.`, 'y')
+const TOK = new RegExp(String.raw`\s+|\x01(\d+)\x01|(<<|>>|\\\\|[{}<>=])|\\([a-zA-Z]+)|\\.|[-^_](?:\d+|[.>^+!_|-])?|([a-zA-Z]+(?:[.-][a-zA-Z]+)*)[',]*[!?]?(?:=(?:[',]+|(?=\d)))?(${DUR})?|\d+\.\d+|(\d+(?:/\d+)?\.*(?:\*\d+(?:/\d+)?)*(?::\d*)?)|.`, 'y')
 
 function tokens(src: string): Tok[] {
   const strs: string[] = []
@@ -41,7 +41,14 @@ function tokens(src: string): Tok[] {
     }
     TOK.lastIndex = i
     const m = TOK.exec(src)!
+    const start = i
     i = TOK.lastIndex
+    if (m[4] && /[.-]/.test(m[4]) && m[0].includes('=')) {
+      // force-hshift=0.5: a property, not a pitch with an octave check: the = is its own token
+      out.push({ t: 'note', v: m[4] })
+      i = start + m[0].indexOf('=')
+      continue
+    }
     if (m[1]) out.push({ t: 'str', v: strs[+m[1]] })
     else if (m[2]) out.push({ t: m[2], v: m[2] })
     else if (m[3]) out.push({ t: 'cmd', v: m[3] })
@@ -164,6 +171,7 @@ function readLy(src: string, unfoldAll = false): Rec[] {
       return len
     }
     if (k.t === '<') {
+      if (is('>')) return p++, 0 // <> carries marks (a dynamic, a text) and has no length
       while (p < T.length && !is('>')) p++
       p++
       if (is('num')) last = dur(T[p++].v)
@@ -399,7 +407,8 @@ function readLy(src: string, unfoldAll = false): Rec[] {
     else if (BLOCK.has(k.v)) block()
     else if (['version', 'include', 'language'].includes(k.v)) p++
   }
-  return scores.filter((s) => s.midi)
+  // a file whose scores all say \layout and none \midi (the midi line commented out, or added by Mutopia's build) has its MIDI from them
+  return scores.some((s) => s.midi) ? scores.filter((s) => s.midi) : scores.filter((s) => s.len)
 }
 
 /** midi.toArray(), but @tonejs/midi 2.0.28 writes a key signature as its table index + 7 where the file wants the fifths
