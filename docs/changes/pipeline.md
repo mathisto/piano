@@ -23,7 +23,7 @@ Types: `src/catalog-types.ts`. Grade overrides: `scripts/library/overrides.json`
 
 ## Open
 
-- **Repeats are not unfolded**: 148 of the 193 `\repeat volta` pieces in the old set have no `\unfoldRepeats`, so their MIDI plays each repeat once. Unfolding needs bar positions of the repeat signs, which means reading LilyPond durations through variables, voices and partial bars: not modest. The way through is LilyPond itself (`\unfoldRepeats` and re-render the MIDI, converting old `.ly` with `convert-ly`), which makes the MIDI our own derivative (fine for PD and CC BY, share-alike for CC BY-SA). 132 shipped pieces carry the flag.
+- **Repeats**: unfolded at ingestion since 2026-10-27 (`repeats.ts`, `docs/changes/repeats.md`); 38 shipped pieces keep the flag (13 of them bundled).
 - Grade calibration: the cut points follow the asked distribution, not the labels (see above). Decide which the app wants before the bundle is cut; a label-matched set is one `fit.mjs` change.
 - Movement titles: `Movement k` follows the zip's file order, which is the score order for LilyPond's numbered files; the Partitas' `51title-hub.mid` style and Clementi's lesson files read as numbers too. Dedupe can merge two different movements of one work whose top lines share most 4-grams (Pictures' Promenades; the last two of BWV 827 have the same D).
 - `catKey` reads Mutopia's opus field before the title, so `Op. 28` matches every Prelude of Op. 28; the fingerprint keeps them apart, but the key is coarser than it looks.

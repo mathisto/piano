@@ -8,6 +8,8 @@ import { inspectMidi, type Selection } from '../../src/midi-tracks'
 import { fromMusicXml, xmlText } from '../../src/musicxml'
 import { estimateFifths, fromMidi, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
+import { withRepeats } from './repeats'
+export { unfold } from './repeats'
 
 export interface Input {
   id: string
@@ -253,7 +255,9 @@ const parseComposer = (c: string) => {
 const lname = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
 
 export async function run(inputs: Input[], out: string, o: Options = {}): Promise<Row[]> {
-  const all = [...inputs].sort((a, b) => idOrder(a.id, b.id))
+  const pinned = new Set(o.pinned)
+  // LilyPond's MIDI plays a volta repeat once: play it out (repeats.ts), except in a pinned file, which stays the bundle's
+  const all = inputs.map((e) => (pinned.has(e.id) ? e : withRepeats(e))).sort((a, b) => idOrder(a.id, b.id))
   const items: { e: Input; a: Analysis }[] = []
   for (const e of all) items.push({ e, a: await analyse(e) })
   const rows = new Map<string, Row>()
@@ -266,7 +270,6 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
     if (g) a.grade = g
     if (a.fails.length) set(e.id, 'analyse', a.error ? [...a.fails, a.error] : a.fails, a)
   }
-  const pinned = new Set(o.pinned)
   const { keep, dropped } = dedupe(items, pinned)
   for (const d of dropped) set(d.id, 'dedupe', [`duplicate of ${d.dupOf}`], items.find((x) => x.e.id === d.id)!.a)
   let ship = keep.filter(({ e, a }) => {
@@ -332,9 +335,10 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
     set(e.id, 'shipped', [], a)
   }
   for (const f of readdirSync(`${out}/p`)) if (!files.has(f)) rmSync(`${out}/p/${f}`)
-  const built = sha(all.map((e) => `${e.id} ${e.upstreamSha}\n`).join('')).slice(0, 16)
   // a dropped duplicate's id leads to the piece that ships instead, unless it was shipped itself (then it is the bundle's)
   const aliases = Object.fromEntries(dropped.filter((d) => !pinned.has(d.id) && pieces.some((p) => p.id === d.dupOf)).map((d) => [d.id, d.dupOf]))
+  // the app refetches only when built changes, so it hashes what ships, not the inputs (the same inputs ship new files when the code changes)
+  const built = sha(JSON.stringify([composers, licences, aliases, pieces])).slice(0, 16)
   const cat: Catalog = { v: 1, built, composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces }
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
   const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`].filter(Boolean).join(', ')
