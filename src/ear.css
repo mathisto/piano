@@ -21,7 +21,7 @@
   margin-left: 8px; /* a beat is a pair of cells */
 }
 .ear-grid i.on {
-  background: var(--lamp);
-  border-color: var(--lamp);
-  color: var(--lamp-ink);
+  background: var(--ink-2); /* Ink, not Lamp: the card's Next is the one lamp */
+  border-color: var(--ink-2);
+  color: var(--ground);
 }

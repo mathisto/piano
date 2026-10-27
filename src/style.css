@@ -522,8 +522,10 @@ table.songs td {
 table.songs tr.open {
   cursor: pointer;
 }
-table.songs tr.open:hover td {
-  background: var(--wash);
+@media (hover: hover) {
+  table.songs tr.open:hover td {
+    background: var(--wash); /* a touch would leave it stuck on the row */
+  }
 }
 table.songs td.name {
   font-weight: 650;
@@ -616,6 +618,8 @@ table.songs td.thumb {
   justify-content: flex-end;
 }
 .tag {
+  display: inline-block;
+  white-space: nowrap; /* "Memorised 4/4" is one tag, never split over two lines */
   margin-left: 10px;
   padding: 3px 6px 2px;
   border: 1px solid var(--edge);
@@ -783,14 +787,23 @@ table.stages col.mcol {
   #ready b {
     font-size: 34px;
   }
-  #ready :is(.hint, .cap, .seg ~ .seg, .legend) {
+  #ready :is(.cap, .seg ~ .seg, .legend) {
     display: none;
   }
 }
-/* a strip too short to hold the card above the keys: it sits on them */
+/* the banner (no keyboard yet, or a note) takes the top of a short stage: the card drops onto the keys, which are no use before Play anyway */
+@container stage (max-height: 420px) {
+  #stage:has(.banner) #ready {
+    bottom: 10px;
+  }
+}
+/* a strip too short to hold the card above the keys: it sits on them, title and mode only */
 @container stage (max-height: 260px) {
   #ready {
     bottom: 10px;
+  }
+  #ready .hint {
+    display: none;
   }
 }
 /* the cover needs room above the title; short and mid-height stages go without */
@@ -1227,9 +1240,11 @@ body.reading .hud small {
 
 .banner {
   position: absolute;
+  z-index: 3; /* #banner itself is not positioned, so its z-index did nothing: the canvas covered this, and Connect took focus unseen */
   left: 50%;
   top: 14px;
   transform: translateX(-50%);
+  width: max-content; /* not capped at half the stage by left: 50% */
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1243,6 +1258,13 @@ body.reading .hud small {
 }
 .banner b {
   color: var(--ink);
+}
+.banner .btn {
+  flex: none;
+  white-space: nowrap;
+}
+.banner > span {
+  text-wrap: pretty;
 }
 kbd {
   font: 700 13px var(--ui);
@@ -1286,6 +1308,7 @@ kbd {
   padding: 18px 32px 20px;
   border-radius: var(--r-3);
   border: 1px solid var(--line);
+  width: max-content; /* left: 50% would otherwise cap it at half the stage, and a title wrapped to three lines */
   max-width: min(720px, 92%);
 }
 .ready .cover {
@@ -1299,6 +1322,7 @@ kbd {
 }
 .ready b {
   display: block;
+  text-wrap: balance;
   font: 800 italic 54px/0.95 var(--display);
   letter-spacing: 0.02em;
   margin-bottom: 6px;
@@ -2009,6 +2033,9 @@ body.zen #dock .aids {
 }
 .pact {
   flex: none;
+  min-width: 112px; /* Start, Practice and Loop share a right edge and a left edge, so the meters line up */
+  display: flex;
+  justify-content: flex-end;
 }
 .tcard.span {
   margin-bottom: 24px;
@@ -2103,6 +2130,7 @@ body.zen #dock .aids {
   padding: 12px 0;
   border-top: 1px solid var(--line);
   white-space: pre-wrap;
+  overflow-wrap: anywhere; /* licence URLs */
   font: 14px/1.45 var(--ui);
   color: var(--ink-2);
 }
@@ -2358,6 +2386,12 @@ dialog.sheet footer .btn {
 .tcard.run {
   margin-bottom: 28px;
 }
+.tcard.run > :is(h2, p) {
+  margin: 0; /* the card's gap spaces its lines; default margins doubled it */
+}
+.tcard.run > h2 {
+  font: 650 28px/1.2 var(--ui); /* the prompt: read from the music stand */
+}
 .run-head {
   display: flex;
   align-items: start;
@@ -2371,8 +2405,9 @@ dialog.sheet footer .btn {
 .run .tech-form {
   margin-bottom: 0;
 }
-.run .field:has(.slider) {
-  grid-column: span 2;
+.run .field:has(.slider),
+.run .field:has(#sgForm) {
+  grid-column: span 2; /* "Diminished 7th arpeggio" */
 }
 .run .slider input {
   min-width: 0;
@@ -2402,6 +2437,19 @@ dialog.sheet footer .btn {
   background: var(--panel-3);
   color: var(--ink);
   border-color: var(--line-2);
+}
+.chip-btn:has(svg.i) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink); /* the quiz's answer, after you pick */
+}
+.chip-btn:disabled {
+  cursor: default;
+}
+.chip-btn svg.i {
+  width: 16px;
+  height: 16px;
 }
 .run-opts {
   display: flex;
@@ -2502,6 +2550,9 @@ dialog.sheet footer .btn {
   width: 100%;
   height: 52px;
   display: block;
+}
+.otc svg.hist * {
+  vector-effect: non-scaling-stroke; /* the chart stretches to the card; its lines stay 2px */
 }
 .otv {
   display: flex;
