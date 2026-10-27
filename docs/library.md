@@ -1,6 +1,6 @@
 # The curated library
 
-`public/library/` holds a small set of free and open scores that ship with the app (about 240 KB, 38 pieces). The larger library of 500 pieces is built by `scripts/library/` and served from `/corpus/` (`docs/changes/pipeline.md`, `docs/hosting.md`); this page covers the bundled set. The app loads `library/manifest.json` (see `src/credits.ts`) and shows a credit for every piece.
+`public/library/` holds a small set of free and open scores that ship with the app (about 240 KB, 38 pieces). The larger library (2,241 pieces) is built by `scripts/library/` and served from `/corpus/` (`docs/changes/pipeline.md`, `docs/hosting.md`); this page covers the bundled set. The app loads `library/manifest.json` (see `src/credits.ts`) and shows a credit for every piece.
 
 ## Policy
 

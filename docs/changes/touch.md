@@ -1,4 +1,4 @@
-# Timing and touch (ROADMAP "Approved 2026-10-28", item 4)
+# Timing and touch (ROADMAP "Approved 2026-10-27", item 4)
 
 Branch `feature/touch`. New logic in `src/coach.ts` (+ `coach.test.ts`, `coach.css`).
 

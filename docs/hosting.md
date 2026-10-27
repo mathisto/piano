@@ -11,9 +11,9 @@ The app (`dist/`) and the library corpus are separate on quartz: `/opt/piano/dis
 
 The web app fetches `/corpus/` on its own origin. The iPad app's origin is `capacitor://localhost`, so it fetches `https://pianoforte.mattkelly.io/corpus/` and needs CORS. Requests are plain GETs with no custom headers, so there is no preflight; `Access-Control-Allow-Origin *` is enough.
 
-## Caddy (applied on quartz 2026-10-28)
+## Caddy (applied on quartz 2026-10-27)
 
-The Caddyfile on quartz was edited on 2026-10-28 and the block shape changed: the live site block now holds `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them. The previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`; restore it if a reload misbehaves. The snippet below is the corpus part.
+The Caddyfile on quartz was edited on 2026-10-27 and the block shape changed: the live site block now holds `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them. The previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`; restore it if a reload misbehaves. The snippet below is the corpus part.
 
 Inside the existing site block for pianoforte.mattkelly.io, before the app's `file_server`:
 
@@ -46,7 +46,7 @@ Nothing to purge after a publish: piece names change when their content does, an
 
 ## Publishing a corpus
 
-The live corpus is 1,810 pieces: about 750 Mutopia and about 1,060 OpenScore Lieder (the grown set of docs/changes/libgrow.md, graded 1 to 5; 1,817 were built and 7 over 15 minutes dropped). Each step reads and writes `.cache/library/` directories; none touches quartz until the last.
+The live corpus is 2,241 pieces (748 Mutopia, 1,299 OpenScore Lieder, 194 Chopin first editions; graded 1 to 5; `docs/changes/libgrow.md`, `lieder-year.md`, `kern.md`). Each step reads and writes `.cache/library/` directories; none touches quartz until the last.
 
 1. Build. `npm run library:build` writes `.cache/library/out` (the Mutopia set). It now ships every grade with no limit (`--grades` and `--limit` still narrow it); the grown run was `--set mutopia --out .cache/library/out-m-grow --merge-with <published out>`, then `--set lieder --out .cache/library/out-grow --merge-with .cache/library/out-m-grow`, and a warm rerun takes about 80 s. `npm run library:build -- --set lieder --out .cache/library/out-lieder --merge-with <published out>` adds the Lieder on top of an output and leaves every base piece untouched (docs/changes/lieder.md). `node scripts/library/repeats-patch.mjs --from <published out> --out <dir>` re-runs only the pieces flagged `repeats` (docs/changes/repeats.md).
 2. Combine, when the changes came from different runs. `node scripts/library/combine.mjs <base-out> <overlay-out> <result-out>` lays the overlay over the base: a piece in both takes the overlay's entry (new file, sha, bars, flags), every `p/` file from both is kept (files are content-addressed, so nothing is removed), `LICENSES.md` follows the new file names, and `built` is recomputed from what ships so clients refetch. It prints the piece count and how many came from the overlay.
