@@ -1,4 +1,4 @@
-import { fromSpec, type Spec } from './song'
+import type { Spec } from './song'
 
 // Compositions are public domain; these arrangements were written for this project.
 export interface Starter {
@@ -156,5 +156,3 @@ export const STARTERS: Starter[] = [
     },
   },
 ]
-
-export const startSongs = () => STARTERS.map((s) => fromSpec(s.spec))
