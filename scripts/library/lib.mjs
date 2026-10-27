@@ -270,7 +270,7 @@ export function openscoreMeta(e, upstream) {
 /** The .ly of a Mutopia piece with one MIDI: the page's link, else (43 pieces have only a -lys.zip) the .ly of the zip that pickLy matches. */
 export async function pieceLy(m, midi, pickLy, http) {
   if (m.ly) return (await get(m.ly, http).catch(() => undefined))?.toString()
-  if (m.lys) return pickLy(midi, lyCandidates([...unzip(await get(m.lys, http))], '', undefined))
+  if (m.lys) return pickLy(midi, lyCandidates([...unzip(await get(m.lys, http))], '', undefined), true)
 }
 
 /** What build.mjs reads for a shipped Mutopia id, before any unfolding: the MIDI bytes and the .ly (the piece's, or for movement k

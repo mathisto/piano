@@ -562,12 +562,17 @@ function score(midi: Midi, ly: string) {
   const tick = (x: number) => Math.round(x * W)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const until = Math.max(0, ...notes.map((n) => n.ticks + n.durationTicks))
-  // LilyPond's MIDI drifts a few ticks after grace notes (rounding of their time): 1/256 of a whole note, far from the next rhythm
-  const near = Array.from({ length: 2 * Math.round(W / 256) + 1 }, (_, i) => i - Math.round(W / 256))
+  // LilyPond's MIDI drifts a few ticks after grace notes (rounding of their time, adding up within a voice): 1/256 of a whole note, and
+  // 1/64 where there are graces (the voice after one runs up to a 64th off), which still is no other rhythm of a piece
+  const near = (r: Rec) => {
+    const t = Math.round(W / (r.ev.some((e) => e.k === 'grace') ? 64 : 256))
+    return Array.from({ length: 2 * t + 1 }, (_, i) => i - t)
+  }
   const lost = (r: Rec) => {
     const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
     const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
-    return notes.filter((n) => !near.some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
+    const d = near(r)
+    return notes.filter((n) => !d.some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
   }
   const misses = (r: Rec) => lost(r).length
   // LilyPond starts the music late by the length of a grace note it opens with: the reading is tried delayed as well
@@ -644,17 +649,17 @@ export function pickupWhy(bytes: Uint8Array, ly: string, matched = false): { pic
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
  * movement can cover a sparse one's onsets); the first when none matches. Zips may number the MIDI files by the master .ly's
- * scores and the .ly files by movement (BWV 827, 830). */
-export function pickLy(bytes: Uint8Array, lys: string[]): string | undefined {
+ * scores and the .ly files by movement (BWV 827, 830). `strict`: none when none matches (a piece with one MIDI has no sibling to fall back to). */
+export function pickLy(bytes: Uint8Array, lys: string[], strict = false): string | undefined {
   const midi = new Midi(ab(bytes))
   const fit = lys.map((ly) => ({ ly, ...score(midi, ly) })).filter((x) => x.ok)
-  return fit.sort((a, b) => a.off - b.off)[0]?.ly ?? lys[0]
+  return fit.sort((a, b) => a.off - b.off)[0]?.ly ?? (strict ? undefined : lys[0])
 }
 
-/** Barlines of a MIDI as the app lays them out (src/quantize.ts): start tick and length of each bar. */
-function barGrid(midi: Midi, bytes: Uint8Array): Bars {
+/** Barlines of a MIDI as the app lays them out (src/quantize.ts), with the pickup the .ly states when it states one: start tick and length of each bar. */
+function barGrid(midi: Midi, bytes: Uint8Array, pickup?: number): Bars {
   const t = (s: number) => Math.round(midi.header.secondsToTicks(s))
-  return fromMidi(ab(bytes), '', '').bars.map((b) => ({ t: t(b.t0), len: t(b.t1) - t(b.t0) }))
+  return fromMidi(ab(bytes), '', '', 60, undefined, undefined, pickup).bars.map((b) => ({ t: t(b.t0), len: t(b.t1) - t(b.t0) }))
 }
 
 /** A bar of `ticks` as a time signature, or undefined when no n/4, n/8, n/16 or n/32 has that length. */
@@ -680,14 +685,15 @@ export function unfold(bytes: Uint8Array, ly: string): { bytes: Uint8Array } | {
   if (lost) return { why: `${lost} notes the order of play never reaches` } // no repeat in this MIDI's score, or only \repeat volta 1: a sign, nothing to play twice
   // the bars of the result are laid out by the app from the notes and time signatures (src/quantize.ts), so the barlines the
   // copies make are checked against what it lays out: first against the bars it finds in this MIDI, else against the score's own
-  const first = write(bytes, p.segs, barGrid(midi, bytes), p.delay, until)
+  const pickup = pickupWhy(bytes, ly).pickup // the app lays the unfolded file out with the same first bar
+  const first = write(bytes, p.segs, barGrid(midi, bytes, pickup), p.delay, until, pickup)
   if ('bytes' in first || !/^(bars|a repeat)/.test(first.why)) return first
-  const second = write(bytes, p.segs, p.bars, p.delay, until)
+  const second = write(bytes, p.segs, p.bars, p.delay, until, pickup)
   return 'bytes' in second ? second : first
 }
 
 /** The MIDI played in the order `segs` says, its barlines (`src`, in the source's ticks) carried along. */
-function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until: number): { bytes: Uint8Array } | { why: string } {
+function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until: number, pickup?: number): { bytes: Uint8Array } | { why: string } {
   const midi = new Midi(ab(bytes))
   const ppq = midi.header.ppq
   let src = src0
@@ -765,7 +771,7 @@ function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until:
   if (back.tracks.reduce((s, t) => s + t.notes.length, 0) !== want) return { why: 'note count after writing' }
   if (JSON.stringify(back.header.keySignatures) !== JSON.stringify(h.keySignatures.map(({ key, scale, ticks }) => ({ key, scale, ticks })))) return { why: 'keys after writing' }
   const want2 = [...new Set(expected)].sort((a, b) => a - b)
-  const got = barGrid(back, outBytes).map((b) => b.t).filter((t) => t <= want2[want2.length - 1] + 1)
+  const got = barGrid(back, outBytes, pickup).map((b) => b.t).filter((t) => t <= want2[want2.length - 1] + 1)
   // the app finds a pickup of its own, so a result with no short bars to state may start its bars at another phase than the
   // source did; every barline is then the copies' one moved by the same amount
   const shift = got.length > 1 ? got[1] - want2[1] : 0
