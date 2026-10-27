@@ -1,6 +1,7 @@
 // End-to-end suite: `npm i --no-save playwright-core axe-core`, then `npm run e2e`. Starts its own Vite dev server
 // (the dev hooks window.__piano and window.__ear exist only in dev) unless E2E_URL points at one. E2E_HEADED=1 shows the browser.
 // Every feature drives the real UI with synthetic key presses and fails on any console or page error. Docs: docs/changes/e2e.md.
+// E2E_PULSE=1 adds a lane with the three pulse trainers (about 8 minutes on its own, so use E2E_ONLY with it: the watchdog below is 8 minutes).
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -481,7 +482,7 @@ async function songsFlow() {
 
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
-const [page] = await Promise.all([mainFlow(), lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['keepbeat'])), lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), () => side(['subdiv', 'holdrhythm']))])
+const [page] = await Promise.all([mainFlow(), lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint'])), lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm'])), ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : [])])
 await feature('11 accessibility: every page and the drawer', page, async () => {
   for (const tab of ['today', 'songs', 'read', 'scales', 'theory', 'technique', 'progress']) {
     await nav(page, tab)
