@@ -74,6 +74,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/polish5.md`: paced beat dots, the Songs Skip link, a calm highway under reduced motion, bundled pickups.
 - `changes/polish6.md`: the critique of everything since polish4 (29 of 40) and the narrow-width fixes.
 - `changes/polish7.md`: six polish6 findings closed (Replay, Today rows, Over time axis, Credits links, copy, staff letters).
+- `changes/prune.md`: dead code and duplicate helpers removed (`src/util.ts`), one dependency dropped.
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
 
 ## Research (`research/`)
