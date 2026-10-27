@@ -94,6 +94,8 @@ for (const p of cat.pieces) {
     for (const k of new Set([...Object.keys(q), ...Object.keys(b)])) if (k !== 'tags' && JSON.stringify(q[k]) !== JSON.stringify(b[k])) q[k] === undefined ? delete r[k] : (r[k] = q[k])
     // flags and quality move by the difference only: a flag today's pipeline sets or drops for other reasons (repeats, tuplets ...) stays as published
     r.flags = [...p.flags.filter((f) => !b.flags.includes(f) || q.flags.includes(f)), ...q.flags.filter((f) => !b.flags.includes(f) && !p.flags.includes(f))]
+    // the pace flags are the .ly's own: a no-tempo it takes away, a tempo-estimated it adds, whatever the published flags were
+    for (const f of lyOnly ? ['no-tempo', 'tempo-estimated'] : []) if (r.flags.includes(f) !== q.flags.includes(f)) r.flags = q.flags.includes(f) ? [...r.flags, f] : r.flags.filter((x) => x !== f)
     // quality is 100 - 10 per review item - 3 per flag: the difference in review items (from q and b), and the flags r has against p
     r.quality = p.quality + q.quality - b.quality + 3 * (q.flags.length - b.flags.length) - 3 * (r.flags.length - p.flags.length)
     // a piece at its original MIDI has the repeat flags that run() gives (volta and D.C. marks in a .ly it could not read before)
