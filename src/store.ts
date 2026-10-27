@@ -250,7 +250,7 @@ export async function importAll(text: string) {
 
 export async function clearAll() {
   for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take):/.test(String(k))) await del(k)
-  localStorage.removeItem('piano.settings')
+  for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
 }
 
 export async function getDrill(): Promise<Stats> {
