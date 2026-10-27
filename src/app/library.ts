@@ -52,6 +52,10 @@ export async function showLibrary(err = '') {
   mountLibrary($('#library'), await store.allProgress(), libSong)
 }
 
+export async function libSong(p: Piece) {
+  return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick }, settings.split)
+}
+
 /** Choose which tracks of a stored MIDI file to read, with a live count of how crowded the staff will be. */
 export async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
@@ -158,7 +162,3 @@ addEventListener('drop', (e) => {
   document.querySelector('#library')?.classList.remove('over')
   if (e.dataTransfer?.files.length) void importFiles(e.dataTransfer.files)
 })
-
-export async function libSong(p: Piece) {
-  return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick }, settings.split)
-}
