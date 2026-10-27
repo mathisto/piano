@@ -1,9 +1,10 @@
 // The big-library pipeline (scripts/library/): every gate fires on a fixture, licences are refused, and a rerun is byte-identical.
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import { movements, refusals, zip } from '../scripts/library/lib.mjs'
-import { analyse, GATES, judge, run, type Input } from '../scripts/library/pipeline'
+import { movements, openscoreMeta, PIANO, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
+import { analyse, GATES, judge, merge, reach, run, type Input } from '../scripts/library/pipeline'
+import { fromMusicXml, xmlText } from './musicxml'
 import { fromSpec, type Song } from './song'
 
 // eight clean bars of C major: a quarter-note tune over half-note bass, 16 s at 120 bpm
@@ -120,5 +121,70 @@ describe('library pipeline run', () => {
     const cat = JSON.parse(readFileSync(`${d}/catalog.json`, 'utf8'))
     expect(cat.pieces.map((p: { id: string }) => p.id)).toEqual(['mutopia-202', 'mutopia-9999'])
     expect(cat.aliases).toEqual({ 'mutopia-75': 'mutopia-9999' })
+  })
+})
+
+describe('lieder: the voice folded into the right hand', () => {
+  const DIR = new URL('../public/library/', import.meta.url)
+  const OUT = new URL('../.cache/library/out-lieder/', import.meta.url) // npm run library:build -- --set lieder (not committed)
+  const song = async (b: Uint8Array) => fromMusicXml(await xmlText(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer), 'x', 'x')
+  // a folded .mxl and the same song with its voice part dropped
+  const pair = (b: Buffer) => {
+    const voices = scoreParts(b).filter((p: { name: string }) => !PIANO.test(p.name)).map((p: { id: string }) => p.id)
+    return [new Uint8Array(b), new Uint8Array(openscoreMeta({ id: 'x', dropParts: voices }, b).bytes)]
+  }
+  const input = (id: string, bytes: Uint8Array, title: string): Input => ({
+    id, title, composer: 'Franz Schubert (1797–1828)', source: 'openscore-lieder', sourceUrl: 'https://x', licenceEvidence: 'https://x', licence: 'CC0-1.0',
+    licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', edition: 'x', format: 'musicxml', bytes, upstreamSha: id,
+  })
+  const folded = (dir: URL, files: string[]) => files.map((f) => pair(readFileSync(new URL(f, dir))))
+  const check = async (pairs: Uint8Array[][]) => {
+    expect(pairs.length).toBeGreaterThanOrEqual(3)
+    for (const [sung, solo] of pairs) {
+      const [s, p] = [await song(sung), await song(solo)]
+      expect(reach(s).ok).toBe(true)
+      expect(s.notes.filter((n) => n.h === 'R').length).toBeGreaterThan(p.notes.filter((n) => n.h === 'R').length) // the melody is there
+    }
+  }
+
+  it('the bundled folded songs pass the fold gate and carry more right-hand notes than piano-only', async () => {
+    await check(folded(DIR, ['lieder-lc5701612.mxl', 'lieder-lc4976849.mxl', 'lieder-lc6180725.mxl']))
+  })
+
+  it.skipIf(!existsSync(OUT))('so do the first three folded songs the lieder run shipped', async () => {
+    const cat = JSON.parse(readFileSync(new URL('catalog.json', OUT), 'utf8'))
+    const ps = cat.pieces.filter((p: { flags: string[]; id: string }) => p.flags.includes('voice-folded') && !['lieder-lc5701612', 'lieder-lc4976849', 'lieder-lc6917116', 'lieder-lc6180725'].includes(p.id))
+    await check(folded(OUT, ps.slice(0, 3).map((p: { file: string }) => p.file)))
+  })
+
+  it('ships a song folded when it passes, piano-only when the voice sits out of reach; merging keeps the base untouched', async () => {
+    const [sung, solo] = pair(readFileSync(new URL('lieder-lc6180725.mxl', DIR)))
+    // the same song with its vocal line two octaves down: out of one hand's reach
+    const files = unzip(Buffer.from(sung))
+    const [root] = [...files.keys()].filter((f: string) => !f.startsWith('META-INF'))
+    const voice = scoreParts(Buffer.from(sung)).find((p: { name: string }) => !PIANO.test(p.name)).id
+    const xml = files.get(root).toString().replace(new RegExp(`<part id="${voice}">[\\s\\S]*?</part>`), (part: string) => part.replace(/<octave>(\d)<\/octave>/g, (_: string, o: string) => `<octave>${+o - 2}</octave>`))
+    const low = new Uint8Array(zip([...files].map(([f, b]) => [f, f === root ? Buffer.from(xml) : b])))
+    const alt = (id: string) => ({ ...input(id, solo, 'x: piano part'), voice: 'dropped' as const, composer: 'Carl Loewe (1796–1869)' }) // not a duplicate of lieder-a
+    const d = mkdtempSync(`${tmpdir()}/lib-l-`)
+    const rows = await run([
+      { ...input('lieder-a', sung, 'x: melody and piano'), voice: 'folded', alt: alt('lieder-a') },
+      { ...input('lieder-b', low, 'x: melody and piano'), voice: 'folded', alt: alt('lieder-b'), composer: 'Carl Loewe (1796–1869)' },
+    ], d)
+    const cat = JSON.parse(readFileSync(`${d}/catalog.json`, 'utf8'))
+    expect(cat.pieces.map((p: { title: string; flags: string[] }) => [p.title, p.flags.filter((f) => f.startsWith('voice'))])).toEqual([
+      ['x: melody and piano', ['voice-folded']],
+      ['x: piano part', ['voice-dropped']],
+    ])
+    expect(rows.find((r) => r.id === 'lieder-b')!.why[0]).toMatch(/^voice dropped: folded right-hand reach \d+/)
+
+    const base = mkdtempSync(`${tmpdir()}/lib-m-`)
+    await run([input('lieder-a', sung, 'kept')], base)
+    const before = readFileSync(`${base}/catalog.json`, 'utf8')
+    expect(merge(base, d)).toEqual(['lieder-b'])
+    const m = JSON.parse(readFileSync(`${d}/catalog.json`, 'utf8'))
+    expect(m.pieces[0]).toEqual(JSON.parse(before).pieces[0]) // the base piece as it was, not this run's
+    expect(m.pieces.map((p: { id: string }) => p.id)).toEqual(['lieder-a', 'lieder-b'])
+    expect(readdirSync(`${d}/p`).sort()).toEqual(m.pieces.map((p: { file: string }) => p.file.slice(2)).sort())
   })
 })

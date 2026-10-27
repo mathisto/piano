@@ -176,7 +176,23 @@ export function zip(entries) {
 
 // ---- OpenScore / any MusicXML: keep the piano, drop or fold the rest, write a one-entry .mxl back ----
 
-const PIANO = /piano|pianoforte|klavier|keyboard|cembalo|harpsichord/i
+export const PIANO = /piano|pianoforte|klavier|keyboard|cembalo|harpsichord/i
+
+/** The parts of an .mxl: id, name, the staves its first measure declares (1 when it says nothing), whether it has lyrics. */
+export function scoreParts(upstream) {
+  const files = unzip(upstream)
+  const root = /full-path="([^"]+)"/.exec(files.get('META-INF/container.xml')?.toString() ?? '')?.[1]
+  const xml = files.get(root)?.toString() ?? ''
+  return [...xml.matchAll(/<score-part id="([^"]+)">([\s\S]*?)<\/score-part>/g)].map(([, id, body]) => {
+    const part = new RegExp(`<part id="${id}">[\\s\\S]*?</part>`).exec(xml)?.[0] ?? ''
+    return {
+      id,
+      name: text(/<part-name[^>]*>([^<]*)/.exec(body)?.[1] ?? ''),
+      staves: Number(/<staves>(\d+)/.exec(part.split('</measure>')[0])?.[1] ?? 1),
+      lyrics: /<lyric\b/.test(part),
+    }
+  })
+}
 
 /** e.dropParts and e.foldParts name parts by id; without them every part whose name is not a keyboard is dropped. */
 export function openscoreMeta(e, upstream) {
