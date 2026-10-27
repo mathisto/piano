@@ -8,13 +8,14 @@ import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings, KEY_TOUCH } from './settings'
-import { coachLines, marks as liveMarks, timingLine } from './coach'
+import { coachLines, marks as liveMarks, timingLine, type Timing } from './coach'
 import type { HistoryEntry, Progress, Stored, TouchEntry } from './store'
 import type { Evenness } from './even'
 import { COMFORT, density, type Song } from './song'
 import type { Starter } from './starters'
 import { fluentMs, type Stage, type Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
+import { PACE, type Pace } from './paced'
 import { TRAINERS, untimed, type TCard, type Trainer } from './theory'
 import { earAsk, earBlock, replayBtn, type EarView } from './ear'
 import { isPulse, pulseBars } from './pulse'
@@ -713,10 +714,10 @@ const WHITE = (p: number) => ![1, 3, 6, 8, 10].includes(p % 12)
 const KEYS_RUN: [number, string][] = [[1, 'Key of G'], [2, 'Key of D'], [3, 'Key of A'], [4, 'Key of E'], [-1, 'Key of F'], [-2, 'Key of B♭'], [-3, 'Key of E♭'], [-4, 'Key of A♭']]
 export const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
 export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
-const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)}${s.length ? ` · ${s.length} cards` : ''}`
+const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)}${s.length ? ` · ${s.length} cards` : ''}${s.pace ? ` · paced, ${s.pace} bpm` : ''}`
 
 /** The Sight Run builder on the Read page, and the saved runs under it. */
-export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { streak: number; ms: number }>, bestKey: (s: RunSpec) => string) {
+export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { streak: number; ms: number }>, bestKey: (s: RunSpec) => string, offer: Pace & { why: string }) {
   const [min, max] = LIMITS[s.clef]
   const names = Array.from({ length: max - min + 1 }, (_, i) => min + i).filter(WHITE)
   const picks = (cur: number) => names.map((p) => `<option value="${p}"${p === cur ? ' selected' : ''}>${noteName(p)}</option>`).join('')
@@ -731,22 +732,24 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
     .join('')
   const b = best[bestKey(s)]
   return `<section class="tcard run" aria-label="Sight Run">
-    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range and how the notes jump about. It waits for you, and keeps going until you finish.</p></div></div>
+    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range and how the notes jump about. ${s.pace ? 'A beat leads and the run does not stop for a miss: look ahead and keep going.' : 'It waits for you, and keeps going until you finish.'}</p></div></div>
     <div class="tech-form">
       ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rLo', 'From', picks(s.lo))}
       ${field('rHi', 'To', picks(s.hi))}
       ${field('rNotes', 'Notes', (s.size > 1 ? [['nat', 'Naturals']] : [['nat', 'Naturals'], ['sharp', 'With sharps'], ['flat', 'With flats']]).map(([v, l]) => `<option value="${v}"${v === notes ? ' selected' : ''}>${l}</option>`).join('') + KEYS_RUN.map(([f, l]) => `<option value="k${f}"${notes === `k${f}` ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rSize', 'Cards', [[1, 'Single notes'], [2, 'Intervals'], [3, 'Triads']].map(([v, l]) => `<option value="${v}"${v === s.size ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rLength', 'Length', [[0, 'Endless'], [10, '10 cards'], [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rAhead', 'Reading ahead', [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']].map(([v, l]) => `<option value="${v}"${v === s.ahead ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rPaced', 'Pace', [[0, 'Waits for me'], [1, 'Steady beat']].map(([v, l]) => `<option value="${v}"${(v === 1) === !!s.pace ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${s.pace ? `<label class="field"><span>Tempo</span><span class="slider"><input id="rPace" type="range" min="${PACE.min}" max="${PACE.max}" step="2" value="${s.pace}" aria-valuetext="${s.pace} beats a minute"><small id="rPaceV" class="bpm">${s.pace} bpm</small></span></label>${field('rEvery', 'A card every', [[1, 'Beat'], [2, 'Two beats']].map(([v, l]) => `<option value="${v}"${v === s.every ? ' selected' : ''}>${l}</option>`).join(''))}` : ''}
+      ${field('rLength', 'Length', [[0, s.pace ? '16 cards' : 'Endless'], ...(s.pace ? [] : [[10, '10 cards']]), [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rAhead', 'Reading ahead', (s.pace ? [[4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes']] : [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']]).map(([v, l]) => `<option value="${v}"${v === (s.pace && s.ahead < 2 ? 3 : s.ahead) ? ' selected' : ''}>${l}</option>`).join(''))}
       ${slider('rNear', 'Jumps', 'Leaps', 'Steps', s.near)}
       ${slider('rWeak', 'Shuffle', 'Even', 'My weak notes', s.weak)}
     </div>
     <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
     <div class="run-opts">
-      <label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label></div>
-    <div class="row-actions run-go">${b ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
+      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'} (${esc(offer.why)}). A clean run on two days raises it ${PACE.step}.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
+    <div class="row-actions run-go">${b && !s.pace ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
     ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
   </section>`
 }
@@ -774,6 +777,34 @@ export function runResults(d: RunSummary) {
     <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
+    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
+  </div></div>`
+}
+
+export interface PacedSummary {
+  spec: RunSpec
+  n: number // cards judged
+  hit: number // of them on the beat
+  cells: (boolean | undefined)[] // each card: on the beat, missed, not reached
+  missed: string[] // the missed cards by name, in order
+  timing: Timing | null
+  wrong: number // keys struck that were no note on the beat
+  note: string // what the tempo rule says
+}
+
+/** A paced run's results: cards on the beat in plain numbers, the run as a strip of cards, timing, the notes missed and the next tempo. No score, no rank. */
+export function pacedResults(d: PacedSummary) {
+  const first = d.cells.findIndex((c) => c === undefined)
+  const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Card ${i + 1}: missed"` : ''}></i>`).join('')
+  const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
+  return `
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
+    <h2>${esc(d.spec.name ?? runTitle(d.spec))}</h2>
+    <p class="line">Hit <b>${d.hit} of ${d.n}</b> on the beat at <b>${d.spec.pace} bpm</b>, a card ${cardWord}${first >= 0 ? `. You finished after ${first} of ${d.cells.length} cards.` : '.'}</p>
+    <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
+    ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
+    <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
+    <p class="line">${esc(d.note)}</p>
     <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
   </div></div>`
 }

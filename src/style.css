@@ -2559,6 +2559,31 @@ dialog.sheet footer .btn {
   border-radius: var(--r-1) var(--r-1) 0 0;
   background: color-mix(in oklab, var(--bad) var(--m), var(--R));
 }
+.pstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pstrip i {
+  width: 14px;
+  height: 22px;
+  border: 2px solid var(--edge);
+  border-radius: var(--r-1);
+  box-sizing: border-box;
+}
+.pstrip i.on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.pstrip i:not(.on, .off) {
+  border-style: dotted;
+  opacity: 0.5;
+}
+.slider small.bpm {
+  min-width: 3.6em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .hbar span {
   position: absolute;
   left: 50%;

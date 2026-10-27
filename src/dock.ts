@@ -143,6 +143,7 @@ export class Dock {
     const g = this.game
     const learn = g.mode === 'learn'
     this.host.querySelectorAll<HTMLElement>('[data-modes]').forEach((e) => (e.hidden = !e.dataset.modes!.split(' ').includes(g.mode)))
+    this.tempo.parentElement!.hidden = g.paced // a paced run's tempo is the one it was built with
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait

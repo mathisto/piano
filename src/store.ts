@@ -1,5 +1,6 @@
 import { del, get, keys, set } from './kv'
 import { INTERVALS, dayNum, type Stats } from './drill'
+import type { PaceMemo } from './paced'
 import type { RunSpec } from './run'
 import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
@@ -282,8 +283,8 @@ export async function saveDrill(s: Stats) {
   await set('drill:stats', s)
 }
 
-/** Sight Run: saved setups, the last one used, and the best score for each range. */
-export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { streak: number; ms: number }> }> {
+/** Sight Run: saved setups, the last one used, the best score for each range, and the tempo a paced run offers for each. */
+export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { streak: number; ms: number }>; paced?: Record<string, PaceMemo> }> {
   return (await get('run:state')) ?? { presets: [], best: {} }
 }
 

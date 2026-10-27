@@ -71,7 +71,7 @@ async function showSection(name: Section, err = '') {
 Object.assign(hooks, { showSection })
 
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
-$('#stagesBtn').onclick = () => (run && run.arc.cards ? void runFinish() : leave())
+$('#stagesBtn').onclick = () => (run && (run.arc.cards || (run.spec.pace && game.judge.judged)) ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
 
 // library actions: the rows and buttons start pieces in any mode

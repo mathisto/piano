@@ -280,6 +280,37 @@ async function mainFlow() {
     await wait(page, () => !document.querySelector('#read [data-runp]'))
   })
 
+  await feature('2b Sight Run paced: a steady run with two cards skipped, results, the tempo kept', page, async () => {
+    const bests = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'] ?? '{}')).then((s) => JSON.stringify(s.best ?? {})))
+    await nav(page, 'read')
+    await page.click('label:has(input[name=readTab][value=run])')
+    await page.waitForSelector('#rStart')
+    await page.selectOption('#rPaced', '1')
+    await page.waitForSelector('#rPace')
+    ok((await text(page, '#rPaceV')) === '50 bpm', 'the offered tempo is not 50 bpm with no history')
+    await axe(page, 'paced builder', '#read')
+    await page.$eval('#rPace', (e) => ((e.value = '100'), e.dispatchEvent(new Event('input', { bubbles: true })), e.dispatchEvent(new Event('change', { bubbles: true }))))
+    ok((await text(page, '#rPaceV')) === '100 bpm', 'the slider does not speak')
+    await page.click('#rStart')
+    await ready(page)
+    ok(await ev(page, () => window.__piano.game.paced && !window.__piano.game.wait && document.querySelector('#tempo').parentElement.hidden), 'not a paced game')
+    await page.click('#go')
+    await ev(page, () => window.__e2e.perform({ skip: [2, 9] })) // every other card on its beat, two never played: the pulse carries on
+    const r = await res(page, 'Run results')
+    const t = await r.textContent()
+    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.slice(0, 160))
+    ok(/Missed:/.test(t) && (await page.$$('.pstrip i.off')).length === 2, 'the two missed cards are not shown')
+    await axe(page, 'paced results', '#res')
+    const st = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'])))
+    ok(Object.values(st.paced ?? {}).some((m) => m.bpm === 100 && m.days.length === 0), 'tempo memo: ' + JSON.stringify(st.paced)) // 14 of 16 is not clean: it stays, and counts no day
+    ok(JSON.stringify(st.best ?? {}) === bests, 'a paced run set a longest streak')
+    await page.click('#toStages')
+    await page.waitForSelector('#rStart')
+    ok((await text(page, '#rPaceV')) === '100 bpm', 'the builder forgot the tempo')
+    await page.selectOption('#rPaced', '0')
+    await page.waitForSelector('#rWiden')
+  })
+
   await feature('3 Scales: stage run, Choose a scale, Quiz', page, async () => {
     await nav(page, 'scales')
     await page.click('#scales button[data-sstage].primary')

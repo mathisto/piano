@@ -1,6 +1,7 @@
 // The Read page: stages, review and the Sight Run form.
 import { cardKey, cards, dueCards, fluentMs, focus, mastery, reviewPool, STAGES } from '../drill'
-import { bestKey, DEFAULT_RUN, LIMITS, type RunSpec } from '../run'
+import { PACE, suggest } from '../paced'
+import { bestKey, DEFAULT_RUN, LIMITS, runCards, type RunSpec } from '../run'
 import * as store from '../store'
 import { $, readView, RUN_START, runForm, runTitle, type StageRow } from '../ui'
 import { drillStats, runSpec, setDrillStats, setRunSpec, stageById } from './state'
@@ -22,8 +23,11 @@ export async function stageRows(): Promise<StageRow[]> {
 export async function showRead() {
   const saved = await store.getRuns()
   if (saved.last) setRunSpec({ ...DEFAULT_RUN, ...saved.last })
-  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey))
+  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey, offer(runSpec, saved.paced?.[bestKey(runSpec)])))
 }
+
+/** The tempo a paced run of this setup offers: where the player left it, else a little under their usual time on these cards, else 50. */
+const offer = (s: RunSpec, memo?: Parameters<typeof suggest>[2]) => suggest(runCards(s), drillStats, memo)
 
 /** The form as the DOM has it now, kept inside what the clef can show. */
 function readRun(): RunSpec {
@@ -45,11 +49,17 @@ function readRun(): RunSpec {
     weak: Number(v('rWeak')),
     length: Number(v('rLength')),
     ahead: Number(v('rAhead')),
-    widen: ($('#rWiden', $('#read')) as HTMLInputElement).checked,
+    widen: !!($('#rWiden', $('#read')) as HTMLInputElement | null)?.checked,
+    pace: v('rPaced') === '1' ? Number($('#rPace', $('#read')) ? v('rPace') : PACE.start) : 0,
+    every: $('#rEvery', $('#read')) ? (Number(v('rEvery')) as 1 | 2) : 1,
   }
 }
 
-$('#read').addEventListener('change', (e) => {
+$('#read').addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement
+  if (t.id === 'rPace') $('#rPaceV', $('#read')).textContent = `${t.value} bpm` // the slider speaks as it moves
+})
+$('#read').addEventListener('change', async (e) => {
   const t = e.target as HTMLInputElement
   if (t.name === 'readTab') {
     readTab = t.value as typeof readTab
@@ -62,8 +72,14 @@ $('#read').addEventListener('change', (e) => {
     ;[s.lo, s.hi] = RUN_START[s.clef]
     s = { ...s, ...(s.clef === 'bass' ? { acc: s.acc } : {}) }
   }
-  void saveRun(s)
-  if (id === 'rClef' || id === 'rSize') void showRead() // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats
+  const moved = ['rPaced', 'rClef', 'rLo', 'rHi', 'rNotes', 'rSize'].includes(id)
+  if (s.pace && moved) {
+    // a new range has its own tempo: offer it, and redraw the slider
+    const o = offer(s, (await store.getRuns()).paced?.[bestKey(s)])
+    s = { ...s, pace: o.bpm, every: o.every }
+  }
+  await saveRun(s) // before the redraw reads it back
+  if (id === 'rClef' || id === 'rSize' || id === 'rPaced' || (s.pace && moved)) void showRead() // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats; pace adds a slider
 })
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
