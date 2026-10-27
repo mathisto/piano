@@ -20,6 +20,9 @@ export interface LibraryEntry {
   bytes: number
   sha256: string
   nc?: true // non-commercial licence: show it in Credits
+  pickup?: number // as Piece.pickup, copied from the corpus catalogue so the offline first run matches the online one
+  tempo?: number // as Piece.tempo
+  tempoGuess?: true // the tempo is the pipeline's estimate: the piece carries the 'tempo-estimated' flag
 }
 
 const valid = (e: unknown): e is LibraryEntry => {

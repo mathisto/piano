@@ -71,6 +71,8 @@ for (const e of cfg.pieces) {
     level: e.level,
     bytes: bytes.length,
     sha256: sha(bytes),
+    ...(e.pickup !== undefined && { pickup: e.pickup }), // from the corpus catalogue, so the first run with no network lays barlines and tempo as the online one does
+    ...(e.tempo && { tempo: e.tempo, ...(e.tempoGuess && { tempoGuess: true }) }),
     ...(e.nc && { nc: true }),
   })
   console.log(`${e.id}  ${meta.licence}  ${bytes.length} B  ${e.title}`)

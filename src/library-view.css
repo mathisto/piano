@@ -86,3 +86,15 @@ dialog.sheet .fine a {
   display: inline-block; /* a sub-line breaks between composer, level and licence, not inside one, unless one is longer than the line */
   max-width: 100%;
 }
+/* a bypass link: out of sight until it takes focus, then in the tools row */
+.libtools .sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  margin-left: auto;
+}
+.libmore:focus {
+  outline: none; /* a skip target, not a control: the next Tab lands on Show more */
+}

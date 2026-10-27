@@ -90,10 +90,11 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
       <label class="libq">${SEARCH}<input type="search" id="libQ" placeholder="Title, composer or opus" aria-label="Search the open library" autocomplete="off" spellcheck="false" value="${esc(ui.q)}"></label>
       ${who.length > 1 ? `<select id="libWho" aria-label="Composer"><option value="">All composers</option>${who.map((c) => `<option value="${c}"${ui.composer === c ? ' selected' : ''}>${esc(catalog.composers[c].name)} (${per.get(c)})</option>`).join('')}</select>` : ''}
       <div class="seg" role="radiogroup" aria-label="Level">${radio('', 'All levels', ui.grade === undefined)}${grades.map((g) => radio(String(g), String(g), ui.grade === g)).join('')}</div>
+      <button class="btn ghost sr-only" id="libSkip"></button>
     </div>
     <table class="songs"><caption class="sr-only">Open library</caption><colgroup><col><col><col style="width:60px"><col class="acol"></colgroup><tbody id="libRows"></tbody></table>
     <p class="sr-only" id="libFound" role="status"></p>
-    <div class="libmore"><p class="fine" id="libShown" role="status"></p><button class="btn ghost" id="libMore">Show ${PAGE} more</button><button class="btn ghost" id="libSave" hidden></button></div>
+    <div class="libmore" id="libEnd" tabindex="-1" role="group" aria-label="After the list"><p class="fine" id="libShown" role="status"></p><button class="btn ghost" id="libMore">Show ${PAGE} more</button><button class="btn ghost" id="libSave" hidden></button></div>
   </section>`,
   )
   const el = host.querySelector<HTMLElement>('.biglib')!
@@ -116,6 +117,8 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     $('#libFound').textContent = ui.q || ui.grade !== undefined || ui.composer !== undefined ? (hits.length ? `${hits.length.toLocaleString()} ${hits.length === 1 ? 'piece' : 'pieces'} found` : 'No piece found') : '' // a screen reader hears the result of a search or filter
     $('#libShown').textContent = hits.length > page.length ? `${page.length.toLocaleString()} of ${hits.length.toLocaleString()}` : ''
     $('#libMore').hidden = hits.length <= page.length
+    $('#libSkip').hidden = !page.length
+    $('#libSkip').textContent = `Skip the ${page.length} ${page.length === 1 ? 'piece' : 'pieces'} listed`
     if (!ui.saving) {
       save.hidden = !away().length
       save.disabled = false
@@ -139,6 +142,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     ui.shown = PAGE
     draw()
   })
+  $('#libSkip').onclick = () => $('#libEnd').focus() // 50 rows of four buttons is 200 tab stops: a way past them (WCAG 2.4.1)
   $('#libMore').onclick = () => {
     ui.shown += PAGE
     draw()

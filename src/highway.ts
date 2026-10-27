@@ -95,9 +95,9 @@ export class Highway {
     this.app.ticker.add((t) => this.draw(t.deltaMS))
   }
 
-  /** The effects level, capped to Calm while the OS asks for reduced motion. */
-  private effects(): 0 | 1 | 2 {
-    return reducedMotion && reducedMotion.matches ? (Math.min(settings.fx, 1) as 0 | 1) : settings.fx
+  /** The OS asks for reduced motion: Calm is all there is to cap (the Arcade tier is gone), so nothing here may pulse or swell. */
+  private get still(): boolean {
+    return !!reducedMotion && reducedMotion.matches
   }
 
   /** Pick the visible key range and place every key. Call on resize and song change. */
@@ -170,7 +170,7 @@ export class Highway {
     if (!k) return
     const color = grade === 'ok' ? C[hand] : gradeColor[grade]
     this.keyHue.set(p, C[hand])
-    const fx = this.game.view === 'sheet' ? 0 : this.effects() // sheet view stays calm: the staff carries the feedback
+    const fx = this.game.view === 'sheet' ? 0 : settings.fx // sheet view stays calm: the staff carries the feedback
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
     this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
@@ -201,7 +201,7 @@ export class Highway {
     const base = (Math.max(this.W / Math.max(this.whites.length, 1), 24) / 128) * 2 * scale
     s.scale.set(base)
     this.fxLayer.addChild(s)
-    this.sparks.push({ s, vx: 0, vy: 0, life: 0.38, max: 0.38, grow: base * 1.9, from: base })
+    this.sparks.push({ s, vx: 0, vy: 0, life: 0.38, max: 0.38, grow: base * (this.still ? 1 : 1.9), from: base })
   }
 
   private label(text: string, color: number, size: number): Sprite {
@@ -237,7 +237,7 @@ export class Highway {
     const H = this.H
     const look = settings.fall
     const pps = H / look
-    const fx = this.effects()
+    const fx = settings.fx
     const hide = (g.mode === 'read' && !g.showNotes) || g.view === 'sheet' // reading drills and sheet view: no falling notes
     const names = g.mode === 'read' ? g.showNames : settings.names
 
@@ -296,7 +296,7 @@ export class Highway {
     }
     const waiting = g.phase === 'waiting'
     const need = new Set<number>()
-    const pulse = 0.55 + 0.45 * Math.sin(this.clock * 7)
+    const pulse = this.still ? 0.85 : 0.55 + 0.45 * Math.sin(this.clock * 7) // the wait ring and the ghost key breathe; under reduced motion they hold steady
     for (let i = hide ? notes.length : i0; i < notes.length; i++) {
       const n = notes[i]
       if (n.t > T + look) break

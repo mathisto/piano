@@ -18,7 +18,8 @@
    "title": "Minuet in G, BWV Anh. 114",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "fd87a6673e18104047842a1c858d2c9d8eb9ad845d7a8fa46e3664b17642cb75"
+   "sha256": "fd87a6673e18104047842a1c858d2c9d8eb9ad845d7a8fa46e3664b17642cb75",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -28,7 +29,8 @@
    "title": "Minuet in C minor, BWV Anh. 121",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "197d23ad4db1d3d6bb1963d3898e1cb0a4419d8078fbd34f9e9a1210357f1485"
+   "sha256": "197d23ad4db1d3d6bb1963d3898e1cb0a4419d8078fbd34f9e9a1210357f1485",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -38,7 +40,8 @@
    "title": "Minuet in A minor, BWV Anh. 120",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "0946fa8ab89a3340e53edacb213bbc3e21e45522057b062614ccdfc8e99ffc66"
+   "sha256": "0946fa8ab89a3340e53edacb213bbc3e21e45522057b062614ccdfc8e99ffc66",
+   "pickup": 1
   },
   {
    "src": "mutopia",
@@ -48,7 +51,8 @@
    "title": "Musette in D, BWV Anh. 126",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "3b03c3939b767a0d46b77eba058d6decc0f191bfb1aa81a1a3bafc9c49098275"
+   "sha256": "3b03c3939b767a0d46b77eba058d6decc0f191bfb1aa81a1a3bafc9c49098275",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -58,7 +62,8 @@
    "title": "La Candeur, Op. 100 No. 1",
    "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
    "licence": "Public Domain",
-   "sha256": "ad185dbf3cb7e3e187cbe6e38c5ead706cf375b9d441f7191429027436b2a8e4"
+   "sha256": "ad185dbf3cb7e3e187cbe6e38c5ead706cf375b9d441f7191429027436b2a8e4",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -78,7 +83,8 @@
    "title": "Of Foreign Lands and People, Op. 15 No. 1",
    "composer": "Robert Schumann (1810–1856)",
    "licence": "Public Domain",
-   "sha256": "e58e708afe8b31c634a0e9f3354a4ed94670e929d82926f7ff49dea3ebe146c2"
+   "sha256": "e58e708afe8b31c634a0e9f3354a4ed94670e929d82926f7ff49dea3ebe146c2",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -98,7 +104,8 @@
    "title": "Innocence, Op. 100 No. 5",
    "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
    "licence": "Public Domain",
-   "sha256": "39768b50abb623d24986b0e3993518ca92a6f1340d6154fc092f218cb6b97fee"
+   "sha256": "39768b50abb623d24986b0e3993518ca92a6f1340d6154fc092f218cb6b97fee",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -108,7 +115,8 @@
    "title": "La Pastorale, Op. 100 No. 3",
    "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
    "licence": "Public Domain",
-   "sha256": "192500ee12358537bf92811064ee4ad0b680c78302d5762175a3c32fe573a577"
+   "sha256": "192500ee12358537bf92811064ee4ad0b680c78302d5762175a3c32fe573a577",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -118,7 +126,8 @@
    "title": "Sonatina in C, Op. 20 No. 1: Allegro",
    "composer": "Friedrich Kuhlau (1786–1832)",
    "licence": "Public Domain",
-   "sha256": "d105169497a3bf92ee134c65c78eef1e5e7192fa53f2e9fedd4115681fa5a692"
+   "sha256": "d105169497a3bf92ee134c65c78eef1e5e7192fa53f2e9fedd4115681fa5a692",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -128,7 +137,8 @@
    "title": "March of the Wooden Soldiers, Op. 39 No. 5",
    "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
    "licence": "Public Domain",
-   "sha256": "a9717d793785c3c702d85e20f99a81de60faedd29fc4e7dcb240fbc99a9b0d2b"
+   "sha256": "a9717d793785c3c702d85e20f99a81de60faedd29fc4e7dcb240fbc99a9b0d2b",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -138,7 +148,8 @@
    "title": "Tendre Fleur, Op. 100 No. 10",
    "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
    "licence": "Public Domain",
-   "sha256": "58dd9eec57bfcb7fb8a924530e8f6c1e1599a02fc10cc4f79ae6d1ef6e2a0c85"
+   "sha256": "58dd9eec57bfcb7fb8a924530e8f6c1e1599a02fc10cc4f79ae6d1ef6e2a0c85",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -148,7 +159,8 @@
    "title": "L'Arabesque, Op. 100 No. 2",
    "composer": "Johann Friedrich Franz Burgmüller (1806–1874)",
    "licence": "Public Domain",
-   "sha256": "9b689a9b3f178e7bb2b5899d0559e223e9d8de7081d83fc087760ac2b4d378e1"
+   "sha256": "9b689a9b3f178e7bb2b5899d0559e223e9d8de7081d83fc087760ac2b4d378e1",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -158,7 +170,8 @@
    "title": "Old French Song, Op. 39 No. 16",
    "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
    "licence": "Public Domain",
-   "sha256": "112c3b61dab55f58bc44d9f3522ef21b3479ffa1953097783ff8c4f10e40175d"
+   "sha256": "112c3b61dab55f58bc44d9f3522ef21b3479ffa1953097783ff8c4f10e40175d",
+   "pickup": 0.5
   },
   {
    "src": "mutopia",
@@ -224,7 +237,8 @@
    "title": "Invention No. 4 in D minor, BWV 775",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "5ecc06eb04d56ea40bd4db64bfd49ac9bff523e46d134912fa5bd07aea1db1c7"
+   "sha256": "5ecc06eb04d56ea40bd4db64bfd49ac9bff523e46d134912fa5bd07aea1db1c7",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -234,7 +248,8 @@
    "title": "Invention No. 8 in F major, BWV 779",
    "composer": "J. S. Bach (1685–1750)",
    "licence": "Public Domain",
-   "sha256": "07238719180171f76283756405ee43a0319226e869283bf29affb9e4c360e6f8"
+   "sha256": "07238719180171f76283756405ee43a0319226e869283bf29affb9e4c360e6f8",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -244,7 +259,10 @@
    "title": "Gymnopédie No. 1",
    "composer": "Erik Satie (1866–1925)",
    "licence": "Public Domain",
-   "sha256": "09ce7337b4bf42ba12e1aa64b4c7dc7fcfa6455f1070cb12f8880a755df97384"
+   "sha256": "09ce7337b4bf42ba12e1aa64b4c7dc7fcfa6455f1070cb12f8880a755df97384",
+   "pickup": 0,
+   "tempo": 56,
+   "tempoGuess": true
   },
   {
    "src": "mutopia",
@@ -254,7 +272,8 @@
    "title": "Gnossienne No. 1",
    "composer": "Erik Satie (1866–1925)",
    "licence": "CC-BY-SA-4.0",
-   "sha256": "f49fc6c6653295e09350d64479d09b4c31091aa5dade81f2494383ab7e71708a"
+   "sha256": "f49fc6c6653295e09350d64479d09b4c31091aa5dade81f2494383ab7e71708a",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -274,7 +293,8 @@
    "title": "Prelude in E minor, Op. 28 No. 4",
    "composer": "Frédéric Chopin (1810–1849)",
    "licence": "Public Domain",
-   "sha256": "c1d7e05aa4e6e2baeec2e9108402a969c16d5df302b82fd66d110634697f2e3b"
+   "sha256": "c1d7e05aa4e6e2baeec2e9108402a969c16d5df302b82fd66d110634697f2e3b",
+   "pickup": 1
   },
   {
    "src": "mutopia",
@@ -284,7 +304,8 @@
    "title": "Träumerei, Op. 15 No. 7",
    "composer": "Robert Schumann (1810–1856)",
    "licence": "Public Domain",
-   "sha256": "6e0045d5783ff28dedcf05813074fe407ca3846e5e2a7246f2793ac5614e4851"
+   "sha256": "6e0045d5783ff28dedcf05813074fe407ca3846e5e2a7246f2793ac5614e4851",
+   "pickup": 1
   },
   {
    "src": "mutopia",
@@ -294,7 +315,8 @@
    "title": "Für Elise, WoO 59",
    "composer": "Ludwig van Beethoven (1770–1827)",
    "licence": "Public Domain",
-   "sha256": "1c12c21c7bbf4cf163896732672648a69d497636059837abd153c71abe50215a"
+   "sha256": "1c12c21c7bbf4cf163896732672648a69d497636059837abd153c71abe50215a",
+   "pickup": 0.5
   },
   {
    "src": "openscore-lieder",
@@ -343,7 +365,8 @@
    "title": "The Entertainer",
    "composer": "Scott Joplin (1868–1917)",
    "licence": "Public Domain",
-   "sha256": "33e4e81ee64ffb2edf90d1c6a1ddee7276507296bfb915c2bb775231a467f066"
+   "sha256": "33e4e81ee64ffb2edf90d1c6a1ddee7276507296bfb915c2bb775231a467f066",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -353,7 +376,10 @@
    "title": "Elite Syncopations",
    "composer": "Scott Joplin (1868–1917)",
    "licence": "Public Domain",
-   "sha256": "28e41b9b3d0afd3de70c0de56dba9c34e4ff05b21a14939f0fdf0b181d856fc9"
+   "sha256": "28e41b9b3d0afd3de70c0de56dba9c34e4ff05b21a14939f0fdf0b181d856fc9",
+   "pickup": 0,
+   "tempo": 100,
+   "tempoGuess": true
   },
   {
    "src": "mutopia",
@@ -363,7 +389,8 @@
    "title": "In the Hall of the Mountain King, Op. 46 No. 4",
    "composer": "Edvard Grieg (1843–1907)",
    "licence": "Public Domain",
-   "sha256": "0c256a809b5af1faef81b6aad6106088a71d76b12435d5f0775d4ceee60c917e"
+   "sha256": "0c256a809b5af1faef81b6aad6106088a71d76b12435d5f0775d4ceee60c917e",
+   "pickup": 0
   },
   {
    "src": "mutopia",
@@ -383,7 +410,9 @@
    "title": "Clair de lune (Suite bergamasque)",
    "composer": "Claude Debussy (1862–1918)",
    "licence": "Public Domain",
-   "sha256": "4eee9a1546ffde1ff74cb9824ba0e57cbc821185a15185bfea9faed97820bf8c"
+   "sha256": "4eee9a1546ffde1ff74cb9824ba0e57cbc821185a15185bfea9faed97820bf8c",
+   "tempo": 90,
+   "tempoGuess": true
   },
   {
    "src": "mutopia",

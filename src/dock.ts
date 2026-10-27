@@ -151,10 +151,13 @@ export class Dock {
     lad.hidden = !learn || !g.loop
     lad.setAttribute('aria-pressed', String(g.autoTempo))
     // in Learn the first row is full of loop buttons: the metronome joins the aids row
-    const m = this.host.querySelector('.metro')!
+    const m = this.host.querySelector<HTMLElement>('.metro')!
     const row = this.host.querySelector(learn ? '.aids' : '.dock-row')!
     if (m.parentElement !== row) row.insertBefore(m, row.querySelector(learn ? '.dock-fill' : '.dock-end'))
     lad.textContent = g.autoTempo ? 'Ladder on' : 'Ladder off'
+    // a paced run has no metronome button (the click is always on) but shows the beat dots: with the silent switch on, they are the pulse
+    m.hidden = m.hidden && !g.paced
+    this.host.querySelector<HTMLElement>('#metro')!.hidden = g.paced
     this.syncMetro()
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
     ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
@@ -190,7 +193,12 @@ export class Dock {
 
   /** The beat dots: one per beat of the bar, the current one lit. Touches the page only when the beat changes. */
   private dots() {
-    const b = settings.metro !== 'off' && this.game.phase !== 'ready' && this.game.phase !== 'done' ? beatAt(this.song.bars, this.game.t) : null
+    const g = this.game
+    let b = (settings.metro !== 'off' || g.paced) && g.phase !== 'ready' && g.phase !== 'done' ? beatAt(this.song.bars, g.t) : null
+    if (!b && g.paced && g.phase === 'countin') {
+      const [{ t0, t1 }] = this.song.bars // the count-in is four beats at the run's tempo, counted back from the first bar
+      b = { k: (((Math.floor(g.t / ((t1 - t0) / 4) + 1e-9) % 4) + 4) % 4), n: 4 }
+    }
     const key = b ? `${b.n}:${b.k}` : ''
     if (key === this.beatKey) return
     this.beatKey = key

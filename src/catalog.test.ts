@@ -16,6 +16,13 @@ describe('the built-in catalogue', () => {
     expect(base.composers.find((c) => c.name === 'J. S. Bach')).toEqual({ name: 'J. S. Bach', born: 1685, died: 1750 })
   })
 
+  it('carries pickup and tempo (a guess is flagged) so the offline first run lays out as the online one does', () => {
+    const p = builtin([{ ...manifest[0], pickup: 0.5, tempo: 56, tempoGuess: true }]).pieces[0]
+    expect([p.pickup, p.tempo, p.flags]).toEqual([0.5, 56, ['tempo-estimated']])
+    expect(base.pieces.find((q) => q.id === 'mutopia-1540')).toMatchObject({ pickup: 0, tempo: 100, flags: ['tempo-estimated'] })
+    expect(base.pieces.find((q) => q.id === 'mutopia-2146')!.pickup).toBeUndefined() // the catalogue states none: the guess stays
+  })
+
   it('merges under a network catalogue: its pieces win, bundled ones it lacks stay, re-indexed', () => {
     const net = synthetic(3)
     const m = merge({ ...net, pieces: [...net.pieces, { ...base.pieces[0], composer: 0, licence: 0 }] }, base)
