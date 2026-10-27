@@ -1,0 +1,195 @@
+// Shared by scripts/fetch-library.mjs and scripts/library/build.mjs: polite fetch, Mutopia page reading, .mxl zip, OpenScore part surgery.
+// Plain Node (>= 22.2 for zlib.crc32), no dependencies.
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib'
+
+export const UA = 'piano-forte-library-fetch/0.1 (+https://pianoforte.mattkelly.io; themattkellyshow@gmail.com)'
+export const sha = (b) => createHash('sha256').update(b).digest('hex')
+export const fail = (id, msg) => {
+  throw new Error(`${id}: ${msg}`)
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/** One request per second. With `cache` (a directory), a URL is fetched once ever: the body is kept under sha256(url). */
+export async function get(url, cache) {
+  const f = cache && `${cache}/${sha(url)}`
+  if (f && existsSync(f)) return readFileSync(f)
+  await sleep(1000)
+  const r = await fetch(url, { headers: { 'User-Agent': UA } })
+  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`)
+  const b = Buffer.from(await r.arrayBuffer())
+  if (f) {
+    mkdirSync(cache, { recursive: true })
+    writeFileSync(f, b)
+  }
+  return b
+}
+
+const YEAR = new Date().getFullYear()
+export const LAST_DEATH = YEAR - 71 // life + 70 everywhere: died 1955 or earlier in 2026
+export const LAST_PUBLISHED = YEAR - 96 // US: published 1930 or earlier in 2026
+
+/** Licence, composer death and publication year (the latest year the edition or composition date names). Empty is a pass. */
+export function refusals({ licence, composer, edition = '', date = '' }, allow) {
+  const why = []
+  if (!allow.includes(licence)) why.push(`licence ${licence}`)
+  const years = /\(([^)]*)\)\s*$/.exec(composer)?.[1].match(/\d{4}/g) ?? []
+  const died = years.length > 1 ? Number(years[years.length - 1]) : NaN
+  if (!(died <= LAST_DEATH)) why.push(Number.isNaN(died) ? 'composer death unknown' : `composer died ${died}`)
+  const pub = Math.max(0, ...[...`${edition} ${date}`.matchAll(/\b(1[5-9]\d\d|20\d\d)\b/g)].map((m) => Number(m[1])))
+  if (pub > LAST_PUBLISHED) why.push(`dated ${pub}`)
+  return why
+}
+
+export const text = (s) =>
+  s
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+// ---- Mutopia: licence, edition, typesetter and the MIDI link all come from the piece's own page ----
+
+export function mutopiaMeta(id, html) {
+  const cell = (label) => {
+    const m = new RegExp(`<b>${label}:</b>\\s*([\\s\\S]*?)</td>`).exec(html)
+    return m ? text(m[1]) : undefined
+  }
+  const copyright = /<b>Copyright:<\/b>([\s\S]*?)<\/td>/.exec(html)?.[1] ?? fail(id, 'no Copyright field')
+  const cc = /creativecommons\.org\/(licenses|publicdomain)\/([a-z-]+)\/?([0-9.]*)/.exec(copyright)
+  let licence, licenceUrl
+  if (cc) {
+    licence = cc[2] === 'zero' ? 'CC0-1.0' : cc[2] === 'publicdomain' || cc[2] === 'mark' || /Public Domain/i.test(text(copyright)) ? 'Public Domain' : `CC-${cc[2].toUpperCase()}-${cc[3]}`
+    licenceUrl = `https://creativecommons.org/${cc[1]}/${cc[2]}/${cc[3] ? cc[3] + '/' : ''}`
+  } else if (/Mutopia\s*BSD/i.test(text(copyright))) {
+    licence = 'MutopiaBSD'
+    licenceUrl = 'https://www.mutopiaproject.org/legal.html'
+  } else fail(id, `no licence link in the Copyright field (${text(copyright)})`)
+  const arranger = cell('Arranger\\(s\\)')
+  const by = /<h4>by ([^<]*)<\/h4>/.exec(html)?.[1]
+  return {
+    licence,
+    licenceUrl,
+    title: /<h2>([^<]*)<\/h2>/.exec(html)?.[1]?.trim(),
+    composer: by && text(by),
+    lifespan: /<h4>by [^(]*(\([^)]*\))/.exec(html)?.[1],
+    instruments: cell('Instrument\\(s\\)'),
+    style: cell('Style'),
+    opus: cell('Opus'),
+    date: cell('Date of composition'),
+    sourceEdition: cell('Source') ?? fail(id, 'no Source field'),
+    typesetter: /<b>Maintainer:<\/b>\s*([^<]*)/.exec(html)?.[1].trim() || undefined,
+    arranger: arranger && arranger !== 'n/a' ? arranger : undefined,
+    midi: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+\.mid)"/.exec(html)?.[1],
+    ly: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+\.ly)"/.exec(html)?.[1],
+  }
+}
+
+// ---- .mxl zip, read and written (fixed dates, so the output is reproducible) ----
+
+export function unzip(buf) {
+  let p = buf.length - 22
+  while (p >= 0 && buf.readUInt32LE(p) !== 0x06054b50) p--
+  if (p < 0) throw new Error('not a zip')
+  const count = buf.readUInt16LE(p + 10)
+  let c = buf.readUInt32LE(p + 16)
+  const files = new Map()
+  for (let i = 0; i < count; i++) {
+    const method = buf.readUInt16LE(c + 10)
+    const csize = buf.readUInt32LE(c + 20)
+    const nlen = buf.readUInt16LE(c + 28)
+    const xlen = buf.readUInt16LE(c + 30)
+    const clen = buf.readUInt16LE(c + 32)
+    const local = buf.readUInt32LE(c + 42)
+    const name = buf.toString('utf8', c + 46, c + 46 + nlen)
+    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28)
+    const raw = buf.subarray(start, start + csize)
+    files.set(name, method === 0 ? raw : inflateRawSync(raw))
+    c += 46 + nlen + xlen + clen
+  }
+  return files
+}
+
+export function zip(entries) {
+  const local = []
+  const central = []
+  let off = 0
+  for (const [name, data] of entries) {
+    const n = Buffer.from(name)
+    const def = deflateRawSync(data, { level: 9 })
+    const crc = crc32(data)
+    const h = Buffer.alloc(30)
+    h.writeUInt32LE(0x04034b50, 0)
+    h.writeUInt16LE(20, 4)
+    h.writeUInt16LE(8, 8) // deflate
+    h.writeUInt16LE(0x21, 12) // fixed DOS date 1980-01-01 keeps the output reproducible
+    h.writeUInt32LE(crc, 14)
+    h.writeUInt32LE(def.length, 18)
+    h.writeUInt32LE(data.length, 22)
+    h.writeUInt16LE(n.length, 26)
+    const ch = Buffer.alloc(46)
+    ch.writeUInt32LE(0x02014b50, 0)
+    ch.writeUInt16LE(20, 4)
+    ch.writeUInt16LE(20, 6)
+    ch.writeUInt16LE(8, 10)
+    ch.writeUInt16LE(0x21, 14)
+    ch.writeUInt32LE(crc, 16)
+    ch.writeUInt32LE(def.length, 20)
+    ch.writeUInt32LE(data.length, 24)
+    ch.writeUInt16LE(n.length, 28)
+    ch.writeUInt32LE(off, 42)
+    local.push(h, n, def)
+    central.push(ch, n)
+    off += 30 + n.length + def.length
+  }
+  const cd = Buffer.concat(central)
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(entries.length, 8)
+  end.writeUInt16LE(entries.length, 10)
+  end.writeUInt32LE(cd.length, 12)
+  end.writeUInt32LE(off, 16)
+  return Buffer.concat([...local, cd, end])
+}
+
+// ---- OpenScore / any MusicXML: keep the piano, drop or fold the rest, write a one-entry .mxl back ----
+
+const PIANO = /piano|pianoforte|klavier|keyboard|cembalo|harpsichord/i
+
+/** e.dropParts and e.foldParts name parts by id; without them every part whose name is not a keyboard is dropped. */
+export function openscoreMeta(e, upstream) {
+  const files = unzip(upstream)
+  const root = /full-path="([^"]+)"/.exec(files.get('META-INF/container.xml')?.toString() ?? '')?.[1] ?? fail(e.id, 'no rootfile in container.xml')
+  let xml = files.get(root)?.toString() ?? fail(e.id, `${root} missing in the mxl`)
+  if (!/<rights>[^<]*CC0/.test(xml)) fail(e.id, 'the file does not state CC0 in <rights>')
+  const drop =
+    e.dropParts ??
+    (e.foldParts
+      ? []
+      : [...xml.matchAll(/<score-part id="([^"]+)">([\s\S]*?)<\/score-part>/g)].filter(([, , body]) => !PIANO.test(/<part-name[^>]*>([^<]*)/.exec(body)?.[1] ?? '')).map(([, id]) => id))
+  for (const p of drop) {
+    // the importer reads tempo from the first part only, and OpenScore puts it on the voice line: move it over
+    const dropped = new RegExp(`<part id="${p}">[\\s\\S]*?</part>`).exec(xml)?.[0] ?? ''
+    const tempo = /<direction\b(?:(?!<\/direction>)[\s\S])*?<sound tempo="[^"]+"\/>[\s\S]*?<\/direction>/.exec(dropped.split('</measure>')[0])?.[0]
+    xml = xml.replace(new RegExp(`<score-part id="${p}">[\\s\\S]*?</score-part>`), '').replace(dropped, '')
+    if (tempo && !/<sound tempo=/.test(xml)) xml = xml.replace(/<note[ >]/, (n) => tempo + n)
+  }
+  for (const p of e.foldParts ?? []) {
+    // a voice line kept as a second right hand: a part with two staves puts its first staff in the right hand
+    const re = new RegExp(`(<part id="${p}">[\\s\\S]*?<attributes>(?:(?!</attributes>)[\\s\\S])*?)(</attributes>)`)
+    if (!re.test(xml)) fail(e.id, `part ${p} has no attributes to fold`)
+    xml = xml.replace(re, (m, a, b) => (/<staves>/.test(a) ? m : `${a}<staves>2</staves>${b}`))
+  }
+  if (!/<part id="/.test(xml)) fail(e.id, 'no part left after dropping')
+  const edition = /<creator type="arranger">([\s\S]*?)<\/creator>/.exec(xml)?.[1]
+  const container = `<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="${root}"/></rootfiles></container>\n`
+  return {
+    composer: /<creator type="composer">([\s\S]*?)<\/creator>/.exec(xml)?.[1],
+    sourceEdition: `${edition ? text(edition) : 'OpenScore Lieder Corpus'}${e.foldParts ? '; the vocal line is folded into the right hand' : ''}`,
+    bytes: zip([['META-INF/container.xml', Buffer.from(container)], [root, Buffer.from(xml)]]),
+  }
+}

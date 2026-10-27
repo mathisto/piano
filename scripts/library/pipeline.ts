@@ -1,0 +1,349 @@
+// Library pipeline, the offline half: analyse (with the app's own importers), dedupe, emit.
+// Bundled by scripts/library/vite.config.mjs into .cache/library/bin/pipeline.mjs and driven by build.mjs, which fetches,
+// checks licences and normalises. Pure and deterministic: the same inputs give byte-identical output.
+import { createHash } from 'node:crypto'
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { Midi } from '@tonejs/midi'
+import { inspectMidi, type Selection } from '../../src/midi-tracks'
+import { fromMusicXml, xmlText } from '../../src/musicxml'
+import { estimateFifths, fromMidi, type Song } from '../../src/song'
+import type { Catalog, Piece } from '../../src/catalog-types'
+
+export interface Input {
+  id: string
+  title: string
+  composer: string // 'J. S. Bach (1685–1750)'
+  opus?: string
+  source: Piece['source']
+  sourceUrl: string
+  licenceEvidence: string
+  licence: string
+  licenceUrl: string
+  edition: string
+  typesetter?: string
+  arranger?: string
+  style?: string
+  format: Piece['format']
+  bytes: Uint8Array // as shipped: MIDI, or a piano-only .mxl
+  upstreamSha: string // sha256 of the file as fetched, before normalising
+  ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
+}
+
+/** Gate names. fail: never shipped. review: minus 10 quality. flag: minus 3. */
+export const GATES = {
+  fail: ['parse', 'notes', 'bars', 'pitch', 'bar-order'],
+  review: ['length', 'bar-length', 'key', 'hand-share', 'hand-register', 'chord', 'span'],
+  flag: ['no-tempo', 'dc-ds', 'repeats', 'tuplets'],
+} as const
+
+export interface Analysis {
+  id: string
+  fails: string[]
+  review: string[]
+  flags: string[]
+  tags: string[]
+  quality: number
+  grade: number
+  gradeWhy: number[]
+  error?: string
+  song?: Song
+  pick?: Selection
+  tracks: number
+  fp: Set<string>
+}
+
+const ab = (u: Uint8Array) => u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength) as ArrayBuffer
+const p95 = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.95)] : 0)
+const clamp = (x: number, hi: number) => Math.max(0, Math.min(hi, x))
+const r2 = (x: number) => Math.round(x * 100) / 100
+
+const HAND_NAME: [RegExp, 'R' | 'L'][] = [
+  [/left|lower|bass|\blh\b|links|sinistra|gauche|unten/i, 'L'],
+  [/right|upper|treble|\brh\b|rechts|destra|droite|oben/i, 'R'],
+]
+
+/** Three or more MIDI tracks: pin each to a hand by its name, else by its middle pitch (the app would split them all at middle C). */
+export function pinHands(buf: ArrayBuffer): Selection | undefined {
+  const live = inspectMidi(buf).tracks.filter((t) => !t.percussion)
+  if (live.length < 3) return undefined
+  const hands: Record<number, 'R' | 'L'> = {}
+  for (const t of live) hands[t.index] = HAND_NAME.find(([re]) => re.test(t.name))?.[1] ?? ((t.lo + t.hi) / 2 < 60 ? 'L' : 'R')
+  if (!Object.values(hands).includes('L')) hands[[...live].sort((a, b) => a.lo + a.hi - b.lo - b.hi)[0].index] = 'L'
+  if (!Object.values(hands).includes('R')) hands[[...live].sort((a, b) => b.lo + b.hi - a.lo - a.hi)[0].index] = 'R'
+  return { tracks: live.map((t) => t.index), hands }
+}
+
+/** Gates, flags, tags and the grade terms for one parsed Song. `marks` is the score text (.ly or MusicXML) when there is one. */
+export function judge(s: Song, marks = '', hasTempo = true) {
+  const fails: string[] = []
+  const review: string[] = []
+  const flags: string[] = []
+  const notes = s.notes.filter((n) => !n.grace)
+  const bars = s.bars
+  if (notes.length < 20) fails.push('notes')
+  if (bars.length < 4 || bars.length > 5000) fails.push('bars')
+  if (s.lo < 21 || s.hi > 108) fails.push('pitch')
+  if (bars.some((b, i) => i > 0 && !(b.t0 > bars[i - 1].t0))) fails.push('bar-order')
+  if (s.end < 10 || s.end > 900) review.push('length')
+  if (bars.some((b, i) => i > 0 && i < bars.length - 1 && Math.abs((b.ql ?? (b.n * 4) / b.den) - (b.n * 4) / b.den) > 1e-6)) review.push('bar-length')
+  const est = estimateFifths(notes.map((n) => ({ p: n.p, d: n.d, dq: n.qd })))
+  const off = Math.abs(est - s.fifths) % 12
+  if (Math.min(off, 12 - off) >= 3) review.push('key')
+  const L = notes.filter((n) => n.h === 'L')
+  const R = notes.filter((n) => n.h === 'R')
+  const left = notes.length ? L.length / notes.length : 0
+  if (left < 0.15 || left > 0.85) review.push('hand-share')
+  if (L.filter((n) => n.p > 72).length > 0.1 * L.length || R.filter((n) => n.p < 48).length > 0.1 * R.length) review.push('hand-register')
+  // chords: the notes one hand starts together
+  const at = new Map<string, number[]>()
+  for (const n of notes) {
+    const k = `${n.h}:${n.bar}:${(n.qb ?? n.t).toFixed(3)}`
+    at.set(k, [...(at.get(k) ?? []), n.p])
+  }
+  const chords = [...at.values()]
+  const maxChord = Math.max(0, ...chords.map((c) => c.length))
+  const spanP95 = p95(chords.map((c) => Math.max(...c) - Math.min(...c))) // over every onset, single notes too (as src/library.test.ts)
+  if (maxChord > 5) review.push('chord')
+  if (spanP95 > 12) review.push('span')
+  if (!hasTempo) flags.push('no-tempo')
+  if (/D\.\s?[CS]\.|\\segno|\\coda|<segno|<coda|dacapo=|dalsegno=|\bFine\b|\bCoda\b/.test(marks)) flags.push('dc-ds')
+  if (/\\repeat\s+volta|<repeat /.test(marks)) flags.push('repeats')
+  if (notes.some((n) => n.tuplet && !(n.tuplet.num === 3 && n.tuplet.den === 2))) flags.push('tuplets')
+  const tags = [...(notes.some((n) => n.tieNext) ? ['ties'] : []), ...(notes.some((n) => n.tuplet?.num === 3 && n.tuplet.den === 2) ? ['triplets'] : [])]
+
+  // grade: seven capped terms, summed
+  const perBar = new Array(bars.length).fill(0)
+  for (const n of notes) perBar[n.bar]++
+  const onsets = new Set(notes.map((n) => `${n.bar}:${(n.qb ?? n.t).toFixed(3)}`)).size
+  const tonic = (((7 * s.fifths) % 12) + 12) % 12
+  const scale = new Set([0, 2, 4, 5, 7, 9, 11].map((x) => (x + tonic) % 12))
+  const share = (f: (n: (typeof notes)[0]) => boolean) => (notes.length ? notes.filter(f).length / notes.length : 0)
+  const why = [
+    clamp(onsets / Math.max(s.end, 1) / 2, 3),
+    clamp((p95(perBar) - 6) / 8, 2),
+    clamp(0.5 * (maxChord - 2), 1.5),
+    clamp((spanP95 - 7) / 4, 1.5),
+    clamp((s.hi - s.lo - 24) / 24, 1),
+    clamp(3 * share((n) => !scale.has(n.p % 12)), 1),
+    clamp(5 * share((n) => !!n.tuplet) + 1.5 * share((n) => (n.qd ?? n.beats) <= 0.25 + 1e-6), 1),
+  ].map(r2)
+  const D = why.reduce((a, b) => a + b, 0)
+  const grade = D < 2 ? 1 : D < 3.5 ? 2 : D < 5 ? 3 : D < 6.5 ? 4 : 5
+  return { fails, review, flags, tags, grade, gradeWhy: why, quality: 100 - 10 * review.length - 3 * flags.length }
+}
+
+/** 4-grams of the intervals of the top line (highest note at each onset). */
+export function fingerprint(s: Song): Set<string> {
+  const top = new Map<number, number>()
+  for (const n of s.notes) if (!n.grace) top.set(Math.round(n.t * 50), Math.max(top.get(Math.round(n.t * 50)) ?? 0, n.p))
+  const line = [...top.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])
+  const iv = line.slice(1).map((p, i) => p - line[i])
+  const out = new Set<string>()
+  for (let i = 0; i + 4 <= iv.length; i++) out.add(iv.slice(i, i + 4).join(','))
+  return out
+}
+
+export async function analyse(e: Input): Promise<Analysis> {
+  const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], tracks: 0, fp: new Set<string>() }
+  try {
+    let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number
+    if (e.format === 'midi') {
+      pick = pinHands(ab(e.bytes))
+      s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick)
+      const midi = new Midi(ab(e.bytes))
+      tracks = midi.tracks.filter((t) => t.notes.length).length
+      marks = e.ly ?? ''
+      hasTempo = e.ly ? /\\tempo/.test(e.ly) : midi.header.tempos.length > 0
+    } else {
+      marks = await xmlText(ab(e.bytes))
+      s = fromMusicXml(marks, e.title, e.id)
+      tracks = (marks.match(/<part id="/g) ?? []).length
+      hasTempo = /<sound[^>]*\btempo="/.test(marks)
+    }
+    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, fp: fingerprint(s) }
+  } catch (err) {
+    return { ...base, fails: ['parse'], error: String((err as Error).message ?? err) }
+  }
+}
+
+// ---- dedupe ----
+
+const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+export const composerKey = (c: string) => fold(c.replace(/\(.*\)/, '')).replace(/[^a-z]/g, '')
+const CAT = /\b(BWV\s*(?:Anh\.?\s*)?\d+[a-z]?|K(?:V|\.)?\s*\d+[a-z]?|Anh\.?\s*\d+|WoO\s*\d+|Op\.?\s*\d+[a-z]?(?:,?\s*No\.?\s*\d+)?)/i
+export const catKey = (e: Pick<Input, 'title' | 'opus'>) => {
+  const m = CAT.exec(`${e.opus ?? ''} ${e.title}`)
+  return m ? fold(m[1]).replace(/[^a-z0-9]/g, '') : ''
+}
+const words = (t: string) => new Set(fold(t.replace(CAT, '')).split(/[^a-z0-9]+/).filter((w) => w.length > 1))
+export const jaccard = <T,>(a: Set<T>, b: Set<T>) => {
+  let n = 0
+  for (const x of a) if (b.has(x)) n++
+  return a.size + b.size ? n / (a.size + b.size - n) : 0
+}
+const idOrder = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true })
+const LIC_RANK = (l: string) => (/^(Public Domain|CC0)/.test(l) ? 0 : /-SA-/.test(l) ? 2 : 1)
+const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2 }
+
+/** Same composer, and the same catalogue number or a similar title, and the same tune by fingerprint: keep the best one. */
+export function dedupe(items: { e: Input; a: Analysis }[]): { keep: typeof items; dropped: { id: string; dupOf: string }[] } {
+  const better = (x: (typeof items)[0], y: (typeof items)[0]) =>
+    x.a.fails.length - y.a.fails.length ||
+    y.a.quality - x.a.quality ||
+    (x.e.format === 'musicxml' ? 0 : 1) - (y.e.format === 'musicxml' ? 0 : 1) ||
+    LIC_RANK(x.e.licence) - LIC_RANK(y.e.licence) ||
+    SRC_RANK[x.e.source] - SRC_RANK[y.e.source] ||
+    (x.e.id < y.e.id ? -1 : 1)
+  const parent = items.map((_, i) => i)
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
+  const byComposer = new Map<string, number[]>()
+  items.forEach((x, i) => byComposer.set(composerKey(x.e.composer), [...(byComposer.get(composerKey(x.e.composer)) ?? []), i]))
+  for (const idx of byComposer.values())
+    for (let i = 0; i < idx.length; i++)
+      for (let j = i + 1; j < idx.length; j++) {
+        const [x, y] = [items[idx[i]], items[idx[j]]]
+        const cx = catKey(x.e)
+        const same = (cx && cx === catKey(y.e)) || jaccard(words(x.e.title), words(y.e.title)) >= 0.6
+        if (same && jaccard(x.a.fp, y.a.fp) >= 0.6) parent[find(idx[j])] = find(idx[i])
+      }
+  const groups = new Map<number, number[]>()
+  items.forEach((_, i) => groups.set(find(i), [...(groups.get(find(i)) ?? []), i]))
+  const keep: typeof items = []
+  const dropped: { id: string; dupOf: string }[] = []
+  for (const g of groups.values()) {
+    const sorted = g.map((i) => items[i]).sort(better)
+    keep.push(sorted[0])
+    for (const x of sorted.slice(1)) dropped.push({ id: x.e.id, dupOf: sorted[0].e.id })
+  }
+  return { keep: keep.sort((x, y) => idOrder(x.e.id, y.e.id)), dropped: dropped.sort((x, y) => idOrder(x.id, y.id)) }
+}
+
+// ---- run: analyse, dedupe, select, emit ----
+
+export interface Options {
+  overrides?: Record<string, number>
+  grades?: [number, number] // ship only these grades
+  limit?: number // ship at most this many, in id order (numeric part compared as a number)
+}
+
+export interface Row {
+  id: string
+  stage: 'analyse' | 'dedupe' | 'quality' | 'grade' | 'limit' | 'shipped'
+  why: string[]
+  grade?: number
+  d?: number // the grade's sum of terms
+  quality?: number
+}
+
+const sha = (b: Uint8Array | string) => createHash('sha256').update(b).digest('hex')
+const parseComposer = (c: string) => {
+  const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(c)
+  const ys = (m?.[2] ?? '').match(/\d{4}/g) ?? []
+  return { name: (m?.[1] ?? c).trim(), born: ys.length > 1 ? Number(ys[0]) : undefined, died: Number(ys[ys.length - 1]) }
+}
+const lname = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
+
+export async function run(inputs: Input[], out: string, o: Options = {}): Promise<Row[]> {
+  const all = [...inputs].sort((a, b) => idOrder(a.id, b.id))
+  const items: { e: Input; a: Analysis }[] = []
+  for (const e of all) items.push({ e, a: await analyse(e) })
+  const rows = new Map<string, Row>()
+  const set = (id: string, stage: Row['stage'], why: string[], a?: Analysis) => {
+    rows.set(id, { id, stage, why, ...(a && a.grade && { grade: a.grade, d: r2(a.gradeWhy.reduce((x, y) => x + y, 0)), quality: a.quality }) })
+    return false
+  }
+  for (const { e, a } of items) {
+    const g = o.overrides?.[e.id]
+    if (g) a.grade = g
+    if (a.fails.length) set(e.id, 'analyse', a.error ? [...a.fails, a.error] : a.fails, a)
+  }
+  const { keep, dropped } = dedupe(items)
+  for (const d of dropped) set(d.id, 'dedupe', [`duplicate of ${d.dupOf}`], items.find((x) => x.e.id === d.id)!.a)
+  let ship = keep.filter(({ e, a }) => {
+    if (a.fails.length) return false
+    if (a.quality < 70) return set(e.id, 'quality', [...a.review, ...a.flags], a)
+    if (o.grades && (a.grade < o.grades[0] || a.grade > o.grades[1])) return set(e.id, 'grade', [`grade ${a.grade}`], a)
+    return true
+  })
+  for (const { e, a } of ship.slice(o.limit ?? Infinity)) set(e.id, 'limit', [], a)
+  ship = ship.slice(0, o.limit ?? Infinity)
+
+  // emit
+  mkdirSync(`${out}/p`, { recursive: true })
+  const composers = [...new Map(ship.map(({ e }) => [parseComposer(e.composer).name, parseComposer(e.composer)])).values()].sort((a, b) => (a.name < b.name ? -1 : 1))
+  const licences = [...new Map(ship.map(({ e }) => [e.licence, { id: e.licence, url: e.licenceUrl }])).values()].sort((a, b) => (a.id < b.id ? -1 : 1))
+  const pieces: Piece[] = []
+  const files = new Set<string>()
+  for (const { e, a } of ship) {
+    const s = a.song!
+    const h = sha(e.bytes)
+    const file = `p/${h.slice(0, 16)}.${e.format === 'midi' ? 'mid' : 'mxl'}`
+    writeFileSync(`${out}/${file}`, e.bytes)
+    files.add(file.slice(2))
+    const full = s.bars.find((b) => !b.ql || Math.abs(b.ql - (b.n * 4) / b.den) < 1e-6) ?? s.bars[0]
+    const keys = s.keys && s.keys.length > 1 ? s.keys.map((k) => k.fifths) : undefined
+    const go = o.overrides?.[e.id]
+    pieces.push({
+      id: e.id,
+      title: e.title,
+      composer: composers.findIndex((c) => c.name === parseComposer(e.composer).name),
+      ...(e.opus && { opus: e.opus }),
+      fifths: s.fifths,
+      ...(keys && { keys }),
+      meter: `${full.n}/${full.den}`,
+      bars: s.bars.length,
+      sec: Math.round(s.end * 10) / 10,
+      bpm: Math.round(60 / s.spb),
+      notes: s.notes.length,
+      lo: s.lo,
+      hi: s.hi,
+      tracks: a.tracks,
+      ...(a.pick && { pick: a.pick }),
+      grade: a.grade,
+      gradeWhy: a.gradeWhy,
+      ...(go && { gradeOverride: go }),
+      tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])],
+      source: e.source,
+      sourceUrl: e.sourceUrl,
+      licenceEvidence: e.licenceEvidence,
+      licence: licences.findIndex((l) => l.id === e.licence),
+      edition: e.edition,
+      ...(e.typesetter && { typesetter: e.typesetter }),
+      ...(e.arranger && { arranger: e.arranger }),
+      quality: a.quality,
+      flags: [...a.review, ...a.flags],
+      format: e.format,
+      file,
+      bytes: e.bytes.length,
+      sha256: h,
+    })
+    set(e.id, 'shipped', [], a)
+  }
+  for (const f of readdirSync(`${out}/p`)) if (!files.has(f)) rmSync(`${out}/p/${f}`)
+  const built = sha(all.map((e) => `${e.id} ${e.upstreamSha}\n`).join('')).slice(0, 16)
+  const cat: Catalog = { v: 1, built, composers, licences, pieces }
+  writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
+  const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`].filter(Boolean).join(', ')
+  const who = (p: Piece) => {
+    const c = composers[p.composer]
+    return `${c.name} (${c.born ?? ''}–${c.died})`
+  }
+  const cell = (s: string) => s.replace(/\|/g, '/')
+  const sa = pieces.filter((p) => /-SA-/.test(licences[p.licence].id))
+  writeFileSync(
+    `${out}/LICENSES.md`,
+    `# Licences of the score files in this folder
+
+Generated by \`scripts/library/pipeline.ts\`. Do not edit by hand.
+
+These files are **data**, not code. The app's source code is MIT-licensed; each score below stays under the licence shown for it. Files marked CC BY-SA must stay under that licence, including any converted or edited copy. The licence was read from each piece's own source page (or, for OpenScore, from the \`<rights>\` element of the file).
+
+| File | Title | Composer | Licence | Source edition | Credit | Source page |
+|---|---|---|---|---|---|---|
+${pieces.map((p) => `| \`${p.file}\` | ${cell(p.title)} | ${cell(who(p))} | [${lname(licences[p.licence].id)}](${licences[p.licence].url}) | ${cell(p.edition)} | ${cell(credit(p))} | [source](${p.sourceUrl}) |`).join('\n')}
+
+${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((p) => `- \`${p.file}\`: ${lname(licences[p.licence].id)}, ${who(p)}, ${cell(p.title)}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder).
+`,
+  )
+  return [...rows.values()].sort((a, b) => idOrder(a.id, b.id))
+}
