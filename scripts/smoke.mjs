@@ -28,7 +28,7 @@ for (const [tab, id] of [['songs', 'library'], ['read', 'read'], ['scales', 'sca
 }
 
 await page.click('label:has(input[value=songs])')
-check('open library lists pieces', (await page.$$('.libgrp')).length >= 1)
+check('open library lists pieces', (await page.$$('.biglib tr[data-lib]')).length >= 1)
 await page.click('tr.open[data-open] >> nth=0')
 await page.waitForTimeout(1200)
 check('a song opens in play', (await views()) === 'play')

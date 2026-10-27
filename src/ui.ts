@@ -2,7 +2,7 @@ import { loadState } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
 import type { Result } from './game'
 import type { Next } from './pace'
-import { creditBlock, licenceName, type LibraryEntry } from './credits'
+import { inBundle } from './catalog'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
@@ -85,9 +85,9 @@ export function skeleton(app: HTMLElement) {
 
 // ---------- library ----------
 
-/** The cover for a starter or open-library piece; your own files have none and keep the mini-staff. */
+/** The cover for a starter or a bundled open-library piece; your own files and the corpus have none and keep the mini-staff. */
 export const art = (id: string, cls = 'art') =>
-  /^(starter-|lib:)/.test(id) ? `<img class="${cls}" src="${import.meta.env.BASE_URL}art/${id.replace('lib:', '')}.webp" alt="" width="600" height="400" decoding="async">` : ''
+  id.startsWith('starter-') || (id.startsWith('lib:') && inBundle(id.slice(4))) ? `<img class="${cls}" src="${import.meta.env.BASE_URL}art/${id.replace('lib:', '')}.webp" alt="" width="600" height="400" decoding="async">` : ''
 
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 
@@ -159,47 +159,27 @@ export function gradeColor(g: string) {
   return g === 'S' ? 'var(--perfect)' : g === 'A' ? 'var(--great)' : g === 'B' || g === 'C' ? 'var(--good)' : 'var(--bad)' // the judgement spectrum only: the letter tells B from C
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
 
-const LEVELS = ['Beginner', 'Elementary', 'Intermediate']
-
-/** The open library, grouped by level; each group folds away. Nothing here is committed copyrighted music: see Credits. */
-function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>, meta: Map<string, { thumb: string; len: number }>) {
-  if (!lib.length) return ''
-  const groups = LEVELS.map((lv) => [lv, lib.filter((e) => e.level === lv)] as const).filter(([, es]) => es.length)
-  return `<p class="label cap">Open library</p>${groups
-    .map(
-      ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
-      <table class="songs"><caption class="sr-only">${lv}</caption><colgroup><col><col><col style="width:100px"><col style="width:60px"><col style="width:320px"></colgroup><tbody>${es
-        .map(
-          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${art(`lib:${e.id}`)}${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<b>${Math.round(prog.get(`lib:${e.id}`)!.best!.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
-            <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
-            <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
-        )
-        .join('')}</tbody></table></details>`,
-    )
-    .join('')}`
-}
-
-export function creditsDialog(lib: LibraryEntry[]) {
+/** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
+export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }) {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><h3>Sounds</h3>
     <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)</pre><pre>Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
-    <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence.</p>
-    <div class="credlist">${lib.map((e) => `<pre>${esc(creditBlock(e))}</pre>`).join('')}</div></div>
+    <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence. Every score and its licence: <a href="${licences.app}" target="_blank" rel="noopener">pieces in the app</a>, <a href="${licences.corpus}" target="_blank" rel="noopener">the whole library</a>.</p>
+    <div class="credlist">${blocks.length ? blocks.map((b) => `<pre>${esc(b)}</pre>`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
     <footer><button class="btn" data-close>Close</button></footer>`
 }
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', lib: LibraryEntry[] = [], prog: Map<string, Progress> = new Map(), meta: Map<string, { thumb: string; len: number }> = new Map()) {
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
   el.innerHTML = `
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
-    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}
-    ${libraryTable(lib, prog, meta)}`
+    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }
 
 // ---------- choosing the tracks of a MIDI file ----------

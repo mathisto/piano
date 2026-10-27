@@ -27,15 +27,17 @@ import { STARTERS } from './starters'
 import * as store from './store'
 import { nameChord } from './chord'
 import { thumb } from './thumb'
-import { served } from './net'
-import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credits'
+import { creditBlock, creditLine, libraryUrl } from './credits'
+import * as lib from './catalog'
+import type { Piece } from './catalog-types'
+import { mountLibrary } from './library-view'
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
 import { LEVELS, autoLevel, simplify, type Level } from './simplify'
 import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { $, CAL_NOTES, art, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
 skeleton(app)
@@ -48,7 +50,6 @@ let highway!: Highway
 let staff!: Staff
 let dock!: Dock
 let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
-let libEntries: LibraryEntry[] = []
 let calibrating: { prevOffset: number } | undefined
 let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
 let played = false
@@ -119,7 +120,10 @@ async function libraryData() {
   const starts = starterRows(STARTERS, starters, prog, thumbs)
   const mine = userRows(stored, prog, lens, thumbs)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
-  const libRows: Row[] = libEntries.map((e) => ({ id: `lib:${e.id}`, title: e.title, sub: `${e.composer} · ${e.level}`, bars: 0, len: 0, prog: prog.get(`lib:${e.id}`), user: false, thumb: '' }))
+  const libRows: Row[] = [...prog.keys()].flatMap((k) => {
+    const p = k.startsWith('lib:') && lib.piece(k.slice(4))
+    return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, thumb: '' }] : []
+  })
   const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
   return { starts, mine, last, all: [...starts, ...mine, ...libRows] }
 }
@@ -127,35 +131,12 @@ async function libraryData() {
 async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
-  library($('#library'), starts, mine, err, libEntries, await store.allProgress(), libMeta)
-  void fillLibrary()
+  library($('#library'), starts, mine, err)
+  mountLibrary($('#library'), await store.allProgress(), libSong)
 }
 
-/** Thumbnails and lengths of the open library: the files are tiny, so they are read once, four at a time, after the page shows. */
-const libMeta = new Map<string, { thumb: string; len: number }>()
-async function fillLibrary() {
-  const todo = libEntries.filter((e) => !libMeta.has(e.id))
-  const next = async (): Promise<void> => {
-    const e = todo.shift()
-    if (!e) return
-    try {
-      const song = await libSong(e)
-      libMeta.set(e.id, { thumb: thumb(song), len: song.end })
-      const row = document.querySelector(`#library tr[data-lib="${e.id}"]`)
-      if (row) {
-        row.querySelector('.thumb')!.insertAdjacentHTML('beforeend', libMeta.get(e.id)!.thumb)
-        row.querySelector('.len')!.textContent = mmss(song.end)
-      }
-    } catch { /* a piece that will not parse still opens and reports its own error */ }
-    return next()
-  }
-  await Promise.all([next(), next(), next(), next()])
-}
-
-async function libSong(e: LibraryEntry) {
-  const r = await fetch(libraryUrl(e.file))
-  if (!served(r)) throw new Error(`${e.title} could not be loaded.`)
-  return store.toSong({ id: `lib:${e.id}`, title: e.title, bytes: await r.arrayBuffer(), added: 0, kind: e.format === 'midi' ? 'midi' : 'xml' }, settings.split)
+async function libSong(p: Piece) {
+  return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick }, settings.split)
 }
 
 const SECTIONS = ['today', 'library', 'read', 'scales', 'theory', 'technique', 'progress', 'play'] as const
@@ -1569,7 +1550,7 @@ function openDrawer() {
     save()
     lens.clear()
   }, 'change')
-  $('#sCredits', d).onclick = openCredits
+  $('#sCredits', d).onclick = () => void openCredits()
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
     await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
@@ -1733,20 +1714,23 @@ $('#library').addEventListener('click', async (e) => {
 
 /** Fetch a piece from the open library, then play it like any imported file, with its credit on the start card. */
 async function openLibrary(id: string, mode: Mode) {
-  const e = libEntries.find((x) => x.id === id)
-  if (!e) return
+  const p = lib.piece(id)
+  if (!p) return
   try {
-    await openSong(await libSong(e), mode)
-    if (current) current.credit = creditLine(e)
+    await openSong(await libSong(p), mode)
+    if (current) current.credit = creditLine(lib.catalog, p)
     onPhase()
   } catch (err) {
     void showSection('songs', (err as Error).message)
   }
 }
 
-function openCredits() {
+/** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
+async function openCredits() {
   const d = $('#credits') as HTMLDialogElement
-  d.innerHTML = creditsDialog(libEntries)
+  const prog = await store.allProgress()
+  const mine = lib.catalog.pieces.filter((p) => lib.cached.has(p.id) || prog.has(`lib:${p.id}`)).sort((a, b) => a.title.localeCompare(b.title))
+  d.innerHTML = creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href })
   d.showModal()
   d.scrollTop = 0
 }
@@ -1875,7 +1859,9 @@ addEventListener('drop', (e) => {
 // ---------------------------------------------------------------- boot
 
 void (async () => {
-  libEntries = await loadManifest()
+  await lib.init(() => {
+    if ($('#library').classList.contains('on')) void showLibrary()
+  })
   await showSection('today')
   updateChip()
   try {
@@ -1890,5 +1876,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
+  ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
 }
