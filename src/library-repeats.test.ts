@@ -1,7 +1,8 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
 import { analyse, type Input } from '../scripts/library/pipeline'
-import { encode, lyPickup, pickLy, unfold, withRepeats } from '../scripts/library/repeats'
+import { encode, lyPickup, pickLy, pickupWhy, unfold, withRepeats } from '../scripts/library/repeats'
+import { inlineIncludes } from '../scripts/library/lib.mjs'
 import { fromMidi } from './midi-tracks'
 
 // A LilyPond-like MIDI: 4/4, G major, one track; notes as [quarter, quarters, pitch]
@@ -179,5 +180,73 @@ describe('the anacrusis a .ly states (lyPickup)', () => {
     expect(a.song!.bars[0].ql).toBe(1)
     expect((await analyse({ ...e, ly: undefined })).pickup).toBeUndefined() // no .ly: the detector, unchanged
     expect((await analyse({ ...e, ly: '{ c1 }' })).pickup).toBeUndefined()
+  })
+})
+
+describe('what the .ly reader reads (readLy)', () => {
+  // three bars of 4/4: c d e f | g a b c | d1; a reading counts when its onsets are the file's, and then says 0 (no pickup)
+  const plain = midiOf([...quarters([60, 62, 64, 65, 67, 69, 71, 72]), [8, 4, 74]])
+  const book = (defs: string, score: string) => `\\version "2.18.2"\n${defs}\n\\score { ${score} \\midi { } }\n`
+  const read = (defs: string, score: string, midi = plain) => lyPickup(midi, book(defs, score))
+  const body = (extra: string) => `x = { \\time 4/4 ${extra} c4 d e f | g a b c | d1 }`
+
+  it('\\tag: kept or dropped by the \\keepWithTag or \\removeWithTag around it, in a variable too', () => {
+    const tagged = body("\\tag #'b { r1 }")
+    expect(read(tagged, '\\x')).toBeUndefined() // nothing filtered: the rest plays a bar late
+    expect(read(tagged, "\\keepWithTag #'a \\x")).toBe(0)
+    expect(read(tagged, "\\removeWithTag #'b \\x")).toBe(0)
+    expect(read(body("\\tag #'(a b) { r1 }"), "\\keepWithTag #'a \\x")).toBeUndefined() // a tag list that has a
+    expect(read(body("\\tag #'(a b) { r1 }"), "\\keepWithTag #'c \\x")).toBe(0)
+    expect(read("x = { \\time 4/4 c 4 d 4 e 4 f 4 | g 4 a 4 b 4 c 4 | d 1 \\tag #'b { r1 } }", "\\keepWithTag #'a \\x")).toBe(0) // read again for the filter: a spaced duration is not read twice
+  })
+  it('\\parallelMusic deals its bars out to the variables', () => {
+    const two = midiOf([...quarters([60, 62, 64, 65]), [0, 4, 48]])
+    expect(read("\\parallelMusic #'(hi lo) { c4 d e f | c1 | }", '<< \\hi \\lo >>', two)).toBe(0)
+  })
+  it('a repeat that is unfolded is played in the voice that writes it, endings in turn', () => {
+    // upper: c d | e2 c d | g a (the first ending once, the second ending after the second pass), lower: a whole note a pass
+    const m = midiOf([[0, 1, 60], [1, 1, 62], [2, 2, 64], [4, 1, 60], [5, 1, 62], [6, 1, 67], [7, 1, 69]])
+    expect(read('', "\\repeat unfold 2 { c4 d } \\alternative { { e2 } { g4 a } }", m)).toBe(0)
+    expect(read('', "\\repeat volta 2 { c4 d } \\alternative { { e2 } { g4 a } }", m)).toBeUndefined() // a volta is played once: the file has the passes
+    const one = midiOf([[0, 1, 60], [1, 1, 62], [2, 1, 64], [3, 1, 65], [4, 1, 60], [5, 1, 62], [6, 1, 64], [7, 1, 65], [0, 4, 48], [4, 4, 48]])
+    expect(read("lo = { g1 g1 }", '\\unfoldRepeats << \\repeat volta 2 { c4 d e f } \\lo >>', one)).toBe(0) // the upper voice repeats, the lower writes both out
+  })
+  it('<> has no length, a property=0.5 is no pitch, a decimal is no duration', () => {
+    expect(read('', '{ \\time 4/4 c4 <>^"x" d e f | g a b c | d1 }')).toBe(0)
+    expect(read('', '{ \\time 4/4 \\override NoteColumn.force-hshift=0.5 \\override Y.offset = 7.75 c4 d e f | g a b c | d1 }')).toBe(0)
+  })
+  it('a score with neither \\layout nor \\midi is played; so are the layout-only scores of a file with no \\midi', () => {
+    const ly = (score: string) => `\\version "2.18.2"\n${score}\n`
+    expect(lyPickup(plain, ly('\\score { { c4 d e f | g a b c | d1 } }'))).toBe(0)
+    expect(lyPickup(plain, ly('\\score { { c4 d e f | g a b c | d1 } \\layout { } }'))).toBe(0)
+    expect(lyPickup(plain, ly('\\score { { c1 } \\midi { } } \\score { { c4 d e f | g a b c | d1 } \\layout { } }'))).toBeUndefined() // the \\midi one is the file's
+  })
+  it('a rest after the last note is no bar of the file, and a last note a bar over is', () => {
+    expect(read('', '{ \\time 4/4 c4 d e f | g a b c | d1 | r1 | r1 }')).toBe(0)
+    expect(read('', '{ \\time 4/4 c4 d e f | g a b c | d1 | r1 c1 }')).toBeUndefined()
+  })
+  it('names the cause when it says nothing', () => {
+    expect(pickupWhy(plain, '{ c1 }')).toEqual({ pickup: undefined, why: expect.stringMatching(/no score|misses/) })
+    expect(pickupWhy(plain, book('', '{ \\time 3/4 c4 d e f | g a b c | d1 }')).why).toMatch(/time/)
+    expect(pickupWhy(plain, book('', '{ \\time 4/4 c4 d e f | g a b c | \\time 3/4 d2. }')).why).toMatch(/time signatures/)
+  })
+})
+
+describe('\\include from a zip of .ly files (lib.mjs)', () => {
+  const zip = (o: Record<string, string>) => new Map(Object.entries(o).map(([k, v]) => [k, Buffer.from(v)]))
+  it('finds the file beside the including one, above it, or by its name alone; leaves what the zip does not hold; skips comments and cycles', () => {
+    const files = zip({
+      'w/main.ly': '\\include "a.ily"\n% \\include "b.ily"\n\\include "english.ly"\n\\include "deep/c.ily"\nend',
+      'w/a.ily': 'A \\include "top.ily"',
+      'top.ily': 'TOP',
+      'w/deep/c.ily': 'C \\include "../main.ly"',
+      'w/lone/b.ily': 'B',
+    })
+    const out = inlineIncludes(files, 'w/main.ly').split('\n').filter(Boolean)
+    expect(out).toEqual(['A ', 'TOP', '% \\include "b.ily"', '\\include "english.ly"', 'C \\include "../main.ly"', 'end']) // b.ily is in a comment, english.ly is not in the zip, main.ly is already being read
+  })
+  it('\\includeScore "Piece" is the folder\'s global.ily as \\global and its score.ily', () => {
+    const files = zip({ 'w/main.ly': '\\includeScore "P"\nend', 'w/P/global.ily': '\\time 3/4', 'w/P/score.ily': '\\score { \\global }' })
+    expect(inlineIncludes(files, 'w/main.ly')).toBe('global = {\n\\time 3/4\n}\n\n\\score { \\global }\n\nend')
   })
 })

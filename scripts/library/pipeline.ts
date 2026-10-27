@@ -11,7 +11,7 @@ import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { lyPickup, plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
-export { lyPickup, pickLy, pickupWhy, reading, DEBUG_readLy, unfold, withRepeats } from './repeats'
+export { lyPickup, pickLy, pickupWhy, plays, reading, unfold, withRepeats } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
 export interface Input {
@@ -33,6 +33,7 @@ export interface Input {
   upstreamSha: string // sha256 of the file as fetched, before normalising
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
   noFormTempo?: true // leave a score that names no pace as it is, without the form guess (reanalyse --formtempo-only compares the two)
+  noPace?: true // read no pace from the .ly: the MIDI's own tempo (reanalyse --ly-only compares the two)
   noPickup?: true // leave the first bar to the detector, as before the .ly's \partial was read (reanalyse --pickup-only compares the two)
   pickup?: number // the anacrusis withRepeats read before it played the repeats out (the unfolded file no longer reads like its .ly)
   matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
@@ -202,7 +203,7 @@ export async function analyse(e: Input): Promise<Analysis> {
       // LilyPond's default is 60: a file at exactly that, or with no tempo event, whose .ly gives no number, has no tempo
       // (a non-60 one with no number in this .ly got it from an \include or a sibling .ly)
       const [n, d] = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
-      const pace = e.ly ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: true }
+      const pace = e.ly && !e.noPace ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: true }
       // a movement of a zip (mutopia-N-k) may have been given a sibling's .ly when none matched (pickLy's fallback)
       if (pace.bpm && /^mutopia-\d+-\d+$/.test(e.id) && !e.matched && !plays(e.bytes, e.ly!)) pace.bpm = undefined
       const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)

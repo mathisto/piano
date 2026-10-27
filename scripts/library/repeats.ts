@@ -549,30 +549,25 @@ function replay(r: Rec, W: number, until: number): Rec {
   return { len: (o + Math.min(e, tick(r.len)) - s) / W, ev, unfolded: true }
 }
 
-/** The \midi score of the .ly that plays this MIDI, and how many of the MIDI's onsets its reading misses: a reading matches
- * when every onset is where the .ly puts a note, or just before one with grace notes (LilyPond writes one file a score). */
 const readings = new Map<string, Rec[]>() // a work's book is read once for all its movements (a candidate .ly is megabytes with its includes)
 const readLyOnce = (ly: string) => {
   // a file that says \unfoldRepeats is read both ways: its volta kept (the old reading of a score played out by replay) and unfolded in place
   if (!readings.has(ly)) (readings.size > 3 && readings.clear(), readings.set(ly, [...readLy(ly), ...(/\\unfoldRepeats|unfold-repeats/.test(ly) ? readLy(ly, true) : [])]))
   return readings.get(ly)!
 }
+/** The \midi score of the .ly that plays this MIDI, and how many of the MIDI's onsets its reading misses: a reading matches
+ * when every onset is where the .ly puts a note, or just before one with grace notes (LilyPond writes one file a score). */
 function score(midi: Midi, ly: string) {
   const W = 4 * midi.header.ppq
   const tick = (x: number) => Math.round(x * W)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const until = Math.max(0, ...notes.map((n) => n.ticks + n.durationTicks))
-  // LilyPond's MIDI drifts a few ticks after grace notes (rounding of their time, adding up within a voice): 1/256 of a whole note, and
-  // 1/64 where there are graces (the voice after one runs up to a 64th off), which still is no other rhythm of a piece
-  const near = (r: Rec) => {
-    const t = Math.round(W / (r.ev.some((e) => e.k === 'grace') ? 64 : 256))
-    return Array.from({ length: 2 * t + 1 }, (_, i) => i - t)
-  }
+  // ponytail: one tick. LilyPond's MIDI runs up to a 64th off in the voice after a grace note; a tolerance of W / 64 where the reading has graces
+  // would take 11 more pieces (docs/changes/lyreader.md). Left strict until someone decides the safeguard may move.
   const lost = (r: Rec) => {
     const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
     const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
-    const d = near(r)
-    return notes.filter((n) => !d.some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
+    return notes.filter((n) => ![-1, 0, 1].some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8))
   }
   const misses = (r: Rec) => lost(r).length
   // LilyPond starts the music late by the length of a grace note it opens with: the reading is tried delayed as well
@@ -643,8 +638,7 @@ export function pickupWhy(bytes: Uint8Array, ly: string, matched = false): { pic
     return n
   }
   const end = Math.max(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))
-  // (a last note a beat shorter or longer than the .ly writes it can sit either side of a barline: one bar of difference is the same piece)
-  return Math.abs(count(end - shift) - count(until / W)) <= 1 ? { pickup: 0 } : { why: 'bar count differs' }
+  return count(end - shift) === count(until / W - shift) ? { pickup: 0 } : { why: 'bar count differs' } // (a bar of difference is 7 more pieces: docs/changes/lyreader.md)
 }
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
@@ -685,11 +679,15 @@ export function unfold(bytes: Uint8Array, ly: string): { bytes: Uint8Array } | {
   if (lost) return { why: `${lost} notes the order of play never reaches` } // no repeat in this MIDI's score, or only \repeat volta 1: a sign, nothing to play twice
   // the bars of the result are laid out by the app from the notes and time signatures (src/quantize.ts), so the barlines the
   // copies make are checked against what it lays out: first against the bars it finds in this MIDI, else against the score's own
-  const pickup = pickupWhy(bytes, ly).pickup // the app lays the unfolded file out with the same first bar
-  const first = write(bytes, p.segs, barGrid(midi, bytes, pickup), p.delay, until, pickup)
+  const first = write(bytes, p.segs, barGrid(midi, bytes), p.delay, until)
   if ('bytes' in first || !/^(bars|a repeat)/.test(first.why)) return first
-  const second = write(bytes, p.segs, p.bars, p.delay, until, pickup)
-  return 'bytes' in second ? second : first
+  const second = write(bytes, p.segs, p.bars, p.delay, until)
+  if ('bytes' in second) return second
+  // last: the bars with the first bar the .ly states, which the catalogue hands to the app (Piece.pickup) for this file and its result
+  const pickup = pickupWhy(bytes, ly).pickup
+  if (pickup === undefined) return first
+  const third = write(bytes, p.segs, barGrid(midi, bytes, pickup), p.delay, until, pickup)
+  return 'bytes' in third ? third : first
 }
 
 /** The MIDI played in the order `segs` says, its barlines (`src`, in the source's ticks) carried along. */
@@ -791,4 +789,3 @@ export function withRepeats<E extends { bytes: Uint8Array; ly?: string; matched?
   return { ...e, bytes: u.bytes, matched: true, ...(pickup !== undefined && { pickup }), ly: e.ly.replace(/\\repeat\s+"?volta"?/g, '\\repeat unfold') }
 }
 
-export const DEBUG_readLy = readLy
