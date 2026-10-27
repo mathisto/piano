@@ -688,6 +688,7 @@ async function openSong(base: Song, mode: Mode) {
   dock.setPhase()
   resOpen(false)
   onPhase()
+  if (!$('#ready').contains(document.activeElement)) $('#go').focus({ preventScroll: true }) // Play is the first stop of a new piece, not the ninth
   history.replaceState(null, '', mode === 'read' ? location.pathname : '#' + song.id)
 }
 
@@ -1804,6 +1805,19 @@ function closeDrawer() {
   $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
+}
+
+// Tab wraps inside the open drawer: the page behind it is inert, so nothing else is a stop
+$('#drawer').onkeydown = (e) => {
+  if (e.key !== 'Tab') return
+  const d = $('#drawer')
+  const stops = [...d.querySelectorAll<HTMLInputElement>('button, input, select, summary, a[href]')].filter((x) => !x.disabled && x.offsetParent && (x.type !== 'radio' || x.checked || !d.querySelector(`input[name="${x.name}"]:checked`)))
+  const [first, last] = [stops[0], stops[stops.length - 1]]
+  const from = e.target as HTMLElement
+  if (e.shiftKey ? from === first || from.id === 'drawerTitle' : from === last) {
+    e.preventDefault()
+    ;(e.shiftKey ? last : first).focus()
+  }
 }
 
 // a tap anywhere outside the drawer closes it

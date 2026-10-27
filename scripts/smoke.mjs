@@ -40,6 +40,7 @@ check('open library lists pieces', (await page.$$('.biglib tr[data-lib]')).lengt
 await page.click('tr.open[data-open] >> nth=0')
 await page.waitForTimeout(1200)
 check('a song opens in play', (await views()) === 'play')
+check('a new piece focuses Play', await page.evaluate(() => document.activeElement.id === 'go'))
 check('start card offers Perform and Learn', (await page.$$('input[name=modeSheet]')).length === 2)
 await page.keyboard.press('Escape')
 await page.waitForTimeout(300)
@@ -54,6 +55,12 @@ await page.click('#settingsBtn')
 await page.waitForTimeout(300)
 const h = await page.evaluate(() => { const d = document.querySelector('#drawer'); return d.scrollHeight - d.clientHeight })
 check('settings fit one screen', h <= 80, `${h}px over`)
+let strayed = 0
+for (let i = 0; i < 80; i++) {
+  await page.keyboard.press(i < 40 ? 'Tab' : 'Shift+Tab')
+  if (!(await page.evaluate(() => !!document.activeElement.closest('#drawer')))) strayed++
+}
+check('Tab stays inside the open drawer', strayed === 0, `${strayed} strays`)
 await page.keyboard.press('Escape')
 
 try {
