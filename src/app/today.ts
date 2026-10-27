@@ -1,6 +1,9 @@
 // Today and Progress: the plan for the day, the Path, and starting whatever they name.
+import * as lib from '../catalog'
 import { dayNum } from '../drill'
 import { type Ctx, nextOf, path as gradePath, type Start } from '../grades'
+import { LADDER } from '../ladder-data'
+import { ladderState } from '../ladder'
 import { type PlanMin, theoryDue } from '../plan'
 import { pickPiece } from '../readthrough'
 import { DEFAULT_RUN } from '../run'
@@ -76,7 +79,11 @@ export async function showProgress() {
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
   const gp = gradePath(await pathCtx(ts))
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, next: nextOf(gp), stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
+  const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
+    const x = lib.piece(id)
+    return x && { title: x.title, composer: lib.catalog.composers[x.composer]?.name ?? '' }
+  })
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, ladder, next: nextOf(gp), stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -104,7 +111,33 @@ async function startReq(s: Start) {
   }
 }
 
+/** Open a ladder piece in Learn; one not on the device is fetched first, so say so, and say plainly when that fails. */
+async function startPiece(b: HTMLButtonElement) {
+  const p = lib.piece(b.dataset.ladder!)
+  const msg = b.closest('details')!.querySelector('.ladder-msg')!
+  if (!p) return
+  msg.textContent = ''
+  if (!lib.local(p.id)) {
+    const st = b.closest('li')!.querySelector('.rqs span')!
+    const was = st.textContent
+    st.textContent = 'Downloading'
+    b.disabled = true
+    try {
+      await lib.pieceBytes(p)
+    } catch {
+      msg.textContent = `${p.title} could not be downloaded. You may be offline; check the connection and try again.`
+      return
+    } finally {
+      st.textContent = was
+      b.disabled = false
+    }
+  }
+  await openById(`lib:${p.id}`, 'learn')
+}
+
 $('#progress').addEventListener('click', (e) => {
+  const lb = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-ladder]')
+  if (lb) return void startPiece(lb)
   const st = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-start]')
   if (st) return void startReq(JSON.parse(st.dataset.start!))
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button.cell')
