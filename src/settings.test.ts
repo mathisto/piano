@@ -12,10 +12,10 @@ it('Set up shows on a true first launch only', () => {
 
 it('saved settings of the wrong kind fall back to their defaults, the rest are kept', async () => {
   const { vi } = await import('vitest')
-  const saved = JSON.stringify({ zoom: 'big', zpos: 5, pane: null, view: 'sheet', volume: 0.3 })
+  const saved = JSON.stringify({ zoom: 'big', zpos: 5, pane: null, planMin: 99, view: 'sheet', volume: 0.3 })
   vi.stubGlobal('localStorage', { getItem: () => saved, setItem: () => {} })
   vi.resetModules()
   const { settings } = await import('./settings')
-  expect(settings).toMatchObject({ zoom: 1, zpos: [1, 1], pane: 0.4, view: 'sheet', volume: 0.3 })
+  expect(settings).toMatchObject({ zoom: 1, zpos: [1, 1], pane: 0.4, planMin: 10, view: 'sheet', volume: 0.3 })
   vi.unstubAllGlobals()
 })

@@ -81,6 +81,7 @@ function load(): Settings {
     delete saved.chord
     // a value of the wrong kind (a hand-edited file, an older version) falls back to the default: a zoom of "big" or a zpos of 5 must not stop the app starting
     for (const k of Object.keys(DEFAULTS) as (keyof Settings)[]) if (k in saved && (typeof saved[k] !== typeof DEFAULTS[k] || Array.isArray(saved[k]) !== Array.isArray(DEFAULTS[k]) || saved[k] === null)) delete saved[k]
+    if (![5, 10, 20, 30, 45].includes(saved.planMin)) delete saved.planMin
     return { ...DEFAULTS, ...saved }
   } catch {
     return { ...DEFAULTS }

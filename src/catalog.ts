@@ -192,7 +192,8 @@ export interface IO {
   get: (k: string) => Promise<unknown>
   set: (k: string, v: unknown) => Promise<void>
 }
-const IDB: IO = { fetch: (...a) => fetch(...a), get, set: (k, v) => set(k, v, true) }
+// a stalled connection must end in the retry message, not hang: 20 s covers a piece on a slow link
+const IDB: IO = { fetch: (u, o) => fetch(u, { signal: AbortSignal.timeout(20_000), ...o }), get, set: (k, v) => set(k, v, true) }
 
 export async function sha256(b: ArrayBuffer) {
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', b))].map((x) => x.toString(16).padStart(2, '0')).join('')
