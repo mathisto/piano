@@ -157,7 +157,7 @@ describe('the anacrusis a .ly states (lyPickup)', () => {
     const ly = (body: string) => lyOf('\\time 4/4', body)
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1'))).toBe(0)
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 | r1'))).toBe(0) // a bar of rests after the last note is no bar of the MIDI's
-    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 r4 e'))).toBeUndefined() // a note in a bar the MIDI does not have
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 | r1 e4'))).toBeUndefined() // a note two bars on that the MIDI does not have
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 \\time 3/4 r2.'))).toBeUndefined() // a meter change after the first note
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c \\partial 4 | d1'))).toBe(0) // a \\partial later on moves the later bars, not the first
     expect(lyPickup(midiOf(plain, [3, 4]), ly('c4 d e f | g a b c | d1'))).toBeUndefined() // another meter

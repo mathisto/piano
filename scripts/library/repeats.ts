@@ -578,9 +578,9 @@ function score(midi: Midi, ly: string) {
   }
   // a score that fits the onsets, the nearest in length (a long score covers a short one's onsets: a sibling movement in a book), else the one that misses least
   const lim = 0.02 * notes.length
-  const gap = (x: Rec) => Math.abs(tick(x.len) - until)
+  const gap = (x: Rec) => Math.abs(tick(Math.max(0, ...x.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))) - until) // by the last sound: rests and spacers after it are no part of the music
   const [r, miss = Infinity] = readLyOnce(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => Number(x[1] > lim) - Number(y[1] > lim) || (x[1] > lim ? x[1] - y[1] : gap(x[0]) - gap(y[0]) || x[1] - y[1]))[0] ?? []
-  const off = r ? Math.abs(tick(r.len) - until) : Infinity // length mismatch, ticks
+  const off = r ? gap(r) : Infinity // length mismatch, ticks
   return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length, lost: r ? [...new Set(lost(r).map((n) => n.ticks / W))].sort((a, b) => a - b) : [] }
 }
 
@@ -638,7 +638,8 @@ export function pickupWhy(bytes: Uint8Array, ly: string, matched = false): { pic
     return n
   }
   const end = Math.max(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))
-  return count(end - shift) === count(until / W) ? { pickup: 0 } : { why: 'bar count differs' }
+  // (a last note a beat shorter or longer than the .ly writes it can sit either side of a barline: one bar of difference is the same piece)
+  return Math.abs(count(end - shift) - count(until / W)) <= 1 ? { pickup: 0 } : { why: 'bar count differs' }
 }
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
