@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLEAN_RUNS, derive, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
+import { CLEAN_RUNS, degreeName, degreeOfPitch, quizDeal, quizRecord, quizRight, derive, fourth, why, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
 
 const c = (o: Partial<Card> = {}): Card => ({ tonic: 0, form: 'major', hands: 'R', oct: 1, ...o })
 
@@ -112,5 +112,50 @@ describe('the curriculum', () => {
     expect(passed({ clean: true, acc: 0.95, even: { rating: 'uneven' } })).toBe(false)
     expect(passed({ clean: true, acc: 0.6, even: null })).toBe(false)
     expect(passed({ clean: false, acc: 0.99, even: null })).toBe(false)
+  })
+})
+
+describe('why this fingering', () => {
+  it('names the degree that takes the 4th finger, as the book lists them', () => {
+    expect(fourth(0, 'major', 'R')).toEqual([7])
+    expect(fourth(0, 'major', 'L')).toEqual([2])
+    expect(fourth(8, 'harmonic', 'R')).toEqual([2]) // G sharp minor, right hand
+    expect(fourth(8, 'harmonic', 'L')).toEqual([4])
+    expect(fourth(11, 'major', 'L')).toEqual([1, 5]) // B major, left hand
+    expect(fourth(11, 'major', 'R')).toEqual([7])
+  })
+  it('names a degree in its key, spelled for the key', () => {
+    expect(degreeName(11, 'major', 7)).toBe('A♯')
+    expect(degreeName(8, 'harmonic', 4)).toBe('C♯')
+    expect(degreeName(5, 'major', 4)).toBe('B♭')
+  })
+  it('explains the groups', () => {
+    expect(why(0, 'major', 'R')).toMatch(/degrees 4, 5, 6 and 7.*degrees 1, 2 and 3/)
+    expect(why(8, 'harmonic', 'R')).toMatch(/degrees 6, 7, 1 and 2/)
+    expect(why(0, 'major', 'L')).toMatch(/degrees 2, 3, 4 and 5.*degrees 6, 7 and 1/)
+  })
+})
+
+describe('the fourth-finger quiz', () => {
+  it('right answers are the book degrees; B left hand takes two', () => {
+    expect(quizRight({ tonic: 0, form: 'major', hand: 'R' }, 7)).toBe(true)
+    expect(quizRight({ tonic: 0, form: 'major', hand: 'R' }, 4)).toBe(false)
+    expect(quizRight({ tonic: 11, form: 'major', hand: 'L' }, 5)).toBe(true)
+  })
+  it('a pressed note is a degree of the key in any octave, or none', () => {
+    expect(degreeOfPitch(11, 'major', 70)).toBe(7) // A sharp, B major
+    expect(degreeOfPitch(11, 'major', 58)).toBe(7)
+    expect(degreeOfPitch(0, 'major', 61)).toBe(0)
+  })
+  it('deals keys you miss more often, and never the same card twice running', () => {
+    const stats = { 'major:3:R': { n: 6, ok: 0 } }
+    const seeded = (seed = 5) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646
+    const d = quizDeal(stats, 400, seeded())
+    expect(d.filter((c) => c.tonic === 3 && c.form === 'major' && c.hand === 'R').length).toBeGreaterThan(400 / 48)
+    expect(d.slice(1).every((c, i) => c.tonic !== d[i].tonic || c.form !== d[i].form || c.hand !== d[i].hand)).toBe(true)
+  })
+  it('records a result', () => {
+    const st = quizRecord({}, { tonic: 0, form: 'major', hand: 'R' }, true)
+    expect(st['major:0:R']).toEqual({ n: 1, ok: 1 })
   })
 })
