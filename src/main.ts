@@ -84,6 +84,7 @@ interface RunCtx {
 }
 let run: RunCtx | undefined
 let runSpec: RunSpec = { ...DEFAULT_RUN }
+let readTab: 'stages' | 'run' = 'stages'
 let drill: Drill | undefined
 let drillStats: Stats = {}
 
@@ -351,7 +352,7 @@ function calNote(vel: number) {
 async function showRead() {
   const saved = await store.getRuns()
   if (saved.last) runSpec = { ...DEFAULT_RUN, ...saved.last }
-  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, runForm(runSpec, saved.presets, saved.best, bestKey))
+  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey))
 }
 
 /** The form as the DOM has it now, kept inside what the clef can show. */
@@ -1018,7 +1019,7 @@ async function runFinish() {
   resOpen(true)
   $('#runAgain', res).focus()
   say(`Run finished. ${r.arc.cards} cards, ${r.arc.cards ? Math.round((r.arc.clean / r.arc.cards) * 100) : 0} percent first try.`)
-  $('#runAgain', res).onclick = () => void startRun(r.base)
+  $('#runAgain', res).onclick = () => void startRun(r.base).then(() => game.toggle())
   $('#toStages', res).onclick = leave
 }
 
@@ -1084,7 +1085,7 @@ async function drillDone() {
   resOpen(true)
   $('#nextSet', res).focus()
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
-  $('#nextSet', res).onclick = () => void startDrill(m?.solid && stage ? nxt : (d.stage as Stage | 'review'))
+  $('#nextSet', res).onclick = () => void startDrill(m?.solid && stage ? nxt : (d.stage as Stage | 'review')).then(() => game.toggle())
   $('#toStages', res).onclick = leave
 }
 
@@ -1274,6 +1275,7 @@ const fromKeyboard = (m: MidiMsg) => {
       updateBanner()
     }
     if (!m.virtual && calNote(m.v)) return
+    if (drill && game.phase === 'ready' && $('#res').hidden) game.toggle() // on a reading drill the first key is the Play button
     game.press(m.p, m.v, m.ts, m.virtual)
   } else game.release(m.p, m.ts, m.virtual)
 }
@@ -1414,6 +1416,11 @@ $('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = () => (run && run.arc.cards ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
 $('#read').addEventListener('change', (e) => {
+  const t = e.target as HTMLInputElement
+  if (t.name === 'readTab') {
+    readTab = t.value as typeof readTab
+    return void showRead()
+  }
   if (!($(`#rClef`, $('#read')))) return
   const id = (e.target as HTMLElement).id
   let s = readRun()

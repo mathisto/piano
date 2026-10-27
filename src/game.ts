@@ -49,7 +49,7 @@ export type GameEvent =
 const COUNT_IN = 4
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
-const LEAD = 2.5 // song-seconds of empty highway before the first note
+const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
 const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500]
 
 export function letter(acc: number): string {
@@ -151,7 +151,7 @@ export class Game {
   private lead(): { from: number; to: number } {
     const spb = this.song.spb
     if (this.loop) return { from: this.loop.a - 2 * spb, to: this.loop.a }
-    return this.mode === 'read' ? { from: -LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
+    return this.mode === 'read' ? { from: -READ_LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
   }
 
   /** Beats of count-in left, 4 down to 1, or 0 when not counting. */

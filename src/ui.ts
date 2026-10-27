@@ -337,7 +337,7 @@ const GROUPS: [string, (id: string) => boolean][] = [
 const meter = (pct: number, solid: boolean, label: string) =>
   `<div class="meter${solid ? ' solid' : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><i style="width:${Math.round(pct * 100)}%"></i></div>`
 
-export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, run = '') {
+export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, tab: 'stages' | 'run', run = '') {
   let group = ''
   const timed = rows.some((r) => r.rt) // no column of dashes before the first card
   const body = rows
@@ -354,13 +354,11 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
     })
     .join('')
   el.innerHTML = `
-    ${head('Read', canReview ? `<button class="btn" data-review="1">Review weak notes</button>` : '')}
-    ${run}
-    <p class="label cap">Stages</p>
-    <table class="songs stages"><caption class="sr-only">Stages</caption>
+    ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
+    ${tab === 'run' ? run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
       <colgroup><col><col style="width:250px">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
-      <tbody>${body}</tbody></table>`
+      <tbody>${body}</tbody></table>`}`
 }
 
 const opt = (v: string | number, label: string, cur: string | number) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${label}</option>`
