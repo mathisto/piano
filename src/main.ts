@@ -1,3 +1,4 @@
+// ---------------------------------------------------------------- views
 import './native-midi' // first: it must exist before midi.ts reads requestMIDIAccess
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
@@ -7,7 +8,7 @@ import * as audio from './audio'
 import * as lib from './catalog'
 import * as coach from './coach'
 import { creditBlock, libraryUrl } from './credits'
-import { cardKey, cards, dayNum, dueCards, fluentMs, focus, mastery, record, reviewPool, STAGES, type Stats } from './drill'
+import { cardKey, cards, dayNum, record, STAGES, type Stats } from './drill'
 import { type EarRun, earTap, earView, newEar, playCard, stopEar } from './ear-play'
 import type { Mode, Result } from './game'
 import { type Ctx, nextOf, path as gradePath, type Start } from './grades'
@@ -17,7 +18,7 @@ import { nextStep } from './pace'
 import { type PlanMin, theoryDue } from './plan'
 import { pickPiece } from './readthrough'
 import { buildSummary, reportLink } from './report'
-import { bestKey, DEFAULT_RUN, LIMITS, type RunSpec } from './run'
+import { DEFAULT_RUN } from './run'
 import { type Card as ScaleCard, CLEAN_RUNS, degreeOfPitch, type Form, keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, quizDeal, quizRecord, quizRight, type QuizStats, record as recordScale, scaleSong, STAGES as SCALE_STAGES } from './scales'
 import { save, settings, showSetup } from './settings'
 import { fromSpec } from './song'
@@ -29,20 +30,17 @@ import { exercise, type Opts, PATTERNS } from './technique'
 import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from './theory'
 import { thumb } from './thumb'
 import { calibrate } from './touch'
-import { $, CAL_NOTES, cardName, creditsDialog, drawer, progressView, type QuizState, readView, results, RUN_START, runForm, runTitle, type ScalePick, scalesView, setupDialog, type StageRow, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
+import { $, CAL_NOTES, cardName, creditsDialog, drawer, progressView, type QuizState, results, type ScalePick, scalesView, setupDialog, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal } from './ui'
 import { dayKey, improved, lastWeek, weekOf } from './week'
-import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, resOpen, rt, run, runSpec, say, type Section, setCalibrating, setDrillStats, setPlayed, setRunSpec, stageById, starters, worstBars } from './app/state'
+import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, resOpen, rt, run, say, type Section, setCalibrating, setPlayed, stageById, starters, worstBars } from './app/state'
 import { chipFlash, connectMidi, midiLine, midiState, updateBanner, updateChip } from './app/banner'
 import { flushPractice, practised, setView, setZoom, syncMode, view, zen, ZOOM } from './app/stage'
 import { lens, libraryData, openTracks, shareFile, showLibrary } from './app/library'
 import { fixBars, leave, onPhase, openById, openLibrary, openSong } from './app/play'
 import { readThrough, rtDone, rtPieces } from './app/readthrough-ui'
 import { memDone, memorise } from './app/memorise-ui'
-import { drillDone, runFinish, saveRun, startDrill, startRun } from './app/drill'
-
-let readTab: 'stages' | 'run' = 'stages'
-
-// ---------------------------------------------------------------- views
+import { drillDone, runFinish, startDrill, startRun } from './app/drill'
+import { showRead, stageRows } from './app/read'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -57,17 +55,6 @@ async function showSection(name: Section, err = '') {
   else if (name === 'theory') showTheory()
   else if (name === 'technique') await showTechnique()
   else await showProgress()
-}
-
-async function stageRows(): Promise<StageRow[]> {
-  setDrillStats(await store.getDrill())
-  const f = focus(drillStats)
-  return STAGES.map((stage) => {
-    const m = mastery(stage, drillStats)
-    const fl = mastery(stage, drillStats, fluentMs(stage))
-    const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
-    return { stage, ...m, fluent: fl.pct, fast: fl.solid, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === f.stage, due: dueCards(stage, drillStats) }
-  })
 }
 
 async function showToday() {
@@ -261,36 +248,6 @@ function calNote(vel: number) {
   }
   void showTechnique()
   return true
-}
-
-async function showRead() {
-  const saved = await store.getRuns()
-  if (saved.last) setRunSpec({ ...DEFAULT_RUN, ...saved.last })
-  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey))
-}
-
-/** The form as the DOM has it now, kept inside what the clef can show. */
-function readRun(): RunSpec {
-  const v = (id: string) => ($(`#${id}`, $('#read')) as HTMLInputElement | HTMLSelectElement).value
-  const clef = v('rClef') as RunSpec['clef']
-  let lo = Number(v('rLo'))
-  let hi = Number(v('rHi'))
-  if (lo > hi) [lo, hi] = [hi, lo]
-  const [min, max] = LIMITS[clef]
-  const n = Number(v('rSize')) > 1 && !v('rNotes').startsWith('k') ? 'nat' : v('rNotes') // intervals and triads: naturals or a key, no loose sharps or flats
-  return {
-    clef,
-    lo: Math.max(min, lo),
-    hi: Math.min(max, hi),
-    acc: n.startsWith('k') ? 'nat' : (n as RunSpec['acc']),
-    fifths: n.startsWith('k') ? Number(n.slice(1)) : 0,
-    size: Number(v('rSize')) as RunSpec['size'],
-    near: Number(v('rNear')),
-    weak: Number(v('rWeak')),
-    length: Number(v('rLength')),
-    ahead: Number(v('rAhead')),
-    widen: ($('#rWiden', $('#read')) as HTMLInputElement).checked,
-  }
 }
 
 // ---------------------------------------------------------------- Theory trainers
@@ -792,40 +749,6 @@ $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi(
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = () => (run && run.arc.cards ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
-$('#read').addEventListener('change', (e) => {
-  const t = e.target as HTMLInputElement
-  if (t.name === 'readTab') {
-    readTab = t.value as typeof readTab
-    return void showRead()
-  }
-  if (!($(`#rClef`, $('#read')))) return
-  const id = (e.target as HTMLElement).id
-  let s = readRun()
-  if (id === 'rClef') {
-    ;[s.lo, s.hi] = RUN_START[s.clef]
-    s = { ...s, ...(s.clef === 'bass' ? { acc: s.acc } : {}) }
-  }
-  void saveRun(s)
-  if (id === 'rClef' || id === 'rSize') void showRead() // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats
-})
-$('#read').addEventListener('click', (e) => {
-  const b = (e.target as HTMLElement).closest('button')
-  if (!b) return
-  if (b.id === 'rStart') void startRun(readRun())
-  else if (b.id === 'rSave') {
-    const s = readRun()
-    const name = prompt('Name this run', runTitle(s))
-    if (name) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: [...r.presets, { ...s, name }] }), showRead()))
-  } else if (b.dataset.runp) void store.getRuns().then((r) => startRun(r.presets[Number(b.dataset.runp)]))
-  else if (b.dataset.rund) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: r.presets.filter((_, i) => i !== Number(b.dataset.rund)) }), showRead()))
-  else if (b.dataset.rr) {
-    const [lo, hi] = b.dataset.rr.split(':').map(Number)
-    void saveRun({ ...readRun(), lo, hi }).then(showRead)
-  } else if (b.dataset.stage) {
-    const st = stageById(b.dataset.stage)
-    if (st) void startDrill(st, !!b.dataset.fast)
-  } else if (b.dataset.review) void startDrill('review')
-})
 
 addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement
