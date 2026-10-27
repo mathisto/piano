@@ -31,6 +31,7 @@ import { nameChord } from './chord'
 import { thumb } from './thumb'
 import { creditBlock, creditLine, libraryUrl } from './credits'
 import * as lib from './catalog'
+import { buildSummary, reportLink } from './report'
 import type { Piece } from './catalog-types'
 import { mountLibrary } from './library-view'
 import { autoSelect, inspectMidi } from './midi-tracks'
@@ -1116,6 +1117,8 @@ function onPhase() {
     }
     const go = matchMedia('(pointer: coarse)').matches ? 'Tap Play to start.' : 'Press Space to start.'
     const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'} ${go}</span>`
+    const lp = current.base.id.startsWith('lib:') ? lib.piece(current.base.id.slice(4)) : undefined
+    const report = lp ? reportLink(lib.catalog, lp, game.t > 0 ? barAt(game.song.bars, game.t) + 1 : undefined) : ''
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
     const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
     r.innerHTML = rt
@@ -1124,7 +1127,7 @@ function onPhase() {
       ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}`
+        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${levels}${legend}${report}`
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return
       const { base, credit } = current
@@ -1776,6 +1779,10 @@ function openDrawer() {
   $('#sExport', d).onclick = async () => {
     await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
   }
+  $('#sSummary', d).onclick = async () => {
+    const titles: Record<string, string> = Object.fromEntries([...STARTERS.map((s) => [s.spec.id, s.spec.title]), ...(await store.listSongs()).map((s) => [s.id, s.title]), ...lib.catalog.pieces.map((p) => [`lib:${p.id}`, p.title])])
+    await shareFile(new File([buildSummary(JSON.parse(await store.exportAll()), titles)], 'piano-practice-summary.txt', { type: 'text/plain' }))
+  }
   const file = $<HTMLInputElement>('#sFile', d)
   $('#sImport', d).onclick = () => file.click()
   file.onchange = async () => {
@@ -1952,7 +1959,7 @@ async function openCredits() {
   const d = $('#credits') as HTMLDialogElement
   const prog = await store.allProgress()
   const mine = lib.catalog.pieces.filter((p) => lib.cached.has(p.id) || prog.has(`lib:${p.id}`)).sort((a, b) => a.title.localeCompare(b.title))
-  d.innerHTML = creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href })
+  d.innerHTML = creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href }, (i) => reportLink(lib.catalog, mine[i]))
   d.showModal()
   d.scrollTop = 0
 }
