@@ -1,3 +1,4 @@
+import { memTag } from './memory'
 import { loadState } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
 import type { Result } from './game'
@@ -145,12 +146,13 @@ function table(caption: string, rows: Row[], empty: string) {
         .map(
           (r) => `<tr class="open" data-open="${r.id}">
         <td class="thumb">${art(r.id)}${r.thumb}</td>
-        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
+        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
           <button class="btn ghost" data-rt="${r.id}" aria-label="Read through ${esc(r.title)}">Read through</button>
+          <button class="btn ghost" data-mem="${r.id}" aria-label="Memorise ${esc(r.title)}">Memorise</button>
           ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Options for ${esc(r.title)}">Options</button>` : ''}
         </div></td></tr>`,
         )

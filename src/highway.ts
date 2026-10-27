@@ -225,6 +225,8 @@ export class Highway {
   }
   private labelUsed = 0
 
+  hideBar?: (bar: number) => boolean // Memorise: bars whose falling notes are hidden
+
   draw(dtMs: number) {
     const g = this.game
     if (!g.song || !this.W) return
@@ -299,7 +301,7 @@ export class Highway {
       const n = notes[i]
       if (n.t > T + look) break
       const mode = g.hands[n.h]
-      if (mode === 'hide') continue
+      if (mode === 'hide' || this.hideBar?.(n.bar)) continue // hidden bars light no key either
       const k = this.keys.get(n.p)
       if (!k) continue
       const st = g.judge.st[i]

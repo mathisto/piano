@@ -101,6 +101,7 @@ export class Staff {
     this.moveCursor()
     this.markAwaited()
     this.peek()
+    this.memo()
     // dim the notes already played
     for (; this.seen < this.timeline.length && this.timeline[this.seen].t < t - 0.02; this.seen++) this.timeline[this.seen].el.classList.add('past')
   }
@@ -109,8 +110,16 @@ export class Staff {
   lookahead = 0
   /** Read through's reading ahead: once the music moves, only the bar being played and the next `aheadBars - 1` show. 0 shows everything. */
   aheadBars = 0
-  private barEls: [number, Element][] = [] // chords, beams and rests by bar, for aheadBars
+  private barEls: [number, Element][] = [] // chords, beams, rests, ties and brackets by bar, for aheadBars and hideBar
   private peeked = -2
+  /** Memorise: bars whose notes are hidden. Hand in a new function to change which; a rebuild applies it again. */
+  hideBar?: (bar: number) => boolean
+  private memFn?: (bar: number) => boolean
+  private memo() {
+    if (this.hideBar === this.memFn) return
+    this.memFn = this.hideBar
+    for (const [bar, e] of this.barEls) e.classList.toggle('mem', !!this.hideBar?.(bar))
+  }
   private peek() {
     const g = this.game
     if (this.aheadBars && g.mode !== 'read') {
@@ -219,12 +228,14 @@ export class Staff {
     this.timeline = []
     this.awaiting.clear()
     this.peeked = -2
+    this.memFn = undefined
     this.ghosts.clear() // the page was redrawn: the ghosts went with it
     this.seen = 0
     const { base, clefs } = L
     const top = base[clefs[0]] - 4 * S
     const bottom = base[clefs[clefs.length - 1]]
     const dyOf = (sys: number) => L.systems[sys].dy
+    const barOf = (sys: number, x: number) => L.bars.find((b) => b.sys === sys && x < b.xEnd)?.i ?? -1 // ties and brackets go with the bar they start in
 
     L.systems.forEach((sy, si) => {
       const dy = sy.dy
@@ -273,7 +284,7 @@ export class Staff {
       const fi = figure(r.v, r.tup)
       const glyph = r.whole || fi.head === 0 ? G.restWhole : fi.head === 1 ? G.restHalf : G.rest[Math.min(fi.flags, 3)]
       this.barEls.push([r.bar, el('text', { class: 'smufl rest', x: r.x, y: r.y + dyOf(r.sys), 'text-anchor': 'middle' }, g, glyph)])
-      if (!r.whole && fi.dots) el('text', { class: 'smufl', x: r.x + 9, y: r.y + dyOf(r.sys) - (fi.head === 2 ? 4 : 0) }, g, G.dot)
+      if (!r.whole && fi.dots) this.barEls.push([r.bar, el('text', { class: 'smufl', x: r.x + 9, y: r.y + dyOf(r.sys) - (fi.head === 2 ? 4 : 0) }, g, G.dot)])
     }
     for (const t of L.ties) {
       const dy = dyOf(t.sys)
@@ -281,7 +292,7 @@ export class Staff {
       const h = Math.min(7, 3 + (t.x2 - t.x1) * 0.06)
       const m = (t.x1 + t.x2) / 2
       const y = t.y + dy
-      el('path', { class: `tie${t.open ? ' open' : ''}`, d: `M${t.x1},${y} Q${m},${y + dir * 2 * h} ${t.x2},${y} Q${m},${y + dir * (2 * h - 2.4)} ${t.x1},${y} Z` }, g)
+      this.barEls.push([barOf(t.sys, t.x1), el('path', { class: `tie${t.open ? ' open' : ''}`, d: `M${t.x1},${y} Q${m},${y + dir * 2 * h} ${t.x2},${y} Q${m},${y + dir * (2 * h - 2.4)} ${t.x1},${y} Z` }, g)])
     }
     for (const t of L.tuplets) {
       const dy = dyOf(t.sys)
@@ -289,15 +300,15 @@ export class Staff {
       const y = t.y + dy
       if (t.bracket) {
         const hook = t.up ? 5 : -5
-        el('path', { class: 'tup', d: `M${t.x1},${y + hook} L${t.x1},${y} L${m - 8},${y} M${m + 8},${y} L${t.x2},${y} L${t.x2},${y + hook}` }, g)
+        this.barEls.push([barOf(t.sys, t.x1), el('path', { class: 'tup', d: `M${t.x1},${y + hook} L${t.x1},${y} L${m - 8},${y} M${m + 8},${y} L${t.x2},${y} L${t.x2},${y + hook}` }, g)])
       }
-      el('text', { class: 'smufl tupn', x: m, y: y + 6, 'text-anchor': 'middle' }, g, G.tuplet(t.num))
+      this.barEls.push([barOf(t.sys, t.x1), el('text', { class: 'smufl tupn', x: m, y: y + 6, 'text-anchor': 'middle' }, g, G.tuplet(t.num))])
     }
     for (const o of L.ottavas) {
       const dy = dyOf(o.sys)
       const hook = o.below ? -6 : 6
-      el('text', { class: 'ott', x: o.x1 - 6, y: o.y + dy + 5 }, g, o.label)
-      el('path', { class: 'ottl', d: `M${o.x1 + o.label.length * 7 + 2},${o.y + dy} L${o.x2},${o.y + dy} L${o.x2},${o.y + dy + hook}` }, g)
+      this.barEls.push([barOf(o.sys, o.x1), el('text', { class: 'ott', x: o.x1 - 6, y: o.y + dy + 5 }, g, o.label)])
+      this.barEls.push([barOf(o.sys, o.x1), el('path', { class: 'ottl', d: `M${o.x1 + o.label.length * 7 + 2},${o.y + dy} L${o.x2},${o.y + dy} L${o.x2},${o.y + dy + hook}` }, g)])
     }
     this.timeline.sort((a, b) => a.t - b.t)
 

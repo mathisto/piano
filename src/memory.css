@@ -1,0 +1,86 @@
+/* ---------- Memorise: the start card's facts, the strip over the staff, hidden bars ---------- */
+body.memorise #modeSeg {
+  display: none; /* Learn only: the stage is the choice */
+}
+#staff .mem {
+  visibility: hidden;
+}
+#staff.mem-blind > svg {
+  visibility: hidden; /* stage 4: no staff, only the keys and how the pass is going */
+}
+.mem-bar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--scrim);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.mem-bar b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.mem-bar .mem-st {
+  color: var(--ink);
+  font-weight: 650;
+}
+.mem-bar:not(:has(.btn)) {
+  padding-right: 14px;
+  min-height: 44px;
+}
+#staff.mem-blind .mem-bar {
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  flex-direction: column;
+  padding: 20px 28px;
+  font-size: 15px;
+}
+.ready .mem-seg span {
+  min-width: 44px;
+  font: 800 italic 22px/1 var(--display);
+}
+.ready .mem-facts {
+  margin: 10px auto 0;
+  max-width: 60ch;
+}
+.ready .mem-facts .cap {
+  margin: 0 0 6px;
+}
+.mem-facts dl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+  margin: 0;
+  font-size: 15px;
+}
+.mem-facts dl div {
+  display: flex;
+  gap: 6px;
+}
+.mem-facts dt {
+  color: var(--ink-3);
+}
+.mem-facts dd {
+  margin: 0;
+  color: var(--ink);
+}
+.mem-card .big-grade small {
+  font-size: 0.4em;
+  color: var(--ink-3);
+}
+/* four row actions: two by two, so no row wraps one button onto a line of its own */
+table.songs td.acts .row-actions {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: end;
+}
