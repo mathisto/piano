@@ -131,7 +131,7 @@ export const keyboardLine = (connected: boolean) =>
 // ---------- the Help sheet ----------
 
 export const HELP = `<header><h2>Help</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-  <div class="body helpbody">
+  <div class="body helpbody" tabindex="0">
     <h3>What each tab is for</h3>
     <dl>
       <dt>Today</dt><dd>A plan for the day, 5 to 45 minutes, and your week.</dd>
