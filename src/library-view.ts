@@ -28,7 +28,8 @@ function row(p: Piece, prog: Map<string, Progress>) {
   const len = p.sec || m?.len
   return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${art(`lib:${p.id}`)}${m?.thumb ?? (local(p.id) ? '' : facts(p))}</td><td class="name">${esc(p.title)}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span></small></td><td class="num len">${len ? mmss(len) : ''}</td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
     <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">Learn</button>
-    <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="perform" aria-label="Perform ${esc(p.title)}">Perform</button></div></td></tr>`
+    <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="perform" aria-label="Perform ${esc(p.title)}">Perform</button>
+    <button class="btn ghost" data-rt="lib:${esc(p.id)}" aria-label="Read through ${esc(p.title)}">Read through</button></div></td></tr>`
 }
 
 /** Read the files already on the device, four at a time, for a thumbnail and a length. */

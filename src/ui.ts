@@ -149,6 +149,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="acts"><div class="row-actions">
           <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${r.id}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           <button class="btn ghost" data-play="${r.id}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
+          <button class="btn ghost" data-rt="${r.id}" aria-label="Read through ${esc(r.title)}">Read through</button>
           ${r.tracks ? `<button class="btn ghost" data-tracks="${r.id}" aria-label="Options for ${esc(r.title)}">Options</button>` : ''}
         </div></td></tr>`,
         )
@@ -457,6 +458,7 @@ export interface TodayData {
   techId: string
   fix?: { id: string; title: string; a: number; b: number } // the worst bars of the piece played last
   review?: { name: string; id: string; line: string } // a second reading stage, for the longest plan
+  sight?: { id: string; title: string; sub: string } // a new, easy piece to read through without stopping
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
   goal: number
   planMin: PlanMin
@@ -483,6 +485,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${c.includes('primary') ? icon('play') : ''}Start</button>` },
     { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${d.read.id}">${c.includes('primary') ? icon('play') : ''}Practice</button>` },
     { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${d.last.id}">${c.includes('primary') ? icon('play') : ''}${d.last.first ? 'Start' : 'Continue'}</button>` },
+    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${c.includes('primary') ? icon('play') : ''}Read through</button>` }] : []),
     ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${d.again!.id}">Play</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${d.fix!.id}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),

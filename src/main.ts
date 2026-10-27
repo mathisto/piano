@@ -44,6 +44,7 @@ import { theoryDue, type PlanMin } from './plan'
 import { restTracker } from './rest'
 import { streak as dayStreak } from './streak'
 import { $, CAL_NOTES, art, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
+import { LOOK, lookCard, pct, pickPiece, startRate, summaryCard, type RtPiece } from './readthrough'
 
 const app = $('#app')
 skeleton(app)
@@ -200,6 +201,7 @@ async function showToday() {
   if (!(await store.getSnap(week[0].key))) await store.putSnap(week[0].key, snap)
   const lw = [1, 2].includes(new Date().getDay()) ? lastWeek(days, settings.goal) : null
   const prevKey = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 7 - ((new Date().getDay() + 6) % 7)))
+  const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   todayView($('#today'), {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
@@ -222,6 +224,7 @@ async function showToday() {
     path: nx?.start && nx.start.kind !== 'scale' ? { title: `Path: ${nx.name}`, sub: `Level ${nx.level}. ${nx.detail}`, start: nx.start } : undefined,
     done: nx?.start && done.includes(PATH_STEP[nx.start.kind]) ? [...done, 'path'] : done,
     recap: recap ?? undefined,
+    sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `Read through, no stopping · ${sight.fresh ? 'new ' : ''}${sight.piece.level}` },
   })
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
     settings.planMin = Number(r.value) as PlanMin
@@ -284,6 +287,7 @@ $('#today').addEventListener('click', (e) => {
   else if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
   else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
   else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
+  else if (b.dataset.today === 'sight') void readThrough(b.dataset.id)
   else void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
 
@@ -692,6 +696,7 @@ function leave() {
   if (drill) void store.saveDrill(drillStats)
   drill = undefined
   run = undefined
+  rtEnd()
   staff.lookahead = 0
   game.endPass()
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
@@ -1093,7 +1098,7 @@ function onPhase() {
     resOpen(false)
     let legend = ''
     try {
-      if (!localStorage.getItem('piano.legend') && !drill && !calibrating && game.view !== 'sheet') {
+      if (!localStorage.getItem('piano.legend') && !drill && !calibrating && !rt && game.view !== 'sheet') {
         legend = '<div class="legend"><span><i class="sw R"></i>Right hand</span><span><i class="sw L"></i>Left hand</span><span><i class="sw lamp"></i>Play this</span></div>'
         localStorage.setItem('piano.legend', '1') // the colours explain themselves after one song
       }
@@ -1104,7 +1109,9 @@ function onPhase() {
     const sheet = `<div class="seg" role="radiogroup" aria-label="Mode">${(['perform', 'learn'] as const).map((v) => `<label><input type="radio" name="modeSheet" value="${v}"${game.mode === v ? ' checked' : ''}><span>${v === 'perform' ? 'Perform' : 'Learn'}</span></label>`).join('')}</div><span class="hint">${game.mode === 'perform' ? 'Scored. The song does not wait.' : 'No score. The song waits for you.'} ${go}</span>`
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
     const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
-    r.innerHTML = drill
+    r.innerHTML = rt
+      ? lookCard({ title: current.song.title, left: rt.left, rate: rt.rate, ahead: !!settings.readAhead, why: rt.why, credit: current.credit })
+      : drill
       ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
@@ -1119,6 +1126,7 @@ function onPhase() {
     }))
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
   }
+  if (rt) rtPhase()
   wake()
   if (game.phase === 'paused') say('Paused')
   if (game.phase === 'waiting') say('Waiting for you')
@@ -1128,6 +1136,105 @@ function onPhase() {
 function resOpen(on: boolean) {
   $('#res').hidden = !on
   $('#play').classList.toggle('resopen', on)
+}
+
+// ---------------------------------------------------------------- Read through
+
+// a read-through in progress: look-through seconds left, the timer counting them, the tempo, and why this piece was offered
+let rt: { left: number; timer: number; rate: number; why: string; zoom?: number } | undefined
+
+const RT_LEVEL = ['Beginner', 'Beginner', 'Elementary', 'Intermediate', 'Intermediate', 'Intermediate'] // catalogue grade 1..5 to the three levels the picker knows
+const rtPieces = (): RtPiece[] => [...STARTERS.map((s) => ({ id: s.spec.id, title: s.spec.title, level: s.level })), ...lib.catalog.pieces.filter((p) => lib.local(p.id)).map((p) => ({ id: `lib:${p.id}`, title: p.title, level: RT_LEVEL[Math.min(5, lib.gradeOf(p))] }))]
+
+/** One no-stop pass of a piece at a gentle tempo, after a look-through. No id: a new, easy piece is picked. */
+async function readThrough(id?: string) {
+  audio.unlock() // the count-in starts on a timer, after the click that opened this
+  const pick = pickPiece(rtPieces(), await store.allProgress())
+  id ??= pick?.piece.id
+  if (!id) return
+  rtEnd()
+  rt = { left: LOOK, timer: 0, rate: startRate(settings.readBest), why: id === pick?.piece.id ? pick.why : '' }
+  document.body.classList.add('readthru')
+  await openById(id, 'perform')
+  if (!current || current.song.id !== id || !rt) return rtEnd()
+  // a look-through wants the page, not one bar: the staff shrinks to fit (not below 0.6) and goes back afterwards
+  rt.zoom = settings.zoom
+  setZoom(staff.fit(0.6, settings.zoom))
+}
+
+function rtEnd() {
+  if (rt) clearInterval(rt.timer)
+  if (rt?.zoom) setZoom(rt.zoom)
+  rt = undefined
+  document.body.classList.remove('readthru')
+  if (staff) staff.aheadBars = 0
+}
+
+/** After every phase change: the look-through counts down on the start card, then the count-in starts by itself. */
+function rtPhase() {
+  const r = rt!
+  if (game.phase !== 'ready') {
+    clearInterval(r.timer)
+    r.timer = 0
+    r.left = LOOK
+    return
+  }
+  if (game.rate !== r.rate) game.setRate(r.rate) // a reopen (thinning the notes) loads at full tempo
+  staff.aheadBars = settings.readAhead ? 2 : 0
+  if (!r.timer)
+    r.timer = window.setInterval(() => {
+      if (game.phase !== 'ready') return
+      r.left = Math.max(0, r.left - 1)
+      document.querySelector<HTMLElement>('#rtMeter')?.style.setProperty('--f', String(r.left / LOOK))
+      const l = document.querySelector('#rtLeft')
+      if (l) l.textContent = `0:${String(r.left).padStart(2, '0')}`
+      if (!r.left) game.toggle()
+    }, 1000)
+  const q = <T extends HTMLElement>(s: string) => $('#ready').querySelector<T>(s)!
+  const tempo = (d: number) => {
+    game.setRate(Math.round((game.rate + d) * 20) / 20)
+    r.rate = game.rate
+    q('#rtRate').textContent = pct(r.rate)
+  }
+  q('#rtSlower').onclick = () => tempo(-0.05)
+  q('#rtFaster').onclick = () => tempo(0.05)
+  q('#rtGo').onclick = () => game.toggle()
+  q<HTMLInputElement>('#rtAhead').onchange = (e) => {
+    settings.readAhead = (e.target as HTMLInputElement).checked
+    save()
+    staff.aheadBars = settings.readAhead ? 2 : 0
+    staff.render()
+  }
+}
+
+async function rtDone(r: Result) {
+  const c = current!
+  const clean = r.acc >= 0.9 && r.clean
+  const prog = await store.commit(c.song.id, r.heat, undefined, clean) // into spaced review, like a Perform run
+  c.heat = prog.heat
+  dock.setSong(c.song, prog.heat)
+  void store.markPlan(dayKey(), 'sight')
+  if (r.total) void store.logHistory({ ts: Date.now(), kind: 'song', label: `Read-through: ${c.song.title}`, acc: r.acc })
+  if (clean) {
+    settings.readBest = Math.max(settings.readBest ?? 0, r.rate)
+    save()
+  }
+  const worst = worstBars(r.heat)
+  const next = pickPiece(rtPieces(), await store.allProgress(), c.song.id)
+  const res = $('#res')
+  res.innerHTML = summaryCard({ title: c.song.title, acc: r.acc, rate: r.rate, caught: r.total - r.counts.miss, total: r.total, wrong: r.wrong, heat: r.heat, bars: c.song.bars.length, worst, next })
+  resOpen(true)
+  res.querySelector<HTMLButtonElement>('#rtNext, #rtFix, #toLib')?.focus()
+  say(`Read-through finished. ${pct(r.acc)} accuracy.`)
+  const fix = res.querySelector<HTMLButtonElement>('#rtFix')
+  if (fix && worst)
+    fix.onclick = () => {
+      rtEnd()
+      void fixBars(c.song.id, worst.a, worst.b)
+    }
+  const nx = res.querySelector<HTMLButtonElement>('#rtNext')
+  if (nx && next) nx.onclick = () => void readThrough(next.piece.id)
+  $('#toLib', res).onclick = leave
 }
 
 // ---------------------------------------------------------------- reading drills
@@ -1336,6 +1443,7 @@ async function onDone(r: Result) {
   if (!current) return
   if (drill) return drillDone()
   if (calibrating) return calibrated(r)
+  if (rt) return rtDone(r)
   const prog = await store.commit(
     current.song.id,
     r.heat,
@@ -1781,6 +1889,7 @@ $('#library').addEventListener('click', async (e) => {
   const row = t.closest<HTMLElement>('tr[data-open]')
   const lib = t.closest<HTMLElement>('tr[data-lib]')
   if (!b && lib) return void openLibrary(lib.dataset.lib!, 'learn')
+  if (b?.dataset.rt) return void readThrough(b.dataset.rt)
   if (b?.dataset.libplay) return void openLibrary(b.dataset.libplay, b.dataset.mode as Mode)
   if (!b && row) return void openById(row.dataset.open!, 'learn') // the whole row opens Learn
   if (!b) return
@@ -1893,7 +2002,7 @@ async function shareFile(file: File) {
 async function openById(id: string, mode: Mode) {
   if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
   const i = STARTERS.findIndex((s) => s.spec.id === id)
-  if (i >= 0) return void openSong(starters[i], mode)
+  if (i >= 0) return openSong(starters[i], mode) // awaited: fixBars and readThrough look at the piece once it is open
   const row = (await store.listSongs()).find((s) => s.id === id)
   if (row) {
     try {

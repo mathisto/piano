@@ -105,9 +105,19 @@ export class Staff {
 
   /** Sight Run's reading ahead: only the next `lookahead` beats of notes show, the rest stay blank until the cursor nears them. 0 shows everything. */
   lookahead = 0
+  /** Read through's reading ahead: once the music moves, only the bar being played and the next `aheadBars - 1` show. 0 shows everything. */
+  aheadBars = 0
+  private barEls: [number, Element][] = [] // chords, beams and rests by bar, for aheadBars
   private peeked = -2
   private peek() {
     const g = this.game
+    if (this.aheadBars && g.mode !== 'read') {
+      const b = g.phase === 'ready' ? -1 : barAt(g.song.bars, Math.max(0, g.t))
+      if (b === this.peeked) return
+      this.peeked = b
+      for (const [bar, e] of this.barEls) e.classList.toggle('ahead', b >= 0 && bar >= b + this.aheadBars)
+      return
+    }
     const n = g.mode === 'read' ? this.lookahead : 0
     const i = n ? g.judge.nextPending() : -1
     if (i === this.peeked) return
@@ -188,6 +198,7 @@ export class Staff {
     svg.replaceChildren()
     svg.setAttribute('viewBox', `0 0 ${L.w} ${L.h}`)
     this.byId.clear()
+    this.barEls = []
     this.all = []
     this.timeline = []
     this.awaiting.clear()
@@ -240,12 +251,12 @@ export class Staff {
     for (const c of L.chords) this.chord(g, c, dyOf(c.sys))
     for (const b of L.beams) {
       const dy = dyOf(b.sys)
-      for (const r of b.rows) el('path', { class: 'beam', d: `M${r.x1},${r.y1 + dy} L${r.x2},${r.y2 + dy} L${r.x2},${r.y4 + dy} L${r.x1},${r.y3 + dy} Z` }, g)
+      for (const r of b.rows) this.barEls.push([b.chords[0]?.bar ?? 0, el('path', { class: 'beam', d: `M${r.x1},${r.y1 + dy} L${r.x2},${r.y2 + dy} L${r.x2},${r.y4 + dy} L${r.x1},${r.y3 + dy} Z` }, g)])
     }
     for (const r of L.rests) {
       const fi = figure(r.v, r.tup)
       const glyph = r.whole || fi.head === 0 ? G.restWhole : fi.head === 1 ? G.restHalf : G.rest[Math.min(fi.flags, 3)]
-      el('text', { class: 'smufl rest', x: r.x, y: r.y + dyOf(r.sys), 'text-anchor': 'middle' }, g, glyph)
+      this.barEls.push([r.bar, el('text', { class: 'smufl rest', x: r.x, y: r.y + dyOf(r.sys), 'text-anchor': 'middle' }, g, glyph)])
       if (!r.whole && fi.dots) el('text', { class: 'smufl', x: r.x + 9, y: r.y + dyOf(r.sys) - (fi.head === 2 ? 4 : 0) }, g, G.dot)
     }
     for (const t of L.ties) {
@@ -294,6 +305,7 @@ export class Staff {
   /** Everything of one chord: ledger lines, stem, flag, heads, accidentals, dots. */
   private chord(parent: Element, c: LChord, dy: number) {
     const g = el('g', { class: 'ch' }, parent)
+    this.barEls.push([c.bar, g])
     const small = c.grace
     for (const l of c.ledgers) el('line', { class: 'ledger', x1: l.x1, x2: l.x2, y1: l.y + dy, y2: l.y + dy }, g)
     if (c.stem) {

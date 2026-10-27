@@ -1,0 +1,102 @@
+/* ---------- Read through: the look-through card and the summary ---------- */
+body.readthru #modeSeg {
+  display: none; /* one pass at one setting: no Perform | Learn switch mid-piece */
+}
+.ready .rt-row,
+.ready .rt-row * {
+  pointer-events: auto;
+}
+.ready .rt-timer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(360px, 100%);
+  margin: 12px auto 4px;
+}
+.rt-timer i {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--ink-3) calc(var(--f, 1) * 100%), var(--line) 0);
+}
+.ready .rt-timer span {
+  display: inline;
+  min-width: 3ch;
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.ready .rt-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 8px;
+}
+.rt-tempo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ready .rt-tempo .cap {
+  margin: 0 4px 0 0;
+}
+.ready .rt-tempo #rtRate {
+  display: inline;
+  min-width: 4ch;
+  font: 800 italic 28px/1 var(--display);
+  color: var(--ink);
+}
+.ready .rt-row .switch {
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.ready .rt-why {
+  max-width: 52ch;
+  margin: 12px auto 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+@container stage (max-height: 420px) {
+  #ready .rt-why {
+    display: none;
+  }
+}
+
+.rt-card .big-grade {
+  grid-row: span 6;
+}
+.rt-bars-wrap {
+  display: grid;
+  gap: 8px;
+}
+.rt-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+}
+.rt-bars i {
+  flex: 1;
+  max-width: 18px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--line-2);
+}
+.rt-bars i.hot {
+  height: calc(12px + var(--h) * 24px); /* height says it as well as the red */
+  background: var(--bad);
+  opacity: calc(0.55 + var(--h) * 0.45);
+}
+.card .line.rt-sub {
+  font-size: 15px;
+}
+@media (max-width: 760px) {
+  .rt-card .big-grade {
+    grid-row: auto;
+  }
+}
+#staff .beam.ahead,
+#staff .rest.ahead {
+  opacity: 0; /* reading ahead hides a whole bar: its beams and rests go with its chords */
+}
