@@ -26,10 +26,10 @@ const median = (xs: number[]) => {
 }
 
 /** One note per moment, per hand, in time order: a chord's top note stands for it. */
-export function lines(hits: Hit[]): Hit[][] {
+export function lines<T extends { t: number; p: number; h: Hand }>(hits: T[]): T[][] {
   return (['R', 'L'] as const)
     .map((h) => {
-      const out: Hit[] = []
+      const out: T[] = []
       for (const x of hits.filter((x) => x.h === h).sort((a, b) => a.t - b.t || a.p - b.p)) {
         const last = out[out.length - 1]
         if (last && x.t - last.t < 0.03) out[out.length - 1] = x
@@ -61,6 +61,7 @@ export interface Evenness {
 
 /** The evenness of a run, or null when no line is long enough to judge. `label` names the kind of note a pattern belongs to. */
 export function evenness(hits: Hit[], e: Edges, coach: Exclude<Coach, 'off'>, label: (h: Hit, i: number) => string = (h) => noteName(h.p)): Evenness | null {
+  if (hits.every((x) => x.v === hits[0]?.v)) return null // Fixed key touch: one velocity says nothing about evenness
   const ls = lines(hits).filter((l) => l.length >= MIN_RUN)
   if (!ls.length) return null
   const band = tolerance(e, coach)

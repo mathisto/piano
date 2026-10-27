@@ -9,6 +9,7 @@ import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
 import { earView, earTap, newEar, playCard, stopEar, type EarRun } from './ear-play'
+import * as coach from './coach'
 import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
@@ -962,7 +963,7 @@ function feel(n: Note, v: number) {
   if (settings.coach === 'off' || !v || game.mode === 'read' || !judged(game.song.id, game.song.dyn) || Math.abs(n.t - f.t) < 0.03) return // a chord is one moment
   f.t = n.t
   const d = live(f.v, v)
-  if (d !== null && Math.abs(d) > tolerance(settings.edges ?? DEFAULT_EDGES, settings.coach)) staff.dev(n.id, d)
+  if (d !== null && coach.marks !== 'none' && Math.abs(d) > tolerance(settings.edges ?? DEFAULT_EDGES, settings.coach)) staff.dev(n.id, d)
   f.v.push(v)
 }
 
@@ -1089,7 +1090,11 @@ function say(msg: string) {
 
 function onPhase() {
   if (!dock || !current) return
-  if (game.phase === 'ready') for (const f of Object.values(felt)) (f.v = []), (f.t = -1)
+  if (game.phase === 'ready') {
+    for (const f of Object.values(felt)) (f.v = []), (f.t = -1)
+    const s = game.song
+    void coach.arm(s.id).then((m) => m === 'none' && coach.coached(s.id, s.dyn, game.mode) && flash('A test run: no touch marks this time'))
+  }
   dock.setPhase()
   const r = $('#ready')
   r.hidden = game.phase !== 'ready'
@@ -1456,10 +1461,11 @@ async function onDone(r: Result) {
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
-    void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands })
+    void store.logTouch({ ts: Date.now(), id: current.song.id, title: current.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands, keyTouch: settings.keyTouch })
   }
   const kind = current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'tech' : 'song'
-  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: current.song.title, acc: r.acc })
+  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: current.song.title, acc: r.acc, even: r.even?.inside, bias: r.timing?.bias })
+  if (coach.coached(current.song.id, current.song.dyn, r.mode)) void coach.tally(current.song.id, r.even?.rating)
   let note = ''
   const sc = parseId(current.song.id)
   if (sc && r.mode === 'perform') {
@@ -1704,6 +1710,14 @@ function openDrawer() {
     settings.names = el.checked
     save()
     openDrawer() // the fade switch only means something while names are shown
+  }, 'change')
+  on('#sKeyTouch', (el) => {
+    settings.keyTouch = el.value as typeof settings.keyTouch
+    save()
+  }, 'change')
+  on('#sMarks', (el) => {
+    settings.marks = el.checked
+    save()
   }, 'change')
   on('#sWritten', (el) => {
     settings.asWritten = el.checked
@@ -2064,5 +2078,5 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
+  ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number) => fromKeyboard({ on: true, p, v, ts: performance.now() }), up: (p: number) => fromKeyboard({ on: false, p, v: 0, ts: performance.now() }), icon, open: (i: number, m: Mode) => openSong(starters[i], m), drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
 }

@@ -1,0 +1,26 @@
+/* Touch coach: results lines, and live evenness marks that fade once the touch has been even for a while. */
+.coachlines {
+  grid-column: 2; /* with the other stats, beside the grade */
+  display: grid;
+  gap: 4px;
+  color: var(--ink-2);
+}
+.coachlines p {
+  margin: 0;
+}
+.coachlines b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+#staff.marks-faint .devmark {
+  opacity: 0.35;
+}
+/* the evenness strip stacks with the other stats too, so the stats column keeps its width */
+.card > div:has(> .hist.even) {
+  grid-column: 2;
+}
+/* a tall results card scrolls instead of being cut off at the top and bottom of a short stage */
+.results {
+  overflow-y: auto;
+  place-items: safe center;
+}

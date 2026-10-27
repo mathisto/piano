@@ -6,7 +6,8 @@ import { inBundle } from './catalog'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
-import { settings } from './settings'
+import { settings, KEY_TOUCH } from './settings'
+import { coachLines, marks as liveMarks, timingLine } from './coach'
 import type { HistoryEntry, Progress, Stored, TouchEntry } from './store'
 import type { Evenness } from './even'
 import type { Song } from './song'
@@ -237,11 +238,11 @@ export function evenBlock(e: Evenness) {
     <div style="color:var(--ink-2)">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</div></div>`
 }
 
-export function touchBlock(t: TouchStats) {
+export function touchBlock(t: TouchStats, hands = true) {
   const peak = Math.max(1, ...t.hist)
   const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
   const x = 6 + (t.mean / 128) * 384
-  const hand = t.hands.R.n && t.hands.L.n ? ` · right hand ${Math.round(t.hands.R.mean)}, left ${Math.round(t.hands.L.mean)}` : ''
+  const hand = hands && t.hands.R.n && t.hands.L.n ? ` · right hand ${Math.round(t.hands.R.mean)}, left ${Math.round(t.hands.L.mean)}` : ''
   const regs = (['low', 'mid', 'high'] as const).filter((r) => t.regions[r].n >= 4)
   const where = regs.length >= 2 ? ` · ${regs.map((r) => `${r === 'mid' ? 'middle' : r} keys ${Math.round(t.regions[r].mean)}`).join(', ')}` : ''
   return `<div>
@@ -254,7 +255,7 @@ export function results(r: Result, next: Next | null, note = '') {
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
   const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
-  const lean = Math.abs(mean) < 8 ? 'Your timing is centred.' : mean < 0 ? `You tend to play about ${Math.round(-mean)} ms early.` : `You tend to play about ${Math.round(mean)} ms late.`
+  const lean = r.timing ? timingLine(r.timing) : Math.abs(mean) < 8 ? 'Your timing is centred.' : mean < 0 ? `You tend to play about ${Math.round(-mean)} ms early.` : `You tend to play about ${Math.round(mean)} ms late.`
   const hist = bins
     .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
@@ -272,8 +273,9 @@ export function results(r: Result, next: Next | null, note = '') {
       <div style="color:var(--ink-2)">${lean}</div></div>`
         : ''
     }
-    ${r.touch.n >= 4 ? touchBlock(r.touch) : ''}
+    ${r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : ''}
     ${r.even ? evenBlock(r.even) : ''}
+    ${coachLines(r, liveMarks === 'none' && !!r.even)}
     ${note ? `<p class="line">${note}</p>` : ''}
     <div class="row">
       ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
@@ -302,6 +304,8 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   }
   <label class="srow"><span>Count-in click</span><input id="sClick" type="range" min="0" max="1" step="0.05" value="${settings.click}" aria-label="Count-in click volume"></label>
   ${seg('coach', 'Touch coach', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach)}
+  <label class="srow"><span>Key touch</span><select id="sKeyTouch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select></label>
+  <p class="fine">Changes the loudness we read; Fixed hides evenness.</p>
   ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
   <div class="srow"><span>Keyboard</span>${
     inputs.length > 1
@@ -315,6 +319,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch sub"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}${settings.names ? '' : ' disabled'}><i></i>Fade names I know</label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
+    <label class="switch"><input id="sMarks" type="checkbox"${settings.marks ? ' checked' : ''}><i></i>Always show touch marks</label>
     <label class="switch"><input id="sWritten" type="checkbox"${settings.asWritten ? ' checked' : ''}><i></i>Play the file's dynamics</label>
     <label class="srow"><span>Fall speed</span><span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"><small>Fast</small></span></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>

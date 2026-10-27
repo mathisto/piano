@@ -3,6 +3,8 @@ import { INTERVALS, dayNum, type Stats } from './drill'
 import type { RunSpec } from './run'
 import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
+import type { Seen } from './coach'
+import type { KeyTouch } from './settings'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
 import { fromMidi, type Song } from './song'
@@ -124,6 +126,7 @@ export interface TouchEntry {
   R: { n: number; mean: number }
   L: { n: number; mean: number }
   bands: { soft: number; medium: number; hard: number }
+  keyTouch?: KeyTouch // the keyboard's key touch setting at the time
 }
 
 const TOUCH_KEEP = 300
@@ -185,7 +188,7 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -201,11 +204,12 @@ export async function importAll(text: string) {
   if (d.scales) await set('scale:stats', d.scales)
   if (d.theory) await set('theory:stats', d.theory)
   if (d.history) await set('history:log', d.history)
+  if (d.coach) await set('coach:stats', d.coach)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -257,6 +261,8 @@ export interface HistoryEntry {
   label: string
   acc: number // 0..1
   ms?: number // median time a card took, where cards are timed
+  even?: number // touch evenness: share of notes inside the band, 0..1
+  bias?: number // timing: mean ms behind (+) or ahead of (-) the beat
 }
 
 export async function getHistory(): Promise<HistoryEntry[]> {
@@ -265,4 +271,13 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 
 export async function logHistory(e: HistoryEntry) {
   await set('history:log', [...(await getHistory()), e].slice(-600))
+}
+
+/** Per exercise: runs finished and even runs in a row, for fading the live touch marks. */
+export async function getCoach(): Promise<Record<string, Seen>> {
+  return (await get<Record<string, Seen>>('coach:stats')) ?? {}
+}
+
+export async function saveCoach(s: Record<string, Seen>) {
+  await set('coach:stats', s)
 }
