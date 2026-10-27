@@ -138,6 +138,7 @@ export async function runFinish() {
   const r = run
   if (!r || r.done || !drill) return
   r.done = true
+  $('#stagesBtn').textContent = 'Back to Read' // the results are up: the button now leaves
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
   if (r.spec.pace) return pacedFinish(r)
   await store.saveDrill(drillStats)
