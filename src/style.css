@@ -1038,6 +1038,11 @@ body.reading .hud small {
 #staff .mk.ahead {
   opacity: 0;
 }
+#staff .cname {
+  fill: var(--ink-2); /* a derived aid, read from the harmony: Ink Soft, never the score's own Ink */
+  font: 700 18px var(--ui);
+  pointer-events: none;
+}
 #staff .barno.dense {
   font-weight: 400;
   font-style: italic;

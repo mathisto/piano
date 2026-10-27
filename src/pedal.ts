@@ -19,8 +19,8 @@ interface Change {
   bar: number // 0-based
 }
 
-/** The best-fitting chord for the notes sounding in [a, b): template match on pitch classes weighted by how long each sounds. Null for silence. */
-function chordIn(song: Song, a: number, b: number): string | null {
+/** The best-fitting chord for the notes sounding in [a, b): template match on pitch classes weighted by how long each sounds, as [root pitch class, index into `shapes`]. A fourth tone must beat the triad by `extra` (lead sheets: a passing note is not a seventh). Null for silence. */
+export function chordIn(song: Song, a: number, b: number, shapes = SHAPES, extra = 0): [number, number] | null {
   const w = new Array<number>(12).fill(0)
   for (const n of song.notes) {
     const len = Math.min(b, n.t + n.d) - Math.max(a, n.t)
@@ -28,32 +28,37 @@ function chordIn(song: Song, a: number, b: number): string | null {
   }
   const sum = w.reduce((x, y) => x + y, 0)
   if (!sum) return null
-  let best = ''
+  let best: [number, number] = [0, 0]
   let top = -Infinity
   for (let r = 0; r < 12; r++)
-    SHAPES.forEach((s, k) => {
+    shapes.forEach((s, k) => {
       const set = s.map((i) => (r + i) % 12)
       const inside = set.reduce((x, pc) => x + w[pc], 0)
       const missing = set.filter((pc) => !w[pc]).length
-      const score = (inside - (sum - inside)) / sum - 0.15 * missing
-      if (score > top + 1e-9) [top, best] = [score, `${r}:${k}`]
+      const score = (inside - (sum - inside)) / sum - 0.15 * missing - extra * (set.length - 3)
+      if (score > top + 1e-9) [top, best] = [score, [r, k]]
     })
   return best
 }
 
-/** Where the harmony moves: bars are cut in halves (or left whole in odd metres), each half is given a chord, and a change is where the chord differs from the one before. */
+/** The windows a chord is read in: each bar cut in halves, or left whole in odd metres. */
+export function* windows(song: Song): Generator<{ bar: number; a: number; b: number }> {
+  for (const bar of song.bars) {
+    const cuts = bar.n % 2 === 0 && bar.n >= 4 ? [bar.t0, (bar.t0 + bar.t1) / 2, bar.t1] : [bar.t0, bar.t1]
+    for (let i = 0; i + 1 < cuts.length; i++) yield { bar: bar.i, a: cuts[i], b: cuts[i + 1] }
+  }
+}
+
+/** Where the harmony moves: each window is given a chord, and a change is where the chord differs from the one before. */
 // ponytail: half-bar resolution; a chord that changes on beat 2 or 3 is missed, and a melody-only passage can read as chords that are not there. Finer windows or bass-led detection if real pieces need it.
 export function changes(song: Song): Change[] {
   const out: Change[] = []
   let prev: string | null = null
-  for (const b of song.bars) {
-    const cuts = b.n % 2 === 0 && b.n >= 4 ? [b.t0, (b.t0 + b.t1) / 2, b.t1] : [b.t0, b.t1]
-    for (let i = 0; i + 1 < cuts.length; i++) {
-      const c = chordIn(song, cuts[i], cuts[i + 1])
-      if (c === null) continue
-      if (prev !== null && c !== prev) out.push({ t: cuts[i], bar: b.i })
-      prev = c
-    }
+  for (const w of windows(song)) {
+    const c = chordIn(song, w.a, w.b)?.join(':')
+    if (c === undefined) continue
+    if (prev !== null && c !== prev) out.push({ t: w.a, bar: w.bar })
+    prev = c
   }
   return out
 }

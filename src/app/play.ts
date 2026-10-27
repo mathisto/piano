@@ -10,7 +10,7 @@ import { knownPitches } from '../quiet'
 import { paceHint } from '../paced'
 import { lookCard } from '../readthrough'
 import { settings } from '../settings'
-import { autoLevel, type Level, LEVELS, simplify } from '../simplify'
+import { autoLevel, canLead, type Level, LEVELS, simplify } from '../simplify'
 import { barAt, type Song } from '../song'
 import { STARTERS } from '../starters'
 import * as store from '../store'
@@ -218,7 +218,7 @@ export function onPhase() {
     const lp = current.base.id.startsWith('lib:') ? lib.piece(current.base.id.slice(4)) : undefined
     const report = lp ? reportLink(lib.catalog, lp, game.t > 0 ? barAt(game.song.bars, game.t) + 1 : undefined) : ''
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
-    const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3] as const).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>` : ''
+    const levels = shows ? `<span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3, 4] as const).filter((l) => l < 4 || canLead(current!.base)).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div>${current.level === 4 ? `<label class="switch ghostsw" title="A block chord with its bass on each half bar, at the tempo"><input type="checkbox" id="compOn"${game.comp ? ' checked' : ''}><i></i>App plays the chords</label><span class="hint">Chords from the harmony of the piece, not the composer's marks.</span>` : ''}` : ''
     r.innerHTML = mem
       ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
       : rt
@@ -239,6 +239,7 @@ export function onPhase() {
       syncMode()
       onPhase()
     }))
+    r.querySelector<HTMLInputElement>('#compOn')?.addEventListener('change', (e) => (game.comp = (e.target as HTMLInputElement).checked))
     r.querySelectorAll<HTMLInputElement>('input[name=you]').forEach((x) => (x.onchange = () => {
       const c = choices(game.song).find((c) => c.id === x.value)
       if (!c) return

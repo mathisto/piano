@@ -831,6 +831,12 @@ export interface LDyn {
   y: number
   text: string
 }
+export interface LSym {
+  sys: number
+  x: number
+  y: number // baseline
+  name: string
+}
 export interface LSign {
   sys: number
   x: number
@@ -878,6 +884,7 @@ export interface Layout {
   slurs: LSlur[]
   wedges: LWedge[]
   dyns: LDyn[]
+  syms: LSym[]
   signs: LSign[]
   finalBar: boolean
   /** A moment in time on the page: x, and the system it sits in. */
@@ -909,7 +916,7 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
 
   const L: Placed = {
     w: 0, h: 0, w0: W0, from: win.from, to: win.to, follow: win.follow, clefs, base,
-    systems: [], bars: [], chords: [], beams: [], rests: [], ties: [], tuplets: [], ottavas: [], slurs: [], wedges: [], dyns: [], signs: [],
+    systems: [], bars: [], chords: [], beams: [], rests: [], ties: [], tuplets: [], ottavas: [], slurs: [], wedges: [], dyns: [], syms: [], signs: [],
     finalBar: win.to >= an.bars.length, posAt: () => ({ x: 0, sys: 0, dy: 0 }),
   }
   const ink: { lo: number; hi: number }[] = []
@@ -1304,6 +1311,20 @@ function place(an: Analysis, win: Win, cfg: Cfg, forceH?: number): Placed {
       const lo = inkTop(L, beamRows, b.sys, b.x, b.x + 26)
       b.numY = Math.min(top - 16, lo - 5)
       if (b.numY < top - 16) k.lo = Math.min(k.lo, b.numY - 9)
+    }
+    // Lead sheet: a chord symbol where the chord changes (and at the left of the system), above the bar numbers and clear of the ink
+    const [t0, t1] = [song.bars[s.from].t0, song.bars[s.to - 1].t1]
+    let prev = ''
+    for (const c of song.chords ?? []) {
+      if (c.t < t0 - 1e-6 || c.t >= t1 || c.name === prev) continue
+      prev = c.name
+      const { x } = L.posAt(c.t)
+      const last = L.syms[L.syms.length - 1]
+      if (last?.sys === si && x - 6 < last.x + last.name.length * 10 + 6) L.syms.pop() // no room after the one before (a pickup bar): the later chord governs the music, so it stays
+      const nb = L.bars.find((b) => b.sys === si && x >= b.x - 4 && x < b.x + 30)
+      const y = Math.min(top - 31, inkTop(L, beamRows, si, x - 4, x + c.name.length * 10) - 8, nb ? nb.numY - 15 : Infinity)
+      L.syms.push({ sys: si, x: x - 6, y, name: c.name })
+      k.lo = Math.min(k.lo, y - 16)
     }
     s.pad = Math.max(0, 4 - k.lo)
     s.h = vbH + s.pad + Math.max(0, k.hi - (vbH - 2))
