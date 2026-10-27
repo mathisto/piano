@@ -1,4 +1,5 @@
 // Boot and navigation. Each page and the play screen live in src/app/; their shared state is src/app/state.ts.
+declare const __COMMIT__: string | undefined // set in vite.config.ts
 import './native-midi' // first: it must exist before midi.ts reads requestMIDIAccess
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
@@ -132,4 +133,4 @@ if (import.meta.env.DEV) {
 }
 
 // Offline after the first visit (src/sw.ts). Not in the iPad app (capacitor:), whose files are on the device, nor in dev.
-if (import.meta.env.PROD && /^https?:$/.test(location.protocol)) void navigator.serviceWorker?.register(`${import.meta.env.BASE_URL}sw.js`).then((r) => r.update()).catch(() => {}) // update(): browsers recheck sw.js only once a day on their own
+if (import.meta.env.PROD && /^https?:$/.test(location.protocol)) void navigator.serviceWorker?.register(`${import.meta.env.BASE_URL}sw.js?v=${typeof __COMMIT__ === 'string' ? __COMMIT__ : ''}`).then((r) => r.update()).catch(() => {}) // update(): browsers recheck sw.js only once a day on their own; ?v=commit is a new URL each deploy, so an edge that holds /sw.js for hours cannot serve the old one
