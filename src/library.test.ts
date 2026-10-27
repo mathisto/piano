@@ -84,3 +84,18 @@ describe('key signatures of MIDI pieces', () => {
     expect(fromMidi(ab(bytes('mutopia-1612.mid')), 'x', 'x').fifths).toBe(0)
   })
 })
+
+describe('songs with the voice folded into the right hand', () => {
+  it('stay inside one hand: the middle of the chords spans an octave and a second at most, and a doubled note is one note', async () => {
+    const folded = manifest.filter((m) => m.title.includes('melody and piano'))
+    expect(folded.length).toBeGreaterThanOrEqual(3)
+    for (const m of folded) {
+      const song = fromMusicXml(await xmlText(ab(bytes(m.file))), m.title, m.id)
+      const at = new Map<string, number[]>()
+      for (const n of song.notes.filter((n) => n.h === 'R')) at.set(n.t.toFixed(3), [...(at.get(n.t.toFixed(3)) ?? []), n.p])
+      const spans = [...at.values()].map((ps) => Math.max(...ps) - Math.min(...ps)).sort((a, b) => a - b)
+      expect(spans[Math.floor(spans.length * 0.95)], `${m.id} right-hand reach`).toBeLessThanOrEqual(14)
+      for (const ps of at.values()) expect(new Set(ps).size, `${m.id} duplicate note`).toBe(ps.length)
+    }
+  })
+})

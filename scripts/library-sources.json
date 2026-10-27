@@ -184,14 +184,14 @@
    "src": "openscore-lieder",
    "id": "lieder-lc5701612",
    "path": "scores/Brahms,_Johannes/5_Lieder,_Op.49/4_Wiegenlied/lc5701612.mxl",
-   "dropParts": [
-    "P1"
-   ],
    "level": "Elementary",
-   "title": "Wiegenlied (Lullaby), Op. 49 No. 4: piano part",
+   "title": "Wiegenlied (Lullaby), Op. 49 No. 4: melody and piano",
    "composer": "Johannes Brahms (1833–1897)",
    "licence": "CC0-1.0",
-   "sha256": "5867b883ba1d159f234a3764a0f3f467afdd78cf6ee4698bca17d52d3a4f65db"
+   "sha256": "5867b883ba1d159f234a3764a0f3f467afdd78cf6ee4698bca17d52d3a4f65db",
+   "foldParts": [
+    "P1"
+   ]
   },
   {
    "src": "openscore-lieder",
@@ -300,40 +300,40 @@
    "src": "openscore-lieder",
    "id": "lieder-lc4976849",
    "path": "scores/Schumann,_Robert/Dichterliebe,_Op.48/03_Die_Rose,_die_Lilie/lc4976849.mxl",
-   "dropParts": [
-    "P1"
-   ],
    "level": "Intermediate",
-   "title": "Die Rose, die Lilie, Op. 48 No. 3: piano part",
+   "title": "Die Rose, die Lilie, Op. 48 No. 3: melody and piano",
    "composer": "Robert Schumann (1810–1856)",
    "licence": "CC0-1.0",
-   "sha256": "c9fba958731ac7d5c72aa1b26eae62cc30f4dca4f9959e67ccf4551eecf110e8"
+   "sha256": "c9fba958731ac7d5c72aa1b26eae62cc30f4dca4f9959e67ccf4551eecf110e8",
+   "foldParts": [
+    "P1"
+   ]
   },
   {
    "src": "openscore-lieder",
    "id": "lieder-lc6917116",
    "path": "scores/Schumann,_Robert/Myrthen,_Op.25/14_Hochländisches_Wiegenlied/lc6917116.mxl",
-   "dropParts": [
-    "P1"
-   ],
    "level": "Intermediate",
-   "title": "Hochländisches Wiegenlied, Op. 25 No. 14: piano part",
+   "title": "Hochländisches Wiegenlied, Op. 25 No. 14: melody and piano",
    "composer": "Robert Schumann (1810–1856)",
    "licence": "CC0-1.0",
-   "sha256": "aa5f378c2cd152e147ce158de2688da7bd6fef08bb2789d4b44526bd28e53624"
+   "sha256": "aa5f378c2cd152e147ce158de2688da7bd6fef08bb2789d4b44526bd28e53624",
+   "foldParts": [
+    "P1"
+   ]
   },
   {
    "src": "openscore-lieder",
    "id": "lieder-lc6180725",
    "path": "scores/Schubert,_Franz/_/An_die_Musik,_D.547/lc6180725.mxl",
-   "dropParts": [
-    "P1"
-   ],
    "level": "Intermediate",
-   "title": "An die Musik, D. 547: piano part",
+   "title": "An die Musik, D. 547: melody and piano",
    "composer": "Franz Schubert (1797–1828)",
    "licence": "CC0-1.0",
-   "sha256": "4c7b0331cb2785ccbd0779be5396bb2faafef2e8a47f8e0aec96e0cb8ccd4984"
+   "sha256": "4c7b0331cb2785ccbd0779be5396bb2faafef2e8a47f8e0aec96e0cb8ccd4984",
+   "foldParts": [
+    "P1"
+   ]
   },
   {
    "src": "mutopia",
