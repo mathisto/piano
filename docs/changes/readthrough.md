@@ -11,7 +11,7 @@ One no-stop pass of a new, easy piece, after a look-through. Evidence: sight-rea
 ## Picker (`src/readthrough.ts`, tested)
 - Your level: the hardest piece with a Perform result or a clean run (starter and library levels: First notes, Beginner, Elementary, Intermediate); Beginner before anything counts.
 - Target: two levels under yours, never under Beginner (the warm-up is not a piece). Unplayed pieces first, nearest level at or under the target, then harder; when all are played, the one played longest ago. User files have no level and are never offered.
-- The look-through card says why ("You play Intermediate pieces. Reading grows fastest on ...").
+- The look-through card says why ("You play Intermediate pieces. Reading improves with plenty of new music that is easier ...").
 
 ## Tempo
 Default 70% of written, or your fastest clean read-through (`settings.readBest`) when that is slower. Clean = no misses, at most one wrong note, accuracy 90% or more.

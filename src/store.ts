@@ -25,6 +25,7 @@ export interface Progress {
   heat: number[] // decaying per-bar trouble score
   box?: number // spaced review: 0..4, up a box for a clean run, down one for a messy one
   due?: number // the local day number a review is next due
+  boxDay?: number // the day the box last went up
   days?: number[] // the last few days with a clean run: ready is two different days
   memStage?: number // Memorise: the highest stage cleared, 0..4
   memDay?: number // the local day number it was cleared
@@ -129,7 +130,9 @@ async function commitNow(id: string, heat: number[], result?: { score: number; a
   p.last = Date.now()
   if (clean !== undefined) {
     const day = dayNum()
-    p.box = Math.min(INTERVALS.length - 1, Math.max(0, (p.box ?? 0) + (clean ? 1 : -1)))
+    const climb = clean && p.boxDay !== day // spacing means days: several clean passes in one day are one step up
+    p.box = Math.min(INTERVALS.length - 1, Math.max(0, (p.box ?? 0) + (clean ? (climb ? 1 : 0) : -1)))
+    if (climb) p.boxDay = day
     p.due = day + INTERVALS[p.box]
     if (clean && !p.days?.includes(day)) p.days = [...(p.days ?? []), day].slice(-6)
   }

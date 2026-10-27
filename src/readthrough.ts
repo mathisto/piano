@@ -37,7 +37,7 @@ export function pickPiece(pieces: RtPiece[], prog: Map<string, Progress>, skip =
   const why = !fresh
     ? 'You have played every piece here, so this is the one you played longest ago.'
     : rank(piece.level) < lv
-      ? `You play ${LEVELS[lv]} pieces. Reading grows fastest on lots of new music easier than what you practise, so this is a new ${piece.level} piece.`
+      ? `You play ${LEVELS[lv]} pieces. Reading improves with plenty of new music that is easier than what you practise, so this is a new ${piece.level} piece.`
       : `A new ${piece.level} piece you have not played yet.`
   return { piece, fresh, why }
 }
