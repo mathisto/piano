@@ -31,7 +31,7 @@
   align-items: center;
   gap: 16px;
   min-height: 42px;
-  padding: 4px;
+  padding: 4px 0;
   border-top: 1px solid var(--line);
 }
 .gstep .pwho b {
@@ -142,7 +142,7 @@
   }
   .gact {
     min-width: 0;
-    margin-left: 40px;
+    margin-left: 36px;
   }
   .helpbody dl {
     grid-template-columns: 1fr;

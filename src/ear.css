@@ -1,6 +1,6 @@
 /* Ear and rhythm trainers: Replay and the rhythm bar on a Theory card. */
 #thReplay {
-  margin-right: auto; /* Replay at the left, Stop at the right, one row */
+  margin: 0 auto 0 -16px; /* Replay at the left, Stop at the right, one row; its word, not its padding, lines up with the card's text */
 }
 .ear-grid {
   display: flex;

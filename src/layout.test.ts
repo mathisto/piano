@@ -6,6 +6,7 @@ import { touchPiece } from './score-fixtures'
 import { fromMidi } from './midi-tracks'
 import { build, fromSpec, type Bar, type Raw, type Song } from './song'
 import { STARTERS } from './starters'
+import { exercise } from './technique'
 
 const SHEET: Cfg = { view: 'sheet', px: { w: 1180, h: 560 } }
 const BOTH: Cfg = { view: 'both', px: { w: 1180, h: 130 } }
@@ -492,5 +493,24 @@ describe('score marks', () => {
   it('a file with no marks draws none', () => {
     const L = run(song([4, 4], 2, eighths(72, 0, 16)))
     expect([L.slurs, L.wedges, L.dyns, L.chords.filter((c) => c.art)].map((x) => x.length)).toEqual([0, 0, 0, 0])
+  })
+
+  it('a letter sits clear of the heads of a stacked chord above it', () => {
+    const s = song([4, 4], 1, [[60, 0, 4], [64, 0, 4], [67, 0, 4], [48, 0, 4]]) // C-E-G over a low C: the lowest head is the ledger line under the treble staff
+    s.marks = [{ t: 0, text: 'mf' }]
+    const L = run(s)
+    expect(L.dyns[0].y - 13).toBeGreaterThanOrEqual(Math.max(...L.chords.flatMap((c) => (c.clef === 'treble' ? c.heads.map((h) => h.y) : []))) + 5)
+  })
+
+  it("a technique exercise's aim-for dynamic clears the chords of the Pedal exercise in every key", () => {
+    for (let tonic = 0; tonic < 12; tonic++) {
+      for (const minor of [false, true]) {
+        const L = run(exercise({ pattern: 'pedal', tonic, minor, dyn: 'medium', hands: 'both', bpm: 72 }), { view: 'sheet', px: { w: 820, h: 1180 } })
+        for (const [si, sy] of L.systems.entries()) {
+          const heads = L.chords.filter((c) => c.sys === si && c.clef === 'treble' && c.x - 8 <= sy.x0 + 44).flatMap((c) => c.heads.map((h) => h.y))
+          expect(sy.aim! - 13, `tonic ${tonic}${minor ? 'm' : ''}`).toBeGreaterThanOrEqual(Math.max(...heads) + 5)
+        }
+      }
+    }
   })
 })

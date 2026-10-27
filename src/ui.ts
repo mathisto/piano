@@ -174,13 +174,20 @@ const head = (title: string, actions = '', lede = '') =>
 /** The Connect line, and with `osk` the switch for the on-screen keys (app/osk-ui.ts). */
 const noKeyboard = (osk = false) => keyboardLine(inputs().length > 0) + (osk ? `<label class="switch osk-sw"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs().length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>` : '')
 
+const SOUNDS = [
+  'Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
+  'Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
+  'Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)',
+  'Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)',
+]
+const links = (s: string) => s.replace(/https?:\/\/[^\s)]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`) // on escaped text; the iPad app hands _blank to the system browser
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><p class="fine free">${FREE}</p><h3>Sounds</h3>
-    <div class="credlist"><pre>Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)</pre><pre>Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)</pre><pre>Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)</pre></div>
+    <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div>
     <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence. Every score and its licence: <a href="${licences.app}" target="_blank" rel="noopener">pieces in the app</a>, <a href="${licences.corpus}" target="_blank" rel="noopener">the whole library</a>.</p>
-    <div class="credlist">${blocks.length ? blocks.map((b, i) => `<pre>${esc(b)}</pre>${after(i)}`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
+    <div class="credlist">${blocks.length ? blocks.map((b, i) => `<pre>${links(esc(b))}</pre>${after(i)}`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
     <footer><button class="btn" data-close>Close</button></footer>`
 }
 
@@ -543,7 +550,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .map((r) => {
       const done = d.done.includes(r.key)
       const cls = r === first ? ' primary' : done ? ' ghost' : ''
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}${r.key === 'piece' ? art(d.last.id, 'art lead') : ''}<div class="pact">${r.act(cls)}</div></div>`
+      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? art(d.last.id, 'art lead') : ''}<div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
   el.innerHTML = `
@@ -589,7 +596,7 @@ function overTime(h: HistoryEntry[]) {
         <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'point' : 'points'} on the five before`}</span></div></div>`
     })
     .join('')
-  return cards ? `<div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
+  return cards ? `<p class="note">Accuracy, session by session, up to the last 24. Each chart runs from 40% to 100%; the dashed line is 100%.</p><div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
 }
 
 /** Which notes you read well: one bar per semitone across the keyboard, filled by how often, how cleanly and how fast. */
@@ -749,7 +756,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
     </div>
     <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
     <div class="run-opts">
-      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'} (${esc(offer.why)}). A clean run on two days raises it by ${PACE.step} bpm.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
+      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'}. ${esc(offer.why)} A clean run on two days raises it by ${PACE.step} bpm.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
     <div class="row-actions run-go">${b && !s.pace ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
     ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
   </section>`
@@ -774,7 +781,8 @@ export function runResults(d: RunSummary) {
     .join('')
   return `
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
-    <h2>${esc(d.spec.name ?? runTitle(d.spec))}</h2>
+    <h2>Run complete</h2>
+    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
     <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
@@ -800,7 +808,8 @@ export function pacedResults(d: PacedSummary) {
   const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
   return `
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
-    <h2>${esc(d.spec.name ?? runTitle(d.spec))}</h2>
+    <h2>Run complete</h2>
+    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
     <p class="line">Hit <b>${d.hit} of ${d.n}</b> on the beat at <b>${d.spec.pace} bpm</b>, a card ${cardWord}${first >= 0 ? `. You finished after ${first} of ${d.cells.length} cards.` : '.'}</p>
     <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}

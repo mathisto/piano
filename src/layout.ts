@@ -847,6 +847,7 @@ export interface LSystem {
   x0: number
   x1: number
   pad: number // headroom this system added above the staves
+  aim?: number // grand staff of a technique exercise: centre y of its aim-for dynamic, clear of the chord heads
 }
 export interface LBar {
   i: number
@@ -1406,7 +1407,6 @@ function marks(L: Layout, an: Analysis, mark: (sys: number, y0: number, y1?: num
   }
 
   // dynamic letters and hairpins: between the staves (under a lone staff), clear of the notes over their stretch
-  if (!song.marks?.length && !song.wedges?.length) return
   const bars = song.bars
   const span = L.systems.map((sy) => [bars[sy.from].t0, bars[sy.to - 1].t1])
   const ys = (si: number, clef: Clef, xa: number, xb: number, stems: boolean) =>
@@ -1414,10 +1414,14 @@ function marks(L: Layout, an: Analysis, mark: (sys: number, y0: number, y1?: num
   // ponytail: slurs and beams in the gap are not avoided; a stem is, unless that leaves no room
   const rowAt = (si: number, xa: number, xb: number) => {
     if (L.clefs.length === 1) return Math.max(base[L.clefs[0]] + 25, ...ys(si, L.clefs[0], xa, xb, true).map((y) => y + 16))
-    const band = (stems: boolean) => [Math.max(base.treble + 2, ...ys(si, 'treble', xa, xb, stems).map((y) => y + 8)), Math.min(base.bass - 4 * S - 2, ...ys(si, 'bass', xa, xb, stems).map((y) => y - 8))]
-    const [hi, lo] = band(true)[1] - band(true)[0] >= 16 ? band(true) : band(false)
-    return (hi + lo) / 2
+    // the free gap between the staves' ink, edge to edge (a head is 5 high either side of its y); a letter is 20 tall (13 above its y, 7 below)
+    const band = (stems: boolean) => [Math.max(base.treble + 2, ...ys(si, 'treble', xa, xb, stems).map((y) => y + 7)), Math.min(base.bass - 4 * S - 2, ...ys(si, 'bass', xa, xb, stems).map((y) => y - 7))]
+    const [hi, lo] = band(true)[1] - band(true)[0] >= 20 ? band(true) : band(false)
+    return Math.max((hi + lo) / 2 + 3, hi + 13) // a gap too tight for the letter keeps it off the heads above and lets it touch a staff line instead
   }
+  // a technique exercise's aim-for dynamic (staff.ts draws it) sits at the system's left: in the same row, clear of the chord heads under it
+  if (song.dyn && L.clefs.length === 2) L.systems.forEach((sy, si) => (sy.aim = rowAt(si, sy.x0 + 4, sy.x0 + 44)))
+  if (!song.marks?.length && !song.wedges?.length) return
   for (const m of song.marks ?? []) {
     if (m.t < span[0][0] - 1e-6 || m.t >= span[span.length - 1][1]) continue
     const p = L.posAt(m.t)

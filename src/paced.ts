@@ -32,11 +32,11 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 /** The tempo to offer: where the player left this range, else a beat a quarter slower than their usual time on these cards (two beats a card when that is slower than 40 bpm), else 50. */
 export function suggest(pool: Card[], stats: Stats, memo?: PaceMemo): Pace & { why: string } {
-  if (memo) return { bpm: memo.bpm, every: memo.every, why: 'where you left this range' }
+  if (memo) return { bpm: memo.bpm, every: memo.every, why: 'Where you left this range.' }
   const rts = pool.flatMap((c) => (stats[cardKey(c)]?.n >= 3 ? [stats[cardKey(c)].rt] : []))
-  if (rts.length < 3) return { bpm: PACE.start, every: 1, why: 'a gentle start' }
+  if (rts.length < 3) return { bpm: PACE.start, every: 1, why: 'A gentle start.' }
   const ms = median(rts) * SLACK
-  const why = `a little under your usual ${(median(rts) / 1000).toFixed(1)} s a card`
+  const why = `A little under your usual ${(median(rts) / 1000).toFixed(1)} s a card.`
   return ms <= 1500 ? { bpm: clamp(even(60000 / ms), 40, 80), every: 1, why } : { bpm: clamp(even(120000 / ms), PACE.min, 80), every: 2, why }
 }
 

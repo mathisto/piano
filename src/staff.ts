@@ -400,7 +400,7 @@ export class Staff {
     const lone = L.clefs.length === 1 // one staff: the mark sits above it, past the bar number, not across the middle of the staff
     for (const dy of new Set(this.all.map((p) => p.dy))) {
       const sy = L.systems.find((s) => s.dy === dy)!
-      el('text', { x: sy.x0 + (lone ? 30 : 4), y: dy + (lone ? L.base[L.clefs[0]] - 4 * S - 6 : mid + (word.length > 1 ? 6 : 10)), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
+      el('text', { x: sy.x0 + (lone ? 30 : 4), y: dy + (lone ? L.base[L.clefs[0]] - 4 * S - 6 : (sy.aim ?? mid) + (word.length > 1 ? 1 : 5)), class: word.length > 1 ? 'wd' : 'smufl' }, g, word)
     }
   }
 

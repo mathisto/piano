@@ -2225,6 +2225,10 @@ body.zen #dock .aids {
   font: 14px/1.45 var(--ui);
   color: var(--ink-2);
 }
+.credlist a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
 .credlist pre::first-line {
   color: var(--ink);
   font-weight: 700;
@@ -2339,8 +2343,19 @@ dialog.sheet footer .grow {
 
 .plead {
   flex: none;
-  width: 24px;
+  width: 20px;
   color: var(--ink-2);
+}
+.plead:empty::before {
+  content: '';
+  display: block;
+  height: 20px;
+  border: 1px solid var(--line-2); /* to do: the ring Start here uses for a step */
+  border-radius: var(--r-pill);
+}
+.plan .prow {
+  padding-inline: 20px; /* the card's own inset, so the ring and the name line up with the cards above and Start here */
+  column-gap: 16px;
 }
 .prow .lead {
   flex: none;
@@ -2666,6 +2681,7 @@ dialog.sheet footer .btn {
   width: 100%;
   height: 52px;
   display: block;
+  margin: 4px 0 0; /* the curve sits close above its figure */
 }
 .otc svg.hist * {
   vector-effect: non-scaling-stroke; /* the chart stretches to the card; its lines stay 2px */
