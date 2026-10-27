@@ -893,6 +893,7 @@ body.reading .hud small {
 #staff > svg {
   position: absolute;
   inset: 0;
+  margin: auto; /* centred when the page is capped smaller than the pane */
   width: 100%;
   height: 100%;
   display: block;

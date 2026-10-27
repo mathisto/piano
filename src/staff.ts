@@ -41,6 +41,8 @@ interface Placed {
   y: number
 }
 
+const MAX_H = 330 // px: the staff beside the keys never needs more; a tall portrait pane would blow a two-bar window up to fill it (a staff space is about 17 px here)
+
 /** Paints a Layout as SVG and keeps the per-frame state (cursor, dimming, marks). The layout is rebuilt only when the window changes. */
 export class Staff {
   private svg: SVGSVGElement
@@ -179,7 +181,8 @@ export class Staff {
   }
 
   private cfg(r: DOMRect): Cfg {
-    return { view: this.game.view === 'sheet' ? 'sheet' : 'both', px: { w: r.width, h: r.height }, zoom: settings.zoom }
+    const sheet = this.game.view === 'sheet'
+    return { view: sheet ? 'sheet' : 'both', px: { w: r.width, h: sheet ? r.height : Math.min(r.height, MAX_H) }, zoom: settings.zoom }
   }
 
   /** The staff size at which the whole piece shows, between `lo` and `hi`. */
@@ -209,6 +212,7 @@ export class Staff {
     const svg = this.svg
     svg.replaceChildren()
     svg.setAttribute('viewBox', `0 0 ${L.w} ${L.h}`)
+    svg.style.height = this.game.view === 'sheet' ? '' : `min(100%, ${MAX_H}px)`
     this.byId.clear()
     this.barEls = []
     this.all = []
