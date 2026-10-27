@@ -1,34 +1,32 @@
-// ---------------------------------------------------------------- views
+// Boot and navigation. Each page and the play screen live in src/app/; their shared state is src/app/state.ts.
 import './native-midi' // first: it must exist before midi.ts reads requestMIDIAccess
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
 import '@fontsource-variable/hanken-grotesk'
 import './style.css'
-import * as audio from './audio'
 import * as lib from './catalog'
 import { cardKey, cards, record, STAGES, type Stats } from './drill'
 import type { Mode } from './game'
 import { icon } from './icons'
-import { type MidiMsg, onMidi, onPedal, typingKeyboard } from './midi'
-import { degreeOfPitch } from './scales'
-import { save, settings, showSetup } from './settings'
+import { showSetup } from './settings'
 import { STARTERS } from './starters'
 import * as store from './store'
 import { $ } from './ui'
-import { current, dock, drill, drillStats, game, highway, hooks, mem, played, run, type Section, setPlayed, stageById, starters } from './app/state'
-import { chipFlash, connectMidi, updateBanner, updateChip } from './app/banner'
-import { flushPractice, setView, setZoom, view, zen, ZOOM } from './app/stage'
+import { current, drillStats, game, highway, hooks, mem, run, type Section, stageById, starters } from './app/state'
+import { connectMidi, updateChip } from './app/banner'
+import { flushPractice, setView, view } from './app/stage'
 import { openTracks, showLibrary } from './app/library'
 import { leave, openById, openLibrary, openSong } from './app/play'
 import { readThrough } from './app/readthrough-ui'
 import { memorise } from './app/memorise-ui'
 import { runFinish, startDrill } from './app/drill'
 import { showRead } from './app/read'
-import { showTheory, theoryNote, theoryOpen } from './app/theory-ui'
-import { answerQuiz, quiz, quizOpen, showScales } from './app/scales-ui'
-import { calNote, showTechnique } from './app/technique-ui'
+import { showTheory } from './app/theory-ui'
+import { showScales } from './app/scales-ui'
+import { showTechnique } from './app/technique-ui'
 import { showProgress, showToday } from './app/today'
-import { closeDrawer, openSetup } from './app/drawer'
+import { openSetup } from './app/drawer'
+import { fromKeyboard } from './app/input'
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -44,85 +42,13 @@ async function showSection(name: Section, err = '') {
   else if (name === 'technique') await showTechnique()
   else await showProgress()
 }
-
-// ---------------------------------------------------------------- touch calibration
-
-// ---------------------------------------------------------------- Theory trainers
-
-// ---------------------------------------------------------------- game events
-
-// ---------------------------------------------------------------- Read through
-
-// ---------------------------------------------------------------- Memorise
-
-// ---------------------------------------------------------------- reading drills
-
-// ---------------------------------------------------------------- Sight Run
-
-// ---------------------------------------------------------------- keyboard + banner
-
-const fromKeyboard = (m: MidiMsg) => {
-  if (m.on) {
-    chipFlash(m.p)
-    if (!played) {
-      setPlayed(true)
-      updateBanner()
-    }
-    if (!m.virtual && calNote(m.v)) return
-    if (theoryOpen()) {
-      if (settings.sound) audio.noteOn(m.p, m.v, true)
-      theoryNote(m.p, m.ts)
-      return // the trainer owns the keyboard while a card is open
-    }
-    if (quizOpen()) {
-      const c = quiz!.cards[quiz!.i]
-      const d = c ? degreeOfPitch(c.tonic, c.form, m.p) : 0
-      if (d) answerQuiz(d)
-      return // the quiz owns the keyboard while it is open
-    }
-    if (drill && game.phase === 'ready' && $('#res').hidden) game.toggle() // on a reading drill the first key is the Play button
-    game.press(m.p, m.v, m.ts, m.virtual)
-  } else game.release(m.p, m.ts, m.virtual)
-}
-onMidi(fromKeyboard)
-onPedal((d) => game.sustain(d))
-typingKeyboard()
-
-// ---------------------------------------------------------------- drawer
+Object.assign(hooks, { showSection })
 
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = () => (run && run.arc.cards ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)
 
-addEventListener('keydown', (e) => {
-  const t = e.target as HTMLElement
-  const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
-  if (typing || e.metaKey || e.ctrlKey || e.altKey) return
-  if ((e.target as HTMLElement).closest('dialog')) return
-  if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
-  else if (e.key === 'm' && current) zen()
-  else if (e.key === 'n') {
-    settings.names = !settings.names
-    save()
-  } else if (e.key === 'Escape') {
-    if (!closeDrawer() && current) leave()
-  } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
-    e.preventDefault()
-    game.toggle()
-  } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current) {
-    setZoom(settings.zoom * (e.key === '-' ? 1 / ZOOM.step : ZOOM.step))
-  } else if (e.key === 'b' && current && game.mode !== 'read') {
-    dock.cycleMetro()
-  } else if (e.key === 'v' && current && game.mode !== 'read') {
-    const order = ['sheet', 'both', 'falling'] as const
-    setView(order[(order.indexOf(settings.view) + 1) % 3])
-  } else if ((e.key === '[' || e.key === ']') && current && game.mode === 'learn') {
-    game.setRate(game.rate + (e.key === ']' ? 0.05 : -0.05))
-    dock.sync()
-  }
-})
-
-// ---------------------------------------------------------------- library actions + import
+// library actions: the rows and buttons start pieces in any mode
 
 $('#library').addEventListener('click', async (e) => {
   const t = e.target as HTMLElement
@@ -141,8 +67,6 @@ $('#library').addEventListener('click', async (e) => {
     void openTracks(b.dataset.tracks)
   }
 })
-
-Object.assign(hooks, { showSection })
 
 // ---------------------------------------------------------------- boot
 
