@@ -9,7 +9,7 @@ import { Dock } from './dock'
 import { DEFAULT_EDGES } from './touch'
 import { judged, live, tolerance } from './even'
 import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
-import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, type Card as ScaleCard, type Form, type QuizStats } from './scales'
+import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -32,9 +32,14 @@ import { creditLine, libraryUrl, loadManifest, type LibraryEntry } from './credi
 import { autoSelect, inspectMidi } from './midi-tracks'
 import { calibrate, writtenTargets } from './touch'
 import { LEVELS, autoLevel, simplify, type Level } from './simplify'
-import { applyRun, nextRecipe, stateOf, SYLLABUS } from './syllabus'
+import { applyRun, nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
 import { exercise, PATTERNS, type Opts } from './technique'
 import { dayKey, improved, lastWeek, weekOf } from './week'
+import { nextOf, path as gradePath, type Ctx, type Start } from './grades'
+import { breakToast } from './habit-ui'
+import { theoryDue, type PlanMin } from './plan'
+import { restTracker } from './rest'
+import { streak as dayStreak } from './streak'
 import { $, CAL_NOTES, art, mmss, creditsDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, skeleton, starterRows, userRows, type StageRow } from './ui'
 
 const app = $('#app')
@@ -202,6 +207,11 @@ async function showToday() {
   const ex = exercise(nr.recipe.opts, settings.edges)
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
+  const ctx = await pathCtx(ts)
+  const nx = nextOf(gradePath(ctx))
+  const sst = nextScaleStage(ctx.scales)
+  const td = theoryDue(ctx.theory)
+  const PATH_STEP = { scale: 'scale', read: 'read', tech: 'warm', theory: 'theory' } // the plan step that does a requirement
   // one snapshot a week lets the recap say what got better; the recap shows on Monday and Tuesday
   const week = weekOf(days).days
   const snap = { read: Object.fromEntries(rows.map((r) => [r.stage.id, r.pct])), tech: SYLLABUS.filter((r) => stateOf(ts, r.id, dayNum()) === 'solid').length }
@@ -224,11 +234,15 @@ async function showToday() {
     week: weekOf(days),
     goal: settings.goal,
     planMin: settings.planMin,
-    done,
+    streak: dayStreak(days),
+    scale: { title: `Scales: ${sst.name}`, sub: `Next: ${keyName(nextCard(sst, ctx.scales).tonic, nextCard(sst, ctx.scales).form)}, at ${sst.bpm} bpm`, pct: scaleMastery(sst, ctx.scales).pct, start: { kind: 'scale', id: sst.id } },
+    theory: td && { title: `Theory: ${td.name}`, sub: `${td.due} ${td.due === 1 ? 'card' : 'cards'} due for review`, start: { kind: 'theory', trainer: td.trainer, level: td.level } },
+    path: nx?.start && nx.start.kind !== 'scale' ? { title: `Path: ${nx.name}`, sub: `Level ${nx.level}. ${nx.detail}`, start: nx.start } : undefined,
+    done: nx?.start && done.includes(PATH_STEP[nx.start.kind]) ? [...done, 'path'] : done,
     recap: recap ?? undefined,
   })
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
-    settings.planMin = Number(r.value) as 5 | 10 | 20
+    settings.planMin = Number(r.value) as PlanMin
     save()
     void showToday()
   }))
@@ -237,7 +251,8 @@ async function showToday() {
 async function showProgress() {
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
+  const gp = gradePath(await pathCtx(ts))
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, next: nextOf(gp), stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -245,7 +260,29 @@ async function showProgress() {
   })
 }
 
+/** The state every Path requirement is judged from. */
+async function pathCtx(tech?: TechStats): Promise<Ctx> {
+  const [scales, theory, t] = await Promise.all([store.getScales(), store.getTheory(), tech ?? store.getTech()])
+  return { scales, drill: drillStats, tech: t, theory, day: dayNum() }
+}
+
+/** Start whatever a Path requirement or a Today row names. */
+async function startReq(s: Start) {
+  if (s.kind === 'scale') {
+    const st = SCALE_STAGES.find((x) => x.id === s.id)!
+    startScale(nextCard(st, await store.getScales()), st.bpm)
+  } else if (s.kind === 'read') void startDrill(stageById(s.id)!)
+  else if (s.kind === 'tech') void openSong(exercise((SYLLABUS.find((r) => r.id === s.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
+  else {
+    theoryLevels[s.trainer] = s.level
+    await showSection('theory')
+    await startTheory(s.trainer)
+  }
+}
+
 $('#progress').addEventListener('click', (e) => {
+  const st = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-start]')
+  if (st) return void startReq(JSON.parse(st.dataset.start!))
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button.cell')
   if (b?.dataset.stage) void startDrill(stageById(b.dataset.stage)!)
   else if (b?.dataset.recipe) void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.recipe) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
@@ -260,7 +297,9 @@ $('#today').addEventListener('click', (e) => {
   }
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-today]')
   if (!b) return
-  if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
+  if (b.dataset.today === 'start') void startReq(JSON.parse(b.dataset.start!))
+  else if (b.dataset.today === 'run') void store.getRuns().then((r) => startRun({ ...DEFAULT_RUN, ...r.last }))
+  else if (b.dataset.today === 'continue') void openById(b.dataset.id!, 'learn')
   else if (b.dataset.today === 'fix') void fixBars(b.dataset.id!, Number(b.dataset.a), Number(b.dataset.b))
   else if (b.dataset.today === 'read') void startDrill(stageById(b.dataset.id!)!)
   else void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
@@ -445,6 +484,7 @@ function judgeTheory() {
   }
   const rt = performance.now() - t.at
   record(theoryStats, c.id, ok, rt)
+  practised(Math.min(30, rt / 1000)) // Theory has no song on the stage, so its time is counted here
   void store.saveTheory(theoryStats)
   t.rts.push(rt)
   t.answered = ok ? 'ok' : 'miss'
@@ -467,6 +507,7 @@ function nextTheory() {
   t.step = 0
   t.answered = undefined
   t.at = performance.now()
+  if (t.i === t.cards.length) void store.markPlan(dayKey(), 'theory')
   if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: median(t.rts) })
   showTheory()
 }
@@ -836,6 +877,13 @@ let last = { score: -1, combo: -1, count: 0 }
 // Time spent playing, per local day. It only goes up, so it can measure effort without shaming anyone.
 let sessionSec = 0
 let lastFrame = 0
+const rest = restTracker()
+
+/** Seconds practised: the day's total, and the run since the last break. */
+function practised(sec: number) {
+  sessionSec += sec
+  if (rest.add(sec, Date.now())) breakToast()
+}
 
 async function flushPractice() {
   const sec = Math.round(sessionSec)
@@ -847,7 +895,7 @@ async function flushPractice() {
 function frame() {
   const now = performance.now()
   if (current && (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting') && !document.hidden) {
-    sessionSec += Math.min(0.25, (now - lastFrame) / 1000)
+    practised(Math.min(0.25, (now - lastFrame) / 1000))
     if (sessionSec >= 20) void flushPractice()
   }
   lastFrame = now
@@ -1155,6 +1203,7 @@ async function runSetDone() {
   if (!r.sets++) {
     const done = await store.getPlan(dayKey())
     void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
+    void store.markPlan(dayKey(), 'run')
   }
   if (r.spec.widen && r.setCards && r.setClean / r.setCards >= 0.9 && median(r.setRts) <= goalMs(r.spec)) r.spec = widened(r.spec, r.turn++)
   if (r.done || (r.spec.length && r.arc.cards >= r.spec.length)) return runFinish()
@@ -1283,7 +1332,7 @@ async function onDone(r: Result) {
     r.mode === 'read' || game.loop ? undefined : r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait,
   )
   current.heat = prog.heat
-  void store.markPlan(dayKey(), /^(tech|scale):/.test(current.song.id) ? 'warm' : game.loop ? 'fix' : 'piece')
+  void store.markPlan(dayKey(), current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
   if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
