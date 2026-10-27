@@ -11,7 +11,7 @@ import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { lyPickup, plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
-export { lyPickup, pickLy, unfold, withRepeats } from './repeats'
+export { lyPickup, pickLy, pickupWhy, reading, DEBUG_readLy, unfold, withRepeats } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
 export interface Input {
@@ -34,6 +34,7 @@ export interface Input {
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
   noFormTempo?: true // leave a score that names no pace as it is, without the form guess (reanalyse --formtempo-only compares the two)
   noPickup?: true // leave the first bar to the detector, as before the .ly's \partial was read (reanalyse --pickup-only compares the two)
+  pickup?: number // the anacrusis withRepeats read before it played the repeats out (the unfolded file no longer reads like its .ly)
   matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
   voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
   alt?: Input // a folded song's piano-only version, shipped instead when the fold fails its gates (reach())
@@ -207,7 +208,7 @@ export async function analyse(e: Input): Promise<Analysis> {
       const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)
       if (!pace.given && flat && pace.bpm) tempo = { bpm: pace.bpm, guess: !pace.exact }
       hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)
-      pickup = e.ly && !e.noPickup ? lyPickup(e.bytes, e.ly, e.matched) : undefined // plays()'s test is inside: a .ly that is not this file's says nothing
+      pickup = e.ly && !e.noPickup ? (e.pickup ?? lyPickup(e.bytes, e.ly, e.matched)) : undefined // plays()'s test is inside: a .ly that is not this file's says nothing
       s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)
       if (!tempo && !pace.given && flat && !e.noFormTempo) {
         // nothing in the .ly names a pace: guess one from the form, else 100. A movement of a zip reads the .ly's header only when it is this file's

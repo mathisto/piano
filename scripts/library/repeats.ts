@@ -9,7 +9,8 @@ import { fromMidi } from '../../src/midi-tracks'
 import { expand, type Unit } from '../../src/playorder'
 
 type Ev =
-  | { k: 'on' | 'grace'; at: number }
+  | { k: 'on'; at: number; d: number } // d: how long it sounds
+  | { k: 'grace'; at: number }
   | { k: 'rep'; at: number; body: number; alts: number[]; n: number }
   | { k: 'bad'; at: number; why: string }
   | { k: 'mark'; at: number; m: string; own: boolean } // a D.C./Fine/segno text; own: written on the note before `at`, not as a \mark
@@ -78,8 +79,9 @@ const BLOCK = new Set(['with', 'header', 'paper', 'layout', 'midi', 'lyricmode',
 const GRACE = new Set(['grace', 'acciaccatura', 'appoggiatura', 'slashedGrace'])
 
 /** The music of each score with a \midi block (LilyPond writes one MIDI file each), in whole notes from its start: note
- * onsets, grace notes and volta repeats. */
-function readLy(src: string): Rec[] {
+ * onsets, grace notes and volta repeats. `unfoldAll`: every volta repeat is read as an unfold, in its own voice (what a score that says
+ * \unfoldRepeats plays: a repeat that only one voice writes extends only that voice). */
+function readLy(src: string, unfoldAll = false): Rec[] {
   const T = tokens(src)
   let p = 0
   let last = 0.25 // LilyPond's default duration is parser state, so it carries lexically, as here
@@ -96,7 +98,7 @@ function readLy(src: string): Rec[] {
     ev = keep
     return r
   }
-  const put = (r: Rec, at: number, k = 1) => r.ev.forEach((e) => ev.push({ ...e, at: at + e.at * k }))
+  const put = (r: Rec, at: number, k = 1) => r.ev.forEach((e) => ev.push({ ...e, at: at + e.at * k, ...(e.k === 'on' && { d: e.d * k }) }))
   /** The words of the tokens a..b: strings, Scheme strings (\musicglyph #"scripts.segno") and \segno, \coda. */
   const words = (a: number, b: number) => T.slice(a, b).map((t) => (t.t === 'cmd' ? (['segno', 'coda'].includes(t.v) ? `scripts.${t.v}` : '') : t.t === 'str' || t.t === 'scm' ? t.v : '')).join(' ')
   const mark = (at: number, own: boolean, text: string) => {
@@ -116,7 +118,7 @@ function readLy(src: string): Rec[] {
   const markup = () => {
     while (is('cmd') || is('scm')) p++
     if (is('{')) block()
-    else p++
+    else if (!is('}') && !is('>>')) p++ // \markup \fermata ends with the command: the brace after it closes the music
   }
   const value = () => (is('cmd', 'markup') ? (p++, markup()) : p++)
   const frac = () => {
@@ -125,11 +127,12 @@ function readLy(src: string): Rec[] {
   }
   const score = () => {
     let r: Rec = { len: 0, ev: [] }
-    let midi = false
+    let [midi, layout] = [false, false]
     if (!is('{')) return { ...r, midi }
     const from = p++
     while (p < T.length && !is('}')) {
       if (is('cmd', 'midi')) midi = true
+      if (is('cmd', 'layout')) layout = true
       if (is('cmd') && BLOCK.has(T[p].v)) (p++, block())
       else {
         const m = sub(() => music(0))
@@ -137,6 +140,7 @@ function readLy(src: string): Rec[] {
       }
     }
     p++
+    midi ||= !layout // a score with neither \layout nor \midi is engraved and played
     const unfolded = T.slice(from, p).some((t) => (t.t === 'cmd' && t.v === 'unfoldRepeats') || (t.t === 'scm' && /unfold-repeats/.test(t.v)))
     return { ...r, midi, ...(unfolded && { unfolded }) }
   }
@@ -160,19 +164,19 @@ function readLy(src: string): Rec[] {
       while (p < T.length && !is('>')) p++
       p++
       if (is('num')) last = dur(T[p++].v)
-      ev.push({ k: 'on', at })
+      ev.push({ k: 'on', at, d: last })
       return last
     }
     if (k.t === 'note') {
       if (!k.d && is('num') && !T[p].v.includes('/')) k.d = T[p++].v // 'e 8' is e8
       while (k.d && is('x', '*') && T[p + 1]?.t === 'num') (k.d += `*${T[p + 1].v}`), (p += 2) // 's2. * 2' is s2.*2
       if (k.d) last = dur(k.d)
-      if (!/^[rRs]$/.test(k.v)) ev.push({ k: 'on', at })
+      if (!/^[rRs]$/.test(k.v)) ev.push({ k: 'on', at, d: last })
       return last
     }
     if (k.t === 'num') {
       last = dur(k.v)
-      ev.push({ k: 'on', at })
+      ev.push({ k: 'on', at, d: last })
       return last
     }
     if (k.t === 'str') return attached(p - 2) && mark(at, true, k.v), 0
@@ -232,6 +236,7 @@ function readLy(src: string): Rec[] {
         p += c === 'shape' ? 2 : 3
         return 0
       case 'key':
+      case 'keys': // Royer's Premier livre writes \keys re \major
         p++
         if (is('cmd')) p++
         return 0
@@ -308,17 +313,23 @@ function readLy(src: string): Rec[] {
         }
         const sum = alts.reduce((s, a) => s + a.len, 0)
         if (!(n >= 1)) ev.push({ k: 'bad', at, why: 'a \\repeat without a count' })
-        if (type === 'volta') {
+        if (type === 'volta' && !unfoldAll) {
           if ([body, ...alts].some((x) => x.ev.some((e) => e.k === 'rep'))) ev.push({ k: 'bad', at, why: 'nested repeats' })
           put(body, at)
           alts.reduce((x, a) => (put(a, x), x + a.len), at + body.len)
           ev.push({ k: 'rep', at, body: body.len, alts: alts.map((a) => a.len), n })
           return body.len + sum
         }
-        if (type !== 'unfold' && type !== 'percent' && type !== 'tremolo') ev.push({ k: 'bad', at, why: `\\repeat ${type}` })
-        for (let i = 0; i < n; i++) put(body, at + i * body.len)
-        alts.reduce((x, a) => (put(a, x), x + a.len), at + n * body.len)
-        return n * body.len + sum
+        if (type !== 'volta' && type !== 'unfold' && type !== 'percent' && type !== 'tremolo') ev.push({ k: 'bad', at, why: `\\repeat ${type}` })
+        // each pass is the body and its ending: the first ending serves the first passes, the last the last (n - k + 1 of them on the first)
+        let x = at
+        for (let i = 0; i < n; i++) {
+          put(body, x)
+          x += body.len
+          const a = alts[Math.min(alts.length - 1, Math.max(0, i - (n - alts.length)))]
+          if (a) (put(a, x), (x += a.len))
+        }
+        return x - at
       }
     }
     if (GRACE.has(c)) return ev.push({ k: 'grace', at }), sub(() => music(0)), 0
@@ -358,6 +369,19 @@ type Bars = { t: number; len: number }[] // start tick and length of each bar
 type Rep = Extract<Ev, { k: 'rep' }>
 const repEnd = (x: Rep) => x.at + x.body + x.alts.reduce((s, a) => s + a, 0)
 
+type BarEv = Extract<Ev, { k: 'bar' }>
+const barEvents = (r: Rec): BarEv[] => r.ev.flatMap((e) => (e.k === 'bar' ? [e] : [])).sort((a, b) => a.at - b.at || Number(!a.len) - Number(!b.len))
+/** The bar a position (whole notes) is in, as where it began and how long it is: \time sets the length, \partial or Timing.measurePosition where the bar began. */
+function barAt(bars: BarEv[], t: number) {
+  let [a, L, set] = [0, 1, false]
+  for (const b of bars) {
+    if (b.at > t + 1e-9) break
+    if (b.len) (a = set && b.len === L ? a : b.at), (L = b.len), (set = true)
+    else a = b.at - (b.pos ?? L - b.d!)
+  }
+  return { a, L }
+}
+
 /**
  * The order a reading is played in, as segments of its own ticks: the repeats with their endings, then the one D.C. or D.S.
  * jump (src/playorder.ts, the order MusicXML gets). The reading is cut into units at every repeat sign, ending and mark;
@@ -379,16 +403,8 @@ function plan(r: Rec, W: number, until: number, repsOnly = false): { segs: Seg[]
   if (reps.some((x) => x.alts.length > x.n)) return { why: 'more endings than passes' }
 
   // the bar a position is in: \time sets the length, \partial or Timing.measurePosition where the bar began
-  const bars = r.ev.flatMap((e) => (e.k === 'bar' ? [e] : [])).sort((a, b) => a.at - b.at || Number(!a.len) - Number(!b.len))
-  const bar = (t: number) => {
-    let [a, L, set] = [0, 1, false]
-    for (const b of bars) {
-      if (b.at > t + 1e-9) break
-      if (b.len) (a = set && b.len === L ? a : b.at), (L = b.len), (set = true)
-      else a = b.at - (b.pos ?? L - b.d!)
-    }
-    return { a, L }
-  }
+  const bars = barEvents(r)
+  const bar = (t: number) => barAt(bars, t)
   const floor = (t: number) => (({ a, L }) => a + L * Math.floor((t - a) / L + 1e-6))(bar(t))
   const ceil = (t: number) => (({ a, L }) => a + L * Math.ceil((t - a) / L - 1e-6))(bar(t))
   // a mark is on the bar it ends (D.C., Fine, To Coda) or starts (segno, Coda, Trio)
@@ -479,6 +495,12 @@ function replay(r: Rec, W: number, until: number): Rec {
 
 /** The \midi score of the .ly that plays this MIDI, and how many of the MIDI's onsets its reading misses: a reading matches
  * when every onset is where the .ly puts a note, or just before one with grace notes (LilyPond writes one file a score). */
+const readings = new Map<string, Rec[]>() // a work's book is read once for all its movements (a candidate .ly is megabytes with its includes)
+const readLyOnce = (ly: string) => {
+  // a file that says \unfoldRepeats is read both ways: its volta kept (the old reading of a score played out by replay) and unfolded in place
+  if (!readings.has(ly)) (readings.size > 3 && readings.clear(), readings.set(ly, [...readLy(ly), ...(/\\unfoldRepeats|unfold-repeats/.test(ly) ? readLy(ly, true) : [])]))
+  return readings.get(ly)!
+}
 function score(midi: Midi, ly: string) {
   const W = 4 * midi.header.ppq
   const tick = (x: number) => Math.round(x * W)
@@ -495,9 +517,22 @@ function score(midi: Midi, ly: string) {
     const on = tick(Math.min(...x.ev.flatMap((e) => (e.k === 'on' ? [e.at] : []))))
     return [x, ...heads.filter((t) => t > on && t - on <= W / 8).map((t) => ({ ...x, delay: (t - on) / W, len: x.len + (t - on) / W, ev: x.ev.map((e) => ({ ...e, at: e.at + (t - on) / W })) }))]
   }
-  const [r, miss = Infinity] = readLy(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => x[1] - y[1])[0] ?? []
+  // a score that fits the onsets, the nearest in length (a long score covers a short one's onsets: a sibling movement in a book), else the one that misses least
+  const lim = 0.02 * notes.length
+  const gap = (x: Rec) => Math.abs(tick(x.len) - until)
+  const [r, miss = Infinity] = readLyOnce(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => Number(x[1] > lim) - Number(y[1] > lim) || (x[1] > lim ? x[1] - y[1] : gap(x[0]) - gap(y[0]) || x[1] - y[1]))[0] ?? []
   const off = r ? Math.abs(tick(r.len) - until) : Infinity // length mismatch, ticks
   return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length }
+}
+
+/** The best reading of this .ly against the MIDI, for scripts/library/ly-coverage.mjs: the numbers `score` has, the first MIDI onsets (in whole notes) the reading has no note at, and the reading's length. */
+export function reading(bytes: Uint8Array, ly: string) {
+  const midi = new Midi(ab(bytes))
+  const x = score(midi, ly)
+  const W = 4 * midi.header.ppq
+  const on = new Set(x.r?.ev.flatMap((e) => (e.k === 'on' ? [Math.round(e.at * W)] : [])))
+  const missed = [...new Set(midi.tracks.flatMap((t) => t.notes.map((n) => n.ticks)))].sort((a, b) => a - b).filter((t) => ![-1, 0, 1].some((d) => on.has(t + d))).slice(0, 12).map((t) => t / W)
+  return { ok: x.ok, miss: x.miss, notes: x.notes, off: x.off, until: x.until, len: x.r && x.r.len, missed }
 }
 
 /** Whether this .ly's reading matches the MIDI's onsets, i.e. it is the score that plays this file (pickLy falls back to the first .ly when none is). */
@@ -505,34 +540,50 @@ export const plays = (bytes: Uint8Array, ly: string) => score(new Midi(ab(bytes)
 
 /**
  * The anacrusis the .ly states for this MIDI, in quarters (the app's unit, whatever the meter): `\partial N`, or a
- * `Timing.measurePosition` set before the first note. 0 when the .ly states none and it is plainly one time signature that the
- * MIDI shares and whose bar count the .ly's length reproduces. undefined when this .ly does not play the file (plays(), unless
- * `matched`), or it
- * is anything else: a \partial or \time after the first note, a meter the MIDI does not have, a bar count that disagrees.
- * Only the first bar is read; a later \partial (after a repeat) does not move the barlines of the first.
+ * `Timing.measurePosition` set before the first note. 0 when the .ly states none, its time signatures are the MIDI's and the bars
+ * its music fills are as many as the MIDI's. undefined when this .ly does not play the file (the 2% onset test of `score`, unless
+ * `matched`), or it is anything else: a meter the MIDI does not have, a bar count that disagrees. Only the first bar is read; a
+ * later \partial (after a repeat) does not move the barlines of the first.
  */
-export function lyPickup(bytes: Uint8Array, ly: string, matched = false): number | undefined {
+export const lyPickup = (bytes: Uint8Array, ly: string, matched = false) => pickupWhy(bytes, ly, matched).pickup
+
+/** lyPickup, and when it is undefined the cause (the coverage table of scripts/library/ly-coverage.mjs groups by it). */
+export function pickupWhy(bytes: Uint8Array, ly: string, matched = false): { pickup?: number; why?: string } {
   const midi = new Midi(ab(bytes))
-  const { r, ok, until, off } = score(midi, ly)
-  if (!r || !(ok || matched)) return undefined // matched: withRepeats read this .ly against the file before unfolding it (its alternatives read differently once unfolded)
+  const { r, ok, until, off, miss, notes } = score(midi, ly)
+  if (!r) return { why: 'no score with \\midi' }
+  if (!(ok || matched)) return { why: `reading misses ${miss} of ${notes} onsets` } // matched: withRepeats read this .ly against the file before unfolding it (its alternatives read differently once unfolded)
   const start = Math.min(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at] : [])))
   const bars = r.ev.flatMap((e) => (e.k === 'bar' ? [e] : [])).sort((a, b) => a.at - b.at || Number(!a.len) - Number(!b.len))
   const first = bars.filter((b) => b.at <= start + 1e-9)
   const L = first.reduce((l, b) => b.len ?? l, 1) // wholes; LilyPond's default is 4/4
   const sig = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
-  if (Math.abs(L - sig[0] / sig[1]) > 1e-6) return undefined
-  if (!matched && off > L * 4 * midi.header.ppq + 1) return undefined // a sibling movement's .ly can cover a sparse movement's onsets (pickLy's fallback); its length gives it away
+  if (Math.abs(L - sig[0] / sig[1]) > 1e-6) return { why: 'first \\time is not the MIDI\'s' }
+  if (!matched && off > L * 4 * midi.header.ppq + 1) return { why: 'length differs by more than a bar' } // a sibling movement's .ly can cover a sparse movement's onsets (pickLy's fallback); its length gives it away
   const part = first.find((b) => b.d !== undefined || b.pos !== undefined)
   if (part) {
     const d = part.d ?? L - (part.pos! % L) // measurePosition is how far into the bar the music starts
-    return d < L - 1e-6 ? Math.round(d * 4 * 1e6) / 1e6 : 0
+    return { pickup: d < L - 1e-6 ? Math.round(d * 4 * 1e6) / 1e6 : 0 }
   }
-  // nothing before the first note and nothing after it but this one meter: bars are the .ly's own, and the MIDI must lay as many
-  const sigs = new Set(midi.header.timeSignatures.map((t) => `${t.timeSignature}`))
-  if (bars.length !== first.length || sigs.size > 1) return undefined
-  const lyBars = Math.ceil((r.len - (r.delay ?? 0)) / L - 1e-6)
-  const midiBars = Math.ceil(until / (L * 4 * midi.header.ppq) - 1e-6)
-  return lyBars === midiBars ? 0 : undefined
+  // no \partial in the first bar: a full one, if the MIDI's time signatures are the .ly's (same bars at the same places) and the
+  // bars the .ly's music fills (its last note's end, not the rests after it) are as many as the MIDI's
+  const W = 4 * midi.header.ppq
+  const shift = r.delay ?? 0
+  const lay = bars.map((b) => ({ ...b, at: b.at - shift }))
+  const metres = (xs: number[][]) => xs.filter((x, i) => !i || Math.abs(x[1] - xs[i - 1][1]) > 1e-6) // [where, bar length]: a change of length only
+  const sigs = metres(bars.reduce((xs, b) => (b.len ? (b.at - shift < 1e-9 ? [[0, b.len]] : [...xs, [b.at - shift, b.len]]) : xs), [[0, 1]]))
+  const heard = metres(midi.header.timeSignatures.map((t) => [t.ticks / W, t.timeSignature[0] / t.timeSignature[1]]))
+  if (sigs.length !== heard.length || sigs.some((x, i) => Math.abs(x[0] - heard[i][0]) > 1e-3 || Math.abs(x[1] - heard[i][1]) > 1e-6)) return { why: "the .ly's time signatures are not the MIDI's" }
+  const count = (end: number) => {
+    let n = 0
+    for (let x = 0; x < end - 1e-6 && n < 1e5; n++) {
+      const { a, L } = barAt(lay, x + 1e-9)
+      x = a + L * (Math.floor((x - a) / L + 1e-6) + 1)
+    }
+    return n
+  }
+  const end = Math.max(...r.ev.flatMap((e) => (e.k === 'on' ? [e.at + e.d] : [])))
+  return count(end - shift) === count(until / W) ? { pickup: 0 } : { why: 'bar count differs' }
 }
 
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
@@ -668,9 +719,14 @@ function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until:
 }
 
 /** A Mutopia input with its volta repeats played out, and its .ly read as \repeat unfold (what the MIDI now plays), so the
- * analysis no longer flags it. Unchanged when there is nothing to unfold or it cannot be done. */
-export function withRepeats<E extends { bytes: Uint8Array; ly?: string; matched?: boolean }>(e: E): E {
+ * analysis no longer flags it. Unchanged when there is nothing to unfold or it cannot be done. The anacrusis is read here, from
+ * the MIDI and .ly that the reading was checked against: the unfolded file no longer reads like its .ly (a D.C. is not in it). */
+export function withRepeats<E extends { bytes: Uint8Array; ly?: string; matched?: boolean; pickup?: number }>(e: E): E {
   if (!e.ly || !/\\repeat\s+"?volta/.test(e.ly) || /\\unfoldRepeats/.test(e.ly)) return e
   const u = unfold(e.bytes, e.ly)
-  return 'why' in u ? e : { ...e, bytes: u.bytes, matched: true, ly: e.ly.replace(/\\repeat\s+"?volta"?/g, '\\repeat unfold') }
+  if ('why' in u) return e
+  const pickup = lyPickup(e.bytes, e.ly)
+  return { ...e, bytes: u.bytes, matched: true, ...(pickup !== undefined && { pickup }), ly: e.ly.replace(/\\repeat\s+"?volta"?/g, '\\repeat unfold') }
 }
+
+export const DEBUG_readLy = readLy

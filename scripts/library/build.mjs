@@ -9,7 +9,7 @@
 // Resumable and polite: every request is cached in .cache/library/http (one request a second on a miss), so a rerun is offline
 // and its output byte-identical. Output goes to .cache/library/out (never public/); the per-piece outcome to .cache/library/report-<set>.json.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, refusals, scoreParts, sha, unzip, zip } from './lib.mjs'
+import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, pieceLy, refusals, scoreParts, sha, unzip, zip } from './lib.mjs'
 import { mutopiaIndex, soloKeyboard } from './mutopia-index.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
@@ -57,8 +57,10 @@ async function mutopia(n, pin) {
   let files // [id, title, midi, ly]
   try {
     const ly = m.ly && (await get(m.ly, HTTP).catch(() => undefined))?.toString()
-    if (m.midi) files = [[id, pin?.title ?? m.title, await get(m.midi, HTTP), ly]]
-    else {
+    if (m.midi) {
+      const midi = await get(m.midi, HTTP)
+      files = [[id, pin?.title ?? m.title, midi, await pieceLy(m, midi, pickLy, HTTP)]]
+    } else {
       // multi-movement: mutopia-N-k, each with the .ly of the -lys.zip (or the work's) whose reading matches its MIDI
       const lys = m.lys ? [...unzip(await get(m.lys, HTTP))] : []
       const base = m.mids.split('/').pop().slice(0, -'-mids.zip'.length)

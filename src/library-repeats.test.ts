@@ -5,11 +5,12 @@ import { encode, lyPickup, pickLy, unfold, withRepeats } from '../scripts/librar
 import { fromMidi } from './midi-tracks'
 
 // A LilyPond-like MIDI: 4/4, G major, one track; notes as [quarter, quarters, pitch]
-const midiOf = (notes: number[][], sig = [4, 4]) => {
+const midiOf = (notes: number[][], sig = [4, 4], later: [number, number[]][] = []) => {
   const m = new Midi()
   const q = m.header.ppq
   m.header.tempos.push({ ticks: 0, bpm: 100 })
   m.header.timeSignatures.push({ ticks: 0, timeSignature: sig })
+  for (const [at, timeSignature] of later) m.header.timeSignatures.push({ ticks: at * q, timeSignature })
   m.header.keySignatures.push({ ticks: 0, key: 'G', scale: 'major' })
   const t = m.addTrack()
   for (const [at, d, p] of notes) t.addNote({ midi: p, ticks: at * q, durationTicks: d * q, velocity: 0.8 })
@@ -155,10 +156,18 @@ describe('the anacrusis a .ly states (lyPickup)', () => {
     const plain = [...quarters([60, 62, 64, 65, 67, 69, 71, 72]), [8, 4, 74]]
     const ly = (body: string) => lyOf('\\time 4/4', body)
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1'))).toBe(0)
-    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 | r1'))).toBeUndefined() // the .ly counts a bar the MIDI does not
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 | r1'))).toBe(0) // a bar of rests after the last note is no bar of the MIDI's
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 r4 e'))).toBeUndefined() // a note in a bar the MIDI does not have
     expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c | d1 \\time 3/4 r2.'))).toBeUndefined() // a meter change after the first note
-    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c \\partial 4 | d1'))).toBeUndefined() // a \\partial later on
+    expect(lyPickup(midiOf(plain), ly('c4 d e f | g a b c \\partial 4 | d1'))).toBe(0) // a \\partial later on moves the later bars, not the first
     expect(lyPickup(midiOf(plain, [3, 4]), ly('c4 d e f | g a b c | d1'))).toBeUndefined() // another meter
+  })
+  it('0 with a later meter change when the MIDI has it too, at the same place', () => {
+    const two = [...quarters([60, 62, 64, 65, 67, 69, 71, 72]), [8, 3, 74], [11, 3, 76]]
+    const ly = (body: string) => lyOf('\\time 4/4', body)
+    expect(lyPickup(midiOf(two, [4, 4], [[8, [3, 4]]]), ly('c4 d e f | g a b c | \\time 3/4 d2. e'))).toBe(0)
+    expect(lyPickup(midiOf(two, [4, 4], [[12, [3, 4]]]), ly('c4 d e f | g a b c | \\time 3/4 d2. e'))).toBeUndefined() // the MIDI changes elsewhere
+    expect(lyPickup(midiOf(two), ly('c4 d e f | g a b c | \\time 3/4 d2. e'))).toBeUndefined() // the MIDI does not change
   })
   it('a \\partial before the first note counts even when a later one follows it (the first bar is all that is read)', () => {
     expect(lyPickup(midiOf(pick), lyOf('\\partial 4', 'c4 | d e f g | a b c d \\partial 4 | e1'))).toBe(1)

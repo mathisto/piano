@@ -113,10 +113,37 @@ export function movements(zipped, base) {
     })
 }
 
-/** A movement's .ly candidates for pickLy (repeats.ts): the -lys.zip file of the same name first, the zip's others, the work's. */
+/** A .ly with its `\include "file"` lines replaced by that file's text, found the way LilyPond finds it: next to the including
+ * file, else up the directories above (a work zip keeps its .ily files in a folder or beside the .ly), else by name alone.
+ * What the zip does not hold (english.ly, a font) stays as it is. A file is not put in twice on one path (a cycle). */
+export function inlineIncludes(files, name, seen = []) {
+  const dir = (f) => f.slice(0, f.lastIndexOf('/') + 1)
+  const find = (inc) => {
+    for (let d = dir(name); ; d = dir(d.slice(0, -1))) {
+      if (files.has(d + inc)) return d + inc
+      if (!d) break
+    }
+    const base = inc.split('/').pop()
+    const same = [...files.keys()].filter((f) => f.split('/').pop() === base)
+    return same.length === 1 ? same[0] : undefined
+  }
+  const put = (inc, pre, m) => {
+    const f = find(inc)
+    return f && !seen.includes(f) && files.get(f).length ? `${pre}\n${inlineIncludes(files, f, [...seen, name])}\n` : m
+  }
+  return files
+    .get(name)
+    .toString()
+    .replace(/^([^%\n]*?)\\include\s+"([^"]+)"/gm, (m, pre, inc) => put(inc, pre, m))
+    .replace(/^([^%\n]*?)\\includeScore\s+"([^"]+)"/gm, (m, pre, inc) => `${put(`${inc}/global.ily`, 'global = {', '')}}\n` + put(`${inc}/score.ily`, pre, m)) // Royer's Premier livre: a piece's folder holds global.ily (the \global the score uses) and score.ily
+}
+
+/** A movement's .ly candidates for pickLy (repeats.ts): the -lys.zip file of the same name first, the zip's others (their includes
+ * read from the zip), the work's. */
 export function lyCandidates(lys, stem, ly) {
+  const files = new Map(lys)
   const named = (f) => +(f.split('/').pop() === `${stem}.ly`)
-  return [...[...lys].filter(([f]) => f.endsWith('.ly')).sort(([a], [b]) => named(b) - named(a)).map(([, b]) => b.toString()), ...(ly ? [ly] : [])]
+  return [...[...files.keys()].filter((f) => f.endsWith('.ly')).sort((a, b) => named(b) - named(a)).map((f) => inlineIncludes(files, f)), ...(ly ? [ly] : [])]
 }
 
 // ---- .mxl zip, read and written (fixed dates, so the output is reproducible) ----
@@ -240,13 +267,22 @@ export function openscoreMeta(e, upstream) {
   }
 }
 
+/** The .ly of a Mutopia piece with one MIDI: the page's link, else (43 pieces have only a -lys.zip) the .ly of the zip that pickLy matches. */
+export async function pieceLy(m, midi, pickLy, http) {
+  if (m.ly) return (await get(m.ly, http).catch(() => undefined))?.toString()
+  if (m.lys) return pickLy(midi, lyCandidates([...unzip(await get(m.lys, http))], '', undefined))
+}
+
 /** What build.mjs reads for a shipped Mutopia id, before any unfolding: the MIDI bytes and the .ly (the piece's, or for movement k
  * of a -mids.zip work the one pickLy matches to its MIDI). */
 export async function sourceOf(id, pickLy, http) {
   const [, n, k] = id.split('-')
   const m = mutopiaMeta(id, (await get(`https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${n}`, http)).toString())
+  if (!k) {
+    const midi = m.midi && (await get(m.midi, http))
+    return { ly: midi && (await pieceLy(m, midi, pickLy, http)), midi }
+  }
   const ly = m.ly && (await get(m.ly, http)).toString()
-  if (!k) return { ly, midi: m.midi && (await get(m.midi, http)) }
   const lys = m.lys ? [...unzip(await get(m.lys, http))] : []
   const v = movements(await get(m.mids, http), m.mids.split('/').pop().slice(0, -'-mids.zip'.length))[k - 1]
   return { ly: pickLy(v.bytes, lyCandidates(lys, v.stem, ly)), midi: v.bytes }

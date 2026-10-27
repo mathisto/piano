@@ -52,6 +52,7 @@ for (const p of cat.pieces) {
     const same = !w.bytes || sha(w.bytes) === p.sha256
     e.ly = same ? w.ly : ly
     e.matched = same && !!w.matched // as build.mjs has it: the .ly was read against the original MIDI before the unfold
+    if (w.pickup !== undefined) e.pickup = w.pickup // ... and so was the first bar
     if (!same) skewed.push(p.id)
   }
   // pinned alone: no dedupe partner, no unfold, shipped at any grade (the published bytes stay)
