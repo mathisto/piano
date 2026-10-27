@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLEAN_RUNS, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
+import { CLEAN_RUNS, derive, STAGES, cardsOf, fifthsOf, fingers, mastery, nextCard, parseId, passed, record, scaleSong, solid, type Card, type ScaleStats } from './scales'
 
 const c = (o: Partial<Card> = {}): Card => ({ tonic: 0, form: 'major', hands: 'R', oct: 1, ...o })
 
@@ -23,6 +23,33 @@ describe('fingering', () => {
           expect(f).toHaveLength(8)
           expect(f.every((x) => x >= 1 && x <= 5)).toBe(true)
         }
+  })
+})
+
+describe('the fourth-finger rule', () => {
+  it('reproduces the printed octave of every key but the two that run 4-3-2-1 twice', () => {
+    for (const form of ['major', 'harmonic'] as const)
+      for (let t = 0; t < 12; t++)
+        for (const h of ['R', 'L'] as const) {
+          const one = fingers(t, form, h, 1)
+          const s = one.join('')
+          const rule = derive((s.indexOf('4') % 7) + 1, h, 1).join('')
+          if (!(t === 11 && h === 'L')) expect(rule, `${t} ${form} ${h}`).toBe(s)
+        }
+  })
+  it('G sharp minor from the book: right hand 4th on the 2nd degree, left hand 4th on the 4th', () => {
+    expect(derive(2, 'R', 1).join('')).toBe('34123123')
+    expect(derive(4, 'L', 1).join('')).toBe('32143213')
+  })
+  it('C major left hand over two octaves puts the thumb, not the fifth finger, in the middle', () => {
+    expect(fingers(0, 'major', 'L', 2)).toEqual([5, 4, 3, 2, 1, 3, 2, 1, 4, 3, 2, 1, 3, 2, 1])
+  })
+  it('B flat major right hand starts on 4 and puts a 4 at each B flat', () => {
+    expect(fingers(10, 'major', 'R', 2)).toEqual([4, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4])
+  })
+  it('B major left hand runs 4-3-2-1 twice', () => {
+    expect(fingers(11, 'major', 'L', 1).join('')).toBe('43214321')
+    expect(fingers(11, 'major', 'L', 2)).toHaveLength(15)
   })
 })
 

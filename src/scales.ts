@@ -39,23 +39,48 @@ const FINGERS: Record<string, { R: string; L: string }> = {
   M3: { R: '31234123', L: '32143213' },
   M6: { R: '23412312', L: '43213214' },
   M8: { R: '34123123', L: '32143213' },
-  M10: { R: '41231234', L: '32143213' },
+  M10: { R: '41231234', L: '32143213' }, // right hand confirmed in Alfred's Complete Book of Scales: starts on 4, or on 2
   m9: M, m2: M, m4: M, m7: M, m0: M,
   m11: { R: '12312345', L: '43214321' },
   m5: { R: '12341234', L: '54321321' },
-  m6: { R: '23123123', L: '43213214' },
+  m6: { R: '34123123', L: '43213214' },
   m1: { R: '34123123', L: '32143213' },
   m8: { R: '34123123', L: '32143213' },
   m3: { R: '31234123', L: '21432132' },
-  m10: { R: '21231234', L: '21321432' },
+  m10: { R: '41231234', L: '21321432' },
 }
-export const UNCHECKED = new Set(['M10:R', 'm8:R', 'm3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L'])
+export const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'M11:L', 'm11:L'])
 export const fingering = (tonic: number, form: Form, h: Hand) => FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h]
 
-/** Fingers of a run up `oct` octaves: the first seven repeat in each octave, and the last note takes the eighth. */
+const mod = (a: number, n: number) => ((a % n) + n) % n
+
+/**
+ * The book's rule: each hand uses its fourth finger once an octave, and that one place fixes the rest. Right hand: the
+ * 4th ends a group 1-2-3-4, and 1-2-3 follows it. Left hand: the 4th starts a group 4-3-2-1, and 3-2-1 follows it.
+ * `d4` is the scale degree (1 to 7) that takes the fourth finger. The top note carries on the last group; a left hand
+ * that would start on the thumb starts on the fifth finger instead.
+ */
+export function derive(d4: number, h: Hand, oct: number): number[] {
+  const at = (c: number) => {
+    if (h === 'R') return mod(c - d4 + 3, 7) < 4 ? 1 + mod(c - d4 + 3, 7) : 1 + mod(c - d4 - 1, 7)
+    return mod(c - d4, 7) < 4 ? 4 - mod(c - d4, 7) : 3 - mod(c - d4 - 4, 7)
+  }
+  const out = Array.from({ length: 7 * oct }, (_, k) => at((k % 7) + 1))
+  out.push(h === 'R' ? out[out.length - 1] + 1 : at(1))
+  if (h === 'L' && out[0] === 1) out[0] = 5
+  return out
+}
+
+// Two octaves of the keys whose left hand runs 4-3-2-1 twice in an octave (B, B minor): the thumb has to land on E and B.
+const TWO_OCT: Record<string, string> = { 'M11:L': '432143213214321', 'm11:L': '432143213214321' }
+
+/** Fingers of a run up `oct` octaves, from the fourth-finger rule; where the printed octave disagrees with the rule, the printed one wins. */
 export function fingers(tonic: number, form: Form, h: Hand, oct: number): number[] {
-  const s = fingering(tonic, form, h)
-  return Array.from({ length: 7 * oct + 1 }, (_, d) => Number(d === 7 * oct ? s[7] : s[d % 7]))
+  const key = `${isMinor(form) ? 'm' : 'M'}${tonic}`
+  const s = FINGERS[key][h]
+  if (oct === 2 && TWO_OCT[`${key}:${h}`]) return [...TWO_OCT[`${key}:${h}`]].map(Number)
+  const d = derive((s.indexOf('4') % 7) + 1, h, oct)
+  return oct === 1 && d.join('') !== s ? [...s].map(Number) : d
 }
 
 /** The scale as a song: eighth notes up and back, fingering carried on every note. */
