@@ -1,4 +1,3 @@
-// Keys in: notes from a MIDI keyboard, the screen keys or the computer keys go to whatever owns them; and the shortcuts.
 import * as audio from '../audio'
 import { type MidiMsg, onMidi, onPedal, typingKeyboard } from '../midi'
 import { degreeOfPitch } from '../scales'
