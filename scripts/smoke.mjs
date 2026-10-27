@@ -21,7 +21,7 @@ await page.goto(URL)
 await page.waitForSelector('#today.on')
 check('boots on Today', (await views()) === 'today')
 
-for (const [tab, id] of [['songs', 'library'], ['read', 'read'], ['technique', 'technique'], ['progress', 'progress'], ['today', 'today']]) {
+for (const [tab, id] of [['songs', 'library'], ['read', 'read'], ['scales', 'scales'], ['technique', 'technique'], ['progress', 'progress'], ['today', 'today']]) {
   await page.click(`label:has(input[value=${tab}])`)
   await page.waitForTimeout(250)
   check(`${tab} page opens`, (await views()) === id)
@@ -51,7 +51,7 @@ await page.keyboard.press('Escape')
 try {
   const axe = readFileSync('node_modules/axe-core/axe.min.js', 'utf8')
   await page.addScriptTag({ content: axe })
-  for (const tab of ['today', 'songs', 'read', 'technique', 'progress']) {
+  for (const tab of ['today', 'songs', 'read', 'scales', 'technique', 'progress']) {
     await page.click(`label:has(input[value=${tab}])`)
     await page.waitForTimeout(250)
     const v = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'] })).violations.map((x) => x.id))

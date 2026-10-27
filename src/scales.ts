@@ -1,0 +1,148 @@
+import { build, type Bar, type Hand, type Raw, type Song } from './song'
+
+export type Form = 'major' | 'natural' | 'harmonic' | 'melodic'
+export type Hands = 'R' | 'L' | 'both'
+export interface Card {
+  tonic: number // pitch class
+  form: Form
+  hands: Hands
+  oct: 1 | 2
+}
+
+const STEPS: Record<Form, number[]> = {
+  major: [0, 2, 4, 5, 7, 9, 11],
+  natural: [0, 2, 3, 5, 7, 8, 10],
+  harmonic: [0, 2, 3, 5, 7, 8, 11],
+  melodic: [0, 2, 3, 5, 7, 9, 11], // going up; coming down it is the natural minor
+}
+const DOWN_MELODIC = STEPS.natural
+export const isMinor = (f: Form) => f !== 'major'
+
+// Key signature (fifths) of each major tonic, and of each minor through its relative major.
+const MAJOR_FIFTHS = [0, -5, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5]
+export const fifthsOf = (tonic: number, form: Form) => (isMinor(form) ? (tonic === 3 ? -6 : MAJOR_FIFTHS[(tonic + 3) % 12]) : MAJOR_FIFTHS[tonic])
+const MAJOR_NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
+const MINOR_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B']
+export const keyName = (tonic: number, form: Form) => `${isMinor(form) ? MINOR_NAMES[tonic] : MAJOR_NAMES[tonic]} ${isMinor(form) ? (form === 'natural' ? 'natural minor' : form === 'harmonic' ? 'harmonic minor' : form === 'melodic' ? 'melodic minor' : 'minor') : 'major'}`
+
+/**
+ * Standard fingering, one octave up from the tonic (eight notes), right hand and left hand. Minor keys use the same
+ * fingers for every form. From pianoscales.org, checked only in part against a second source: keys in UNCHECKED are
+ * the ones to confirm against a printed book before anyone relies on them.
+ */
+const M = { R: '12312345', L: '54321321' }
+const FINGERS: Record<string, { R: string; L: string }> = {
+  M0: M, M2: M, M4: M, M7: M, M9: M,
+  M5: { R: '12341234', L: '54321321' },
+  M11: { R: '12312345', L: '43214321' },
+  M1: { R: '23123412', L: '32143213' },
+  M3: { R: '31234123', L: '32143213' },
+  M6: { R: '23412312', L: '43213214' },
+  M8: { R: '34123123', L: '32143213' },
+  M10: { R: '41231234', L: '32143213' },
+  m9: M, m2: M, m4: M, m7: M, m0: M,
+  m11: { R: '12312345', L: '43214321' },
+  m5: { R: '12341234', L: '54321321' },
+  m6: { R: '23123123', L: '43213214' },
+  m1: { R: '34123123', L: '32143213' },
+  m8: { R: '34123123', L: '32143213' },
+  m3: { R: '31234123', L: '21432132' },
+  m10: { R: '21231234', L: '21321432' },
+}
+export const UNCHECKED = new Set(['M10:R', 'm8:R', 'm3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L'])
+export const fingering = (tonic: number, form: Form, h: Hand) => FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h]
+
+/** Fingers of a run up `oct` octaves: the first seven repeat in each octave, and the last note takes the eighth. */
+export function fingers(tonic: number, form: Form, h: Hand, oct: number): number[] {
+  const s = fingering(tonic, form, h)
+  return Array.from({ length: 7 * oct + 1 }, (_, d) => Number(d === 7 * oct ? s[7] : s[d % 7]))
+}
+
+/** The scale as a song: eighth notes up and back, fingering carried on every note. */
+export function scaleSong(c: Card, bpm: number): Song {
+  const q = 60 / bpm
+  const step = q / 2
+  const n = 7 * c.oct
+  const up = Array.from({ length: n + 1 }, (_, d) => d)
+  const order = [...up, ...up.slice(0, -1).reverse()]
+  const raw: Raw[] = []
+  const hands: Hand[] = c.hands === 'both' ? ['R', 'L'] : [c.hands]
+  for (const h of hands) {
+    const fs = fingers(c.tonic, c.form, h, c.oct)
+    const base = (h === 'R' ? 60 : 48) + c.tonic
+    order.forEach((d, i) => {
+      const down = i > n
+      const I = down && c.form === 'melodic' ? DOWN_MELODIC : STEPS[c.form]
+      const p = d === n ? base + 12 * c.oct : base + 12 * Math.floor(d / 7) + I[d % 7]
+      raw.push({ t: i * step, d: step * 0.95, p, v: 0.7, track: 0, h, f: fs[d] })
+    })
+  }
+  const total = order.length
+  const bars: Bar[] = Array.from({ length: Math.ceil(total / 8) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
+  const title = `${keyName(c.tonic, c.form)}, ${c.oct === 1 ? 'one octave' : 'two octaves'}${c.hands === 'both' ? ', hands together' : c.hands === 'L' ? ', left hand' : ', right hand'}`
+  return { ...build(`scale:${c.form}:${c.tonic}:${c.hands}:${c.oct}:${bpm}`, title, raw, bars, fifthsOf(c.tonic, c.form)), dyn: 'even' }
+}
+
+// ---------------------------------------------------------------- the curriculum
+
+export interface Stat {
+  streak: number // clean runs in a row at the tempo being worked on
+  best: number // fastest tempo with three clean runs, 0 if none yet
+  n: number
+}
+export type ScaleStats = Record<string, Stat>
+export const cardKey = (c: Card) => `${c.form}:${c.tonic}:${c.hands}:${c.oct}`
+export const parseId = (id: string): { card: Card; bpm: number } | null => {
+  const m = /^scale:(major|natural|harmonic|melodic):(\d+):(R|L|both):([12]):(\d+)$/.exec(id)
+  return m ? { card: { form: m[1] as Form, tonic: Number(m[2]), hands: m[3] as Hands, oct: Number(m[4]) as 1 | 2 }, bpm: Number(m[5]) } : null
+}
+
+type Combo = [Hands, 1 | 2]
+export interface Stage {
+  id: string
+  name: string
+  blurb: string
+  keys: [number, Form][]
+  combos: Combo[]
+  bpm: number // eighth notes, at this many beats a minute
+}
+
+const maj = (...t: number[]): [number, Form][] => t.map((x) => [x, 'major'])
+const min = (...t: number[]): [number, Form][] => t.map((x) => [x, 'harmonic'])
+const SEP: Combo[] = [['R', 1], ['L', 1]]
+export const STAGES: Stage[] = [
+  { id: 's1', name: 'The easy keys', blurb: 'C, G and F major; A and D minor. One octave, each hand on its own.', keys: [...maj(0, 7, 5), ...min(9, 2)], combos: SEP, bpm: 60 },
+  { id: 's2', name: 'The easy keys, longer', blurb: 'The same five keys over two octaves, then hands together.', keys: [...maj(0, 7, 5), ...min(9, 2)], combos: [['R', 2], ['L', 2], ['both', 1]], bpm: 66 },
+  { id: 's3', name: 'Two more sharps', blurb: 'D, A and E major; E and G minor.', keys: [...maj(2, 9, 4), ...min(4, 7)], combos: [...SEP, ['R', 2], ['L', 2], ['both', 1]], bpm: 66 },
+  { id: 's4', name: 'The black-key keys', blurb: 'B and D flat first, as Chopin taught: the long fingers sit on the black keys. Then E flat, F sharp, A flat, B flat and their minors.', keys: [...maj(11, 1, 3, 6, 8, 10), ...min(11, 6, 1, 8, 3, 10)], combos: [...SEP, ['both', 1]], bpm: 60 },
+  { id: 's5', name: 'All 24 keys together', blurb: 'Every major and harmonic minor, hands together over two octaves.', keys: [...maj(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...min(9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)], combos: [['both', 2]], bpm: 80 },
+  { id: 's6', name: 'Up to speed', blurb: 'All 24 keys again, faster.', keys: [...maj(0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5), ...min(9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2)], combos: [['both', 2]], bpm: 100 },
+]
+
+export const cardsOf = (s: Stage): Card[] => s.keys.flatMap(([tonic, form]) => s.combos.map(([hands, oct]) => ({ tonic, form, hands, oct })))
+export const solid = (stats: ScaleStats, c: Card, bpm: number) => (stats[cardKey(c)]?.best ?? 0) >= bpm
+
+export function mastery(s: Stage, stats: ScaleStats) {
+  const cs = cardsOf(s)
+  const done = cs.filter((c) => solid(stats, c, s.bpm)).length
+  return { pct: cs.length ? done / cs.length : 0, solid: done === cs.length, done, total: cs.length }
+}
+
+/** The first scale of a stage that is not solid yet, or the first one. */
+export const nextCard = (s: Stage, stats: ScaleStats): Card => cardsOf(s).find((c) => !solid(stats, c, s.bpm)) ?? cardsOf(s)[0]
+/** The first stage with something left to do. */
+export const nextStage = (stats: ScaleStats): Stage => STAGES.find((s) => !mastery(s, stats).solid) ?? STAGES[STAGES.length - 1]
+
+export const CLEAN_RUNS = 3
+
+/** A run that counts: every note, no stray ones, in time, and not an uneven touch when that is being judged. */
+export const passed = (r: { clean: boolean; acc: number; even: { rating: string } | null }) => r.clean && r.acc >= 0.85 && r.even?.rating !== 'uneven'
+
+/** Three clean runs in a row at a tempo make it solid at that tempo; a bad run starts the count again. */
+export function record(stats: ScaleStats, c: Card, bpm: number, ok: boolean): ScaleStats {
+  const k = cardKey(c)
+  const s = stats[k] ?? { streak: 0, best: 0, n: 0 }
+  const streak = ok ? s.streak + 1 : 0
+  stats[k] = { n: s.n + 1, streak: streak >= CLEAN_RUNS ? 0 : streak, best: streak >= CLEAN_RUNS ? Math.max(s.best, bpm) : s.best }
+  return stats
+}

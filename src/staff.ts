@@ -308,6 +308,8 @@ export class Staff {
       if (h === c.heads[0]) this.timeline.push({ t: h.t, el: g })
       if (!h.cont && !small) for (const id of h.ids) this.byId.set(id, p)
       if (!h.cont && !small) e.setAttribute('data-id', String(h.ids[0]))
+      const f = !h.cont && !small ? this.game.song.notes[h.ids[0]]?.f : undefined // scales: the finger to use, on the side away from the stem
+      if (f) el('text', { class: 'finger', x: h.x, y: h.y + dy + (h.up ? 27 : -19), 'text-anchor': 'middle' }, g, String(f))
     }
     for (const a of c.accs) el('text', { class: `smufl acc${a.grace ? ' small' : ''}`, x: a.x, y: a.y + dy, 'text-anchor': 'middle' }, g, G[a.glyph])
     for (const d of c.dots) el('text', { class: 'smufl', x: d.x, y: d.y + dy }, g, G.dot)
