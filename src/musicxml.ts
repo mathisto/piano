@@ -1,3 +1,4 @@
+import { expand } from './playorder'
 import { build, estimateFifths, type Bar, type Hand, type Raw, type Song } from './song'
 
 // ---- a small XML reader: enough for MusicXML, runs in the browser and in node tests ----
@@ -177,20 +178,6 @@ export function playOrder(parts: El[], flags: string[] = []): number[] {
         for (const k of ['dalsegno', 'segno', 'tocoda', 'coda', 'fine']) if (s.a[k]) mk.add(k === 'dalsegno' ? 'ds' : k)
       }
     })
-  const at = (k: string) => marks.flatMap((m, i) => (m.has(k) ? [i] : []))
-  // bare coda signs: the last is the Coda, an earlier one the To Coda
-  const signs = at('sign')
-  if (signs.length && !at('coda').length) marks[signs[signs.length - 1]].add('coda')
-  if (signs.length > 1 && !at('tocoda').length) marks[signs[0]].add('tocoda')
-  const jumps = [...at('dc'), ...at('ds')]
-  const [tocoda, coda] = [at('tocoda')[0], at('coda')[0]]
-  const any = jumps.length > 0 || tocoda !== undefined || coda !== undefined
-  const target = jumps.length === 1 ? (marks[jumps[0]].has('ds') ? at('segno')[0] : 0) : undefined
-  const ok = target !== undefined && target <= jumps[0] && (tocoda === undefined) === (coda === undefined) && (coda === undefined || (tocoda < coda && coda > jumps[0]))
-  if (any) flags.push('dc-ds')
-  if (any && !ok) flags.push('repeats-unexpanded')
-  const jump = ok ? jumps[0] : undefined
-
   const info = ms.map((meas) => {
     const bars = kids(meas, 'barline')
     const rep = (loc: string, dir: string) => bars.some((b) => (b.a.location ?? 'right') === loc && kids(b, 'repeat').some((r) => r.a.direction === dir))
@@ -211,49 +198,9 @@ export function playOrder(parts: El[], flags: string[] = []): number[] {
     ending[i] = cur
     if (m.stop) cur = undefined
   })
-  // after a jump only the last ending of each set is played
-  const last = ending.map((e, i) => {
-    if (!e) return false
-    let a = i
-    let b = i
-    while (ending[a - 1]) a--
-    while (ending[b + 1]) b++
-    return e.includes(Math.max(...ending.slice(a, b + 1).flatMap((x) => x!)))
-  })
-  const order: number[] = []
-  let from = 0
-  let pass = 1
-  let final = false // on the last pass of a repeat
-  let jumped = false
-  for (let i = 0; i < ms.length && order.length < 5000; ) {
-    if (info[i].forward && i !== from) {
-      from = i
-      pass = 1
-      final = false
-    }
-    if (ending[i] && !(jumped ? last[i] : ending[i]!.includes(pass))) {
-      i++
-      continue
-    }
-    order.push(i)
-    if (info[i].backward && pass < info[i].times && !jumped) {
-      pass++
-      final = pass === info[i].times
-      i = from
-      continue
-    }
-    if (info[i].backward) {
-      from = i + 1
-      pass = 1
-      final = false
-    }
-    if (marks[i].has('fine') && (jumped || (final && !any))) break
-    if (jumped && i === tocoda) i = coda!
-    else if (!jumped && i === jump) {
-      jumped = true
-      i = from = target!
-    } else i++
-  }
+  const { order, any, ok } = expand(ms.map((_, i) => ({ forward: info[i].forward, backward: info[i].backward, times: info[i].times, ending: ending[i], marks: marks[i] })))
+  if (any) flags.push('dc-ds')
+  if (any && !ok) flags.push('repeats-unexpanded')
   return order
 }
 
