@@ -159,6 +159,7 @@ function view(name: (typeof SECTIONS)[number]) {
   $('#hud').hidden = name !== 'play'
   if (name !== 'play') $('#title').textContent = ''
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
+  if (highway) highway.app.ticker[name === 'play' ? 'start' : 'stop']() // the falling-notes stage draws only while it can be seen
 }
 
 type Section = 'today' | 'songs' | 'read' | 'scales' | 'theory' | 'technique' | 'progress'
@@ -1014,6 +1015,7 @@ function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?
 let chordTimer = 0
 /** The readout of what is held now; it lingers a moment after the last key comes up. */
 function chordUpdate() {
+  if (!game.song) return // a key pressed before any song is open
   const el = $('#chord')
   const c = nameChord([...game.held.keys()], game.song.fifths)
   clearTimeout(chordTimer)
