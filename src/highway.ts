@@ -1,6 +1,7 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import type { Game } from './game'
 import type { Grade } from './judge'
+import { isBlack } from './osk'
 import { C } from './palette'
 import { settings } from './settings'
 import { noteName } from './spell'
@@ -25,8 +26,6 @@ interface Spark {
   from?: number
 }
 
-const BLACK = new Set([1, 3, 6, 8, 10])
-const isBlack = (p: number) => BLACK.has(p % 12)
 const gradeColor: Record<Grade, number> = { perfect: C.perfect, great: C.great, good: C.good, miss: C.bad }
 
 function radial(size: number, stops: [number, string][]): Texture {

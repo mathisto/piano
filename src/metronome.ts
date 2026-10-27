@@ -1,4 +1,4 @@
-import { beatQ, type Bar } from './song'
+import { barQ, beatQ, type Bar } from './song'
 
 export type Metro = 'off' | 'beat' | 'eighths'
 export const METROS: Metro[] = ['off', 'beat', 'eighths']
@@ -7,7 +7,6 @@ export interface Tick {
   kind: 'down' | 'beat' | 'sub'
 }
 
-const barQ = (b: Bar) => b.ql ?? (b.n * 4) / b.den
 
 /** Beats in a bar and how many seconds each lasts. The bar's own t0..t1 is the truth, so tempo changes come free. */
 function grid(b: Bar) {

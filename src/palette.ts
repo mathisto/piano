@@ -20,5 +20,3 @@ export const C = {
   held: 0xbfeaff,
   muted: 0x5b5f8a, // key names and unlit receptor lamps
 } as const
-
-export type GradeKey = 'perfect' | 'great' | 'good'

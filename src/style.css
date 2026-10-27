@@ -2023,17 +2023,6 @@ body.zen #dock .aids {
 .tcard .label {
   color: var(--ink-3);
 }
-.tthumb {
-  flex: none;
-  width: 120px;
-}
-.tthumb svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: var(--ground);
-  border-radius: var(--r-1);
-}
 .week {
   display: flex;
   gap: 10px;

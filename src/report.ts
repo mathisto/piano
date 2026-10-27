@@ -7,6 +7,7 @@ import { MIN_SEC, dayOfKey, streak } from './streak'
 import { SYLLABUS, stateOf, type TechStats } from './syllabus'
 import { dayKey } from './week'
 import type { HistoryEntry, Progress, TouchEntry } from './store'
+import { mean, pct, plural } from './util'
 
 declare const __COMMIT__: string | undefined // set in vite.config.ts; absent under other tools
 
@@ -14,9 +15,9 @@ declare const __COMMIT__: string | undefined // set in vite.config.ts; absent un
  * Where a problem report goes. An address (contains @) opens the mail app; a URL opens that page with title and body in the query.
  * Nothing is sent by the app: the link only opens the user's mail or browser. The owner may swap in a mailto address here.
  */
-export const REPORT_TO = 'https://github.com/mathisto/piano/issues/new'
+const REPORT_TO = 'https://github.com/mathisto/piano/issues/new'
 
-export const PROMPT = 'What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, other)'
+const PROMPT = 'What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, other)'
 
 /** The text of a report for one library piece, from its catalogue row. `bar` is the 1-based bar the player was at, if known. */
 export function reportText(cat: Catalog, p: Piece, bar?: number, version = typeof __COMMIT__ === 'string' ? __COMMIT__ : ''): { title: string; body: string } {
@@ -64,10 +65,7 @@ export interface SummaryData {
 }
 
 const AREA: [HistoryEntry['kind'], string][] = [['read', 'Reading'], ['run', 'Sight Run'], ['scale', 'Scales'], ['theory', 'Theory'], ['song', 'Songs'], ['tech', 'Technique']]
-const pct = (x: number) => `${Math.round(x * 100)}%`
 const mins = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`)
-const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
 
 /** A plain-text report for a teacher: what was practised, how accurately, what is solid and what is weak. `titles` maps song ids to names. */
 export function buildSummary(d: SummaryData, titles: Record<string, string> = {}, now = new Date()): string {
@@ -96,9 +94,9 @@ export function buildSummary(d: SummaryData, titles: Record<string, string> = {}
       if (!xs.length) return []
       const last = xs.slice(-5)
       const before = xs.slice(-10, -5)
-      const delta = before.length >= 3 ? Math.round((avg(last) - avg(before)) * 100) : null
+      const delta = before.length >= 3 ? Math.round((mean(last) - mean(before)) * 100) : null
       const trend = delta === null ? 'no trend yet' : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${plural(Math.abs(delta), 'point')} on the five before`
-      return [`- ${name}: ${plural(xs.length, 'session')}, average ${pct(avg(xs))}, last five ${pct(avg(last))} (${trend})`]
+      return [`- ${name}: ${plural(xs.length, 'session')}, average ${pct(mean(xs))}, last five ${pct(mean(last))} (${trend})`]
     }),
   )
   if (!h.length) out.push('- No sessions recorded yet.')

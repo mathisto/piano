@@ -22,7 +22,7 @@ const STEPS: Record<Form, number[]> = {
   dim7: [0, 3, 6, 9],
 }
 const DOWN_MELODIC = STEPS.natural
-export const isMinor = (f: Form) => f === 'natural' || f === 'harmonic' || f === 'melodic' || f === 'arpMinor'
+const isMinor = (f: Form) => f === 'natural' || f === 'harmonic' || f === 'melodic' || f === 'arpMinor'
 const isScale = (f: Form) => f === 'major' || f === 'natural' || f === 'harmonic' || f === 'melodic'
 const BLACK = [1, 3, 6, 8, 10]
 
@@ -66,7 +66,7 @@ const FINGERS: Record<string, { R: string; L: string }> = {
   m3: { R: '31234123', L: '21432132' },
   m10: { R: '41231234', L: '21321432' },
 }
-export const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'm11:L'])
+const UNCHECKED = new Set(['m3:L', 'm10:R', 'm10:L', 'm6:R', 'm6:L', 'm11:L'])
 export const fingering = (tonic: number, form: Form, h: Hand) => (isScale(form) ? FINGERS[`${isMinor(form) ? 'm' : 'M'}${tonic}`][h] : fingers(tonic, form, h, 1).join(''))
 
 const mod = (a: number, n: number) => ((a % n) + n) % n

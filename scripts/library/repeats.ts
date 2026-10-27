@@ -79,7 +79,7 @@ const GRACE = new Set(['grace', 'acciaccatura', 'appoggiatura', 'slashedGrace'])
 
 /** The music of each score with a \midi block (LilyPond writes one MIDI file each), in whole notes from its start: note
  * onsets, grace notes and volta repeats. */
-export function readLy(src: string): Rec[] {
+function readLy(src: string): Rec[] {
   const T = tokens(src)
   let p = 0
   let last = 0.25 // LilyPond's default duration is parser state, so it carries lexically, as here

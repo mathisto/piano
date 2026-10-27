@@ -1,4 +1,4 @@
-export const BREAK_AFTER = 30 * 60 // seconds of playing in a row
+const BREAK_AFTER = 30 * 60 // seconds of playing in a row
 export const GAP = 5 * 60 // a pause this long counts as a break already taken
 
 /**

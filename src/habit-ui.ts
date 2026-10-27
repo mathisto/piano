@@ -2,8 +2,7 @@ import './habit.css'
 import type { Level, Row, Start, State } from './grades'
 import type { LadderLevel, PieceState } from './ladder'
 import type { Streak } from './streak'
-
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+import { esc } from './util'
 
 /** "12-day streak · 1 freeze": quiet, and absent until there is a streak to show. */
 export function streakHtml(s: Streak): string {

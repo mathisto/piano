@@ -3,7 +3,7 @@
 declare const PRECACHE: string[]
 declare const VERSION: string
 
-export const DATA = 'pf-data'
+const DATA = 'pf-data'
 export const shellCache = (version: string) => `pf-shell-${version}`
 
 export type Route = 'nav' | 'cache-first' | 'revalidate' | 'network'

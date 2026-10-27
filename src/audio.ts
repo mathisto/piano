@@ -61,8 +61,6 @@ function hall(c: AudioContext): AudioBuffer {
 
 // ---- sampled instruments (instruments.ts): one recording every third semitone, pitched to fit ----
 
-export const ROOTS = PIANO.roots
-
 /** The recording closest to a pitch, and the playback rate that bends it there. */
 export function pickSample(p: number, inst: Instrument = PIANO): { name: string; rate: number; loop?: [number, number] } {
   const r = inst.roots.reduce((a, b) => (Math.abs(b.midi - p) < Math.abs(a.midi - p) ? b : a))

@@ -1,4 +1,5 @@
 import { cards, keyNotes, weight, type Card, type Stage, type Stats } from './drill'
+import { isBlack } from './osk'
 
 /** Sight Run: a reading drill you build yourself, from a range, a spread and a pace. */
 export interface RunSpec {
@@ -26,9 +27,6 @@ export const LIMITS = { treble: [55, 88], bass: [36, 62], grand: [36, 88] } as c
 export const SET = 16 // cards dealt at a time in an endless run
 const GOAL = { 1: 3000, 2: 4000, 3: 5000 } as const // "fluent" ms per card, as in the stages
 export const goalMs = (s: RunSpec) => GOAL[s.size]
-
-const BLACKS = [1, 3, 6, 8, 10]
-const isBlack = (p: number) => BLACKS.includes(p % 12)
 
 /** Pitches the spec can deal as a root: the key's notes, the white keys, or every key. */
 export const runPitches = (s: RunSpec): number[] =>

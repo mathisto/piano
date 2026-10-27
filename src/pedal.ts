@@ -8,8 +8,8 @@ export interface PedalEv {
 }
 
 export const EARLY = 0.5 // beats: a lift this long before the new chord still counts as changing with it
-export const LATE = 0.25 // beats: the old chord may ring this long into the new one (the "legato pedal" lifts just after the new chord lands)
-export const MIN_CHANGES = 2 // chord changes the pedal must touch before a sentence is worth saying
+const LATE = 0.25 // beats: the old chord may ring this long into the new one (the "legato pedal" lifts just after the new chord lands)
+const MIN_CHANGES = 2 // chord changes the pedal must touch before a sentence is worth saying
 
 // Chord templates as pitch-class offsets from the root, simplest first (a tie goes to the earlier one).
 const SHAPES = [[0, 4, 7], [0, 3, 7], [0, 4, 7, 10], [0, 3, 6]]

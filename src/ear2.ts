@@ -61,7 +61,7 @@ const QA_LEVELS = [
   { keys: [0, 7, 5, 2, 10, 9], minor: false, echo: true },
 ]
 const BARS = 16 // eighth-note cells in two bars of 4/4
-export const MIN_NOTES = 4
+const MIN_NOTES = 4
 
 /** Two-bar stepwise phrases, 60 per level. A "question" phrase from the app ends on the dominant and you answer on the tonic; the app's closing phrase ends on the tonic and you ask back, ending on the dominant. The ids hold the notes and the rhythm, so spaced review finds a phrase again. */
 export function qaCards(level: number): TCard[] {

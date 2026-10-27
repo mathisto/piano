@@ -5,6 +5,7 @@ import { barList, slipped } from './readthrough'
 import { noteName } from './spell'
 import type { Song } from './song'
 import type { Progress } from './store'
+import { esc } from './util'
 
 // Memorise: Learn (the song waits) with the score fading by bars. Players lean on finger memory, which fails under nerves;
 // seeing the shape (analysis), hearing it and knowing where the hands go hold up better. So the card asks you to look
@@ -12,8 +13,8 @@ import type { Progress } from './store'
 
 export const TOP = 4 // stage 4: no staff at all
 export const STAGES = ['Full score', 'Every 4th bar hidden', 'Every 2nd bar hidden', 'Barlines only', 'No staff']
-export const CLEAN_TO_ADVANCE = 2 // clean passes in a row at a stage move you on
-export const DROP_OVER = 3 // more slips than this in one pass step you back
+const CLEAN_TO_ADVANCE = 2 // clean passes in a row at a stage move you on
+const DROP_OVER = 3 // more slips than this in one pass step you back
 
 /** Whether a bar's notes are hidden at a stage (bars 0-based): stage 1 hides bars 4, 8, 12..., stage 2 every even bar, 3 and up all. */
 export const hidden = (stage: number, bar: number) => (stage >= 3 ? true : stage === 2 ? bar % 2 === 1 : stage === 1 ? bar % 4 === 3 : false)
@@ -91,7 +92,6 @@ export function facts(song: Song): [string, string][] {
 /** "Memorised 3/4" for a Songs row, once any stage is cleared. */
 export const memTag = (p?: Progress) => (p?.memStage ? ` <span class="tag">Memorised ${p.memStage}/${TOP}</span>` : '')
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const stageSeg = (stage: number) =>
   `<div class="seg mem-seg" role="radiogroup" aria-label="Stage">${STAGES.map((s, i) => `<label title="${s}"><input type="radio" name="memStage" value="${i}" aria-label="Stage ${i}, ${s.toLowerCase()}"${i === stage ? ' checked' : ''}><span>${i}</span></label>`).join('')}</div>`

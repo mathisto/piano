@@ -4,15 +4,10 @@ import { writtenTargets, type Edges } from './touch'
 import { barAt, type Hand, type Note, type Song } from './song'
 import { settings } from './settings'
 import * as store from './store'
+import { mean, median } from './util'
 
 /** How a run was played over time, from the key downs and ups: timing evenness, legato or staccato, the balance of the hands. */
 
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b)
-  const m = s.length >> 1
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-}
-const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 const mad = (xs: number[]) => {
   const m = median(xs)
   return median(xs.map((x) => Math.abs(x - m))) * 1.48
@@ -57,9 +52,9 @@ export interface Artic {
 }
 
 // Tolerant on purpose: MIDI and a web view add jitter, and the research only says "slight overlap" and "short".
-export const LEGATO_GAP = 30 // ms: a lift shorter than this still sounds joined
-export const LEGATO_BLUR = 120 // ms: overlap past this (or a third of the gap, if longer) smears the two notes
-export const STACCATO_MAX = 0.5 // share of the written value: held longer than this is not detached
+const LEGATO_GAP = 30 // ms: a lift shorter than this still sounds joined
+const LEGATO_BLUR = 120 // ms: overlap past this (or a third of the gap, if longer) smears the two notes
+const STACCATO_MAX = 0.5 // share of the written value: held longer than this is not detached
 
 /** Legato: the overlap of each key with the next one in its hand. Staccato: how much of each written value the key was held. `only` picks the notes judged (a song's staccato or slurred ones). */
 export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[], rate: number, only: (n: Note) => boolean = () => true): Artic | null {
@@ -92,7 +87,7 @@ export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[
   return marks.length >= MIN_RUN - 1 ? { kind, n: marks.length, ok, typical: median(marks) } : null
 }
 
-export function articLine(a: Artic) {
+function articLine(a: Artic) {
   if (a.kind === 'staccato') return `Staccato: <b>${a.ok} of ${a.n}</b> notes short; you hold about <b>${Math.round(a.typical * 100)}%</b> of each note's value.`
   const t = Math.round(Math.abs(a.typical))
   const how = a.typical < -LEGATO_GAP ? `you lift about <b>${t} ms</b> before the next note` : a.typical > LEGATO_BLUR ? `keys overlap by about <b>${t} ms</b>, which blurs` : `keys overlap by about <b>${Math.max(0, Math.round(a.typical))} ms</b>`
@@ -107,7 +102,7 @@ export interface Voicing {
   aim: number // the melody hand should be at least this much louder
 }
 
-export const BALANCE_SHARE = 0.25 // of the calibrated soft-to-hard range: about 10 on the default bands
+const BALANCE_SHARE = 0.25 // of the calibrated soft-to-hard range: about 10 on the default bands
 const CLEAR_TOP = 0.75 // share of bars with both hands where one hand holds the highest note
 
 /** The hand with the highest note in most bars where both play; null when neither clearly leads (or too few bars to say). */
@@ -152,8 +147,8 @@ export interface Seen {
   runs: number // finished runs of this exercise
   even: number // 'even' ratings in a row
 }
-export const FADE_AFTER = 3 // even runs in a row before the live marks fade
-export const TEST_EVERY = 4 // every 4th run has no live marks at all
+const FADE_AFTER = 3 // even runs in a row before the live marks fade
+const TEST_EVERY = 4 // every 4th run has no live marks at all
 
 export function marksFor(s: Seen | undefined, always: boolean): Marks {
   if (always) return 'full'
@@ -191,7 +186,7 @@ export interface Finding {
   n: number
   line: string
 }
-export const REPEATS = 3 // a pattern shows at least this often (and in a third of its chances) before it earns a line
+const REPEATS = 3 // a pattern shows at least this often (and in a third of its chances) before it earns a line
 const MOST = 2 // song lines per run
 const often = (miss: number, n: number) => miss >= REPEATS && miss * 3 >= n
 const where = (s: Song, t0: number, t1: number) => {

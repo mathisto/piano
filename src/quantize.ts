@@ -7,7 +7,7 @@ const PLAIN = [4, 3.5, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25, 0.125] // written v
 const TRIPLET = [8 / 3, 4 / 3, 2 / 3, 1 / 3, 1 / 6]
 
 /** 2/3, 1/3, 1/6 ...: a value that only exists inside a triplet. */
-export const isTripletValue = (x: number) => near(x * 6, Math.round(x * 6)) && !near(x * 4, Math.round(x * 4)) && !near(x * 2, Math.round(x * 2))
+const isTripletValue = (x: number) => near(x * 6, Math.round(x * 6)) && !near(x * 4, Math.round(x * 4)) && !near(x * 2, Math.round(x * 2))
 const isTripletPos = (x: number) => near(x * 6, Math.round(x * 6)) && Math.round(x * 6) % 3 !== 0
 
 type Tup = { num: number; den: number }
@@ -46,7 +46,7 @@ export interface NOut {
   grace?: boolean
 }
 
-export function barIndex(bars: BarQ[], q: number) {
+function barIndex(bars: BarQ[], q: number) {
   let lo = 0
   let hi = bars.length - 1
   while (lo < hi) {

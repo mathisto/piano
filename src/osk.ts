@@ -9,9 +9,9 @@ export interface OKey {
 }
 
 export const WHITE_MIN = 44 // px: the touch floor (44 on a coarse pointer, DESIGN.md Touch Floor Rule) for a white key's width
-export const BLACK_W = 0.62 // a black key's width against a white one
-export const BLACK_H = 0.62 // and its length against the keyboard's height
-export const LOW_MIN = 24 // C1; the top key never passes C8 (108)
+const BLACK_W = 0.62 // a black key's width against a white one
+const BLACK_H = 0.62 // and its length against the keyboard's height
+const LOW_MIN = 24 // C1; the top key never passes C8 (108)
 const BLACKS = [1, 3, 6, 8, 10]
 export const isBlack = (p: number) => BLACKS.includes(p % 12)
 
