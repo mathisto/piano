@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // The big library, batch: fetch, licence check, normalise here; analyse, dedupe, emit in pipeline.ts (bundled first).
-//   npm run library:build -- [--set current|mutopia|lieder] [--grades 1-4] [--limit N] [--out DIR] [--merge-with DIR]
+//   npm run library:build -- [--set current|mutopia|lieder|chopin] [--grades 1-4] [--limit N] [--out DIR] [--merge-with DIR]
 // current: the pieces in scripts/library-sources.json (ids unchanged). mutopia: every solo keyboard piece on Mutopia.
 // lieder: every OpenScore Lieder song, its vocal line folded into the right hand when that stays playable, else piano-only.
+// chopin: the Chopin Institute's first editions (Humdrum **kern, CC BY 4.0), shipped as MusicXML; one edition a work.
 // --merge-with: OUT also gets every piece of that (published) output, untouched, the new ones added after them; its pieces
 // count as pinned here, so dedupe never ships a new duplicate of one.
 // Resumable and polite: every request is cached in .cache/library/http (one request a second on a miss), so a rerun is offline
 // and its output byte-identical. Output goes to .cache/library/out (never public/); the per-piece outcome to .cache/library/report-<set>.json.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, refusals, scoreParts, sha, unzip } from './lib.mjs'
+import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, refusals, scoreParts, sha, unzip, zip } from './lib.mjs'
 import { mutopiaIndex, soloKeyboard } from './mutopia-index.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
@@ -30,7 +31,7 @@ const ALLOW = [...sources.allow, 'MutopiaBSD']
 const licenceCheck = (x) => refusals(x, ALLOW)
 
 const bin = `${CACHE}/bin/pipeline.mjs`
-const { run, merge, pickLy } = await import(bin).catch(() => {
+const { run, merge, pickLy, kernToMusicXml } = await import(bin).catch(() => {
   throw new Error(`${bin} missing: run npx vite build --config scripts/library/vite.config.mjs first (npm run library:build does)`)
 })
 const rows = [] // pieces refused before analysis: { id, stage, why }
@@ -204,6 +205,103 @@ async function liederSet() {
   }
 }
 
+const CHOPIN = 'pl-wnifc/humdrum-chopin-first-editions'
+const craw = (path) => `https://raw.githubusercontent.com/${CHOPIN}/main/${path}`
+// several first editions of one work: dedupe keeps the best by the gates, and on a tie (Input.rank) the first impression
+// before a later issue (Rink-Grabowski '1' before '1a', '1b'), then Paris (Chopin read the proofs of most French editions),
+// Leipzig or Berlin (engraved from their own manuscripts), London (Wessel mostly reprinted Paris), the rest (Vienna, Warsaw)
+const CITY = { Paris: 0, Leipzig: 1, Berlin: 1, London: 2 }
+const DIGITAL = 'digital edition © The Fryderyk Chopin Institute (nifc.pl), chopinscores.org'
+
+/** Every Humdrum file of the Chopin Institute's first editions, converted to MusicXML (src/kern.ts) and shipped as .mxl.
+ * The pieces already published count as pinned (--merge-with): the Chopin ones go into dedupe too, so a first edition of
+ * a work the library already has is dropped, not shipped twice. */
+async function chopinSet() {
+  const lic = (await get(craw('LICENSE.txt'), HTTP)).toString()
+  if (!/creativecommons\.org\/licenses\/by\/4\.0/.test(lic) || /NonCommercial|NoDerivatives/i.test(lic)) throw new Error(`${CHOPIN}: LICENSE.txt does not grant CC BY 4.0, refusing the set`)
+  const rights = lic.split('\n').slice(0, 5).join('; ') // the licence asks for its first five lines as the acknowledgement
+  const tree = JSON.parse(await get(`https://api.github.com/repos/${CHOPIN}/git/trees/main?recursive=1`, HTTP))
+  const krn = tree.tree.filter((x) => /^kern\/.+\.krn$/.test(x.path))
+  console.log(`index: ${krn.length} kern files`)
+  const read = []
+  for (const { path } of krn) {
+    const file = path.slice(5, -4)
+    const id = `chopin-${file}`
+    if (/-(piano|piano-primo|piano-secondo|violino|violin|violoncello)$/.test(file)) {
+      refuse(id, 'normalise', 'one part of a chamber or four-hand work')
+      continue
+    }
+    let src, k
+    try {
+      src = await get(craw(path), HTTP)
+    } catch (e) {
+      refuse(id, 'fetch', e.message)
+      continue
+    }
+    try {
+      k = kernToMusicXml(src.toString(), rights)
+    } catch (e) {
+      refuse(id, 'normalise', e.message)
+      continue
+    }
+    const lost = (k.skipped['token without one pitch'] ?? 0) + (k.skipped['token without a duration'] ?? 0)
+    if (lost > k.notes / 100) {
+      refuse(id, 'normalise', `${lost} unreadable tokens for ${k.notes} notes`)
+      continue
+    }
+    if (!/chopin/i.test(k.refs.COM ?? '')) {
+      refuse(id, 'licence', `composer ${k.refs.COM}`)
+      continue
+    }
+    read.push({ id, file, path, src, k })
+  }
+  const cut = (s) => s?.replace(/\|/g, '').replace(/\s+/g, ' ').trim()
+  const work = (r) => cut(r.k.refs['rism-title'])?.replace(/ op\. (\S+?), no\.? ?(\d+)$/i, ', Op. $1 No. $2').replace(/ op\. (\S+)$/i, ', Op. $1')
+  const edition = (r) => r.file.replace(/-\d+[a-z-]*$/, '') // 058-1-BH-003 -> 058-1-BH
+  for (const r of read) {
+    const R = r.k.refs
+    const w = work(r)
+    const shared = w && read.filter((x) => edition(x) === edition(r) && work(x) === w).length > 1 // movements of one sonata or concerto
+    const title = w ? (shared ? `${w}: Movement ${Number(/-(\d+)[a-z-]*$/.exec(r.file)?.[1] ?? R.OMV)}` : w) : `${cut(R.OTL)?.replace(/[.,\s]+$/, '') ?? r.file}${R.OPS && !/op\./i.test(R.OTL ?? '') ? `, ${cut(R.OPS).replace(/\.$/, '')}` : ''}`
+    const opus = cut(R['rism-opus'])?.replace(/^op\. (\S+?)(?:, no\.? ?(\d+))?$/i, (_, o, n) => `Op. ${o}${n ? `, No. ${n}` : ''}`) ?? cut(R.OPS)?.replace(/\.$/, '')
+    const composer = 'Frédéric Chopin (1810–1849)'
+    const ed = `First edition: ${[R.PPR, R.PPP].filter(Boolean).join(', ')}${R.PTL ? ` (${cut(R.PTL)})` : ''}; ${DIGITAL}`
+    const why = licenceCheck({ id: r.id, licence: 'CC-BY-4.0', composer, edition: ed })
+    if (why.length) {
+      refuse(r.id, 'licence', why)
+      continue
+    }
+    const [, sub = ''] = /-\d+([a-z]*)-[A-Za-z]+(?:-|$)/.exec(r.file) ?? []
+    const container = '<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="score.xml"/></rootfiles></container>\n'
+    const url = `https://github.com/${CHOPIN}/blob/main/${r.path}`
+    inputs.push({
+      id: r.id,
+      title,
+      composer,
+      ...(opus && { opus }),
+      source: 'chopin',
+      sourceUrl: url,
+      licenceEvidence: `https://github.com/${CHOPIN}/blob/main/LICENSE.txt`,
+      licence: 'CC-BY-4.0',
+      licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      edition: ed,
+      typesetter: R.ENC?.replace(/; /g, ', ') ?? 'Fryderyk Chopin Institute', // the encoders; source and edition name the Institute
+      format: 'musicxml',
+      bytes: new Uint8Array(zip([['META-INF/container.xml', Buffer.from(container)], ['score.xml', Buffer.from(r.k.xml)]])),
+      upstreamSha: sha(r.src),
+      rank: (sub ? 10 : 0) + (CITY[R.PPP] ?? 3),
+    })
+  }
+  if (!MERGE) return
+  // the published Chopin pieces, pinned, so a first edition of the same work is a duplicate of one of them
+  const base = JSON.parse(readFileSync(`${MERGE}/catalog.json`, 'utf8'))
+  for (const p of base.pieces.filter((p) => /chopin/i.test(base.composers[p.composer].name))) {
+    const c = base.composers[p.composer]
+    const l = base.licences[p.licence]
+    inputs.push({ ...p, composer: `${c.name} (${c.born ?? ''}–${c.died})`, licence: l.id, licenceUrl: l.url, bytes: new Uint8Array(readFileSync(`${MERGE}/${p.file}`)), upstreamSha: p.sha256 })
+  }
+}
+
 const t0 = Date.now()
 let level = {}
 if (SET === 'current') {
@@ -216,6 +314,7 @@ if (SET === 'current') {
     }
   }
 } else if (SET === 'lieder') await liederSet()
+else if (SET === 'chopin') await chopinSet()
 else {
   const index = await mutopiaIndex(HTTP)
   const solo = index.filter((r) => soloKeyboard(r.instruments))

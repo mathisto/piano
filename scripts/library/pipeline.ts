@@ -9,7 +9,9 @@ import { fromMusicXml, xmlText } from '../../src/musicxml'
 import { estimateFifths, fromMidi, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { withRepeats } from './repeats'
+import { SOURCE } from '../../src/credits'
 export { pickLy, unfold } from './repeats'
+export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
 export interface Input {
   id: string
@@ -32,6 +34,7 @@ export interface Input {
   voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
   alt?: Input // a folded song's piano-only version, shipped instead when the fold fails its gates (reach())
   why?: string // why the voice was left out
+  rank?: number // between equally good versions of one work, the lower wins dedupe (build.mjs: Chopin first editions)
 }
 
 /** Gate names. fail: never shipped. review: minus 10 quality. flag: minus 3. */
@@ -215,7 +218,7 @@ export const jaccard = <T,>(a: Set<T>, b: Set<T>) => {
 }
 const idOrder = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true })
 const LIC_RANK = (l: string) => (/^(Public Domain|CC0)/.test(l) ? 0 : /-SA-/.test(l) ? 2 : 1)
-const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2 }
+const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2, chopin: 3 }
 
 /** Same composer, and the same catalogue number or a similar title, and the same tune by fingerprint: keep a pinned one, else the best one. */
 export function dedupe(items: { e: Input; a: Analysis }[], pinned = new Set<string>()): { keep: typeof items; dropped: { id: string; dupOf: string }[] } {
@@ -226,6 +229,7 @@ export function dedupe(items: { e: Input; a: Analysis }[], pinned = new Set<stri
     (x.e.format === 'musicxml' ? 0 : 1) - (y.e.format === 'musicxml' ? 0 : 1) ||
     LIC_RANK(x.e.licence) - LIC_RANK(y.e.licence) ||
     SRC_RANK[x.e.source] - SRC_RANK[y.e.source] ||
+    (x.e.rank ?? 0) - (y.e.rank ?? 0) ||
     (x.e.id < y.e.id ? -1 : 1)
   const parent = items.map((_, i) => i)
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
@@ -371,7 +375,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
 
 function licencesMd(cat: Catalog) {
   const { composers, licences, pieces } = cat
-  const credit = (p: Piece) => [p.source === 'mutopia' ? 'Mutopia Project' : p.source === 'openscore-lieder' ? 'OpenScore Lieder Corpus' : 'PDMX', p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`, p.flags.includes('voice-folded') && 'vocal line folded into the right hand', p.flags.includes('voice-dropped') && 'voice part left out'].filter(Boolean).join(', ')
+  const credit = (p: Piece) => [SOURCE[p.source], p.typesetter && `typeset by ${p.typesetter}`, p.arranger && `arr. ${p.arranger}`, p.flags.includes('voice-folded') && 'vocal line folded into the right hand', p.flags.includes('voice-dropped') && 'voice part left out'].filter(Boolean).join(', ')
   const who = (p: Piece) => {
     const c = composers[p.composer]
     return `${c.name} (${c.born ?? ''}–${c.died})`
@@ -388,7 +392,7 @@ These files are **data**, not code. The app's source code is MIT-licensed; each 
 |---|---|---|---|---|---|---|
 ${pieces.map((p) => `| \`${p.file}\` | ${cell(p.title)} | ${cell(who(p))} | [${lname(licences[p.licence].id)}](${licences[p.licence].url}) | ${cell(p.edition)} | ${cell(credit(p))} | [source](${p.sourceUrl}) |`).join('\n')}
 
-${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((p) => `- \`${p.file}\`: ${lname(licences[p.licence].id)}, ${who(p)}, ${cell(p.title)}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder).
+${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((p) => `- \`${p.file}\`: ${lname(licences[p.licence].id)}, ${who(p)}, ${cell(p.title)}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder).${pieces.some((p) => p.source === 'chopin') ? " The Chopin first editions are First Editions of Fryderyk Chopin's Music, Copyright 2017-2021 The Fryderyk Chopin Institute (https://nifc.pl), https://chopinscores.org, https://github.com/pl-wnifc/humdrum-chopin-first-editions, licensed CC BY 4.0; converted here from Humdrum **kern to MusicXML (src/kern.ts)." : ''}
 `
 }
 

@@ -29,7 +29,7 @@ export interface Piece {
   gradeWhy: number[]
   gradeOverride?: number
   tags: string[]
-  source: 'mutopia' | 'openscore-lieder' | 'pdmx'
+  source: 'mutopia' | 'openscore-lieder' | 'pdmx' | 'chopin'
   sourceUrl: string
   licenceEvidence: string
   licence: number
