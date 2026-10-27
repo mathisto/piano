@@ -174,6 +174,50 @@ describe('quantize: pickup bars', () => {
       expect(measure(s, true).crossing).toBe(0)
     }
   })
+  // Exact notation-software output (a LilyPond-style MIDI): `pickup` quarters of melody lead into bar 1; each bar has a bass and
+  // an eighth-note accompaniment that repeat every half bar, a long melody note at the start and one in the middle, and the
+  // closing chord in the middle of the last bar (the half-bar ambiguity of a Chopin nocturne or a Bach fugue). A pickup of
+  // exactly half a bar in a file whose halves are twins (`longMid`) is not decidable from the notes: not tested.
+  function engraved(n: number, den: number, pickup: number, bars = 12, longMid = true): ArrayBuffer {
+    const m = new Midi()
+    m.header.setTempo(80)
+    m.header.timeSignatures.push({ ticks: 0, timeSignature: [n, den] } as never)
+    const t = m.addTrack()
+    const B = (n * 4) / den
+    const add = (p: number, at: number, len: number) => t.addNote({ midi: p, ticks: Math.round(at * PPQ), durationTicks: Math.round(len * PPQ * 0.95), velocity: 0.7 })
+    const step = pickup > 1.5 ? 1 : 0.5 // eighths, or quarters for a long pickup
+    for (let q = 0; q < pickup; q += step) add(67, q, step)
+    for (let b = 0; b < bars; b++) {
+      const b0 = pickup + b * B
+      for (const half of [0, B / 2]) {
+        add(43 - (b % 2) * 2, b0 + half, half && !longMid ? 0.5 : B / 2) // bass, held at the start of the bar
+        for (let q = 0.5; q < B / 2; q += 0.5) add(55 + (b % 3) + (q > 1 ? 4 : 0), b0 + half + q, 0.5)
+        add(72 + ((b + (half ? 2 : 0)) % 5), b0 + half, half && !longMid ? 0.5 : B / 2 - (half ? 0.5 : 0)) // melody: long at the start, long (or short) in the middle
+      }
+    }
+    const end = pickup + bars * B + B / 2 // the closing chord, half way into the last bar
+    add(43, end, B / 2)
+    add(72, end, B / 2)
+    return m.toArray().buffer as ArrayBuffer
+  }
+  it.each([
+    ['one eighth in 12/8', 12, 8, 0.5],
+    ['one eighth in 6/8', 6, 8, 0.5],
+    ['three eighths in 6/8', 6, 8, 1.5, false],
+    ['one quarter in 4/4', 4, 4, 1],
+    ['one quarter in 3/4', 3, 4, 1],
+    ['one eighth in 2/4', 2, 4, 0.5],
+    ['two beats in 4/4', 4, 4, 2, false],
+  ])('finds %s', (_, n, den, pickup, longMid = true) => {
+    const s = imp(engraved(n, den, pickup, 12, longMid))
+    expect(s.bars[0].ql).toBe(pickup)
+    expect(s.bars).toHaveLength(14) // the pickup, twelve bars and the closing chord's
+  })
+  it.each([[4, 4], [3, 4], [6, 8], [12, 8], [2, 4]])('does not invent a pickup in %i/%i when the music starts on the barline', (n, den) => {
+    const s = imp(engraved(n, den, 0))
+    expect(s.bars[0].ql).toBeUndefined()
+    expect(s.bars).toHaveLength(13)
+  })
   it('leaves a file alone whose barlines are already right', () => {
     const s = imp(waltz(0, true))
     expect(s.bars[0].ql).toBeUndefined()

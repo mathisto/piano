@@ -20,6 +20,7 @@ export interface Piece {
   bars: number
   sec: number
   bpm: number
+  tempo?: number // quarter-note bpm the app plays a MIDI at instead of the file's own: from the .ly's tempo word (a guess, flagged 'tempo-estimated') or its metronome mark; the file is unchanged, so its sha256 and any copy kept on a device stay valid
   notes: number
   lo: number
   hi: number

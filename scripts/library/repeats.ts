@@ -320,6 +320,9 @@ function score(midi: Midi, ly: string) {
   return { r, miss, off, notes: notes.length, ok: miss <= 0.02 * notes.length }
 }
 
+/** Whether this .ly's reading matches the MIDI's onsets, i.e. it is the score that plays this file (pickLy falls back to the first .ly when none is). */
+export const plays = (bytes: Uint8Array, ly: string) => score(new Midi(ab(bytes)), ly).ok
+
 /** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
  * movement can cover a sparse one's onsets); the first when none matches. Zips may number the MIDI files by the master .ly's
  * scores and the .ly files by movement (BWV 827, 830). */

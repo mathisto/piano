@@ -57,6 +57,31 @@ describe('piano scores keep both hands', () => {
   })
 })
 
+describe('a tempo given by the caller', () => {
+  const file = (bpms?: [number, number][]) => {
+    const m = new Midi()
+    bpms?.forEach(([ticks, bpm], i) => (i ? m.header.tempos.push({ ticks, bpm } as never) : m.header.setTempo(bpm)))
+    m.header.update()
+    const t = m.addTrack()
+    for (let i = 0; i < 16; i++) t.addNote({ midi: 60 + (i % 4), ticks: i * 480, durationTicks: 400 })
+    return m.toArray().buffer as ArrayBuffer
+  }
+  it('plays a file with no tempo event at that bpm and says it was a guess', () => {
+    const plain = fromMidi(file(), 't', 'id') // 120
+    const s = fromMidi(file(), 't', 'id', 60, undefined, { bpm: 60, guess: true })
+    expect(s.end / plain.end).toBeCloseTo(2, 1)
+    expect(s.spb).toBeCloseTo(1, 2)
+    expect(s.flags).toEqual(['tempo-estimated'])
+    expect(fromMidi(file(), 't', 'id', 60, undefined, { bpm: 60, guess: false }).flags).toBeUndefined() // a number the score gave: no flag
+  })
+  it('scales a tempo map as a whole, so a change keeps its proportion', () => {
+    const was = fromMidi(file([[0, 60], [4 * 480, 120]]), 't', 'id')
+    const s = fromMidi(file([[0, 60], [4 * 480, 120]]), 't', 'id', 60, undefined, { bpm: 90, guess: true })
+    expect(s.end / was.end).toBeCloseTo(60 / 90, 2)
+    expect(s.bars[1].t1 - s.bars[1].t0).toBeCloseTo((was.bars[1].t1 - was.bars[1].t0) * (60 / 90), 2)
+  })
+})
+
 describe('hands from track names', () => {
   const file = (names: string[]) => {
     const m = new Midi()
