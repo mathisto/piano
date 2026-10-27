@@ -27,7 +27,7 @@ async function onDone(r: Result) {
     current.song.id,
     r.heat,
     r.mode === 'perform' ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
-    r.mode === 'read' || game.loop ? undefined : r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait,
+    r.mode === 'read' || game.loop ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
   )
   current.heat = prog.heat
   void store.markPlan(dayKey(), current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')

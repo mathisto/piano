@@ -78,7 +78,7 @@ function rtPhase() {
 
 export async function rtDone(r: Result) {
   const c = current!
-  const clean = r.acc >= 0.9 && r.clean
+  const clean = r.acc >= 0.9 && r.clean && r.rate >= 0.9
   const prog = await store.commit(c.song.id, r.heat, undefined, clean) // into spaced review, like a Perform run
   c.heat = prog.heat
   dock.setSong(c.song, prog.heat)
