@@ -12,7 +12,7 @@ import type { HistoryEntry, Progress, Stored, TouchEntry } from './store'
 import type { Evenness } from './even'
 import type { Song } from './song'
 import type { Starter } from './starters'
-import type { Stage, Stats } from './drill'
+import { fluentMs, type Stage, type Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, type TCard, type Trainer } from './theory'
 import { earAsk, earBlock, type EarView } from './ear'
@@ -353,6 +353,8 @@ export interface StageRow {
   seen: number
   total: number
   rt: number // mean response time of seen cards, ms (0 = none yet)
+  fluent: number // 0..1, mastery against the Fluent clock
+  fast: boolean // the Fluent tier reached
   next: boolean
   due: number // seen cards whose review is due
 }
@@ -360,14 +362,15 @@ export interface StageRow {
 const GROUPS: [string, (id: string) => boolean][] = [
   ['Treble clef', (id) => id.startsWith('t-')],
   ['Bass clef', (id) => id.startsWith('b-')],
-  ['Both clefs', (id) => id === 'grand'],
+  ['Both clefs', (id) => id === 'mixed' || id === 'grand' || id === 'oct8'],
   ['Accidentals and keys', (id) => id === 'sharps' || id === 'flats' || id.startsWith('keys-')],
   ['Melodies', (id) => id.startsWith('tune-')],
   ['Chords', (id) => id === 'ints' || id === 'triads'],
 ]
 
-const meter = (pct: number, solid: boolean, label: string) =>
-  `<div class="meter${solid ? ' solid' : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"><i style="width:${Math.round(pct * 100)}%"></i></div>`
+// Two tiers: the fill climbs to Solid in Ink Soft; past Solid, a second fill in Ink climbs to Fluent over it.
+const meter = (pct: number, solid: boolean, label: string, fluent?: number) =>
+  `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
 
 export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, tab: 'stages' | 'run', run = '') {
   let group = ''
@@ -378,11 +381,13 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
       const band = g !== group ? `<tr class="band"><th colspan="${timed ? 4 : 3}" scope="colgroup">${g}</th></tr>` : ''
       group = g
       const pct = Math.round(r.pct * 100)
+      const speed = r.solid && !r.fast && !r.next // Solid, not yet Fluent: the button practises against the tighter clock
+      const sub = r.fast ? `Solid and fluent, under ${fluentMs(r.stage) / 1000} s` : r.solid ? `Solid · Fluent at ${fluentMs(r.stage) / 1000} s` : r.seen ? `${r.seen} of ${r.total} seen` : ''
       return `${band}<tr>
-        <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
-        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`)}<b>${pct}%</b></div>${r.solid ? '<small style="color:var(--ink-3)">Solid</small>' : r.seen ? `<small style="color:var(--ink-3)">${r.seen} of ${r.total} seen</small>` : ''}</td>
+        <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.fast ? ' <span class="tag">Fluent</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
+        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`, r.fluent)}<b>${r.solid ? Math.round(r.fluent * 100) : pct}%</b></div>${sub ? `<small style="color:var(--ink-3)">${sub}</small>` : ''}</td>
         ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practice ${esc(r.stage.name)}${speed ? ' for speed' : ''}">${r.next ? icon('play') : ''}${speed ? 'For speed' : 'Practice'}</button></div></td></tr>`
     })
     .join('')
   el.innerHTML = `
@@ -648,6 +653,8 @@ export interface DrillSummary {
   after: number
   solid: boolean
   nextName: string
+  fast: boolean // a Fluent set: before, after and solid are the Fluent tier
+  goalMs: number
 }
 
 export function drillResults(d: DrillSummary) {
@@ -657,8 +664,12 @@ export function drillResults(d: DrillSummary) {
     <h2>${esc(d.stage)}: set complete</h2>
     <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · median <b>${secs(d.medianMs)}</b> a card</p>
     <div>
-      <p class="line" style="margin-bottom:6px">Stage mastery went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${d.solid ? '. Solid.' : '. It is solid when every note is first-try right and fast.'}</p>
-      <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, 'Stage mastery after this set')}<b>${Math.round(d.after * 100)}%</b></div>
+      <p class="line" style="margin-bottom:6px">${d.fast ? 'Fluent' : 'Stage mastery'} went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${
+        d.solid
+          ? d.fast ? '. Fluent.' : '. Solid. The next tier is Fluent: the same cards, faster. Practice for speed from the stage list.'
+          : `. It is ${d.fast ? 'fluent' : 'solid'} when every card is first-try right in under ${secs(d.goalMs)}.`
+      }</p>
+      <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, `${d.fast ? 'Fluent' : 'Stage mastery'} after this set`)}<b>${Math.round(d.after * 100)}%</b></div>
     </div>
     ${d.solid ? `<p class="line">Next up: <b>${esc(d.nextName)}</b></p>` : ''}
     ${
@@ -695,7 +706,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
   const [min, max] = LIMITS[s.clef]
   const names = Array.from({ length: max - min + 1 }, (_, i) => min + i).filter(WHITE)
   const picks = (cur: number) => names.map((p) => `<option value="${p}"${p === cur ? ' selected' : ''}>${noteName(p)}</option>`).join('')
-  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}"${id === 'rNotes' && s.size > 1 ? ' disabled' : ''}>${body}</select></label>`
+  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
   const slider = (id: string, label: string, lo: string, hi: string, v: number) => `<label class="field"><span>${label}</span><span class="slider"><small>${lo}</small><input id="${id}" type="range" min="0" max="1" step="0.1" value="${v}"><small>${hi}</small></span></label>`
   const notes = s.fifths ? `k${s.fifths}` : s.acc
   const saved = presets
@@ -711,7 +722,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
       ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rLo', 'From', picks(s.lo))}
       ${field('rHi', 'To', picks(s.hi))}
-      ${field('rNotes', 'Notes', [['nat', 'Naturals'], ['sharp', 'With sharps'], ['flat', 'With flats']].map(([v, l]) => `<option value="${v}"${v === notes ? ' selected' : ''}>${l}</option>`).join('') + KEYS_RUN.map(([f, l]) => `<option value="k${f}"${notes === `k${f}` ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rNotes', 'Notes', (s.size > 1 ? [['nat', 'Naturals']] : [['nat', 'Naturals'], ['sharp', 'With sharps'], ['flat', 'With flats']]).map(([v, l]) => `<option value="${v}"${v === notes ? ' selected' : ''}>${l}</option>`).join('') + KEYS_RUN.map(([f, l]) => `<option value="k${f}"${notes === `k${f}` ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rSize', 'Cards', [[1, 'Single notes'], [2, 'Intervals'], [3, 'Triads']].map(([v, l]) => `<option value="${v}"${v === s.size ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rLength', 'Length', [[0, 'Endless'], [10, '10 cards'], [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rAhead', 'Reading ahead', [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']].map(([v, l]) => `<option value="${v}"${v === s.ahead ? ' selected' : ''}>${l}</option>`).join(''))}

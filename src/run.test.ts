@@ -87,3 +87,28 @@ describe('the tally', () => {
     expect([a.streak, a.best, a.cards, a.clean]).toEqual([0, 6, 7, 6])
   })
 })
+
+import { deckSong } from './drill'
+import { keyAcc, spell } from './spell'
+
+describe('intervals and triads in a key', () => {
+  it('stack the key’s own notes and carry its signature', () => {
+    const g = runCards(spec({ size: 2, lo: 67, hi: 79, fifths: 1 }))
+    expect(g.length).toBeGreaterThan(0)
+    expect(g.every((c) => c.fifths === 1 && c.pitches.every((p) => p % 12 !== 5))).toBe(true) // F sharp, never F
+    expect(g.some((c) => c.pitches.includes(78))).toBe(true)
+    const d = runCards(spec({ size: 3, lo: 62, hi: 74, fifths: 2 }))
+    expect(d[0].pitches).toEqual([62, 66, 69]) // D F♯ A
+    expect(d.every((c) => Math.max(...c.pitches) <= 74)).toBe(true)
+  })
+  it('need no sign beside any note: every accidental is in the signature', () => {
+    for (const fifths of [-3, -2, 1, 3]) {
+      const song = deckSong('x', 'x', runCards(spec({ size: 3, lo: 60, hi: 79, fifths })), fifths)
+      const ka = keyAcc(fifths)
+      expect(song.notes.every((n) => { const s = spell(n.p, fifths, n.acc); return s.acc === ka[s.letter] }), String(fifths)).toBe(true)
+    }
+  })
+  it('naturals stay on the white keys in C', () => {
+    expect(runCards(spec({ size: 3, lo: 60, hi: 72 }))[0]).toMatchObject({ pitches: [60, 64, 67], fifths: undefined })
+  })
+})

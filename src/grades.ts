@@ -1,4 +1,4 @@
-import { STAGES as DRILL, mastery as drillMastery, type Stats } from './drill'
+import { STAGES as DRILL, fluentMs, mastery as drillMastery, type Stats } from './drill'
 import { cardKey, cardsOf, mastery as scaleMastery, STAGES as SCALES, type ScaleStats } from './scales'
 import { SYLLABUS, stateOf, type TechStats } from './syllabus'
 import type { Opts } from './technique'
@@ -10,7 +10,7 @@ import { deckOf, type Trainer } from './theory'
  * cadences, then reading and theory. The levels are our own; no exam board is named or implied.
  * A requirement with no `check` is listed as coming: no feature trains it yet, so it never shows progress.
  */
-export type Start = { kind: 'scale'; id: string } | { kind: 'read'; id: string } | { kind: 'tech'; id: string } | { kind: 'theory'; trainer: Trainer; level: number }
+export type Start = { kind: 'scale'; id: string } | { kind: 'read'; id: string; fast?: boolean } | { kind: 'tech'; id: string } | { kind: 'theory'; trainer: Trainer; level: number }
 export interface Ctx {
   scales: ScaleStats
   drill: Stats
@@ -46,15 +46,16 @@ const scale = (level: number, id: string, name: string, extra = ''): Req => {
   }
 }
 
-const read = (level: number, name: string, detail: string, ids: string[]): Req => {
+// `fast` asks for the Fluent tier: the same stages against fluentMs
+const read = (level: number, name: string, detail: string, ids: string[], fast = false): Req => {
   const sts = DRILL.filter((s) => ids.includes(s.id))
   return {
     level,
     name,
     detail,
-    start: { kind: 'read', id: sts[0].id },
+    start: { kind: 'read', id: sts[0].id, ...(fast && { fast }) },
     check: (c) => {
-      const ms = sts.map((s) => drillMastery(s, c.drill))
+      const ms = sts.map((s) => drillMastery(s, c.drill, fast ? fluentMs(s) : s.goalMs))
       return { pct: ms.reduce((a, m) => a + (m.solid ? 1 : m.pct), 0) / ms.length, started: ms.some((m) => m.seen > 0) }
     },
   }
@@ -103,7 +104,7 @@ export const REQS: Req[] = [
   scale(2, 's2', 'Scales: two octaves, hands together'),
   tech(2, 'Contrary motion', 'Both hands out from the tonic and back, C major.', (o) => o.pattern === 'contrary'),
   tech(2, 'Arpeggios, major', 'Broken chords over the octave.', (o) => o.pattern === 'arp' && !o.minor),
-  read(2, 'Reading: the octave and the staff', 'Treble and bass, an octave out from the landmarks.', ['t-oct', 't-staff', 'b-oct', 'b-staff']),
+  read(2, 'Reading: the octave and the staff', 'Treble and bass, an octave out from the landmarks.', ['t-oct', 't-anch', 't-staff', 'b-oct', 'b-anch', 'b-staff']),
   read(2, 'Reading: G and F major', 'One sharp, one flat in the key signature.', ['keys-g', 'keys-f']),
   theory(2, 'Triads in every key', 'Major and minor from any root.', 'chords', 2),
 
@@ -114,6 +115,8 @@ export const REQS: Req[] = [
   theory(3, 'Triads with inversions', 'Major and minor, root position and the two inversions.', 'chords', 3, /^chord:(maj|min):\d+:[12]$/),
   theory(3, 'Intervals, second to fifth', 'Play the note above or below.', 'intervals', 1, /^iv:(1|2|3|4|5|7):/),
   read(3, 'Reading: four-note tunes and accidentals', 'Short lines in C, G and F; sharps and flats.', ['tune-c', 'tune-g', 'tune-f', 'sharps', 'flats']),
+  read(3, 'Reading: ledger lines and switching clefs', 'One and two ledger lines in each clef, then cards that change clef every time.', ['t-led1', 't-led2', 'b-led1', 'b-led2', 'mixed']),
+  read(3, 'Reading: A and D minor', 'The minor key signatures, with the raised seventh.', ['keys-am', 'keys-dm']),
   theory(3, 'Cadence ii–V–I', 'Adds the dominant preparation.', 'cadences', 2),
 
   scale(4, 's4', 'Scales: the black-key keys'),
@@ -123,6 +126,7 @@ export const REQS: Req[] = [
   theory(4, 'Cadences, all four', 'Adds I–V–vi–IV and I–vi–IV–V.', 'cadences', 3),
   theory(4, 'Key signatures', 'The chord of a signature, and the sharps or flats of a key.', 'keys', 1),
   read(4, 'Reading: the whole grand staff', 'Both clefs, intervals and triads.', ['grand', 'ints', 'triads', 'b-low', 't-high']),
+  read(4, 'Reading: two and three sharps or flats', 'D, B♭, A and E♭ major.', ['keys-d', 'keys-bb', 'keys-a', 'keys-eb']),
 
   scale(5, 's5', 'Scales: all 24 keys together'),
   scale(5, 's6', 'Scales: up to speed'),
@@ -132,6 +136,8 @@ export const REQS: Req[] = [
   theory(5, 'Seventh chords', 'Major, dominant, minor and half-diminished sevenths.', 'chords', 4),
   theory(5, 'Intervals, all', 'Every interval above and below, any note.', 'intervals', 1),
   theory(5, 'Scale degrees', 'The 2nd to 7th note of any major key.', 'degrees', 1),
+  read(5, 'Reading: octave signs and reading ahead', 'Notes under 8va and 8vb, and tunes whose next notes vanish.', ['oct8', 'tune-a1', 'tune-a2']),
+  read(5, 'Reading at speed', 'The staff in both clefs, fluent: every note first try in about 1.5 s.', ['t-staff', 'b-staff', 'mixed'], true),
 ]
 
 export function rowOf(r: Req, c: Ctx): Row {

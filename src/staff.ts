@@ -103,7 +103,7 @@ export class Staff {
     for (; this.seen < this.timeline.length && this.timeline[this.seen].t < t - 0.02; this.seen++) this.timeline[this.seen].el.classList.add('past')
   }
 
-  /** Sight Run's reading ahead: only the next `lookahead` beats of notes show, the rest stay blank until the cursor nears them. 0 shows everything. */
+  /** Sight Run's reading ahead: only the next `lookahead` beats of notes show, the rest stay blank until the cursor nears them. 0 shows everything; below 0 covers the next beats instead (Read ahead stages). */
   lookahead = 0
   /** Read through's reading ahead: once the music moves, only the bar being played and the next `aheadBars - 1` show. 0 shows everything. */
   aheadBars = 0
@@ -123,7 +123,19 @@ export class Staff {
     if (i === this.peeked) return
     this.peeked = i
     const t0 = i >= 0 ? g.song.notes[i].t : 0
-    for (const [id, p] of this.byId) p.grp.classList.toggle('ahead', i >= 0 && g.song.notes[id].t - t0 > n - 0.5)
+    // a negative lookahead covers instead: once the first card is played, the next -n beats are hidden, so they must be read ahead
+    const hide = (d: number) => (n > 0 ? d > n - 0.5 : t0 > 0 && d >= 0 && d < -n - 0.5 && !(d === 0 && g.song.notes[i] === this.shown))
+    for (const [id, p] of this.byId) p.grp.classList.toggle('ahead', i >= 0 && hide(g.song.notes[id].t - t0))
+  }
+
+  /** A wrong key on a covered card shows it again, so a forgotten note never strands the player (the card already counts as missed). */
+  private shown?: object // the awaited note of the covered card a wrong key showed (a new song has new notes)
+  uncover() {
+    const i = this.game.judge.nextPending()
+    if (this.lookahead >= 0 || i < 0) return
+    this.shown = this.game.song.notes[i]
+    this.peeked = -2
+    this.peek()
   }
 
   /** In wait mode, light the noteheads the song is waiting for. */

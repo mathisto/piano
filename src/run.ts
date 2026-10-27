@@ -1,4 +1,4 @@
-import { cards, whites, weight, type Card, type Stage, type Stats } from './drill'
+import { cards, keyNotes, weight, type Card, type Stage, type Stats } from './drill'
 
 /** Sight Run: a reading drill you build yourself, from a range, a spread and a pace. */
 export interface RunSpec {
@@ -27,25 +27,18 @@ export const goalMs = (s: RunSpec) => GOAL[s.size]
 
 const BLACKS = [1, 3, 6, 8, 10]
 const isBlack = (p: number) => BLACKS.includes(p % 12)
-const MAJOR = [0, 2, 4, 5, 7, 9, 11]
-const tonic = (fifths: number) => (((fifths * 7) % 12) + 12) % 12
 
-/** Pitches the spec can deal as a root. */
-export function runPitches(s: RunSpec): number[] {
-  const inKey = s.fifths ? MAJOR.map((i) => (tonic(s.fifths) + i) % 12) : null
-  const out: number[] = []
-  for (let p = s.lo; p <= s.hi; p++) {
-    if (inKey ? inKey.includes(p % 12) : s.acc === 'nat' ? !isBlack(p) : true) out.push(p)
-  }
-  return out
-}
+/** Pitches the spec can deal as a root: the key's notes, the white keys, or every key. */
+export const runPitches = (s: RunSpec): number[] =>
+  s.fifths || s.acc === 'nat' ? keyNotes(s.lo, s.hi, s.fifths) : Array.from({ length: s.hi - s.lo + 1 }, (_, i) => s.lo + i)
 
 /** Every card the spec can deal. */
 export function runCards(s: RunSpec): Card[] {
   const hand = (p: number) => (s.clef === 'treble' ? 'R' : s.clef === 'bass' ? 'L' : p >= 60 ? 'R' : 'L')
   if (s.size === 1)
     return runPitches(s).map((p) => ({ pitches: [p], hand: hand(p), flat: s.acc === 'flat' && !s.fifths && isBlack(p) ? true : undefined, fifths: s.fifths || undefined }))
-  const stage: Stage = { id: 'run', name: '', blurb: '', pool: whites(s.lo, s.hi), size: s.size, goalMs: goalMs(s) }
+  // intervals and triads stack the key's own notes, read under its signature (naturals: C major)
+  const stage: Stage = { id: 'run', name: '', blurb: '', pool: keyNotes(s.lo, s.hi, s.fifths), size: s.size, goalMs: goalMs(s), fifths: s.fifths || undefined }
   return cards(stage)
     .filter((c) => c.pitches[c.pitches.length - 1] <= s.hi)
     .map((c) => ({ ...c, hand: hand(c.pitches[0]) }))

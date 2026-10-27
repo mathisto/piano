@@ -13,7 +13,7 @@ import * as coach from './coach'
 import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
 import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
 import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec, type Tally } from './run'
-import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
+import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, fluentMs, focus, mastery, nextStage, record, reviewPool, stageDeck, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
 import { Highway } from './highway'
 import { icon } from './icons'
@@ -78,6 +78,7 @@ interface Drill {
   cleanN: number
   rts: number[]
   before: number
+  fast?: boolean // the Fluent tier: the same stage against fluentMs
   run?: RunCtx
 }
 // Sight Run: one setup, dealt a set of cards at a time until you finish or run out of lives.
@@ -180,8 +181,9 @@ async function stageRows(): Promise<StageRow[]> {
   const f = focus(drillStats)
   return STAGES.map((stage) => {
     const m = mastery(stage, drillStats)
+    const fl = mastery(stage, drillStats, fluentMs(stage))
     const seen = cards(stage).map((c) => drillStats[cardKey(c)]).filter(Boolean)
-    return { stage, ...m, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === f.stage, due: dueCards(stage, drillStats) }
+    return { stage, ...m, fluent: fl.pct, fast: fl.solid, rt: seen.length ? seen.reduce((a, b) => a + b.rt, 0) / seen.length : 0, next: stage === f.stage, due: dueCards(stage, drillStats) }
   })
 }
 
@@ -259,7 +261,7 @@ async function startReq(s: Start) {
   if (s.kind === 'scale') {
     const st = SCALE_STAGES.find((x) => x.id === s.id)!
     startScale(nextCard(st, await store.getScales()), st.bpm)
-  } else if (s.kind === 'read') void startDrill(stageById(s.id)!)
+  } else if (s.kind === 'read') void startDrill(stageById(s.id)!, s.fast)
   else if (s.kind === 'tech') void openSong(exercise((SYLLABUS.find((r) => r.id === s.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
   else {
     theoryLevels[s.trainer] = s.level
@@ -403,7 +405,7 @@ function readRun(): RunSpec {
   let hi = Number(v('rHi'))
   if (lo > hi) [lo, hi] = [hi, lo]
   const [min, max] = LIMITS[clef]
-  const n = Number(v('rSize')) > 1 ? 'nat' : v('rNotes') // intervals and triads are built on white keys
+  const n = Number(v('rSize')) > 1 && !v('rNotes').startsWith('k') ? 'nat' : v('rNotes') // intervals and triads: naturals or a key, no loose sharps or flats
   return {
     clef,
     lo: Math.max(min, lo),
@@ -1055,6 +1057,7 @@ game.on((e: GameEvent) => {
     case 'wrong':
       highway.wrong(e.p)
       staff.ghostBad(e.p)
+      staff.uncover()
       break
     case 'loop':
       fixChain(e.clean)
@@ -1250,13 +1253,14 @@ async function rtDone(r: Result) {
 
 const stageById = (id: string) => STAGES.find((s) => s.id === id)
 
-async function startDrill(which: Stage | 'review') {
+async function startDrill(which: Stage | 'review', fast = false) {
   drillStats = await store.getDrill()
   const stage = which === 'review' ? undefined : which
-  const pool = stage ? cards(stage) : reviewPool(drillStats)
-  const goal = stage ? stage.goalMs : 3000
-  const d = deck(pool, drillStats, goal, stage?.scale ? 10 : 24) // a fragment takes four beats
-  const title = stage ? stage.name : 'Weak notes review'
+  fast = fast && !!stage
+  const goal = stage ? (fast ? fluentMs(stage) : stage.goalMs) : 3000
+  const n = stage?.scale ? 10 : 24 // a fragment takes four beats
+  const d = stage ? stageDeck(stage, drillStats, goal, n) : deck(reviewPool(drillStats), drillStats, goal, n)
+  const title = stage ? `${stage.name}${fast ? ', for speed' : ''}` : 'Weak notes review'
   const song = deckSong(`drill:${stage ? stage.id : 'review'}`, title, d, stage?.fifths ?? 0)
   const noteCard = noteCards(d, song)
   drill = {
@@ -1271,11 +1275,13 @@ async function startDrill(which: Stage | 'review') {
     streak: 0,
     cleanN: 0,
     rts: [],
-    before: stage ? mastery(stage, drillStats).pct : 0,
+    before: stage ? mastery(stage, drillStats, goal).pct : 0,
+    fast,
   }
   run = undefined
   $('#stagesBtn').textContent = 'All stages'
   await openSong(song, 'read')
+  staff.lookahead = -(stage?.cover ?? 0)
   drillHud()
 }
 
@@ -1411,7 +1417,7 @@ async function drillDone() {
   void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
   void store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
   const stage = d.stage === 'review' ? undefined : d.stage
-  const m = stage ? mastery(stage, drillStats) : undefined
+  const m = stage ? mastery(stage, drillStats, d.goal) : undefined
   const nxt = nextStage(drillStats)
   const res = $('#res')
   res.innerHTML = drillResults({
@@ -1424,11 +1430,13 @@ async function drillDone() {
     after: m ? m.pct : 0,
     solid: !!m?.solid,
     nextName: nxt.name,
+    fast: !!d.fast,
+    goalMs: d.goal,
   })
   resOpen(true)
   $('#nextSet', res).focus()
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
-  $('#nextSet', res).onclick = () => void startDrill(m?.solid && stage ? nxt : (d.stage as Stage | 'review')).then(() => game.toggle())
+  $('#nextSet', res).onclick = () => void (m?.solid && stage ? startDrill(nxt) : startDrill(d.stage, d.fast)).then(() => game.toggle())
   $('#toStages', res).onclick = leave
 }
 
@@ -1829,7 +1837,7 @@ $('#read').addEventListener('change', (e) => {
     s = { ...s, ...(s.clef === 'bass' ? { acc: s.acc } : {}) }
   }
   void saveRun(s)
-  if (id === 'rClef' || id === 'rSize') void showRead() // the pickers list a different span of notes; intervals and triads have no key or sharps
+  if (id === 'rClef' || id === 'rSize') void showRead() // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats
 })
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
@@ -1846,7 +1854,7 @@ $('#read').addEventListener('click', (e) => {
     void saveRun({ ...readRun(), lo, hi }).then(showRead)
   } else if (b.dataset.stage) {
     const st = stageById(b.dataset.stage)
-    if (st) void startDrill(st)
+    if (st) void startDrill(st, !!b.dataset.fast)
   } else if (b.dataset.review) void startDrill('review')
 })
 
