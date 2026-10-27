@@ -285,6 +285,42 @@ describe('musicxml articulation and hairpins', () => {
     expect(r.wedges).toHaveLength(2)
     expect(r.marks?.map((m) => m.text)).toEqual(['p', 'mf', 'mf', 'f'])
   })
+  describe('hairpins in words', () => {
+    // one note per beat, 4/4, 8 bars; `at` maps a bar number to the directions written at its start
+    const piece = (at: Record<number, string>, bars = 8) => {
+      const dir = (x: string) => (x.startsWith('<') ? x : `<words>${x}</words>`)
+      const ms = Array.from({ length: bars }, (_, i) => `<measure number="${i + 1}">${i ? '' : '<attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><dynamics><p/></dynamics></direction-type></direction>'}${at[i + 1] ? `<direction><direction-type>${dir(at[i + 1])}</direction-type></direction>` : ''}${'<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration></note>'.repeat(4)}</measure>`)
+      return fromMusicXml(`<score-partwise><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">${ms.join('')}</part></score-partwise>`, 't', 'id')
+    }
+    const bar = (s: ReturnType<typeof piece>, b: number) => s.notes.filter((n) => n.bar === b).map((n) => n.v)
+    it('cresc. runs to the next dynamic and moves the notes under it', () => {
+      const s = piece({ 2: 'cresc.', 5: '<dynamics><f/></dynamics>' })
+      expect(s.wedges).toHaveLength(1)
+      expect(s.wedges![0].up).toBe(true)
+      const v = s.notes.map((n) => n.v)
+      expect(v[3]).toBeCloseTo(0.35) // bar 1 is p
+      expect(v[4]).toBeCloseTo(0.35) // the word's first note
+      for (let i = 5; i < 16; i++) expect(v[i]).toBeGreaterThan(v[i - 1])
+      expect(v[16]).toBeCloseTo(0.78)
+    })
+    it('dim. with no dynamic after it runs four bars, steps down one mark and holds', () => {
+      for (const w of ['dim.', 'diminuendo', 'decresc.', 'decrescendo']) {
+        const s = piece({ 2: w }, 10)
+        expect(s.wedges).toHaveLength(1)
+        expect(s.wedges![0].up).toBe(false)
+        expect(s.notes.filter((n) => n.bar < 6).map((n) => n.v).at(-1)).toBeLessThan(0.35)
+        expect(bar(s, 6)[0]).toBeCloseTo(0.2) // p less one step, held to the end
+        expect(bar(s, 9)[3]).toBeCloseTo(0.2)
+      }
+    })
+    it('a word near the end of the part stops there; a hairpin drawn with its word is one hairpin; other words are not hairpins', () => {
+      expect(piece({ 7: 'poco cresc.' }).wedges).toHaveLength(1)
+      const w = '<wedge type="crescendo"/>'
+      const both = piece({ 3: `<words>cresc.</words></direction-type><direction-type>${w}`, 6: '<wedge type="stop"/>' }) // the word at the hairpin's own start
+      expect(both.wedges).toHaveLength(1)
+      for (const t of ['rit.', 'a tempo', 'Allegro', 'crescent moon', 'dimly']) expect(piece({ 2: t }).wedges).toBeUndefined()
+    })
+  })
   it('keeps where the dynamic letters are written', () => {
     expect(s.marks).toEqual([{ t: 0, text: 'p' }, { t: 16, text: 'f' }])
   })

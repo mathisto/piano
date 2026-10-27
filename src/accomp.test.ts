@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
-import { choices, chooserHtml, partsOf, yourPart } from './accomp'
+import { choices, chooserHtml, partsOf, voiceOf, yourPart } from './accomp'
 import * as audio from './audio'
 import { Game } from './game'
 import { fromMusicXml, xmlText } from './musicxml'
 import { Midi } from '@tonejs/midi'
 import { fromMidi, fromSpec, type Song } from './song'
 
-vi.mock('./audio', () => ({ noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn() }))
+vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn() }))
 
 // bundled OpenScore songs with the voice folded into the piano's right hand: in lc6917116 the piano doubles every sung note, in lc4976849 it does not
 async function lied(id = 'lc6917116'): Promise<Song> {
@@ -63,6 +63,23 @@ describe('accompaniment', () => {
     expect(chooserHtml(s, BOTH, new Set(), esc)).not.toContain('hint')
     expect(yourPart(s, BOTH, new Set())).toBeNull()
     expect(yourPart(s, BOTH, new Set([0]))).toEqual({ you: 'the piano part', app: 'the voice part' })
+  })
+
+  it('the app sings a voice-named part on strings and plays the rest on the setting\'s instrument', async () => {
+    const s = await lied('lc4976849')
+    const as = () => vi.mocked(audio.noteOn).mock.calls.map((c) => c[3])
+    expect(voiceOf(s, s.notes.find((n) => n.part === 0)!)).toBe('strings')
+    expect(voiceOf(s, s.notes.find((n) => n.part === 1)!)).toBeUndefined()
+    perform(s, { hands: BOTH, parts: [0] }) // the app plays the voice
+    expect(as().length).toBeGreaterThan(20)
+    expect(as().every((a) => a === 'strings')).toBe(true)
+    expect(audio.preload).toHaveBeenCalledWith('strings')
+    perform(s, { hands: BOTH, parts: [1] }) // the app plays the piano
+    expect(as().every((a) => a === undefined)).toBe(true)
+    const named = (name: string) => voiceOf({ parts: [name] } as Song, { part: 0 } as never)
+    expect(['Voice', 'Singstimme', 'Gesang', 'Canto', 'Soprano', 'Alto', 'Tenor', 'Bass', 'Voice 1'].map(named)).toEqual(Array(9).fill('strings'))
+    expect(['Piano', 'Klavier', 'Altos saxophone', 'Violin'].map(named)).toEqual(Array(4).fill(undefined))
+    expect(voiceOf(duo(), duo().notes[0])).toBeUndefined() // a two-hand piece has no parts
   })
 
   it('a one-hand piece played whole is a run of the piece, not your part of it', () => {

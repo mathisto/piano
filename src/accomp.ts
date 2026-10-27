@@ -16,6 +16,11 @@ const MAX_PARTS = 4 // past this a chooser is a list nobody reads; hands still w
 /** The app plays a note when every part that wrote it is the app's: a voice the piano doubles is still yours at the piano. */
 export const byApp = (n: Note, parts: Set<number>) => n.part !== undefined && parts.has(n.part) && (n.also === undefined || parts.has(n.also))
 
+const VOICE = /(?<!\p{L})(voice|vocals?|singstimme|gesang|stimme|canto|chant|soprano|sopran|mezzo|alto|contralto|tenor|baritone|bariton|bass|basso)(?!\p{L})/iu
+
+/** The instrument that sings a note when the app plays it: strings for a part named like a voice (a folded Lied's voice line), else the setting's. */
+export const voiceOf = (song: Song, n: Note): string | undefined => (n.part !== undefined && VOICE.test(song.parts?.[n.part] ?? '') ? 'strings' : undefined)
+
 /** Source parts with notes, in score order. */
 export function partsOf(song: Song): number[] {
   return [...new Set(song.notes.flatMap((n) => [n.part, n.also].filter((p) => p !== undefined)))].sort((a, b) => a - b)
