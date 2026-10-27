@@ -16,11 +16,11 @@ Primary: Matt, an adult beginner with a Roland FP-10 (USB MIDI to a Mac, Chrome)
 
 ## Product Purpose
 
-Turn any MIDI file (v2: MusicXML) into a falling-notes game on the keyboard you own, and make it a real practice tool, not only a game. Success: the player improves at reading and playing, and wants to come back daily.
+A practice tool for a piano or MIDI keyboard you already own. Any MIDI or MusicXML file becomes falling notes on a calm grand staff, and around that sit the other things a learner needs: sight-reading stages and runs, scales with fingering, theory and ear trainers, touch and timing coaching, and a big open library of credited scores. It tells you what to practise today and shows the one thing to fix. Success: the player improves at reading and playing, and wants to come back daily.
 
 ## Positioning
 
-Open, no-account, in-browser. Combines what is split across other tools: Synthesia-style falling notes from arbitrary files, learn-oriented controls (wait mode, tempo, loop, hands separate) and, in v2, sight-reading drills in the spirit of sightreading.training, with rhythm-game scoring and juice. Not a walled catalog like Simply Piano or Flowkey; not desktop-only like Synthesia.
+Open, free, no-account, in-browser. Combines what is split across other tools: Synthesia-style falling notes from arbitrary files, learn-oriented controls (wait mode, tempo, loop, hands separate), sight-reading drills in the spirit of sightreading.training, scale fingering, theory and ear trainers, and read-through of real pieces. Free with no subscription and no ads, which the Credits and Set up sheets say. Not a walled catalog like Simply Piano or Flowkey; not desktop-only like Synthesia.
 
 ## Operating Context
 
@@ -28,28 +28,36 @@ Open, no-account, in-browser. Combines what is split across other tools: Synthes
 - No lit keys, no hardware lighting. "Lighting" means on-screen visual effects only.
 - iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app is dark-only by decision (Apple allows it for immersive apps). The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
 - Audio and display latency are real; a one-time calibration sets a user offset. Screen mirroring to an iPad adds display lag.
-- Content: users import their own MIDI files (stay in the browser); a few public-domain pieces ship (Mutopia / OpenScore, license checked per piece). The repo is public, so no copyrighted MIDI is committed.
+- Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 500 pieces from Mutopia and OpenScore, graded 1 to 4, is served at pianoforte.mattkelly.io/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
 
 ## Capabilities and Constraints
 
-- Five places: Today (a generated plan, the week, a weekly goal), Songs (starter pieces, your files, an open library of credited public-domain and openly licensed scores), Read (sight-reading stages), Technique (a syllabus of scales, arpeggios, rhythm and touch exercises), Progress (mastery, touch history).
-- Play: Perform (scored, count-in) and Learn (wait mode, tempo ladder with Auto tempo, A-B loop, hands, hold to advance, hide played); ghost notes, chord readout, hold and pedal grading, key-velocity targets and calibration; judgement words go quiet as playing gets clean and note names fade as reading improves.
-- Import: MIDI and MusicXML (.musicxml, .mxl) with repeats and dynamics; a notation layer (quantization, tuplets, ties, voices) so imperfect performance MIDI reads as music; track selection, hands per track and Simplify levels for busy arrangements; credits for library pieces and sounds.
+- Seven places: Today (a generated plan of 5, 10, 20, 30 or 45 minutes, the week, a weekly goal, a day streak with freezes), Songs (starter pieces, your files, a searchable open library with level and composer filters, offline saving and Read through), Read (sight-reading stages and Sight Run, a run you build yourself), Scales (stages, a chooser and a quiz, with fingering numbers on the staff), Theory (chord, key, interval and cadence trainers, ear and rhythm-echo trainers, all answered on the keyboard), Technique (a syllabus of patterns, arpeggios, rhythm and touch exercises), Progress (this week, accuracy over time, notes you know, mastery, the Path of five levels, touch history).
+- Play: Perform (count-in, accuracy and notes in a row, no points or ranks) and Learn (wait mode, tempo ladder with Auto tempo, A-B loop, hands, hold to advance, hide played); Read through (a 30-second look-through, then one no-stop pass of an easy piece); ghost notes, chord readout, hold and pedal grading, key-velocity targets and calibration; judgement words go quiet as playing gets clean and note names fade as reading improves.
+- Touch coaching: evenness of loudness, timing evenness with bias apart from spread, legato and staccato length, voicing between the hands, live marks that fade as the touch evens out, and an occasional quiet test run; a key-touch setting and a first-run Set up sheet.
+- Import: MIDI and MusicXML (.musicxml, .mxl) with repeats, D.C./D.S./Fine/Coda, key changes, spelling and dynamics; a notation layer (quantization, tuplets, ties, voices) so imperfect performance MIDI reads as music; track selection, hands per track and Simplify levels for busy arrangements; credits for library pieces and sounds.
 - Sound: sampled grand piano plus five lazy-loaded instruments; the keyboard's own speakers by default.
 - Local only: progress, settings, practice time and imported songs in IndexedDB, JSON export and import. No accounts, no cloud.
 - Web MIDI called directly in browsers; the iPad app reaches CoreMIDI through a small plugin that fakes the same API.
 - Deploys to pianoforte.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano` (the app is Piano Forte, PF for short: a play on "pianoforte", and on finding your forte).
-- Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them); 
+- Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them).
 
 ## Brand Commitments
 
-- Visual direction is neon arcade (user-pinned).
+- Visual direction is the neon cabinet at night (user-pinned): the dark room, lit lanes and the amber lamp stay. The arcade scoring went in October 2026: no points, ranks, lives, combos or fireworks.
 - Sheet music must stay clearly readable. The staff is the learning objective; effects must never fight it.
 - Binding anti-goals: not a kids' game, not a sterile music app, effects never obscure notation, no strobing or excess flash.
 
 ## Evidence on Hand
 
-No existing assets, brand, copy, or song content. Nothing to fabricate from; starter songs must come from verified public-domain sources.
+No existing assets, brand, copy, or song content. Nothing to fabricate from; starter songs and library scores must come from verified public-domain or openly licensed sources. Cover art is generated by the owner (docs/art/covers.md).
+
+The product follows evidence, kept in docs/research/ and docs/STRATEGY.md. The sources by name:
+- Learning science: a review of practice research (testing and spacing are strong; "guidance hypothesis" says live feedback helps now and can cap learning later, so marks fade and some runs are unaided); Duke, Simmons and Cash 2009 for stop, isolate, slow, repeat and put back; Mishra 2014 (sight-reading grows with volume of new easy music, so Read through points at real pieces); Silverman and Barasch 2023 (streaks with repair or freeze); Hanus and Fox 2015 and Deci 1999 (points and expected rewards do not raise intrinsic motivation).
+- Products and UX: leafo's open source sightreading.training, a survey of 16 apps (Melodics' separation of effort from skill among them), an independent UI critique and iPad UX notes.
+- Syllabi: ABRSM, RCM and Trinity graded requirements for the order and tempi of scales and technique, used with generic level names and no implied endorsement.
+- Theory, ear and rhythm survey for the trainers.
+Beliefs the evidence does not support are not built on: more minutes alone, learning styles, "more feedback is always better", slow practice as proven, gamification as a sure motivator, music making you smarter. Key velocity feedback has no controlled evidence, so touch features are measurement, not pedagogy.
 
 ## Product Principles
 
@@ -57,8 +65,11 @@ No existing assets, brand, copy, or song content. Nothing to fabricate from; sta
 2. Notation is sacred: neon is for state and feedback, the staff stays calm and legible.
 3. Friendly to a learner: training wheels (note names, wait mode, slow tempo) are on by default and fade as mastery grows.
 4. Timing honesty: calibrate for the real chain (keyboard, USB/BLE, audio, display) and be explicit about what is measured.
-5. Local and open: no accounts, user files stay in the browser, nothing copyrighted ships.
+5. Local and open: no accounts, user files stay in the browser, nothing copyrighted ships, every library score is credited under its own licence.
+6. Free: no subscription, no ads, no account, and the app says so.
+7. Skill over points: reward information (your own trend, mastery that can fall, a weekly goal, a quiet day streak), never points, ranks, lives or leaderboards. Effort only goes up; nothing is locked; a recommended plan is a default, not a gate.
+8. Evidence-led: choices cite research or say they are bets; features that measure (touch, timing) are framed as measurement.
 
 ## Accessibility & Inclusion
 
-Feedback uses shape and position as well as colour. A chill/effects slider, `prefers-reduced-motion` support, and a cap on flash rate (no strobing). Full keyboard operability of menus; the highway itself is MIDI-driven. Note-name labels optional for learners.
+Feedback uses shape and position as well as colour. An Effects switch (Off or Calm), `prefers-reduced-motion` support, and a cap on flash rate (no strobing). Full keyboard operability of menus; the highway itself is MIDI-driven. Note-name labels optional for learners.

@@ -2,6 +2,8 @@
 
 Synthesis of `docs/research/learning-science.md`, `docs/research/products-and-ux.md` and `docs/research/ui-critique.md` (19 Oct 2026). This is the decision record. The roadmap carries the work; DESIGN.md carries the look.
 
+Later decisions that change it (October 2026): row 7 is relaxed, a quiet day streak with freezes is allowed on Today and Progress (Silverman and Barasch 2023); the arcade is gone, so the effects tiers are Off and Calm and Perform shows accuracy and notes in a row, not score and combo; there are now seven places, not five (Scales and Theory were added); the Settings list has gained Touch coach, Key touch and Count-in click, plus a first-run Set up sheet.
+
 ## The one-sentence product
 
 A practice tool that tells you what to practise today, lets you play it on your own keyboard, shows you the one thing to fix, and gets out of the way.
@@ -25,7 +27,7 @@ A practice tool that tells you what to practise today, lets you play it on your 
 
 ## Information architecture
 
-Five places, in the order a practice day uses them:
+Five places, in the order a practice day uses them (Scales and Theory were added between Read and Technique later):
 
 **Today · Songs · Read · Technique · Progress**
 

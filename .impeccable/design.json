@@ -312,11 +312,11 @@
       },
       "hud-numeral": {
         "displayName": "HUD numeral",
-        "purpose": "Score, combo, cards (30px) with a 12px caption stacked above. Combo and multiplier are Ink."
+        "purpose": "Accuracy, notes in a row, streak, cards (30px) with a 12px caption stacked above, all Ink."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Drawer and help headings, big buttons, tempo value, table grade (28px)."
+        "purpose": "Drawer and help headings, big buttons, tempo value (28px)."
       },
       "body": {
         "displayName": "Body",
@@ -330,13 +330,9 @@
         "displayName": "Notation",
         "purpose": "Bravura SMuFL staff glyphs."
       },
-      "badge": {
-        "displayName": "Badge",
-        "purpose": "x-multiplier, 22px with Ink Faint outline."
-      },
       "stage-word": {
         "displayName": "Stage words",
-        "purpose": "Ready title 54, count-in 160, slam clamp(64px,11vw,150px), results grade 190, staff grade word 17; over Shade."
+        "purpose": "Ready title 54, count-in 160, results accuracy 190, staff grade word 17; over Shade."
       },
       "body-lg": {
         "displayName": "Body large",
@@ -344,7 +340,7 @@
       },
       "heading-lg": {
         "displayName": "Heading large",
-        "purpose": "Results heading, chord readout, narrow notice (34px)."
+        "purpose": "Results heading, chord readout (34px)."
       },
       "section": {
         "displayName": "Section",
@@ -406,7 +402,7 @@
       },
       {
         "name": "effects",
-        "value": "Off / Calm / Arcade",
+        "value": "Off / Calm",
         "purpose": "Canvas effects tiers. Sheet view forces Off; reduced motion caps to Calm."
       },
       {
@@ -434,11 +430,15 @@
       },
       {
         "name": "touch",
-        "value": "pointer: coarse: --control 44px, segment cells 38px, small buttons 44px, slider thumb 32px"
+        "value": "pointer: coarse: --control 44px, segment cells 38px with a 44px hit area, small buttons 44px, slider thumb 32px"
       },
       {
         "name": "page-measure",
         "value": "1100px column, padding 32px clamp(16px,6vw,96px) 64px"
+      },
+      {
+        "name": "nav-scroll",
+        "value": "about 820px (max-width): the seven tabs fit; narrower, the tab row scrolls sideways and keeps the selected tab in view"
       }
     ]
   },
@@ -508,9 +508,9 @@
     {
       "name": "HUD Numeral",
       "kind": "custom",
-      "description": "Score cluster: 12px caption stacked above, 30px italic Ink numeral, outlined multiplier.",
-      "html": "<div class=\"ds-hud\"><small>Combo</small><b>128</b><span>×2</span></div>",
-      "css": ".ds-hud{display:grid;grid-template-columns:auto auto;justify-items:center;column-gap:8px;row-gap:3px}.ds-hud small{grid-column:1/-1;font:700 12px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-hud b{font:800 italic 30px/1 var(--display);color:var(--ink)}.ds-hud span{font:800 italic 22px/1 var(--display);color:var(--ink);border:1px solid var(--ink-3);border-radius:4px;padding:3px 6px 2px}",
+      "description": "Accuracy cluster: 12px caption stacked above, 30px italic Ink numeral.",
+      "html": "<div class=\"ds-hud\"><small>Accuracy</small><b>96%</b></div>",
+      "css": ".ds-hud{display:grid;grid-template-columns:auto auto;justify-items:center;column-gap:8px;row-gap:3px}.ds-hud small{grid-column:1/-1;font:700 12px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-hud b{font:800 italic 30px/1 var(--display);color:var(--ink)}",
       "refersTo": "hud-numeral"
     },
     {
@@ -523,7 +523,7 @@
     {
       "name": "Song Row",
       "kind": "custom",
-      "description": "Thumbnail, name with Next tag, one primary on the next row, ghost Perform and Options. Plan and path rows share this grammar.",
+      "description": "Cover and thumbnail, name with Ready tag, one primary on the next row, ghost Perform and Read through. Plan and path rows share this grammar.",
       "html": "<div class=\"ds-row\"><span class=\"ds-th\"></span><span class=\"ds-nm\">Ode to Joy <b>Continue</b></span><button class=\"ds-btn ds-primary\">Learn</button><button class=\"ds-btn ds-ghost\">Perform</button></div>",
       "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:hover{border-color:var(--ink-3);background:var(--panel-3)}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-primary{background:var(--lamp);border-color:var(--lamp);color:var(--lamp-ink);font-weight:800}.ds-primary:hover{background:var(--lamp-hi);border-color:var(--lamp-hi)}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line)}.ds-th{width:140px;height:52px;border-radius:4px;background:var(--panel)}.ds-nm{flex:1;font:650 18px var(--ui)}.ds-nm b{margin-left:10px;font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--lamp)}"
     },
@@ -560,7 +560,7 @@
     {
       "name": "Week And Goal",
       "kind": "card",
-      "description": "Seven week days (Ink dot when practised) over a goal meter, in a card.",
+      "description": "Seven week days (Ink dot when practised) over a goal meter, then a quiet day-streak line, in a card.",
       "html": "<div class=\"ds-card\"><div class=\"ds-week\"><span class=\"on\"><i></i>M</span><span><i></i>T</span><span class=\"today\"><i></i>W</span><span><i></i>T</span><span><i></i>F</span><span><i></i>S</span><span><i></i>S</span></div><div class=\"ds-goal\"><div class=\"ds-m\"><i></i></div><span><b>20</b> of 60 min</span></div></div>",
       "css": ".ds-card{display:grid;gap:12px;padding:18px 20px;border:1px solid var(--edge);border-radius:12px;background:var(--panel)}.ds-week{display:flex;gap:10px}.ds-week span{display:grid;justify-items:center;gap:6px;font:700 13px/1 var(--ui);color:var(--ink-3)}.ds-week i{width:22px;height:22px;border-radius:50%;border:2px solid var(--edge)}.ds-week .on i{background:var(--ink);border-color:var(--ink)}.ds-week .today{color:var(--ink)}.ds-week .today:not(.on) i{border-color:var(--ink-2)}.ds-goal{display:flex;align-items:center;gap:12px;color:var(--ink-2)}.ds-goal b{color:var(--ink)}.ds-m{flex:1;height:10px;border-radius:999px;background:var(--line);overflow:hidden}.ds-m i{display:block;width:33%;height:100%;background:var(--ink-2);border-radius:999px}"
     },
@@ -569,7 +569,7 @@
       "kind": "custom",
       "description": "Progress: cells grouped under a Label caption, fill rises with mastery; Ink when solid; due adds an Ink Soft outline.",
       "html": "<div class=\"ds-cgrp\"><small>Treble clef</small><div class=\"ds-cells\"><i class=\"ds-cell solid\"><b style=\"height:100%\"></b></i><i class=\"ds-cell\"><b style=\"height:60%\"></b></i><i class=\"ds-cell due\"><b style=\"height:100%\"></b></i><i class=\"ds-cell\"></i></div></div>",
-      "css": ".ds-cgrp{display:grid;gap:6px}.ds-cgrp small{font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-cells{display:flex;gap:4px}.ds-cell{position:relative;display:block;width:26px;height:40px;border-radius:4px;background:var(--panel-2);overflow:hidden}.ds-cell b{position:absolute;inset:auto 0 0;background:var(--ink-2)}.ds-cell.solid b{background:var(--ink)}.ds-cell.due{outline:2px solid var(--ink-2);outline-offset:-2px}"
+      "css": ".ds-cgrp{display:grid;gap:6px}.ds-cgrp small{font:700 13px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}.ds-cells{display:flex;gap:4px}.ds-cell{position:relative;display:block;width:30px;height:44px;border-radius:4px;background:var(--panel-2);overflow:hidden}.ds-cell b{position:absolute;inset:auto 0 0;background:var(--ink-2)}.ds-cell.solid b{background:var(--ink)}.ds-cell.due{outline:2px solid var(--ink-2);outline-offset:-2px}"
     },
     {
       "name": "Touch Bands",
@@ -589,7 +589,7 @@
       "name": "Drawer Row",
       "kind": "input",
       "description": "Label in Ink Soft, control to the right; a choice is a segmented control.",
-      "html": "<div class=\"ds-srow\"><span>Effects</span><div class=\"ds-seg\"><span>Off</span><span class=\"on\">Calm</span><span>Arcade</span></div></div>",
+      "html": "<div class=\"ds-srow\"><span>Effects</span><div class=\"ds-seg\"><span>Off</span><span class=\"on\">Calm</span></div></div>",
       "css": ".ds-srow{display:grid;grid-template-columns:6.5rem 1fr;align-items:center;gap:12px;min-height:40px;font:15px var(--ui)}.ds-srow>span{color:var(--ink-2)}.ds-seg{display:inline-flex;background:var(--ground);border:1px solid var(--edge);border-radius:8px;padding:3px;gap:2px;justify-self:start}.ds-seg span{display:flex;align-items:center;height:32px;padding:0 12px;border-radius:4px;color:var(--ink-2);font-weight:650}.ds-seg .on{background:var(--line-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--edge)}"
     },
     {
@@ -633,13 +633,14 @@
   ],
   "narrative": {
     "northStar": "The DDR Cabinet at Night",
-    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The arcade lives on the stage (highway, receptor, sparks, the combo slam). The notation does not: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the arcade turned down: the staff takes the screen and the highway shrinks to a strip.\n\nThe iPad in landscape is the main screen, a desktop browser the second. The player sits 1-2 m away with busy hands, so state is carried by word, shape, and hue together, never hue alone, and every target is thumb-sized on a coarse pointer. Density is moderate and fixed: a 56px top bar, one view, a docked transport. One control height (40px, 44px on touch) and four radii run through the whole shell. Five tabs live in the top bar until a piece opens: Today, Songs, Read, Technique, Progress. Today is a generated plan, not a menu.",
+    "overview": "A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The cabinet lives on the stage (highway, receptor, lane pulses, sparks); there are no points, ranks, lives or fireworks, and the shell never scores you. The notation does not live there either: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the stage turned down: the staff takes the screen and the highway shrinks to a strip.\n\nThe iPad in landscape is the main screen, a desktop browser the second. The player sits 1-2 m away with busy hands, so state is carried by word, shape, and hue together, never hue alone, and every target is thumb-sized on a coarse pointer. Density is moderate and fixed: a 56px top bar, one view, a docked transport. One control height (40px, 44px on touch) and four radii run through the whole shell. Seven tabs live in the top bar until a piece opens: Today, Songs, Read, Scales, Theory, Technique, Progress. Today is a generated plan, not a menu. Progress is the reward: accuracy over time, mastery, a quiet day streak.",
     "keyCharacteristics": [
       "Cool navy ground with one warm voice, the lamp amber, that means only \"play this / now\". Everything else in the shell is neutral Ink.",
       "Heavy italic condensed display type for what is announced; a quiet grotesk for what is read.",
       "Glow is a state signal on the staff and stage only. No hard offset shadows, no hard text-shadows.",
       "Every page shares one measure and one head; plan rows, song rows and stage rows are one grammar.",
-      "Touch first: `pointer: coarse` raises controls to 44px. Below 1024px wide a full-screen notice still replaces the app.",
+      "Touch first: `pointer: coarse` raises controls to 44px. The app has no minimum width: portrait and split-view windows reflow, and the seven tabs scroll sideways when they do not fit.",
+      "Skill over points: progress is shown as charts, meters and words that can honestly fall; nothing is scored against you and nothing is locked.",
       "Copy is label, value, nothing else.",
       "One dialog grammar (`dialog.sheet`), one tag style, one disclosure marker."
     ],
@@ -666,7 +667,7 @@
       },
       {
         "name": "The Word And Shape Rule",
-        "body": "A judgement colour never stands alone; it ships with its word (or letter grade) and, on the staff, a position or mark.",
+        "body": "A judgement colour never stands alone; it ships with its word and, on the staff, a position or mark.",
         "section": "colors"
       },
       {
@@ -722,7 +723,7 @@
     ],
     "dos": [
       "**Do** keep notation Ink on Panel and let it ignite only for state.",
-      "**Do** pair every judgement colour with a word, letter or position.",
+      "**Do** pair every judgement colour with a word or position.",
       "**Do** differentiate hands by hue, fill style (solid vs. tinted with a lighter outline) and lane edge.",
       "**Do** reserve Lamp (#ffc83d) for the verb and the now-markers, and use the 2px/2px Lamp focus ring everywhere.",
       "**Do** draw control borders in Edge (#5a6196) and keep Line for hairlines.",
@@ -734,20 +735,20 @@
       "**Do** show tags as outlined Ink Soft words; only Next is lamp, on the primary's row.",
       "**Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.",
       "**Do** mirror any new colour in `src/palette.ts` if Pixi draws it.",
-      "**Do** show mastery and effort as Ink meters, cells and dots plus a number or word.",
+      "**Do** show mastery and effort as Ink meters, cells, charts and dots plus a number or word.",
       "**Do** cap canvas effects to Calm and collapse CSS motion under `prefers-reduced-motion`."
     ],
     "donts": [
       "**Don't** add synthwave sun, perspective grid, or glow on chrome.",
       "**Don't** add a hard offset shadow or a hard text-shadow; use Shade.",
       "**Don't** colour notation permanently; colour is a transient state.",
-      "**Don't** use amber for selection, switches, slider thumbs, the PF mark in the bar, combo or multiplier, and never for a judgement grade.",
+      "**Don't** use amber for selection, switches, slider thumbs, the PF mark in the bar or the HUD numerals, and never for a judgement grade.",
       "**Don't** reuse a hand or judgement colour for chrome.",
       "**Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 12px.",
       "**Don't** invent a second dialog layout, an inline-styled modal or a coloured tag.",
       "**Don't** put a Label-style kicker above a heading.",
       "**Don't** add paragraphs, parentheticals or explanatory sentences to controls, headers or drawers.",
-      "**Don't** show a streak, points or a loss-framed counter; effort only goes up."
+      "**Don't** show points, ranks, lives, a score or a loss-framed counter; effort only goes up. The day streak is the one counter allowed, small, absent at zero, with freezes."
     ]
   }
 }

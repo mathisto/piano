@@ -1,6 +1,6 @@
 # The curated library
 
-`public/library/` holds a small set of free and open scores that ship with the app (about 240 KB, 38 pieces). The app loads `library/manifest.json` (see `src/credits.ts`) and shows a credit for every piece.
+`public/library/` holds a small set of free and open scores that ship with the app (about 240 KB, 38 pieces). The larger library of 500 pieces is built by `scripts/library/` and served from `/corpus/` (`docs/changes/pipeline.md`, `docs/hosting.md`); this page covers the bundled set. The app loads `library/manifest.json` (see `src/credits.ts`) and shows a credit for every piece.
 
 ## Policy
 
@@ -36,6 +36,6 @@ Needs Node 22.2 or newer and network access. It reads `scripts/library-sources.j
 ## Known gaps
 
 - A pickup (anacrusis) first bar makes `Song.spb` wrong, because it divides the first bar's length by the nominal bar length (Brahms Wiegenlied reads as 450 bpm there). The notes and timing are right.
-- Key changes inside a MIDI file are ignored (only the first key signature is used).
+- Fixed since this list was written: key changes inside a MIDI file are now read (`docs/changes/importer.md`); the pickup item above has not been rechecked. Mutopia works offered only as a zip of MIDI files are handled by the batch pipeline, not by `library:fetch`.
 - Several OpenScore songs have no tempo marking, so they play at 100 bpm.
 - The Satie Gymnopedie page cites only "Dover Edition" without a date. Mutopia tags the piece Public Domain, and the work is from 1888.
