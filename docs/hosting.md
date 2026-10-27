@@ -13,7 +13,7 @@ The web app fetches `/corpus/` on its own origin. The iPad app's origin is `capa
 
 ## Caddy (applied on quartz 2026-10-28)
 
-The live block uses `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them; the previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`. The snippet below is the corpus part.
+The Caddyfile on quartz was edited on 2026-10-28 and the block shape changed: the live site block now holds `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them. The previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`; restore it if a reload misbehaves. The snippet below is the corpus part.
 
 Inside the existing site block for pianoforte.mattkelly.io, before the app's `file_server`:
 
@@ -44,6 +44,15 @@ Two cache rules on the zone (Caching > Cache Rules), in this order:
 
 Nothing to purge after a publish: piece names change when their content does, and the catalogue is not cached at the edge.
 
-## Publishing
+## Publishing a corpus
+
+The live corpus is 764 pieces: 500 Mutopia and 264 OpenScore Lieder. Each step reads and writes `.cache/library/` directories; none touches quartz until the last.
+
+1. Build. `npm run library:build` writes `.cache/library/out` (the Mutopia set). `npm run library:build -- --set lieder --out .cache/library/out-lieder --merge-with <published out>` adds the Lieder on top of an output and leaves every base piece untouched (docs/changes/lieder.md). `node scripts/library/repeats-patch.mjs --from <published out> --out <dir>` re-runs only the pieces flagged `repeats` (docs/changes/repeats.md).
+2. Combine, when the changes came from different runs. `node scripts/library/combine.mjs <base-out> <overlay-out> <result-out>` lays the overlay over the base: a piece in both takes the overlay's entry (new file, sha, bars, flags), every `p/` file from both is kept (files are content-addressed, so nothing is removed), `LICENSES.md` follows the new file names, and `built` is recomputed from what ships so clients refetch. It prints the piece count and how many came from the overlay.
+3. Hold back what is not cleared. `scripts/library/hold-lieder.json` lists the 36 Lieder ids by composers who died after 1930 whose first-publication year is unknown (the world-safe test needs 1930 or earlier). No script reads it yet: remove those ids from the result's `catalog.json` (and their rows from `LICENSES.md`) before publishing, and check that the count is 764. A rebuild with `--set lieder` brings them back.
+4. Publish. `LIBRARY_OUT=<result-out> scripts/deploy-library.sh` (below), then the `curl` checks under Caddy.
+
+## Publish script
 
 `scripts/deploy-library.sh` (not run by CI) copies new `p/` files with `--ignore-existing`, then `LICENSES.md`, then writes `catalog.json` last by an atomic rename. It never deletes a piece. `LIBRARY_OUT=<dir>` publishes another output, for example a `--merge-with` build (docs/changes/lieder.md). To withdraw one, remove it from the catalogue and publish; for a takedown, also delete its `p/` file on quartz by hand at once and purge that URL in Cloudflare (clients that hold an older catalogue then get a 404 for it and say it could not be loaded).

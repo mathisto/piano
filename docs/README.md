@@ -6,7 +6,7 @@ The top-level files are `PRODUCT.md` (what the app is and for whom), `DESIGN.md`
 
 - `STRATEGY.md`: the product model (progression, sessions, feedback diet, gamification rules, copy rules) and the evidence behind each decision.
 - `library.md`: the curated library policy (allowed licences, what a piece must carry, rebuild and add-a-piece steps).
-- `hosting.md`: serving the big library corpus on quartz (Caddy, Cloudflare cache rules, publishing and takedown).
+- `hosting.md`: serving the big library corpus on quartz (Caddy, Cloudflare cache rules, corpus publish steps and takedown).
 - `sounds.md`: every sample set, its source and licence, and how the piano and instruments are built.
 
 ## Change notes (`changes/`)
@@ -22,6 +22,15 @@ One file per feature branch: what it built, how it was checked, what is open.
 - `changes/touch.md`: timing evenness, legato and staccato, voicing, fading marks, key-touch setting.
 - `changes/habit.md`: 30 and 45 minute plans, break reminder, day streak, the Path.
 - `changes/polish.md`: the critique of the whole app, the Set up sheet, fixes and what was left.
+- `changes/polish2.md`: the five polish findings closed (rests, focus, Progress cells, stale loop offer, Set up decision).
+- `changes/polish3.md`: the critique of the newer surfaces: the play banner, start card width, song row actions, and what stayed open.
+- `changes/memory.md`: Memorise, Learn with the score fading by bars.
+- `changes/metro.md`: the practice metronome and the visible tempo ladder.
+- `changes/report.md`: Report a problem on library pieces and the practice summary.
+- `changes/readcur.md`: the 37 Read stages, the Fluent tier and keyed Sight Run.
+- `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
+- `changes/lieder.md`: OpenScore Lieder in the pipeline, the fold gate and the 36 held-back songs.
+- `changes/e2e.md`: the end-to-end suite and the bugs it found.
 
 ## Research (`research/`)
 
