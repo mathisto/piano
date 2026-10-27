@@ -214,7 +214,15 @@ export async function saveTech(s: TechStats) {
 
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), settings: localStorage.getItem('piano.settings') }, null, 1)
+  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), extra: await getExtra(), settings: localStorage.getItem('piano.settings') }, null, 1)
+}
+
+/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot. */
+const EXTRA = /^(scale:quiz|plan:|simp:|snap:)/
+async function getExtra() {
+  const out: Record<string, unknown> = {}
+  for (const k of await keys()) if (EXTRA.test(String(k))) out[String(k)] = await get(k)
+  return out
 }
 
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
@@ -231,6 +239,7 @@ export async function importAll(text: string) {
   if (d.theory) await set('theory:stats', d.theory)
   if (d.history) await set('history:log', d.history)
   if (d.coach) await set('coach:stats', d.coach)
+  for (const [k, v] of Object.entries(d.extra ?? {})) await set(k, v)
   if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
 }
 

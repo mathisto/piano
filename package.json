@@ -12,7 +12,8 @@
     "ios:sync": "npm run build && cap sync ios",
     "library:fetch": "node scripts/fetch-library.mjs",
     "library:build": "vite build --config scripts/library/vite.config.mjs && node scripts/library/build.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "e2e": "node scripts/e2e/run.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
