@@ -161,6 +161,22 @@ export function mixed(jitter = 0): Fixture {
   return w.done()
 }
 
+/** Exact ticks as notation software writes them: a quintuplet and a septuplet of sixteenths, and a grace note 44 ticks long just before a beat. */
+export function oddTuplets(): Fixture {
+  const w = new Writer(0, () => 0, 13, 90)
+  for (let bar = 0; bar < 4; bar++) {
+    const b0 = bar * 4
+    for (let i = 0; i < 5; i++) w.add(72 + i, b0 + i / 5, 1 / 5, 'R', { exact: true })
+    w.add(79, b0 + 1, 1, 'R', { exact: true })
+    for (let i = 0; i < 7; i++) w.add(72 + i, b0 + 2 + i / 7, 1 / 7, 'R', { exact: true })
+    w.add(79, b0 + 3, 1, 'R', { exact: true })
+    w.add(48, b0, 4, 'L', { exact: true })
+  }
+  w.track.addNote({ midi: 81, ticks: 5 * PPQ - 44, durationTicks: 43, velocity: 0.7 }) // LilyPond's grace before bar 1, beat 2
+  w.truth.push({ p: 81, tick: 5 * PPQ - 44, at: 5, hand: 'R', grace: true })
+  return w.done({ bars: 4 })
+}
+
 /** The orchestral-style file from midi-tracks.test.ts: melody, harp arpeggio, held pads, drums; exact ticks, 120 bpm. */
 export function orchestral(): ArrayBuffer {
   const m = new Midi()

@@ -1,6 +1,8 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
-import { measure, mixed, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
+import { figure } from './layout'
+import { scoreFlags } from './flags'
+import { measure, mixed, oddTuplets, orchestral, pianoHuman, ritard, sixEight, waltz, PPQ, type Fixture, type Metrics } from './notation-fixtures'
 import { notate, quantize, tiedSegments } from './quantize'
 import { fromMusicXml } from './musicxml'
 import { estimateFifths, fromMidi, fromSpec, type Note, type Song } from './song'
@@ -284,5 +286,20 @@ describe('spelling and key', () => {
     const st = steady.addTrack()
     for (let i = 0; i < 64; i++) st.addNote({ midi: 60 + [0, 2, 4, 5, 7, 9, 11, 12][i % 8], ticks: i * 240, durationTicks: 200 })
     expect(fromMidi(steady.toArray().buffer as ArrayBuffer, 't', 'id').keys).toBeUndefined()
+  })
+})
+
+describe('quantize: odd tuplets in an exact file', () => {
+  const s = imp(oddTuplets())
+  it('writes quintuplets and septuplets with their ratio and value, and the short note before a beat as a grace', () => {
+    const at = (bar: number, q: number) => s.notes.filter((n) => n.bar === bar && !n.grace && Math.abs(n.qb! - q) < 1e-3 && n.h === 'R')[0]
+    for (const bar of [0, 1, 2, 3]) {
+      for (let i = 0; i < 5; i++) expect(at(bar, i / 5)).toMatchObject({ tuplet: { num: 5, den: 4 }, qd: expect.closeTo(0.2, 3) })
+      for (let i = 0; i < 7; i++) expect(at(bar, 2 + i / 7)).toMatchObject({ tuplet: { num: 7, den: 4 }, qd: expect.closeTo(1 / 7, 3) })
+      expect(at(bar, 1).tuplet).toBeUndefined()
+    }
+    expect(s.notes.filter((n) => n.grace).map((n) => [n.p, n.bar, n.qb])).toEqual([[81, 1, 1]])
+    expect(scoreFlags(s)).toContain('irregular-tuplet')
+    expect(figure(0.2, '5:4')).toEqual(figure(0.25)) // drawn as sixteenths under a 5
   })
 })

@@ -77,10 +77,19 @@ export const COMFORT = 16 // notes in a bar the staff can show without turning i
 // General MIDI programs that make an accompaniment on their own: pianos, guitars, harp
 const keyed = (program: string) => /piano|clavi|harpsichord|guitar|harp|celesta|glock|music box|marimba|vibraphone/i.test(program)
 
+const RIGHT = /(?<![a-z])(up|upper|rh|right|treble|dis[ck]ant|oberstimme|staffu)(?![a-z])/i
+const LEFT = /(?<![a-z])(down|lower|lh|left|bass|unterstimme|staffl)(?![a-z])/i
+
+/** Hands from track names (rh/lh, upper/lower, Discant/Bass ...), only when every track names one hand and both hands appear. */
+export function namedHands(tracks: TrackInfo[]): Record<number, Hand> {
+  const hs = tracks.map((t) => (RIGHT.test(t.name) === LEFT.test(t.name) ? undefined : RIGHT.test(t.name) ? 'R' : 'L'))
+  return hs.every(Boolean) && new Set(hs).size === 2 ? Object.fromEntries(tracks.map((t, i) => [t.index, hs[i]!])) : {}
+}
+
 /** Everything when the file is already readable; otherwise a lead line and an accompaniment, with drums and pads left out. */
 export function autoSelect(r: Report): Selection {
   const live = r.tracks.filter((t) => !t.percussion)
-  const all = { tracks: live.map((t) => t.index), hands: {} }
+  const all = { tracks: live.map((t) => t.index), hands: namedHands(live) }
   // a piano score is a few keyed tracks (often one per hand): keep them all and let Simplify thin a busy one
   if (density(live, r.bars) <= COMFORT || live.length <= 3 || live.every((t) => keyed(t.program))) return all
 
@@ -92,6 +101,6 @@ export function autoSelect(r: Report): Selection {
     .filter((t) => t !== lead && keyed(t.program))
     .sort((a, b) => b.notes - a.notes)[0]
   const tracks = [lead, comp].filter((t): t is TrackInfo => !!t)
-  if (!tracks.length) return { tracks: live.map((t) => t.index), hands: {} }
+  if (!tracks.length) return all
   return { tracks: tracks.map((t) => t.index), hands: lead ? { [lead.index]: 'R' } : {} }
 }
