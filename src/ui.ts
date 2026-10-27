@@ -77,6 +77,10 @@ export function skeleton(app: HTMLElement) {
 
 // ---------- library ----------
 
+/** The cover for a starter or open-library piece; your own files have none and keep the mini-staff. */
+export const art = (id: string, cls = 'art') =>
+  /^(starter-|lib:)/.test(id) ? `<img class="${cls}" src="${import.meta.env.BASE_URL}art/${id.replace('lib:', '')}.webp" alt="" width="600" height="400" decoding="async">` : ''
+
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 
 export interface Row {
@@ -125,7 +129,7 @@ function table(caption: string, rows: Row[], empty: string) {
     ? rows
         .map(
           (r) => `<tr class="open" data-open="${r.id}">
-        <td class="thumb">${r.thumb}</td>
+        <td class="thumb">${art(r.id)}${r.thumb}</td>
         <td class="name">${esc(r.title)}<small>${esc(r.sub)}</small></td>
         <td class="num">${r.len ? mmss(r.len) : '—'}</td>
         ${best ? `<td class="num">${r.prog?.best ? `<span class="grade" style="color:${gradeColor(r.prog.best.grade)}">${r.prog.best.grade}</span> ${Math.round(r.prog.best.acc * 100)}%` : '—'}</td>` : ''}
@@ -138,7 +142,7 @@ function table(caption: string, rows: Row[], empty: string) {
         .join('')
     : `<tr><td colspan="${best ? 5 : 4}" class="empty">${empty}</td></tr>`
   return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col style="width:156px"><col><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:320px"></colgroup>
+    <colgroup><col><col><col style="width:100px">${best ? '<col style="width:130px">' : ''}<col style="width:320px"></colgroup>
     <thead><tr><th scope="col"><span style="position:absolute;left:-9999px">Preview</span></th><th scope="col">Piece</th><th scope="col" class="num">Length</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
     <tbody>${body}</tbody></table>`
 }
@@ -161,9 +165,9 @@ function libraryTable(lib: LibraryEntry[], prog: Map<string, Progress>, meta: Ma
   return `<p class="label cap">Open library</p>${groups
     .map(
       ([lv, es], i) => `<details class="libgrp"${i === 0 ? ' open' : ''}><summary>${lv} <span>${es.length}</span></summary>
-      <table class="songs"><caption class="sr-only">${lv}</caption><colgroup><col style="width:156px"><col><col style="width:100px"><col style="width:60px"><col style="width:320px"></colgroup><tbody>${es
+      <table class="songs"><caption class="sr-only">${lv}</caption><colgroup><col><col><col style="width:100px"><col style="width:60px"><col style="width:320px"></colgroup><tbody>${es
         .map(
-          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
+          (e) => `<tr class="open" data-lib="${esc(e.id)}"><td class="thumb">${art(`lib:${e.id}`)}${meta.get(e.id)?.thumb ?? ''}</td><td class="name">${esc(e.title)}<small>${esc(e.composer)} · ${esc(licenceName(e.licence))}</small></td><td class="num len">${meta.has(e.id) ? mmss(meta.get(e.id)!.len) : ''}</td><td class="num">${prog.get(`lib:${e.id}`)?.best ? `<span class="grade" style="color:${gradeColor(prog.get(`lib:${e.id}`)!.best!.grade)}">${prog.get(`lib:${e.id}`)!.best!.grade}</span>` : ''}</td><td class="acts"><div class="row-actions">
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="learn" aria-label="Learn ${esc(e.title)}">Learn</button>
             <button class="btn ghost" data-libplay="${esc(e.id)}" data-mode="perform" aria-label="Perform ${esc(e.title)}">Perform</button></div></td></tr>`,
         )
@@ -464,7 +468,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .map((r) => {
       const done = d.done.includes(r.key)
       const cls = r === first ? ' primary' : done ? ' ghost' : ''
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
+      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}${r.key === 'piece' ? art(d.last.id, 'art lead') : ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
   el.innerHTML = `

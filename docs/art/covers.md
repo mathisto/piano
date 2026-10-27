@@ -83,9 +83,9 @@ Send as: `Cover for: <subject>`.
 | mutopia-471 | Prelude in D-flat (Raindrop) | one big raindrop making cyan concentric ripples, amber droplet falling |
 | mutopia-463 | Bethena | an ornate waltz-hall chandelier, amber bulbs, magenta and cyan crystals |
 
-## Wiring (Claude, after the images arrive)
+## Wiring (done)
 
-- `art/*.png` to `public/art/<id>.webp`, 600x400, quality 80, about 25 KB each (about 1.2 MB in all, fetched lazily).
-- Shown on the start card (top, 16:5 crop), on the Today "Continue" card and in the Songs rows as a 72x52 tile beside the mini-staff, which stays. Pieces without art (your own files) show the mini-staff only.
-- Check each against the palette in `DESIGN.md` (Ground, Panel, Lamp, hands, Perfect) and reject any with off-palette colour; the amber rule is one amber shape per image, as on the staff.
-- Credit: the images are ours, made with ChatGPT image generation; nothing to attribute. Do not use them with names of living artists in the prompt.
+- `art/*.png` (1536x1024, kept out of git; `art/NOTES.md` records the tries) to `public/art/<id>.webp`, 600x400, quality 80, 856 KB for all 46. Library ids are served as `lib:<id>`, so the helper `art()` in `src/ui.ts` maps `starter-*` and `lib:*` ids to the file and gives your own files nothing.
+- Songs rows: a 78x52 tile before the mini-staff (starters, library). At 1000px wide and under the mini-staff drops and the cover stays; at 760px and under the whole thumbnail column goes, as before.
+- Today: a 60x40 cover on the piece row. Start card: a 168x112 cover above the title, only when the stage is taller than 640px (a portrait iPad); shorter stages go without, because the card is already tall.
+- The images are ours, made with ChatGPT image generation; nothing to attribute.

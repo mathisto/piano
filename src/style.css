@@ -547,15 +547,40 @@ table.songs td.acts {
   text-align: right;
   white-space: nowrap;
 }
+table.songs col:first-child {
+  width: 242px;
+}
 table.songs td.thumb {
-  width: 140px; /* held while a library thumbnail loads, so the rows do not jump */
+  width: 226px;
+  white-space: nowrap; /* held while a library thumbnail loads, so the rows do not jump */
   padding-right: 0;
   line-height: 0;
+}
+.thumb .art {
+  width: 78px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: var(--r-1);
+  margin-right: 8px;
+  vertical-align: top;
+}
+/* a mid-width window keeps the cover and drops the mini-staff, so the title has room */
+@media (max-width: 1000px) {
+  table.songs col:first-child {
+    width: 94px;
+  }
+  table.songs td.thumb {
+    width: 78px;
+  }
+  .thumb .art + svg {
+    display: none;
+  }
 }
 .thumb svg {
   width: 140px;
   height: 52px;
-  display: block;
+  display: inline-block;
+  vertical-align: top;
   border-radius: var(--r-1);
   background: var(--panel);
 }
@@ -713,6 +738,12 @@ table.stages td {
     font-size: 34px;
   }
   #ready :is(.hint, .cap, .seg ~ .seg, .legend) {
+    display: none;
+  }
+}
+/* the cover needs room above the title; short and mid-height stages go without */
+@container stage (max-height: 640px) {
+  #ready .cover {
     display: none;
   }
 }
@@ -1236,6 +1267,15 @@ kbd {
   border-radius: var(--r-3);
   border: 1px solid var(--line);
   max-width: min(720px, 92%);
+}
+.ready .cover {
+  display: block;
+  width: 168px;
+  height: 112px;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--line);
 }
 .ready b {
   display: block;
@@ -2146,6 +2186,13 @@ dialog.sheet footer .grow {
   flex: none;
   width: 24px;
   color: var(--ink-2);
+}
+.prow .lead {
+  flex: none;
+  width: 60px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--r-1);
 }
 .plead svg {
   width: 20px;
