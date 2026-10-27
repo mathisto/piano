@@ -1,4 +1,4 @@
-import { del, get, keys, set } from 'idb-keyval'
+import { del, get, keys, set } from './kv'
 import { INTERVALS, dayNum, type Stats } from './drill'
 import type { RunSpec } from './run'
 import type { QuizStats, ScaleStats } from './scales'
@@ -236,27 +236,41 @@ async function getExtra() {
   return out
 }
 
+/** What each key of an export holds: a file whose field is the wrong kind of thing is skipped, never stored to break a page later. */
+const FIELDS: [field: string, key: string, kind: 'object' | 'array'][] = [
+  ['reading', 'drill:stats', 'object'],
+  ['touch', 'touch:log', 'array'],
+  ['practice', 'practice:days', 'object'],
+  ['technique', 'tech:stats', 'object'],
+  ['runs', 'run:state', 'object'],
+  ['scales', 'scale:stats', 'object'],
+  ['theory', 'theory:stats', 'object'],
+  ['history', 'history:log', 'array'],
+  ['coach', 'coach:stats', 'object'],
+]
+const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === 'object' ? 'object' : '')
+
 /** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
 export async function importAll(text: string) {
   const d = JSON.parse(text)
   if (d?.version !== 1) throw new Error('Not a piano export.')
-  for (const [id, p] of Object.entries(d.progress ?? {})) await set(`prog:${id}`, p)
-  if (d.reading) await set('drill:stats', d.reading)
-  if (d.touch) await set('touch:log', d.touch)
-  if (d.practice) await set('practice:days', d.practice)
-  if (d.technique) await set('tech:stats', d.technique)
-  if (d.runs) await set('run:state', d.runs)
-  if (d.scales) await set('scale:stats', d.scales)
-  if (d.theory) await set('theory:stats', d.theory)
-  if (d.history) await set('history:log', d.history)
-  if (d.coach) await set('coach:stats', d.coach)
-  for (const [k, v] of Object.entries(d.extra ?? {})) await set(k, v)
-  if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
+  for (const [id, p] of Object.entries(d.progress ?? {})) if (Array.isArray((p as Progress | null)?.heat)) await set(`prog:${id}`, p)
+  for (const [field, key, kind] of FIELDS) if (kindOf(d[field]) === kind) await set(key, d[field])
+  for (const [k, v] of Object.entries(d.extra ?? {})) if (EXTRA.test(k)) await set(k, v) // only the small records exportAll writes, never a song or the catalogue
+  try {
+    if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
+  } catch {
+    /* no localStorage: the settings in the file are skipped */
+  }
 }
 
 export async function clearAll() {
   for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take):/.test(String(k))) await del(k)
-  for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
+  } catch {
+    /* no localStorage: nothing to clear */
+  }
 }
 
 export async function getDrill(): Promise<Stats> {

@@ -200,6 +200,9 @@ export function setupDialog(midi: string, connected: boolean, delay: number) {
     <footer><span class="fine free">${FREE}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
 }
 
+/** A line of plain words at the top of a page, with an optional button: what is wrong and what can be done about it. */
+export const notice = (text: string, action = '', cls = '') => `<p class="notice${cls}" role="status"><span>${esc(text)}</span>${action}</p>`
+
 export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
   el.innerHTML = `
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}

@@ -12,21 +12,35 @@ interface Voice {
 }
 const voices = new Map<number, Voice>() // by pitch, oldest first
 
-function ready(): AudioContext {
+let denied = false // the browser would not make an audio context at all (a locked-down web view, too many open): the app stays silent, everything else works
+
+/** The audio context, made on first use; undefined when the browser refuses one. */
+function ready(): AudioContext | undefined {
+  if (denied) return
   if (!ctx) {
-    ;(navigator as unknown as { audioSession?: { type: string } }).audioSession?.type && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = 'playback') // iOS: not muted by the silent switch
-    ctx = new AudioContext({ latencyHint: 'interactive' })
-    master = ctx.createGain()
-    master.connect(ctx.destination)
-    const room = ctx.createConvolver() // a small hall under every instrument: a dry sample sounds like a sample
-    room.buffer = hall(ctx)
-    const wet = ctx.createGain()
-    wet.gain.value = 0.2
-    master.connect(room).connect(wet).connect(ctx.destination)
+    try {
+      make()
+    } catch {
+      denied = true
+      ctx = undefined
+      return
+    }
   }
-  if (ctx.state !== 'running') void ctx.resume() // iOS reports `interrupted` after a call, Siri or lock, and needs this too
+  if (ctx!.state !== 'running') ctx!.resume().catch(() => {}) // iOS reports `interrupted` after a call, Siri or lock, and needs this too
   master!.gain.value = settings.volume * 0.5
   return ctx
+}
+
+function make() {
+  ;(navigator as unknown as { audioSession?: { type: string } }).audioSession?.type && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = 'playback') // iOS: not muted by the silent switch
+  ctx = new AudioContext({ latencyHint: 'interactive' })
+  master = ctx.createGain()
+  master.connect(ctx.destination)
+  const room = ctx.createConvolver() // a small hall under every instrument: a dry sample sounds like a sample
+  room.buffer = hall(ctx)
+  const wet = ctx.createGain()
+  wet.gain.value = 0.2
+  master.connect(room).connect(wet).connect(ctx.destination)
 }
 
 /** Two seconds of decaying noise that darkens as it dies: the impulse response of a mid-sized room. */
@@ -70,6 +84,7 @@ export function preload(id = settings.instrument): Promise<void> {
     p = (async () => {
       states.set(inst.id, 'loading')
       const c = ready()
+      if (!c) return void states.set(inst.id, 'failed')
       const base = `${import.meta.env.BASE_URL}samples/${inst.base}/`
       const get = async (r: Root, k?: number) => {
         const file = k === undefined ? r.name : `${r.name}-${k}`
@@ -119,6 +134,7 @@ export function click(accent: boolean, after = 0, force = false, soft = 1) {
   const level = force ? settings.click || 0.6 : settings.click // the rhythm trainer needs its click even when the count-in is silent
   if (level <= 0) return
   const c = ready()
+  if (!c) return
   const t = audioTime(c, after)
   const out = c.createGain()
   out.gain.value = level * 0.7 * (accent ? 1 : 0.7) * soft
@@ -150,6 +166,7 @@ export function click(accent: boolean, after = 0, force = false, soft = 1) {
 /** A hand clap for the rhythm trainer: two short bursts of band-passed noise a few ms apart, on the audio clock. */
 export function clap(after = 0) {
   const c = ready()
+  if (!c) return
   const t = c.currentTime + after
   const out = c.createGain()
   out.gain.value = 0.9
@@ -253,6 +270,7 @@ function synthVoice(c: AudioContext, p: number, vel: number): Voice {
 export function noteOn(p: number, vel: number, force = false, as?: string) {
   if (!settings.sound && !force) return
   const c = ready()
+  if (!c) return
   noteOff(p, true) // a struck key damps its own string first
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   let inst = instrument(as ?? settings.instrument)

@@ -84,7 +84,8 @@
 }
 
 .gnote,
-.kbline {
+.kbline,
+.notice {
   display: flex;
   align-items: center;
   gap: 8px 16px;
@@ -99,7 +100,8 @@
   min-height: var(--control);
   padding: 0 4px;
 }
-.kbline {
+.kbline,
+.notice {
   flex-wrap: wrap;
   padding: 10px 14px;
   border: 1px solid var(--line-2);

@@ -69,6 +69,14 @@ describe('musicxml', () => {
     expect(() => fromMusicXml('<score-partwise><part id="P1"><measure number="1"/></part></score-partwise>', 'x', 'id')).toThrow(/No notes/)
   })
 
+  it('refuses a cut-off file and a piece of more than 5,000 bars, in words', () => {
+    expect(() => fromMusicXml(XML.slice(0, XML.length >> 1), 'x', 'id')).toThrow(/cut short or damaged/)
+    const m = (i: number) => `<measure number="${i}"><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration></note></measure>`
+    const x = (n: number) => `<score-partwise><part-list><score-part id="P1"/></part-list><part id="P1">${Array.from({ length: n }, (_, i) => m(i + 1)).join('')}</part></score-partwise>`
+    expect(fromMusicXml(x(4000), 'x', 'id').notes.every((n) => Number.isFinite(n.t))).toBe(true)
+    expect(() => fromMusicXml(x(5200), 'x', 'id')).toThrow(/longer than 5,000 bars/)
+  })
+
   it('reads a compressed .mxl through its container file', async () => {
     const zip = makeZip({
       'META-INF/container.xml': '<container><rootfiles><rootfile full-path="score/a.xml"/></rootfiles></container>',

@@ -14,6 +14,16 @@ describe('midi tracks', () => {
     expect(r.tracks[2].mono).toBeLessThan(0.2)
   })
 
+  it('reads a file of 30,000 notes at once (the mono count was a filter per onset: 28 s)', () => {
+    const m = new Midi()
+    const t = m.addTrack()
+    for (let i = 0; i < 30000; i++) t.addNote({ midi: 60 + (i % 12), time: i * 0.05, duration: 0.04 })
+    const t0 = performance.now()
+    const r = inspectMidi(m.toArray().buffer as ArrayBuffer)
+    expect(r.tracks[0]).toMatchObject({ notes: 30000, lo: 60, hi: 71, mono: 1 })
+    expect(performance.now() - t0).toBeLessThan(5000)
+  })
+
   it('keeps every track of a file that is already readable', () => {
     const m = new Midi()
     const t = m.addTrack()

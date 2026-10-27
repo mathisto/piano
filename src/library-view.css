@@ -83,5 +83,6 @@ dialog.sheet .fine a {
   text-underline-offset: 3px;
 }
 .biglib td.name small span {
-  white-space: nowrap; /* a sub-line breaks between composer, level and licence, never inside one */
+  display: inline-block; /* a sub-line breaks between composer, level and licence, not inside one, unless one is longer than the line */
+  max-width: 100%;
 }

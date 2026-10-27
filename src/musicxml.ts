@@ -31,6 +31,7 @@ export function parseXml(src: string): El {
   }
   const first = root.c[0]
   if (!first) throw new Error('This is not a MusicXML file.')
+  if (stack.length > 1) throw new Error('This MusicXML file is cut short or damaged.') // a download that stopped halfway would otherwise play as a shorter piece
   return first
 }
 
@@ -199,6 +200,7 @@ export function playOrder(parts: El[], flags: string[] = []): number[] {
     if (m.stop) cur = undefined
   })
   const { order, any, ok } = expand(ms.map((_, i) => ({ forward: info[i].forward, backward: info[i].backward, times: info[i].times, ending: ending[i], marks: marks[i] })))
+  if (order.length >= 5000) throw new Error('This piece is longer than 5,000 bars, more than the app can show.') // expand stops there; the rest would keep notes with no time
   if (any) flags.push('dc-ds')
   if (any && !ok) flags.push('repeats-unexpanded')
   return order

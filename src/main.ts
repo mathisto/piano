@@ -21,8 +21,9 @@ import { icon } from './icons'
 import { feed } from './midi'
 import { showSetup } from './settings'
 import { STARTERS } from './starters'
+import { lost, probe } from './kv'
 import * as store from './store'
-import { $ } from './ui'
+import { $, notice } from './ui'
 import { current, drillStats, game, highway, hooks, mem, run, type Section, stageById, starters } from './app/state'
 import { connectMidi, updateChip } from './app/banner'
 import { flushPractice, setView, view } from './app/stage'
@@ -48,14 +49,24 @@ async function showSection(name: Section, err = '') {
   const tab = $(`input[name=nav][value=${name}]`) as HTMLInputElement
   tab.checked = true
   tab.parentElement!.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // a narrow window scrolls the tabs
-  view(name === 'songs' ? 'library' : name)
-  if (name === 'today') await showToday()
-  else if (name === 'songs') await showLibrary(err)
-  else if (name === 'read') await showRead()
-  else if (name === 'scales') await showScales()
-  else if (name === 'theory') (await theory()).showTheory()
-  else if (name === 'technique') await showTechnique()
-  else await showProgress()
+  const id = name === 'songs' ? 'library' : name
+  view(id)
+  try {
+    if (name === 'today') await showToday()
+    else if (name === 'songs') await showLibrary(err)
+    else if (name === 'read') await showRead()
+    else if (name === 'scales') await showScales()
+    else if (name === 'theory') (await theory()).showTheory()
+    else if (name === 'technique') await showTechnique()
+    else await showProgress()
+  } catch (e) {
+    // a page that cannot be drawn says so and offers another go, never a blank screen
+    console.error(e)
+    $(`#${id}`).innerHTML = `<div class="lib-head"><h1>${name[0].toUpperCase() + name.slice(1)}</h1></div>${notice('This page could not load. Try again, or reload the app.', '<button class="btn" data-retry>Try again</button>')}`
+    $(`#${id} [data-retry]`).onclick = () => void showSection(name)
+  }
+  if (err && name !== 'songs') $(`#${id}`).insertAdjacentHTML('afterbegin', notice(err)) // Songs has its own error line
+  if (lost() && !$(`#${id}`).querySelector('.lost')) $(`#${id}`).insertAdjacentHTML('afterbegin', notice('This browser is not letting the app save. What you do now is gone when you close this tab.', '', ' lost')) // a page that keeps its content between visits gets it once
 }
 Object.assign(hooks, { showSection })
 
@@ -85,7 +96,17 @@ $('#library').addEventListener('click', async (e) => {
 
 // ---------------------------------------------------------------- boot
 
+/** A localStorage key is set; false when the browser refuses localStorage altogether. */
+const stored = (k: string) => {
+  try {
+    return !!localStorage.getItem(k)
+  } catch {
+    return false
+  }
+}
+
 void (async () => {
+  await probe()
   await lib.init(() => {
     if ($('#library').classList.contains('on')) void showLibrary()
   })
@@ -102,7 +123,7 @@ void (async () => {
   const want = location.hash.slice(1)
   const i = STARTERS.findIndex((s) => s.spec.id === want)
   if (i >= 0) void openSong(starters[i], 'perform')
-  else if (showSetup({ seen: !!localStorage.getItem('piano.setup'), saved: !!localStorage.getItem('piano.settings'), automated: navigator.webdriver, forced: location.search.includes('setup') })) openSetup()
+  else if (showSetup({ seen: stored('piano.setup'), saved: stored('piano.settings'), automated: navigator.webdriver, forced: location.search.includes('setup') })) openSetup()
 })()
 
 if (import.meta.env.DEV) {
