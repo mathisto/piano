@@ -8,6 +8,7 @@ import type { KeyTouch } from './settings'
 import { fromMusicXml, xmlText } from './musicxml'
 import { autoSelect, inspectMidi, type Selection } from './midi-tracks'
 import { fromMidi, type Song } from './song'
+import { KEEP, type Take } from './take'
 
 export interface Stored {
   id: string
@@ -87,6 +88,7 @@ export async function listSongs(): Promise<Stored[]> {
 export async function removeSong(id: string) {
   await del(`song:${id}`)
   await del(`prog:${id}`)
+  await del(`take:${id}`)
 }
 
 export async function toSong(s: Stored, split: number): Promise<Song> {
@@ -220,8 +222,8 @@ export async function exportAll() {
   return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), extra: await getExtra(), settings: localStorage.getItem('piano.settings') }, null, 1)
 }
 
-/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot. */
-const EXTRA = /^(scale:quiz|plan:|simp:|snap:)/
+/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes. */
+const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:)/
 async function getExtra() {
   const out: Record<string, unknown> = {}
   for (const k of await keys()) if (EXTRA.test(String(k))) out[String(k)] = await get(k)
@@ -247,7 +249,7 @@ export async function importAll(text: string) {
 }
 
 export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach):/.test(String(k))) await del(k)
+  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take):/.test(String(k))) await del(k)
   localStorage.removeItem('piano.settings')
 }
 
@@ -318,4 +320,15 @@ export async function getCoach(): Promise<Record<string, Seen>> {
 
 export async function saveCoach(s: Record<string, Seen>) {
   await set('coach:stats', s)
+}
+
+/** The last few takes of a piece (src/take.ts), newest first. */
+export async function getTakes(id: string): Promise<Take[]> {
+  return (await get<Take[]>(`take:${id}`)) ?? []
+}
+
+export async function addTake(id: string, k: Take): Promise<Take[]> {
+  const ks = [k, ...(await getTakes(id))].slice(0, KEEP)
+  await set(`take:${id}`, ks)
+  return ks
 }
