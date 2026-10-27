@@ -3,56 +3,51 @@ import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
 import '@fontsource-variable/hanken-grotesk'
 import './style.css'
-
 import * as audio from './audio'
-import { Dock } from './dock'
-import { DEFAULT_EDGES } from './touch'
-import { judged, live, tolerance } from './even'
-import { earView, earTap, newEar, playCard, stopEar, type EarRun } from './ear-play'
+import * as lib from './catalog'
+import type { Piece } from './catalog-types'
+import { nameChord } from './chord'
 import * as coach from './coach'
-import { TRAINERS, check as checkAnswer, deal as dealTheory, deckOf, type Trainer } from './theory'
-import { STAGES as SCALE_STAGES, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, record as recordScale, scaleSong, CLEAN_RUNS, degreeOfPitch, quizDeal, quizRecord, quizRight, keyName, type Card as ScaleCard, type Form, type QuizStats } from './scales'
-import { DEFAULT_RUN, LIMITS, SET, bestKey, deal, goalMs, newTally, runCards, tally, widened, type RunSpec } from './run'
-import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, fluentMs, focus, mastery, nextStage, record, reviewPool, stageDeck, weakest, type Card, type Stage, type Stats } from './drill'
-import { type GameEvent, type Mode, type Result } from './game'
+import { creditBlock, creditLine, libraryUrl } from './credits'
+import { Dock } from './dock'
+import { type Card, cardKey, cards, dayNum, deck, deckSong, dueCards, fluentMs, focus, mastery, nextStage, noteCards, record, reviewPool, type Stage, stageDeck, STAGES, type Stats, weakest } from './drill'
+import { type EarRun, earTap, earView, newEar, playCard, stopEar } from './ear-play'
+import { judged, live, tolerance } from './even'
+import type { GameEvent, Mode, Result } from './game'
+import { type Ctx, nextOf, path as gradePath, type Start } from './grades'
+import { breakToast } from './habit-ui'
 import { Highway } from './highway'
 import { icon } from './icons'
-import { nextStep } from './pace'
-import { knownPitches } from './quiet'
 import type { Grade, VelGrade } from './judge'
-import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
-import { noteName } from './spell'
+import { mountLibrary } from './library-view'
+import { afterPass, barHtml, facts, hidden, passCard, type PassReport, startCard, startStage, TOP, verdict } from './memory'
+import { chooseInput, inputs, type MidiMsg, monitor, onMidi, onPedal, typingKeyboard } from './midi'
+import { autoSelect, inspectMidi } from './midi-tracks'
+import { nextStep } from './pace'
+import { type PlanMin, theoryDue } from './plan'
+import { knownPitches } from './quiet'
+import { LOOK, lookCard, pct, pickPiece, type RtPiece, startRate, summaryCard } from './readthrough'
+import { buildSummary, reportLink } from './report'
+import { restTracker } from './rest'
+import { bestKey, deal, DEFAULT_RUN, goalMs, LIMITS, newTally, runCards, type RunSpec, SET, tally, widened } from './run'
+import { type Card as ScaleCard, CLEAN_RUNS, degreeOfPitch, type Form, keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId, passed, quizDeal, quizRecord, quizRight, type QuizStats, record as recordScale, scaleSong, STAGES as SCALE_STAGES } from './scales'
 import { save, settings, showSetup } from './settings'
+import { autoLevel, type Level, LEVELS, simplify } from './simplify'
 import { barAt, fromSpec, type Hand, type Note, type Song } from './song'
+import { noteName } from './spell'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
-import { nameChord } from './chord'
-import { thumb } from './thumb'
-import { creditBlock, creditLine, libraryUrl } from './credits'
-import * as lib from './catalog'
-import { buildSummary, reportLink } from './report'
-import type { Piece } from './catalog-types'
-import { mountLibrary } from './library-view'
-import { autoSelect, inspectMidi } from './midi-tracks'
-import { calibrate, writtenTargets } from './touch'
-import { LEVELS, autoLevel, simplify, type Level } from './simplify'
-import { applyRun, nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
-import { exercise, PATTERNS, type Opts } from './technique'
-import { dayKey, improved, lastWeek, weekOf } from './week'
-import { nextOf, path as gradePath, type Ctx, type Start } from './grades'
-import { breakToast } from './habit-ui'
-import { theoryDue, type PlanMin } from './plan'
-import { restTracker } from './rest'
 import { streak as dayStreak } from './streak'
-import { $, CAL_NOTES, art, creditsDialog, setupDialog, tracksDialog, type Row, progressView, techniqueView, todayView, type TouchCal, drawer, drillResults, library, readView, results, runForm, scalesView, theoryView, type TheoryRunView, cardName, type QuizState, type ScalePick, runResults, runTitle, RUN_START, starterRows, userRows, type StageRow } from './ui'
-import { LOOK, lookCard, pct, pickPiece, startRate, summaryCard, type RtPiece } from './readthrough'
-import { TOP, afterPass, barHtml, facts, hidden, passCard, startCard, startStage, verdict, type PassReport } from './memory'
-import { calibrating, current, dock, drill, drillStats, esc, game, highway, median, mem, played, reduced, resOpen, rt, run, runSpec, say, setCalibrating, setCurrent, setDock, setDrill, setDrillStats, setHighway, setMem, setPlayed, setRt, setRun, setRunSpec, setStaff, staff, stageById, starters, worstBars, type Section } from './app/state'
-
-let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
-let noteTimer = 0
-let note = ''
+import { applyRun, nextRecipe, stateOf, SYLLABUS, type TechStats } from './syllabus'
+import { exercise, type Opts, PATTERNS } from './technique'
+import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINERS } from './theory'
+import { thumb } from './thumb'
+import { calibrate, DEFAULT_EDGES, writtenTargets } from './touch'
+import { $, art, CAL_NOTES, cardName, creditsDialog, drawer, drillResults, library, progressView, type QuizState, readView, results, type Row, RUN_START, runForm, runResults, runTitle, type ScalePick, scalesView, setupDialog, type StageRow, starterRows, techniqueView, type TheoryRunView, theoryView, todayView, type TouchCal, tracksDialog, userRows } from './ui'
+import { dayKey, improved, lastWeek, weekOf } from './week'
+import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, median, mem, played, reduced, resOpen, rt, run, runSpec, say, type Section, setCalibrating, setCurrent, setDock, setDrill, setDrillStats, setHighway, setMem, setPlayed, setRt, setRun, setRunSpec, setStaff, staff, stageById, starters, worstBars } from './app/state'
+import { chipFlash, connectMidi, flash, midiLine, midiState, updateBanner, updateChip } from './app/banner'
 
 let readTab: 'stages' | 'run' = 'stages'
 
@@ -112,7 +107,6 @@ function view(name: (typeof SECTIONS)[number]) {
   if (name !== 'play') $('#title').textContent = ''
   $('#title').hidden = name !== 'play' // an empty heading is noise to a screen reader
 }
-
 
 async function showSection(name: Section, err = '') {
   await flushPractice()
@@ -961,7 +955,6 @@ function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?
   )
 }
 
-
 let chordTimer = 0
 /** The readout of what is held now; it lingers a moment after the last key comes up. */
 function chordUpdate() {
@@ -1103,7 +1096,6 @@ function onPhase() {
 
 // ---------------------------------------------------------------- Read through
 
-
 const RT_LEVEL = ['Beginner', 'Beginner', 'Elementary', 'Intermediate', 'Intermediate', 'Intermediate'] // catalogue grade 1..5 to the three levels the picker knows
 const rtPieces = (): RtPiece[] => [...STARTERS.map((s) => ({ id: s.spec.id, title: s.spec.title, level: s.level })), ...lib.catalog.pieces.filter((p) => lib.local(p.id)).map((p) => ({ id: `lib:${p.id}`, title: p.title, level: RT_LEVEL[Math.min(5, lib.gradeOf(p))] }))]
 
@@ -1199,7 +1191,6 @@ async function rtDone(r: Result) {
 }
 
 // ---------------------------------------------------------------- Memorise
-
 
 /** Learn with the score fading by bars. `floor`: start at this stage at least (1 after a clean Learn run). */
 async function memorise(id: string, floor = 0) {
@@ -1593,87 +1584,6 @@ function calibrated(r: Result) {
 }
 
 // ---------------------------------------------------------------- keyboard + banner
-
-function flash(msg: string) {
-  note = msg
-  updateBanner()
-  clearTimeout(noteTimer)
-  noteTimer = window.setTimeout(() => {
-    note = ''
-    updateBanner()
-  }, 5000)
-}
-
-function updateBanner() {
-  const b = $('#banner')
-  let html = ''
-  const have = inputs().length > 0
-  if (note) html = `<span>${esc(note)}</span>`
-  else if (!current || played || have) html = ''
-  else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer. You can still play with the computer keyboard (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> …).</span>`
-  else if (midiState === 'blocked') html = `<span><b>MIDI access is blocked.</b> Allow it in the address bar, then reload. Computer keys work meanwhile.</span>`
-  else
-    html = `<span><b>No keyboard yet.</b> Plug in over USB, then connect. Or play with the computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd>.</span><button class="btn" id="connectBtn">Connect keyboard</button>`
-  b.innerHTML = html ? `<div class="banner" role="status">${html}</div>` : ''
-  const c = b.querySelector<HTMLButtonElement>('#connectBtn')
-  if (c) c.onclick = () => void connectMidi()
-}
-
-function updateChip() {
-  const list = inputs()
-  const chip = $('#dev')
-  chip.classList.toggle('ok', list.length > 0)
-  const pick = list.find((i) => i.id === settings.device) ?? list[0]
-  $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
-  $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
-  const su = document.querySelector('#suMidi')
-  if (su) {
-    su.textContent = midiLine()
-    document.querySelector('#suConnect')?.toggleAttribute('hidden', list.length > 0)
-  }
-}
-
-/** The keyboard's state in words, for the Set up sheet. */
-function midiLine() {
-  const list = inputs()
-  const pick = list.find((i) => i.id === settings.device) ?? list[0]
-  if (pick) return `${pick.name}, connected`
-  if (midiState === 'unsupported') return 'No MIDI in this browser. The computer keys still play.'
-  if (midiState === 'blocked') return 'MIDI is blocked. Allow it for this site, then reload.'
-  return 'Not connected. Plug it in over USB, then Connect.'
-}
-
-async function connectMidi() {
-  try {
-    await connect(() => {
-      updateChip()
-      updateBanner()
-      if (!inputs().length && (game.phase === 'playing' || game.phase === 'waiting' || game.phase === 'countin')) {
-        game.toggle()
-        flash('Keyboard disconnected. Plug it back in and press Space to resume.')
-      }
-      if (document.querySelector('#drawer:not([hidden])')) openDrawer()
-    })
-    chooseInput(settings.device)
-    midiState = 'ok'
-  } catch {
-    midiState = midiSupported ? 'blocked' : 'unsupported'
-  }
-  updateChip()
-  updateBanner()
-}
-
-let chipTimer = 0
-function chipFlash(p: number) {
-  const chip = $('#dev')
-  chip.classList.add('live')
-  $('#devName').textContent = noteName(p)
-  clearTimeout(chipTimer)
-  chipTimer = window.setTimeout(() => {
-    chip.classList.remove('live')
-    updateChip()
-  }, 450)
-}
 
 const fromKeyboard = (m: MidiMsg) => {
   if (m.on) {
@@ -2154,6 +2064,8 @@ addEventListener('drop', (e) => {
   document.querySelector('#library')?.classList.remove('over')
   if (e.dataTransfer?.files.length) void importFiles(e.dataTransfer.files)
 })
+
+Object.assign(hooks, { openDrawer })
 
 // ---------------------------------------------------------------- boot
 
