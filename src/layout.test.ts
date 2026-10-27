@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { analyze, beamBounds, densest, figure, fitZoom, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
 import { mixed, orchestral, pianoHuman, sixEight, waltz } from './notation-fixtures'
-import { build, fromMidi, type Bar, type Raw, type Song } from './song'
+import { build, fromMidi, fromSpec, type Bar, type Raw, type Song } from './song'
+import { STARTERS } from './starters'
 
 const SHEET: Cfg = { view: 'sheet', px: { w: 1180, h: 560 } }
 const BOTH: Cfg = { view: 'both', px: { w: 1180, h: 130 } }
@@ -372,5 +373,19 @@ describe('zoom in a drill', () => {
     const an = analyze(s, { read: true })
     const cards = (zoom: number) => windowFor(an, 0, { view: 'both', px: { w: 1180, h: 400 }, zoom }).systems.reduce((n, x) => n + x.to - x.from, 0)
     expect(cards(0.5)).toBeGreaterThan(cards(1))
+  })
+})
+
+describe('a bar where one staff is silent', () => {
+  it('gets one whole-bar rest in that staff only, centred in its bar', () => {
+    // the Five-finger warm-up: right hand in bars 1-3, left hand in bars 3-5
+    const L = run(fromSpec(STARTERS[0].spec))
+    expect(L.rests.map((r) => `${r.clef}${r.bar}${r.whole ? 'w' : ''}`).sort()).toEqual(['bass0w', 'bass1w', 'treble3w'])
+    for (const r of L.rests) {
+      const b = L.bars.find((x) => x.i === r.bar)!
+      expect(r.x).toBeCloseTo((b.x + b.xEnd) / 2, 5)
+      expect(r.y).toBeLessThan(L.base[r.clef]) // inside its own staff
+      expect(r.y).toBeGreaterThan(L.base[r.clef] - 40)
+    }
   })
 })

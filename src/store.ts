@@ -95,11 +95,17 @@ export async function allProgress(): Promise<Map<string, Progress>> {
   return m
 }
 
-/** Fold one session's trouble into the long-run heat: old trouble cools as you improve. */
+/** Old trouble cools by 30% a session; what falls under one stray wrong note is gone, so a mastered piece stops offering a loop. */
+export const cool = (old: number[], run: number[]) =>
+  Array.from({ length: Math.max(old.length, run.length) }, (_, i) => {
+    const h = (old[i] ?? 0) * 0.7 + (run[i] ?? 0)
+    return h < 0.25 ? 0 : h
+  })
+
+/** Fold one session's trouble into the long-run heat. */
 export async function commit(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
   const p = await getProgress(id)
-  const n = Math.max(p.heat.length, heat.length)
-  p.heat = Array.from({ length: n }, (_, i) => (p.heat[i] ?? 0) * 0.7 + (heat[i] ?? 0))
+  p.heat = cool(p.heat, heat)
   p.last = Date.now()
   if (clean !== undefined) {
     const day = dayNum()

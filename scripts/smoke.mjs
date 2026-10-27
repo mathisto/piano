@@ -20,9 +20,14 @@ const views = () => page.evaluate(() => [...document.querySelectorAll('.view.on'
 await page.goto(URL)
 await page.waitForSelector('#today.on')
 check('boots on Today', (await views()) === 'today')
-check('first launch shows Set up', await page.waitForSelector('dialog#setup[open]', { timeout: 3000 }).then(() => true, () => false))
-await page.keyboard.press('Escape')
-check('Set up skips with Escape', !(await page.isVisible('dialog#setup[open]')))
+await page.waitForTimeout(500)
+check('automation never gets the Set up sheet unasked', !(await page.isVisible('dialog#setup[open]')))
+const first = await browser.newPage()
+await first.goto(`${URL}?setup`)
+check('?setup shows Set up on a first launch', await first.waitForSelector('dialog#setup[open]', { timeout: 3000 }).then(() => true, () => false))
+await first.keyboard.press('Escape')
+check('Set up skips with Escape', !(await first.isVisible('dialog#setup[open]')))
+await first.close()
 
 for (const [tab, id] of [['songs', 'library'], ['read', 'read'], ['scales', 'scales'], ['theory', 'theory'], ['technique', 'technique'], ['progress', 'progress'], ['today', 'today']]) {
   await page.click(`label:has(input[value=${tab}])`)
@@ -35,6 +40,7 @@ check('open library lists pieces', (await page.$$('.biglib tr[data-lib]')).lengt
 await page.click('tr.open[data-open] >> nth=0')
 await page.waitForTimeout(1200)
 check('a song opens in play', (await views()) === 'play')
+check('a new piece focuses Play', await page.evaluate(() => document.activeElement.id === 'go'))
 check('start card offers Perform and Learn', (await page.$$('input[name=modeSheet]')).length === 2)
 await page.keyboard.press('Escape')
 await page.waitForTimeout(300)
@@ -49,6 +55,12 @@ await page.click('#settingsBtn')
 await page.waitForTimeout(300)
 const h = await page.evaluate(() => { const d = document.querySelector('#drawer'); return d.scrollHeight - d.clientHeight })
 check('settings fit one screen', h <= 80, `${h}px over`)
+let strayed = 0
+for (let i = 0; i < 80; i++) {
+  await page.keyboard.press(i < 40 ? 'Tab' : 'Shift+Tab')
+  if (!(await page.evaluate(() => !!document.activeElement.closest('#drawer')))) strayed++
+}
+check('Tab stays inside the open drawer', strayed === 0, `${strayed} strays`)
 await page.keyboard.press('Escape')
 
 try {

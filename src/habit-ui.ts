@@ -38,9 +38,9 @@ let timer = 0
 
 /** A quiet reminder after a long run of practice. Association only, no claim about injury. */
 export function breakToast() {
-  document.querySelector('.rest')?.remove()
+  document.querySelector('.wristnote')?.remove()
   const el = document.createElement('div')
-  el.className = 'rest'
+  el.className = 'wristnote'
   el.setAttribute('role', 'status')
   el.innerHTML = `<span>Stretch your wrists</span><button class="btn ghost sm">Dismiss</button>`
   const close = () => {
