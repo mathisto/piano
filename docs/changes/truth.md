@@ -6,7 +6,6 @@ Done on this branch:
 - Arcade leftovers: `multiplier`/`mult` removed from judge.ts, game.ts and tests; a hit scores its grade only. Kept `combo` (the HUD "In a row") and `maxCombo` (results "longest run"). store.ts keeps the best run by accuracy (it compared the multiplied score, so old bests could block new ones). HUD accuracy now starts as a dash in ui.ts.
 - Copy: grepped all UI strings; no claims of ear-training transfer, medical effect, "proven", "guaranteed" or "learn faster" were found. Only softened readthrough.ts ("Reading improves with plenty of new music ...").
 
-Needs main.ts (not edited here):
-1. frame(), line `if (j.score !== last.score) $('#hScore').textContent = ...`: show a dash until a note is judged, and re-run when `j.judged` changes:
-   `if (j.score !== last.score || j.judged !== last.judged) $('#hScore').textContent = j.judged ? \`${Math.round(j.accuracy * 100)}%\` : '—'` (add `judged` to `last`). Verified in headless Chrome with this patch: Perform shows "—" and 0 before the first note.
-2. Ready rule. Today `prog.days` (the Ready tag after 2) gets a day from any clean run (Perform: acc >= 0.9, no miss, <= 1 wrong; Learn: clean and not waiting) at ANY tempo, so a run at 40% tempo counts. Proposed: two different days with a clean run at 90% of written tempo or more and no waiting. At the store.commit call (about line 1578) pass `... && !game.wait && r.rate >= 0.9` for both modes (Perform is always rate 1, no wait). Then the Ready tag (ui.ts line 149) can carry that sentence as a title; it is not added yet because the logic is not in.
+Needed `main.ts` (not edited on this branch), both made since:
+1. The accuracy HUD shows a dash until a note is judged (`app/stage.ts` frame loop).
+2. The Ready rule: a clean run counts toward Ready and the review boxes only at 90% of the written tempo or more and without waiting (`app/results.ts`; Perform is always rate 1, no wait). Still open: the Ready tag (`ui.ts`, `library-view.ts`) carries no title saying so.

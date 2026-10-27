@@ -629,6 +629,48 @@
       "description": "The shared +/− marker for every details.",
       "html": "<details class=\"ds-d\" open><summary>Beginner <span>12</span></summary></details><details class=\"ds-d\"><summary>5 more</summary></details>",
       "css": ".ds-d summary{display:flex;align-items:center;min-height:40px;list-style:none;cursor:pointer;color:var(--ink-3);font-weight:650}.ds-d summary::-webkit-details-marker{display:none}.ds-d summary::before{content:\"+\";display:inline-block;width:1.2em;color:var(--ink-3)}.ds-d[open] summary::before{content:\"\\2212\"}.ds-d summary span{margin-left:8px}"
+    },
+    {
+      "name": "Start Here Card",
+      "kind": "card",
+      "description": "Today, first week only: seven suggested days in plan-row grammar. The day's step has a lamp-ringed number and a plain Start (Today's one lamp stays on the plan); earlier steps are ghost, later ones Ink Faint.",
+      "html": "<section class=\"ds-guide\"><header><div><h2>Start here</h2><p>A suggested first week, day 2 of 7. Do them in any order, or none.</p></div><button class=\"ds-btn ds-ghost\">Hide</button></header><ol><li class=\"ds-g done\"><span class=\"ds-n\">✓</span><b>Read: Treble landmarks</b></li><li class=\"ds-g now\"><span class=\"ds-n\">2</span><div><b>Scales: C major, right hand</b><span>Three clean runs make it solid.</span></div><button class=\"ds-btn\">Start</button><a>Skip</a></li><li class=\"ds-g later\"><span class=\"ds-n\">3</span><b>Theory: chord triads</b></li></ol></section>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-guide{width:560px;padding:18px 20px;background:var(--panel);border:1px solid var(--edge);border-radius:12px;display:grid;gap:8px}.ds-guide header{display:flex;justify-content:space-between;gap:16px}.ds-guide h2{margin:0;font:800 italic 22px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}.ds-guide p{margin:6px 0 0;color:var(--ink-2)}.ds-guide ol{display:grid;margin:4px 0 0;padding:0;list-style:none}.ds-g{display:flex;align-items:center;gap:16px;min-height:42px;padding:4px;border-top:1px solid var(--line)}.ds-g div{flex:1}.ds-g b{font:500 16px var(--ui)}.ds-g span:not(.ds-n){display:block;color:var(--ink-3);font-size:15px}.ds-n{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid var(--line-2);border-radius:999px;color:var(--ink-3);font:650 13px var(--ui)}.ds-g.now .ds-n{border-color:var(--lamp);color:var(--ink)}.ds-g.now b{font-size:18px;font-weight:650}.ds-g.done b{color:var(--ink-2)}.ds-g.later b{color:var(--ink-3)}.ds-g a{color:var(--ink-3);font-size:15px}"
+    },
+    {
+      "name": "Tab Note",
+      "kind": "card",
+      "description": "One quiet line under a tab's page head, the first time only, with Got it. Ink Soft; it claims nothing the app does not measure.",
+      "html": "<p class=\"ds-note\"><span>Scales are for fingering and an even hand. Each stage adds keys; the Quiz asks which note takes a given finger.</span><a>Got it</a></p>",
+      "css": ".ds-note{display:flex;align-items:center;gap:16px;width:560px;margin:0;color:var(--ink-2)}.ds-note a{flex:none;padding:0 4px;color:var(--ink-3);font-size:15px}"
+    },
+    {
+      "name": "On-Screen Keys",
+      "kind": "custom",
+      "description": "The strip under Theory and Quiz cards and reading drills when no MIDI keyboard is connected: octave buttons, range, Names, then Ink keys with the player's cyan where a finger is.",
+      "html": "<div class=\"ds-osk\"><div class=\"ds-ob\"><button class=\"ds-btn\">‹</button><b>C3 to C5</b><button class=\"ds-btn\">›</button><button class=\"ds-btn ds-names\">Names</button></div><div class=\"ds-ok\"><i class=\"w\">C3</i><i class=\"w on\"></i><i class=\"w\"></i><i class=\"w\"></i><i class=\"w\">C4</i><i class=\"w\"></i><i class=\"b\" style=\"left:11%\"></i><i class=\"b\" style=\"left:25%\"></i><i class=\"b\" style=\"left:53%\"></i></div></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-osk{width:560px;display:grid;gap:6px;padding:6px 12px 10px;background:var(--panel);border-top:1px solid var(--line-2)}.ds-ob{display:flex;align-items:center;gap:8px}.ds-ob b{min-width:7ch;text-align:center;color:var(--ink-2);font:600 15px var(--ui)}.ds-names{margin-left:auto}.ds-ok{position:relative;display:flex;height:130px}.ds-ok i{font:700 13px var(--ui);font-style:normal}.ds-ok .w{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:var(--line-2);background:var(--ink);border-radius:0 0 4px 4px;box-shadow:inset -2px 0 var(--panel),inset 2px 0 var(--panel)}.ds-ok .w.on{background:#3fe0ff}.ds-ok .b{position:absolute;top:0;width:8%;height:62%;background:var(--ground);border-radius:0 0 2px 2px;box-shadow:inset 0 0 0 1px var(--edge)}"
+    },
+    {
+      "name": "Pulse Bar",
+      "kind": "custom",
+      "description": "A pulse-trainer figure: a bar with a line on every beat and an Ink Soft dot where a tap is wanted; a silent bar is dashed with hollow dots.",
+      "html": "<div class=\"ds-pulse\"><figure><div><b style=\"--m:0\"></b><b style=\"--m:.5\"></b><b style=\"--m:.75\"></b></div><figcaption>Bar 1</figcaption></figure><figure class=\"silent\"><div><b style=\"--m:0\"></b><b style=\"--m:.25\"></b><b style=\"--m:.5\"></b><b style=\"--m:.75\"></b></div><figcaption>Silent bar</figcaption></figure></div>",
+      "css": ".ds-pulse{display:flex;gap:12px}.ds-pulse figure{width:170px;margin:0}.ds-pulse figure>div{position:relative;height:40px;padding:0 12px;border:1px solid var(--line-2);border-radius:4px;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 25%) content-box}.ds-pulse b{position:absolute;top:50%;left:calc(12px + (100% - 24px) * var(--m));width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:999px;background:var(--ink-2)}.ds-pulse .silent>div{border-style:dashed}.ds-pulse .silent b{background:transparent;border:2px solid var(--ink-3)}.ds-pulse figcaption{margin-top:4px;color:var(--ink-3);font:500 12px/1.2 var(--ui)}"
+    },
+    {
+      "name": "Compare Strip",
+      "kind": "card",
+      "description": "Results, from the second run: right keys per bar as two thin columns, last time dim and this run in Ink (mint when 15 points better, red when worse), with a line saying it in words.",
+      "html": "<div class=\"ds-cmp\"><div class=\"ds-key\"><span><i class=\"l\"></i>Last time</span><span><i class=\"n\"></i>This run</span></div><svg viewBox=\"0 0 120 40\" preserveAspectRatio=\"none\"><rect class=\"l\" x=\"4\" y=\"12\" width=\"6\" height=\"28\"/><rect class=\"n\" x=\"12\" y=\"8\" width=\"6\" height=\"32\"/><rect class=\"l\" x=\"34\" y=\"22\" width=\"6\" height=\"18\"/><rect class=\"up\" x=\"42\" y=\"6\" width=\"6\" height=\"34\"/><rect class=\"l\" x=\"64\" y=\"8\" width=\"6\" height=\"32\"/><rect class=\"down\" x=\"72\" y=\"20\" width=\"6\" height=\"20\"/></svg><p>Bars 2 and 3 changed.</p></div>",
+      "css": ".ds-cmp{display:grid;gap:10px;width:360px;padding-top:14px;border-top:1px solid var(--line)}.ds-key{display:flex;gap:20px;font:650 15px var(--ui);color:var(--ink-2)}.ds-key i{display:inline-block;width:8px;height:14px;margin-right:8px;vertical-align:-2px}.ds-key .l{background:var(--ink-3);opacity:.55}.ds-key .n{background:var(--ink)}.ds-cmp svg{width:100%;height:48px}.ds-cmp .l{fill:var(--ink-3);opacity:.55}.ds-cmp .n{fill:var(--ink)}.ds-cmp .up{fill:#34e89a}.ds-cmp .down{fill:#ff4a3d}.ds-cmp p{margin:0;color:var(--ink-2)}"
+    },
+    {
+      "name": "Listen Bar",
+      "kind": "chip",
+      "description": "While a take plays back: a pill at the top of the stage with a Display word, Any key stops, and Stop.",
+      "html": "<div class=\"ds-take\"><b>Listening back</b><small>Any key stops</small><button class=\"ds-btn\">Stop</button></div>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);font:650 15px var(--ui);cursor:pointer}.ds-btn:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}.ds-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}.ds-take{display:inline-flex;align-items:center;gap:14px;padding:6px 6px 6px 18px;background:rgba(9,11,23,.94);border:1px solid var(--edge);border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.45)}.ds-take b{font:800 italic 22px/1 var(--display);letter-spacing:.03em;text-transform:uppercase}.ds-take small{color:var(--ink-3);font-size:13px}"
     }
   ],
   "narrative": {

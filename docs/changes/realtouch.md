@@ -19,5 +19,5 @@ Branch `feature/realtouch`. On a song the question is "did you follow the writte
 ## Not verified / open
 
 - No human playing: the tolerances (hairpin flat = within one band, accent = half a band, a third of chances) are guesses, like the exercise thresholds. Real phrasing inside a run written at one level may trip the evenness line too often.
-- The staff does not draw staccato dots, accents, slurs or hairpins yet, so a line can name a mark the player never saw.
+- The staff did not draw staccato dots, accents, slurs or hairpins when this was written; `marks.md` draws them now.
 - Words (`cresc.`, `dim.`) are not read; a second hairpin after an end-less one starts from the old level. Lines name the stretch, not the moment: no marks on the staff after the run.
