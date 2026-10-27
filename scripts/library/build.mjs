@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // The big library, batch: fetch, licence check, normalise here; analyse, dedupe, emit in pipeline.ts (bundled first).
-//   npm run library:build -- [--set current|mutopia] [--grades 1-3] [--limit 500] [--out DIR]
+//   npm run library:build -- [--set current|mutopia] [--grades 1-4] [--limit 500] [--out DIR]
 // current: the pieces in scripts/library-sources.json (ids unchanged). mutopia: every solo keyboard piece on Mutopia.
 // Resumable and polite: every request is cached in .cache/library/http (one request a second on a miss), so a rerun is offline
 // and its output byte-identical. Output goes to .cache/library/out (never public/); the per-piece outcome to .cache/library/report-<set>.json.
 import { readFileSync, writeFileSync } from 'node:fs'
-import { get, mutopiaMeta, openscoreMeta, refusals, sha } from './lib.mjs'
+import { get, movements, mutopiaMeta, openscoreMeta, refusals, sha, unzip } from './lib.mjs'
 import { mutopiaIndex, soloKeyboard } from './mutopia-index.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
@@ -17,7 +17,7 @@ const arg = (k, d) => {
 }
 const SET = arg('set', 'mutopia')
 const OUT = arg('out', `${CACHE}/out`)
-const grades = arg('grades', SET === 'mutopia' ? '1-3' : undefined)?.split('-').map(Number)
+const grades = arg('grades', SET === 'mutopia' ? '1-4' : undefined)?.split('-').map(Number)
 const limit = Number(arg('limit', SET === 'mutopia' ? 500 : Infinity))
 
 const sources = JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8'))
@@ -29,6 +29,8 @@ const rows = [] // pieces refused before analysis: { id, stage, why }
 const inputs = []
 const refuse = (id, stage, why) => rows.push({ id, stage, why: [].concat(why) })
 const page = (n) => `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${n}`
+// the pieces already in public/library: in the mutopia set they keep their curated title, sha256 pin and id (dedupe never drops them)
+const pins = new Map(sources.pieces.map((e) => [e.id, e]))
 
 async function mutopia(n, pin) {
   const id = `mutopia-${n}`
@@ -42,34 +44,47 @@ async function mutopia(n, pin) {
   if (pin && pin.licence !== m.licence) why.push(`page says ${m.licence}, sources say ${pin.licence}`)
   if (pin && !pin.composer.endsWith(m.lifespan ?? '?')) why.push(`composer dates ${m.lifespan} differ from the sources`)
   if (why.length) return refuse(id, 'licence', why)
-  if (!m.midi) return refuse(id, 'fetch', 'zip-only (multi-movement) piece')
-  let midi, ly
+  if (!m.midi && !m.mids) return refuse(id, 'fetch', 'no MIDI file')
+  let files // [id, title, midi, ly]
   try {
-    midi = await get(m.midi, HTTP)
-    ly = m.ly && (await get(m.ly, HTTP).catch(() => undefined))?.toString()
+    const ly = m.ly && (await get(m.ly, HTTP).catch(() => undefined))?.toString()
+    if (m.midi) files = [[id, pin?.title ?? m.title, await get(m.midi, HTTP), ly]]
+    else {
+      // multi-movement: mutopia-N-k, each with its own .ly when the -lys.zip has one of the same name, else the whole work's
+      const lys = m.lys ? [...unzip(await get(m.lys, HTTP))] : []
+      const base = m.mids.split('/').pop().slice(0, -'-mids.zip'.length)
+      files = movements(await get(m.mids, HTTP), base).map((v, k) => [
+        `${id}-${k + 1}`,
+        `${m.title}: ${v.name}`,
+        v.bytes,
+        lys.find(([f]) => f.split('/').pop() === `${v.stem}.ly`)?.[1].toString() ?? ly,
+      ])
+    }
   } catch (e) {
     return refuse(id, 'fetch', e.message)
   }
-  if (pin?.sha256 && pin.sha256 !== sha(midi)) return refuse(id, 'fetch', 'upstream changed (sha256 pin)')
-  inputs.push({
-    id,
-    title: pin?.title ?? m.title,
-    composer: pin?.composer ?? m.composer,
-    ...(m.opus && !/^(not known|n\/a|none)$/i.test(m.opus) && { opus: m.opus }),
-    source: 'mutopia',
-    sourceUrl: page(n),
-    licenceEvidence: page(n),
-    licence: m.licence,
-    licenceUrl: m.licenceUrl,
-    edition: m.sourceEdition,
-    ...(m.typesetter && { typesetter: m.typesetter }),
-    ...(m.arranger && { arranger: m.arranger }),
-    ...(m.style && { style: m.style }),
-    format: 'midi',
-    bytes: new Uint8Array(midi),
-    upstreamSha: sha(midi),
-    ...(ly && { ly }),
-  })
+  for (const [fid, title, midi, ly] of files) {
+    if (pin?.sha256 && pin.sha256 !== sha(midi)) return refuse(id, 'fetch', 'upstream changed (sha256 pin)')
+    inputs.push({
+      id: fid,
+      title,
+      composer: pin?.composer ?? m.composer,
+      ...(m.opus && !/^(not known|n\/a|none)$/i.test(m.opus) && { opus: m.opus }),
+      source: 'mutopia',
+      sourceUrl: page(n),
+      licenceEvidence: page(n),
+      licence: m.licence,
+      licenceUrl: m.licenceUrl,
+      edition: m.sourceEdition,
+      ...(m.typesetter && { typesetter: m.typesetter }),
+      ...(m.arranger && { arranger: m.arranger }),
+      ...(m.style && { style: m.style }),
+      format: 'midi',
+      bytes: new Uint8Array(midi),
+      upstreamSha: sha(midi),
+      ...(ly && { ly }),
+    })
+  }
 }
 
 async function lieder(e) {
@@ -119,7 +134,7 @@ if (SET === 'current') {
   const solo = index.filter((r) => soloKeyboard(r.instruments))
   console.log(`index: ${index.length} keyboard-tagged, ${solo.length} solo keyboard`)
   for (const r of index) if (!solo.includes(r)) refuse(`mutopia-${r.id}`, 'normalise', `not solo keyboard: ${r.instruments}`)
-  for (const r of solo) await mutopia(r.id)
+  for (const r of solo) await mutopia(r.id, pins.get(`mutopia-${r.id}`))
 }
 
 const bin = `${CACHE}/bin/pipeline.mjs`
@@ -127,7 +142,7 @@ const { run } = await import(bin).catch(() => {
   throw new Error(`${bin} missing: run npx vite build --config scripts/library/vite.config.mjs first (npm run library:build does)`)
 })
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
-const done = await run(inputs, OUT, { overrides, grades, limit })
+const done = await run(inputs, OUT, { overrides, grades, limit, pinned: [...pins.keys()] })
 const all = [...rows, ...done].sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
 writeFileSync(`${CACHE}/report-${SET}.json`, JSON.stringify(all, null, 1) + '\n')
 

@@ -86,7 +86,25 @@ export function mutopiaMeta(id, html) {
     arranger: arranger && arranger !== 'n/a' ? arranger : undefined,
     midi: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+\.mid)"/.exec(html)?.[1],
     ly: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+\.ly)"/.exec(html)?.[1],
+    mids: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+-mids\.zip)"/.exec(html)?.[1], // a multi-movement work: one .mid a movement
+    lys: /href="(https:\/\/www\.mutopiaproject\.org\/ftp\/[^"]+-lys\.zip)"/.exec(html)?.[1],
   }
+}
+
+/** A -mids.zip: one .mid a movement, in LilyPond's order (name.mid, name-1.mid, ...), four-hand versions left out; titled by a
+ * dance name in the file name, else Movement k. */
+export function movements(zipped, base) {
+  const key = (stem) => (/-\d+$/.test(stem) ? stem : `${stem}-0`)
+  return [...unzip(zipped)]
+    .filter(([f]) => f.endsWith('.mid') && !/four-?hands/i.test(f))
+    .map(([f, b]) => [f.split('/').pop().slice(0, -4), b])
+    .sort((a, b) => key(a[0]).localeCompare(key(b[0]), 'en', { numeric: true }))
+    .map(([stem, b], k) => {
+      const at = stem.toLowerCase().indexOf(base.toLowerCase())
+      const name = (at >= 0 ? stem.slice(at + base.length) : stem).replace(/^[-_]+/, '') // french-suite-5-gigue: Gigue
+      const word = /^[a-z]+([-_][a-z]+)*$/i.test(name) && !/^all$/i.test(name)
+      return { stem, bytes: b, name: word ? name[0].toUpperCase() + name.slice(1).replace(/[-_]/g, ' ') : `Movement ${k + 1}` }
+    })
 }
 
 // ---- .mxl zip, read and written (fixed dates, so the output is reproducible) ----

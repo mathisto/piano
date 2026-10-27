@@ -2,7 +2,7 @@
 import { mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import { refusals } from '../scripts/library/lib.mjs'
+import { movements, refusals, zip } from '../scripts/library/lib.mjs'
 import { analyse, GATES, judge, run, type Input } from '../scripts/library/pipeline'
 import { fromSpec, type Song } from './song'
 
@@ -43,10 +43,27 @@ describe('library pipeline gates', () => {
       expect(all(judge(s, marks ?? '', tempo ?? true))).toContain(gate)
     })
 
+  it('a repeat LilyPond already unfolds into the MIDI is not flagged', () => {
+    expect(judge(base(), '\\repeat volta 2 { c4 } \\midi { } \\unfoldRepeats').flags).not.toContain('repeats')
+  })
+
   it('covers every gate, and a file that does not parse fails', async () => {
     expect(Object.keys(cases).sort()).toEqual([...GATES.fail, ...GATES.review, ...GATES.flag].filter((g) => g !== 'parse').sort())
     const bad = await analyse({ id: 'bad', format: 'midi', bytes: new Uint8Array([1, 2, 3]) } as Input)
     expect(bad.fails).toEqual(['parse'])
+  })
+})
+
+describe('multi-movement zip', () => {
+  it("orders LilyPond's name.mid, name-1.mid, ... and titles dances by name, leaving four-hand versions out", () => {
+    const z = (names: string[]) => zip(names.map((n) => [n, Buffer.from(n)]))
+    const names = (base: string, files: string[]) => movements(z(files), base).map((m: { name: string; stem: string }) => `${m.stem}=${m.name}`)
+    expect(names('son', ['son-2.mid', 'son-10.mid', 'son.mid', 'son-1.mid', 'son.ly', 'son-four-hands.mid'])).toEqual(['son=Movement 1', 'son-1=Movement 2', 'son-2=Movement 3', 'son-10=Movement 4'])
+    expect(names('french-suite-5', ['french-suite-5-gigue.mid', 'french-suite-5-allemande.mid', 'x/il-vecchio-castello.mid'])).toEqual([
+      'french-suite-5-allemande=Allemande',
+      'french-suite-5-gigue=Gigue',
+      'il-vecchio-castello=Il vecchio castello',
+    ])
   })
 })
 
@@ -93,5 +110,15 @@ describe('library pipeline run', () => {
     const files = (d: string) => ['catalog.json', 'LICENSES.md', ...readdirSync(`${d}/p`).map((f) => `p/${f}`)].sort()
     expect(files(b)).toEqual(files(a))
     for (const f of files(a)) expect(readFileSync(`${b}/${f}`).equals(readFileSync(`${a}/${f}`)), f).toBe(true)
+    expect(cat.aliases).toEqual({ 'mutopia-9999': 'mutopia-75' })
+  })
+
+  it('a pinned (already shipped) piece wins dedupe, keeps no alias, and ships first under the limit', async () => {
+    const d = mkdtempSync(`${tmpdir()}/lib-p-`)
+    const rows = await run(inputs, d, { pinned: ['mutopia-9999', 'mutopia-202'], limit: 2 })
+    expect(rows.find((r) => r.id === 'mutopia-75')).toMatchObject({ stage: 'dedupe', why: ['duplicate of mutopia-9999'] })
+    const cat = JSON.parse(readFileSync(`${d}/catalog.json`, 'utf8'))
+    expect(cat.pieces.map((p: { id: string }) => p.id)).toEqual(['mutopia-202', 'mutopia-9999'])
+    expect(cat.aliases).toEqual({ 'mutopia-75': 'mutopia-9999' })
   })
 })
