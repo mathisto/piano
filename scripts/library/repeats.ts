@@ -304,23 +304,40 @@ const ab = (u: Uint8Array) => u.buffer.slice(u.byteOffset, u.byteOffset + u.byte
 type Seg = [number, number, number] // source ticks [from, to), output tick
 const DC = /D\.\s?[CS]\.|[Dd]a [Cc]apo|[Dd]al [Ss]egno|\\segno|\\coda|\\repeat\s+segno|\\volta\b|\bFine\b/
 
-/** The MIDI with its volta repeats played out (the same bytes when its score has none), or why not. */
-export function unfold(bytes: Uint8Array, ly: string): { bytes: Uint8Array } | { why: string } {
-  if (DC.test(ly)) return { why: 'D.C., D.S., Fine, segno or \\volta' }
-  const midi = new Midi(ab(bytes))
+/** The \\midi score of the .ly that plays this MIDI, and how many of the MIDI's onsets its reading misses: a reading matches
+ * when every onset is where the .ly puts a note, or just before one with grace notes (LilyPond writes one file a score). */
+function score(midi: Midi, ly: string) {
   const W = 4 * midi.header.ppq
   const tick = (x: number) => Math.round(x * W)
-  // the reading must match the file: every MIDI onset where the .ly puts a note, or just before one with grace notes. A .ly
-  // with several \midi scores (one MIDI file each) is matched to the score that fits.
   const notes = midi.tracks.flatMap((t) => t.notes)
   const misses = (r: Rec) => {
     const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
     const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
     return notes.filter((n) => ![-1, 0, 1].some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8)).length
   }
-  const [r, miss] = readLy(ly).map((x) => [x, misses(x)] as const).sort((x, y) => x[1] - y[1])[0] ?? []
+  const [r, miss = Infinity] = readLy(ly).map((x) => [x, misses(x)] as const).sort((x, y) => x[1] - y[1])[0] ?? []
+  const off = r ? Math.abs(tick(r.len) - Math.max(0, ...notes.map((n) => n.ticks + n.durationTicks))) : Infinity // length mismatch, ticks
+  return { r, miss, off, notes: notes.length, ok: miss <= 0.02 * notes.length }
+}
+
+/** Of a multi-movement work's .ly files, the one whose reading matches this movement's MIDI, closest in length (a dense
+ * movement can cover a sparse one's onsets); the first when none matches. Zips may number the MIDI files by the master .ly's
+ * scores and the .ly files by movement (BWV 827, 830). */
+export function pickLy(bytes: Uint8Array, lys: string[]): string | undefined {
+  const midi = new Midi(ab(bytes))
+  const fit = lys.map((ly) => ({ ly, ...score(midi, ly) })).filter((x) => x.ok)
+  return fit.sort((a, b) => a.off - b.off)[0]?.ly ?? lys[0]
+}
+
+/** The MIDI with its volta repeats played out (the same bytes when its score has none), or why not. */
+export function unfold(bytes: Uint8Array, ly: string): { bytes: Uint8Array } | { why: string } {
+  if (DC.test(ly)) return { why: 'D.C., D.S., Fine, segno or \\volta' }
+  const midi = new Midi(ab(bytes))
+  const W = 4 * midi.header.ppq
+  const tick = (x: number) => Math.round(x * W)
+  const { r, miss, notes, ok } = score(midi, ly)
   if (!r) return { why: 'no score with \\midi' }
-  if (miss! > 0.02 * notes.length) return { why: `the .ly reading misses ${miss} of ${notes.length} MIDI onsets` }
+  if (!ok) return { why: `the .ly reading misses ${miss} of ${notes} MIDI onsets` }
   const bad = r.ev.find((e) => e.k === 'bad')
   if (bad) return { why: bad.why }
   type Rep = Extract<Ev, { k: 'rep' }>

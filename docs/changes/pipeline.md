@@ -1,6 +1,6 @@
 # Library batch pipeline (scripts/library/)
 
-`npm run library:build -- --set mutopia|current [--grades 1-4] [--limit 500] [--out DIR]` bundles `pipeline.ts` with the app's importers (vite ssr, no new dependencies), then runs:
+`npm run library:build -- --set mutopia|current [--grades 1-4] [--limit N] [--out DIR]` (defaults since `docs/changes/libgrow.md`: every grade, no limit) bundles `pipeline.ts` with the app's importers (vite ssr, no new dependencies), then runs:
 
 1. **fetch** (`build.mjs`, `lib.mjs`, `mutopia-index.mjs`): Mutopia's search table for Piano, Harpsichord and Clavichord (113 pages), then each piece page, `.mid` and `.ly`. One request a second, the existing User-Agent, every response cached under `.cache/library/http/<sha256(url)>`, so a rerun is offline (27 s) and resumes where it stopped.
 2. **licence**: read from the piece's own page (Mutopia) or the file's `<rights>` (OpenScore). Allowed: `scripts/library-sources.json` `allow` plus MutopiaBSD. Composer must have died in or before year minus 71; the latest year named by the edition or composition date must be year minus 96 or earlier. The `current` set also checks the sha256 pins and the licence and dates in the sources.

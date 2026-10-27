@@ -7,21 +7,21 @@
 // LICENSES.md. The .ly sources are fetched like build.mjs does (cached in .cache/library/http, one request a second on a miss).
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { get, movements, mutopiaMeta, sha, unzip } from './lib.mjs'
+import { get, lyCandidates, movements, mutopiaMeta, sha, unzip } from './lib.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
 const HTTP = `${ROOT}.cache/library/http`
 const arg = (k, d) => (process.argv.includes(`--${k}`) ? process.argv[process.argv.indexOf(`--${k}`) + 1] : d)
 const FROM = arg('from', `${ROOT}.cache/library/out`)
 const OUT = arg('out', `${ROOT}.cache/library/out-repeats`)
-const { run, unfold } = await import(`${ROOT}.cache/library/bin/pipeline.mjs`)
+const { pickLy, run, unfold } = await import(`${ROOT}.cache/library/bin/pipeline.mjs`)
 
 const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
 const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8')).pieces.map((e) => e.id))
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
 const page = (n) => `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${n}`
 
-// the .ly build.mjs reads: the piece's, or for movement k of a -mids.zip work the -lys.zip file of the same name, else the work's
+// the .ly build.mjs reads: the piece's, or for movement k of a -mids.zip work the one pickLy matches to its MIDI
 async function lyOf(id) {
   const [, n, k] = id.split('-')
   const m = mutopiaMeta(id, (await get(page(n), HTTP)).toString())
@@ -29,7 +29,7 @@ async function lyOf(id) {
   if (!k) return ly
   const lys = m.lys ? [...unzip(await get(m.lys, HTTP))] : []
   const v = movements(await get(m.mids, HTTP), m.mids.split('/').pop().slice(0, -'-mids.zip'.length))[k - 1]
-  return lys.find(([f]) => f.split('/').pop() === `${v.stem}.ly`)?.[1].toString() ?? ly
+  return pickLy(v.bytes, lyCandidates(lys, v.stem, ly))
 }
 
 const before = cat.pieces.map((p) => p.sha256)

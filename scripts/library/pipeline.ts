@@ -9,7 +9,7 @@ import { fromMusicXml, xmlText } from '../../src/musicxml'
 import { estimateFifths, fromMidi, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { withRepeats } from './repeats'
-export { unfold } from './repeats'
+export { pickLy, unfold } from './repeats'
 
 export interface Input {
   id: string

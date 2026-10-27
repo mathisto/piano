@@ -2,7 +2,7 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import { movements, openscoreMeta, PIANO, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
+import { movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
 import { analyse, GATES, judge, merge, reach, run, type Input } from '../scripts/library/pipeline'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromSpec, type Song } from './song'
@@ -77,6 +77,14 @@ describe('licence check', () => {
     expect(refusals({ ...ok, composer: 'B. Bartók (1881–1960)' }, allow)).toEqual(['composer died 1960'])
     expect(refusals({ ...ok, composer: 'Anonymous' }, allow)).toEqual(['composer death unknown'])
     expect(refusals({ ...ok, edition: 'Dover, 1998' }, allow)).toEqual(['dated 1998'])
+  })
+  it('holds a composer who died after 1930 until the id is allow-listed with evidence; the held Lieder stay out', () => {
+    const late = { ...ok, composer: 'Richard Strauss (1864–1949)' }
+    const hold = JSON.parse(readFileSync(new URL('../scripts/library/hold-lieder.json', import.meta.url), 'utf8')).ids
+    expect(refusals({ ...late, id: hold[0] }, allow)).toEqual([`composer died 1949, publication by ${new Date().getFullYear() - 96} unchecked`])
+    expect(refusals({ ...late, id: 'mutopia-2162' }, allow)).toEqual([])
+    for (const id of hold) expect(PUBLISHED_BY[id], id).toBeUndefined()
+    for (const [id, why] of Object.entries(PUBLISHED_BY)) expect(Math.min(...(why as string).match(/\b1[5-9]\d\d\b/g)!.map(Number)), id).toBeLessThanOrEqual(1930)
   })
 })
 

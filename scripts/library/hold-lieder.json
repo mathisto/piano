@@ -1,5 +1,5 @@
 {
- "why": "Lieder by composers who died after 1930: their first publication year is not in the OpenScore data, so they stay out until it is checked (world-safe rule: first published 1930 or earlier). Ids held back:",
+ "why": "Lieder by composers who died after 1930 that the 2026-10-27 run had shipped: their first publication year is not in the OpenScore data, so they stay out until it is checked (world-safe rule: first published 1930 or earlier). refusals() in lib.mjs enforces it for every piece; to release one, add its id with one line of evidence to published-by-1930.json and remove it here. Ids held back:",
  "ids": [
   "lieder-lc30910133",
   "lieder-lc4999596",

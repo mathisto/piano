@@ -1,0 +1,22 @@
+# The library grows: every piece the licence rules allow (scripts/library/)
+
+**Publication rule enforced.** `refusals()` (`lib.mjs`) now refuses any piece whose composer died after `LAST_PUBLISHED` (1930 in 2026) and in or before 1955, unless its id is in `scripts/library/published-by-1930.json` (id: one line of evidence; a Mutopia work is listed by page id, `mutopia-N`). It applies to every set, not only the Lieder: Mutopia had the same hole (a page with no year passed). Listed after reading each page: 5 published Sousa marches, Bartók's Romanian Folk Dances (UE 1918), and 15 new ones (5 Sousa marches of 1893 to 1897, Rachmaninoff Op. 3 No. 2 and nine Op. 23 Preludes, Gutheil 1903). `hold-lieder.json` keeps the 36 songs the previous run had shipped; a test checks that none of them is allow-listed and that every entry names a year of 1930 or earlier.
+
+**No ceiling.** `build.mjs` defaults to every grade and no limit (`--grades`, `--limit` still work). With `--merge-with`, the base's pieces count as pinned, so dedupe never ships a new duplicate of a published piece.
+
+**Movement .ly matching.** `pickLy` (`repeats.ts`): of the `-lys.zip` files (the same-name one first) and the work's `.ly`, the one whose reading matches the movement's MIDI onsets (within 2%), closest in length; the first when none matches. `build.mjs` and `repeats-patch.mjs` share it through `lyCandidates` (`lib.mjs`). BWV 827 (mutopia-1080): 5 of 7 movement MIDIs now match a `.ly` (the MIDI numbered k reads the file numbered k+1), and 3 of the 4 published ones that read the wrong file unfold; BWV 830 (mutopia-1497): 2 of 7 match, the rest are missed by the reader itself.
+
+## Run (2026-10-27, cold fetch: 1,960 s Mutopia and 1,620 s Lieder in parallel, one request a second per host)
+
+`node scripts/library/build.mjs --set mutopia --out .cache/library/out-m-grow --merge-with <published out-all>`, then `--set lieder --out .cache/library/out-grow --merge-with .cache/library/out-m-grow`. Warm rerun 80 s, byte-identical.
+
+- **Mutopia**: 827 keyboard-tagged, 189 not solo keyboard, 78 licence (75 composer death unknown, 2 died after 1955, 1 dated), 2 fetch (665 zip 404, 2207 no MIDI), 785 analysed, 2 fail `bars`, 28 duplicates, 1 under quality 70: **754 ship**, 500 already published, **254 new** (grade 4: 142, 5: 112).
+- **Lieder**: 1,462 files, 75 normalise, 318 licence (**278 held by the 1930 rule**: Chaminade 33, Faisst 27, Kralik 18, Bridge 13, Elgar 10, Webern 10, Schoenberg 9, Strauss 4 and 34 more composers; 34 death unknown; 6 without CC0), 1,069 analysed, 4 fail `pitch`, 1 duplicate, 1 under quality 70: **1,063 ship**, 264 already published, **799 new** (grade 3: 191, 4: 323, 5: 285; 547 folded, 252 piano-only).
+- **Union** `.cache/library/out-grow`: **1,817 pieces** (764 published + 1,053 new), grades 1: 71, 2: 279, 3: 554, 4: 515, 5: 398. The 764 entries, the composer and licence table prefixes, the 21 aliases and all 889 base files are identical; 29 aliases (8 new, Pictures' doubled movements), none dangling; every file's sha256 and size checked; none of the 36 held ids; `built` 22a59c87e934c983. catalog.json 1.49 MB (187 KB brotli; was 598 KB).
+
+## Open
+
+- **Allow-list the held songs**: 278 Lieder wait for a first-publication year (IMSLP pages). Many are surely pre-1930 (Elgar, Chaminade, Bridge); one line each in `published-by-1930.json`.
+- **BWV 827 fix for published pieces**: `repeats-patch.mjs --from .cache/library/out-grow --out .cache/library/out-lyfix` unfolds 1080-3, 1080-5, 1080-6 (new files, same grades). Not merged into out-grow because published files stay identical; lay it over with `combine.mjs` when wanted. `combine.mjs` ignores flag-only changes (same file), so 5 pieces whose `repeats` flag the patch drops (374, 804-2, 804-3, 989, 1080-1) still carry it in the published catalogue.
+- **Risks among the new**: long pieces (Liszt Ballade 2, 1,396 s; three La Traviata numbers, 1,032 to 1,169 s; Mort de Socrate 980 s), all flagged `length`; 62 pieces carry `repeats` in the union (18 of them new: D.C./D.S., part-bar repeats, readings that miss); Frühlingsnacht Op. 39 No. 12 (lc4987677) plays 31 bars in 26 s (no tempo mark, 144 bpm default: 57 notes a second); Stanchinsky's Prelude in Lydian Mode reads 18 bpm in 21/16 (420 s for 24 bars). Not heard or looked at by eye.
+- The grade cut points are unchanged and were fitted on the Mutopia set; the Lieder now add 608 pieces at grades 4 and 5.

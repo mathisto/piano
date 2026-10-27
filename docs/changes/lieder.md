@@ -1,6 +1,6 @@
 # OpenScore Lieder in the batch pipeline (scripts/library/)
 
-`npm run library:build -- --set lieder --out .cache/library/out-lieder --merge-with <published out>` (defaults: grades 1-4, limit 300).
+`npm run library:build -- --set lieder --out .cache/library/out-lieder --merge-with <published out>` (defaults: every grade, no limit, since `docs/changes/libgrow.md`).
 
 - **Fetch**: the repo tree from the GitHub API (one request), `data/composers.yaml` (names, birth and death years by folder), then every `scores/**/lc*.mxl` (1,462). Same polite `get()`: one request a second, the project User-Agent, cached in `.cache/library/http`; a warm rerun takes 41 s and its output is byte-identical.
 - **Licence**: the file's `<rights>` must say CC0 (`openscoreMeta`), plus the usual death and edition-year rule (`refusals`).
