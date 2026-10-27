@@ -300,7 +300,7 @@ export class Highway {
     for (let i = hide ? notes.length : i0; i < notes.length; i++) {
       const n = notes[i]
       if (n.t > T + look) break
-      const mode = g.hands[n.h]
+      const mode = g.modeOf(n)
       if (mode === 'hide' || this.hideBar?.(n.bar)) continue // hidden bars light no key either
       const k = this.keys.get(n.p)
       if (!k) continue

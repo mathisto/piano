@@ -102,6 +102,7 @@ interface Ev {
   acc?: -1 | 0 | 1 // as written
   tuplet?: { num: number; den: number }
   gn?: number // a grace note: how many graces before its main note it is played (1 = just before)
+  also?: number // another part wrote this note too (a voice doubled by the piano): it belongs to both
 }
 
 const DYN: Record<string, number> = { pppp: 0.1, ppp: 0.15, pp: 0.25, p: 0.35, mp: 0.48, mf: 0.62, f: 0.78, ff: 0.9, fff: 0.96, sf: 0.9, sfz: 0.9, fz: 0.9, fp: 0.7 }
@@ -348,7 +349,10 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     if (!ev.h || !had) {
       if (ev.h) first.set(k, ev)
       evs.push(ev)
-    } else if (ev.dq > had.dq) had.dq = ev.dq
+    } else {
+      if (ev.dq > had.dq) had.dq = ev.dq
+      if (ev.track >> 2 !== had.track >> 2) had.also = ev.track >> 2 // ponytail: a third part doubling it is not recorded
+    }
   }
 
   // repeats: play the measures in order, so a repeated bar is a bar again in the song
@@ -419,6 +423,9 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     return e.gn ? { ...r, t: Math.max(0, t - e.gn * GRACE_S), d: GRACE_S * 0.9, dq: 0.125, grace: true, tuplet: undefined } : r
   })
   if (!raw.length) throw new Error('No notes found in this score.')
+  // several parts (a voice and a piano, a duet's two players): each note keeps its part, so the app can play one for you
+  const sounding = new Set(evs.map((e) => e.track >> 2))
+  if (sounding.size >= 2) raw.forEach((r, i) => Object.assign(r, { part: evs[i].track >> 2 }, evs[i].also !== undefined && { also: evs[i].also }))
   const keys: { bar: number; fifths: number }[] = []
   keyOf.forEach((f, bar) => {
     if (f !== undefined && keys[keys.length - 1]?.fifths !== f) keys.push({ bar, fifths: f })
@@ -426,5 +433,9 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const song = build(id, title, raw, bars, keys[0]?.fifths ?? estimateFifths(raw))
   if (keys.length > 1) song.keys = keys
   if (flags.length) song.flags = [...new Set(flags)]
+  if (sounding.size >= 2) {
+    const names = new Map(kids(kid(root, 'part-list'), 'score-part').map((sp) => [sp.a.id, kid(sp, 'part-name')?.t.trim() ?? '']))
+    song.parts = parts.map((pt, i) => names.get(pt.a.id) || `Part ${i + 1}`)
+  }
   return song
 }

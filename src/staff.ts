@@ -205,10 +205,10 @@ export class Staff {
     this.dirty = false
     if (!r.width || !r.height) return // hidden: the resize observer calls render() when it shows
     const read = mode === 'read'
-    const hands = this.game.hands
-    const key = `${song.id}|${read}|${hands.R}|${hands.L}`
+    const { hands, parts } = this.game
+    const key = `${song.id}|${read}|${hands.R}|${hands.L}|${[...parts]}`
     if (!this.an || this.an.song !== song || key !== this.anKey) {
-      this.an = analyze(song, { read, hide: (n) => hands[n.h] === 'hide' })
+      this.an = analyze(song, { read, hide: (n) => this.game.modeOf(n) === 'hide' })
       this.anKey = key
     }
     const cfg = this.cfg(r)
@@ -341,7 +341,8 @@ export class Staff {
     }
     if (c.flag) el('text', { class: `smufl${small ? ' small' : ''}`, x: c.flag.x, y: c.flag.y + dy }, g, String.fromCharCode(c.flag.glyph))
     for (const h of c.heads) {
-      const e = el('text', { class: `smufl head${small ? ' small' : ''}${h.cont ? ' cont' : ''}`, x: h.x, y: h.y + dy, 'text-anchor': 'middle' }, g, G.head[h.kind])
+      const app = h.ids.length > 0 && h.ids.every((id) => this.game.modeOf(this.game.song.notes[id]) === 'listen') // the app plays it: dimmed
+      const e = el('text', { class: `smufl head${small ? ' small' : ''}${h.cont ? ' cont' : ''}${app ? ' app' : ''}`, x: h.x, y: h.y + dy, 'text-anchor': 'middle' }, g, G.head[h.kind])
       const p: Placed = { head: e, grp: g, dy, up: h.up, want: h.want, x: h.x, y: h.y + dy }
       this.all.push(p)
       if (h === c.heads[0]) this.timeline.push({ t: h.t, el: g })

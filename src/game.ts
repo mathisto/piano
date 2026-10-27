@@ -1,3 +1,4 @@
+import { byApp } from './accomp'
 import * as audio from './audio'
 import { ticks } from './metronome'
 import { Pace } from './pace'
@@ -70,6 +71,8 @@ export class Game {
   rate = 1
   wait = false
   hands: Record<'R' | 'L', HandMode> = { R: 'play', L: 'play' }
+  you: Record<'R' | 'L', HandMode> = { R: 'play', L: 'play' } // the start card's 'You play': Perform goes back to it
+  parts = new Set<number>() // source parts the app plays for you (Note.part): a song's voice, a duet's other player
   loop: { a: number; b: number } | null = null
   judge!: Judge
   pedal = false // sustain pedal is down
@@ -114,6 +117,8 @@ export class Game {
 
   load(song: Song, mode: Mode = 'perform') {
     this.song = song
+    this.you = { R: 'play', L: 'play' }
+    this.parts = new Set()
     this.heat = []
     this.setMode(mode)
   }
@@ -124,7 +129,7 @@ export class Game {
       this.rate = 1
       this.wait = false
       this.loop = null
-      this.hands = { R: 'play', L: 'play' }
+      this.hands = { ...this.you }
     } else {
       this.wait = true
       if (mode === 'read') {
@@ -136,8 +141,21 @@ export class Game {
     this.restart()
   }
 
+  /** Play, listen (the app plays it) or hide, for one note: its part first, then its hand. */
+  modeOf(n: Note): HandMode {
+    return byApp(n, this.parts) ? 'listen' : this.hands[n.h]
+  }
+
+  /** You play part of the piece and the app plays the rest at the tempo (it waits only in Learn with Wait on). Kept until the next song. */
+  accomp(hands: Record<'R' | 'L', HandMode>, parts: number[]) {
+    this.you = { ...hands }
+    this.hands = { ...hands }
+    this.parts = new Set(parts)
+    this.rescore()
+  }
+
   private scored = (n: Note) =>
-    this.hands[n.h] === 'play' && n.t >= this.t - 0.05 && (!this.loop || (n.t >= this.loop.a && n.t < this.loop.b))
+    this.modeOf(n) === 'play' && n.t >= this.t - 0.05 && (!this.loop || (n.t >= this.loop.a && n.t < this.loop.b))
 
   cfg() {
     const perform = this.mode === 'perform'
@@ -293,7 +311,7 @@ export class Game {
     // listen-hand notes play themselves
     while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
       const n = this.song.notes[this.autoI++]
-      if (this.hands[n.h] !== 'listen') continue
+      if (this.modeOf(n) !== 'listen') continue
       audio.noteOn(n.p, n.v, true) // Listen always sounds: the app is the one playing this hand
       const ms = (n.d / this.rate) * 1000
       this.autoUntil.set(n.p, perf + ms)
