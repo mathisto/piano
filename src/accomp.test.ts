@@ -65,6 +65,12 @@ describe('accompaniment', () => {
     expect(yourPart(s, BOTH, new Set([0]))).toEqual({ you: 'the piano part', app: 'the voice part' })
   })
 
+  it('a one-hand piece played whole is a run of the piece, not your part of it', () => {
+    const solo = fromSpec({ id: 's', title: 's', bpm: 120, fifths: 0, rh: 'C5:1 D5:1 E5:2', lh: 'R:4' })
+    expect(yourPart(solo, BOTH, new Set())).toBeNull()
+    expect(yourPart(duo(), { R: 'play', L: 'listen' }, new Set())).toEqual({ you: 'the right hand', app: 'the left hand' })
+  })
+
   it('a two-hand piece: Right hand in one tap, the left is played for you; Perform keeps it, a new song clears it', () => {
     const d = duo()
     const right = choices(d).find((c) => c.id === 'R')!

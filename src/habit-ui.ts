@@ -43,7 +43,7 @@ export function pathSection(p: Level[], next?: Row, ladder: LadderLevel[] = []):
     <p class="note">Five levels of technical requirements, from the public graded syllabi, in our own words. A requirement is solid when its practice is. Coming means nothing trains it yet.</p>
     ${p
       .map(
-        (l) => `<details class="all lvl"${l.level === open ? ' open' : ''}><summary>Level ${l.level}<span>${l.solid} of ${l.total} solid${l.coming ? ` · ${l.coming} coming` : ''}${ladder[l.level - 1]?.pieces.length ? ` · ${ladder[l.level - 1].ready} of ${ladder[l.level - 1].pieces.length} pieces ready` : ''}</span></summary>
+        (l) => `<details class="all lvl"${l.level === open ? ' open' : ''}><summary>Level ${l.level}<span>${l.solid} of ${l.total} solid${l.coming ? ` · ${l.coming} coming` : ''}${ladder[l.level - 1]?.pieces.length ? ` · ${ladder[l.level - 1].ready} of ${ladder[l.level - 1].pieces.length} ${ladder[l.level - 1].pieces.length === 1 ? 'piece' : 'pieces'} ready` : ''}</span></summary>
         <ul class="rqs-list">${l.rows.map((r) => reqRow(r, r === l.next ? (r === next ? 'primary' : 'sm') : '')).join('')}</ul>${ladderRows(ladder[l.level - 1])}</details>`,
       )
       .join('')}`

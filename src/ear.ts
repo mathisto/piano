@@ -221,5 +221,8 @@ export function earBlock(c: TCard, v: EarView, answered?: 'ok' | 'miss') {
   const p = c.play!
   const shape = p.kind === 'rhythm' && answered ? cells(p.onsets) : ''
   const last = v.last && answered ? `<p class="line">${v.last}</p>` : ''
-  return `${last}${shape}${answered ? '' : `<div class="row-actions ear-go"><button class="btn ghost" id="thReplay">Replay${v.replays ? ` · ${v.replays}` : ''}</button></div>`}`
+  return `${last}${shape}`
 }
+
+/** Replay, at the left of the card's Stop row while the card waits for an answer. */
+export const replayBtn = (v: EarView) => `<button class="btn ghost" id="thReplay">Replay${v.replays ? ` · ${v.replays}` : ''}</button>`

@@ -21,5 +21,5 @@ export function thumb(song: Song): string {
       return `<ellipse class="nt" cx="${(8 + (((n.bar ? ql(0) : 0) + (n.qb ?? 0)) / total) * 126).toFixed(1)}" cy="${y.toFixed(1)}" rx="2.6" ry="1.9"/>`
     })
     .join('')
-  return `<svg viewBox="0 0 140 52" aria-hidden="true">${lines}${heads}</svg>`
+  return `<svg viewBox="0 0 140 52" preserveAspectRatio="xMinYMid slice" aria-hidden="true">${lines}${heads}</svg>`
 }

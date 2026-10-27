@@ -588,6 +588,9 @@ table.songs td.thumb {
   .thumb .art + svg {
     display: none;
   }
+  .thumb svg:first-child {
+    width: 78px; /* a file with no cover keeps its first bars, cropped to the column */
+  }
 }
 .thumb svg {
   width: 140px;
@@ -803,6 +806,14 @@ table.stages col.mcol {
     bottom: 10px;
   }
   #ready .hint {
+    display: none;
+  }
+  /* with 'You play' the card outgrows the strip: the title goes, the top bar already carries it */
+  #ready:has(.accomp) > b {
+    display: none;
+  }
+  /* too short for both: the card keeps its choices and the Connect banner yields (the bar's No keyboard chip still connects) */
+  #stage:has(#ready:not([hidden])) .banner:has(#connectBtn) {
     display: none;
   }
 }

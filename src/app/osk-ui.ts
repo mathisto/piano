@@ -18,9 +18,10 @@ const down = new Map<number, number>() // pointer id -> pitch held
 const box = document.createElement('div')
 box.id = 'osk'
 box.hidden = true
-box.setAttribute('role', 'group')
+box.setAttribute('role', 'region')
 box.setAttribute('aria-label', 'On-screen keys')
-box.innerHTML = `<div class="osk-bar"><button class="btn icon sm" data-oct="-1" aria-label="Octave down">${icon('back')}</button><b class="osk-range"></b><button class="btn icon sm flip" data-oct="1" aria-label="Octave up">${icon('back')}</button><button class="btn sm osk-names" aria-pressed="false">Names</button><button class="btn icon sm" data-hide aria-label="Hide on-screen keys">${icon('x')}</button></div><div class="osk-keys"></div>`
+box.setAttribute('aria-describedby', 'oskHelp')
+box.innerHTML = `<p class="sr-only" id="oskHelp">Piano keys to tap with a finger; a screen reader cannot press them. Play a MIDI keyboard, or the computer keys: A to ; for the white keys, W E T Y U O P for the black, Z and X to shift the octave.</p><div class="osk-bar"><button class="btn icon sm" data-oct="-1" aria-label="Octave down">${icon('back')}</button><b class="osk-range" aria-live="polite"></b><button class="btn icon sm flip" data-oct="1" aria-label="Octave up">${icon('back')}</button><button class="btn sm osk-names" aria-pressed="false">Names</button><button class="btn icon sm" data-hide aria-label="Hide on-screen keys">${icon('x')}</button></div><div class="osk-keys" aria-hidden="true"></div>`
 $('#app').insertBefore(box, $('#drawer'))
 const board = $('.osk-keys', box)
 

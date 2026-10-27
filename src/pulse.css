@@ -6,13 +6,13 @@
   margin: 14px 0;
 }
 .pulse-bar {
-  flex: 0 0 auto;
-  width: 170px;
-  max-width: 100%;
+  flex: 1 1 140px; /* four bars of keep the beat share one row on a portrait iPad */
+  max-width: 220px;
   margin: 0;
 }
 .pulse.wide .pulse-bar {
-  width: 300px;
+  flex-basis: 260px;
+  max-width: 340px;
 }
 .pulse-bar > div {
   position: relative;
@@ -42,5 +42,8 @@
 .pulse-bar figcaption {
   margin-top: 4px;
   color: var(--ink-3);
-  font: 500 12px/1.2 var(--ui);
+  font: 500 13px/1.2 var(--ui);
+}
+.pulse-bar figcaption::first-letter {
+  text-transform: uppercase; /* 'eighths' is mid-sentence in the prompt, a caption here */
 }

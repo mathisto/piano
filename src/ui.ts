@@ -16,7 +16,7 @@ import type { Starter } from './starters'
 import { fluentMs, type Stage, type Stats } from './drill'
 import { LIMITS, type RunSpec, type Tally } from './run'
 import { TRAINERS, untimed, type TCard, type Trainer } from './theory'
-import { earAsk, earBlock, type EarView } from './ear'
+import { earAsk, earBlock, replayBtn, type EarView } from './ear'
 import { isPulse, pulseBars } from './pulse'
 import { checkNote, degreeName, explain, fingering, keyLabels, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
 import { COMFORT, density, type Report, type Selection, type TrackInfo } from './midi-tracks'
@@ -240,8 +240,8 @@ export function tracksDialog(title: string, r: Report | undefined, pick: Selecti
 // ---------- results ----------
 
 /** How hard the keys were struck: a histogram from soft to hard, then the average, spread and hand balance. */
-/** How even the loudness was: a line of words, a bar for each note above or below its neighbours, and one thing to try. */
-export function evenBlock(e: Evenness) {
+/** How even the loudness was: a bar for each note above or below its neighbours (the chart), and a line of words with one thing to try. */
+function evenBlock(e: Evenness) {
   const scale = Math.max(e.band * 2, ...e.devs.map((x) => Math.abs(x.d ?? 0)))
   const w = Math.min(14, 380 / e.devs.length)
   const bars = e.devs
@@ -252,12 +252,13 @@ export function evenBlock(e: Evenness) {
     .join('')
   const edge = (e.band / scale) * 34
   const word = { even: 'Even', nearly: 'Nearly even', uneven: 'Uneven' }[e.rating]
-  return `<div>
-    <svg class="hist even" viewBox="0 0 396 74" role="img" aria-label="Loudness of each note against its neighbours: ${Math.round(e.inside * 100)} percent within plus or minus ${e.band}"><rect class="band" x="0" y="${36 - edge}" width="396" height="${edge * 2}"/><line class="mid" x1="0" x2="396" y1="36" y2="36"/>${bars}<text x="6" y="72">softer than its neighbours below, louder above</text></svg>
-    <div style="color:var(--ink-2)">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</div></div>`
+  return {
+    chart: `<div><svg class="hist even" viewBox="0 0 396 74" role="img" aria-label="Loudness of each note against its neighbours: ${Math.round(e.inside * 100)} percent within plus or minus ${e.band}"><rect class="band" x="0" y="${36 - edge}" width="396" height="${edge * 2}"/><line class="mid" x1="0" x2="396" y1="36" y2="36"/>${bars}<text x="6" y="72">softer than its neighbours below, louder above</text></svg></div>`,
+    line: `<p class="line sub">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</p>`,
+  }
 }
 
-export function touchBlock(t: TouchStats, hands = true) {
+function touchBlock(t: TouchStats, hands = true) {
   const peak = Math.max(1, ...t.hist)
   const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
   const x = 6 + (t.mean / 128) * 384
@@ -279,23 +280,27 @@ export function results(r: Result, next: Next | null, note = '') {
     .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
   const perform = r.mode === 'perform'
+  const even = r.even ? evenBlock(r.even) : null
+  // the sentences stay in view; the charts behind them, and the touch figures, fold under More
+  const more =
+    (perform
+      ? `<div><div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span><span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
+      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
+      : '') +
+    (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
+    (even?.chart ?? '')
   return `
-  <div class="results"><div class="card" role="dialog" aria-label="Results">
+  <div class="results"><div class="card song-res" role="dialog" aria-label="Results">
     <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : r.clean ? icon('check') : icon('loop')}</div>
+    <div class="stats">
     <h2>${perform ? 'Song complete' : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
     <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
-    ${
-      perform
-        ? `<div>
-      <div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span><span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
-      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg>
-      <div style="color:var(--ink-2)">${lean}</div></div>`
-        : ''
-    }
-    ${r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : ''}
-    ${r.even ? evenBlock(r.even) : ''}
-    ${coachLines(r, liveMarks === 'none' && !!r.even)}
     ${note ? `<p class="line">${note}</p>` : ''}
+    ${perform ? `<p class="line sub">${lean}</p>` : ''}
+    ${even?.line ?? ''}
+    ${coachLines(r, liveMarks === 'none' && !!r.even)}
+    ${more ? `<details class="all more"><summary>More</summary>${more}</details>` : ''}
+    </div>
     <div class="row">
       ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
@@ -338,6 +343,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch sub"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}${settings.names ? '' : ' disabled'}><i></i>Fade names I know</label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
+    <label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs.length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>
     <label class="switch"><input id="sMarks" type="checkbox"${settings.marks ? ' checked' : ''}><i></i>Always show touch marks</label>
     <label class="switch"><input id="sWritten" type="checkbox"${settings.asWritten ? ' checked' : ''}><i></i>Play the file's dynamics</label>
     <label class="srow"><span>Fall speed</span><span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"><small>Fast</small></span></label>
@@ -884,7 +890,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       ${c.steps.length > 1 ? `<p class="line">${c.steps[0].pcs.length > 1 ? 'Chord' : 'Note'} <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
       <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : c.play ? earAsk(c) : 'Play it on your keyboard.'}</p>
       ${c.play?.kind === 'pulse' ? pulseBars(c.play) : ''}${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
-      <div class="row-actions run-go"><button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
+      <div class="row-actions run-go">${c.play && run.ear && !run.answered ? replayBtn(run.ear) : ''}<button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
   el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${noKeyboard(true)}${body}`
 }
