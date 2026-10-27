@@ -31,6 +31,7 @@ export interface Input {
   bytes: Uint8Array // as shipped: MIDI, or a piano-only .mxl
   upstreamSha: string // sha256 of the file as fetched, before normalising
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
+  matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
   voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
   alt?: Input // a folded song's piano-only version, shipped instead when the fold fails its gates (reach())
   why?: string // why the voice was left out
@@ -194,7 +195,7 @@ export async function analyse(e: Input): Promise<Analysis> {
       const [n, d] = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
       const pace = e.ly ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: true }
       // a movement of a zip (mutopia-N-k) may have been given a sibling's .ly when none matched (pickLy's fallback)
-      if (pace.bpm && /^mutopia-\d+-\d+$/.test(e.id) && !plays(e.bytes, e.ly!)) pace.bpm = undefined
+      if (pace.bpm && /^mutopia-\d+-\d+$/.test(e.id) && !e.matched && !plays(e.bytes, e.ly!)) pace.bpm = undefined
       const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)
       if (!pace.given && flat && pace.bpm) tempo = { bpm: pace.bpm, guess: !pace.exact }
       hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)

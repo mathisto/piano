@@ -392,16 +392,30 @@ function plan(r: Rec, W: number, until: number, repsOnly = false): { segs: Seg[]
   const floor = (t: number) => (({ a, L }) => a + L * Math.floor((t - a) / L + 1e-6))(bar(t))
   const ceil = (t: number) => (({ a, L }) => a + L * Math.ceil((t - a) / L - 1e-6))(bar(t))
   // a mark is on the bar it ends (D.C., Fine, To Coda) or starts (segno, Coda, Trio)
-  const marks = repsOnly ? [] : r.ev.flatMap((e) => (e.k === 'mark' ? [e] : []))
+  const all = r.ev.flatMap((e) => (e.k === 'mark' ? [e] : []))
+  const marks = repsOnly || !all.some((m) => /^d[cs]/.test(m.m)) ? [] : all // a Coda, Fine or Trio with no jump to it is a label
   const unknown = marks.find((m) => m.m[0] === '?')
   if (unknown) return { why: `a mark I cannot place: "${unknown.m.slice(1)}"` }
   const starts = new Set(['segno', 'coda', 'sign', 'trio'])
   // ... but never past the end of the repeat or ending it is in
   const stops = reps.flatMap((x) => [x.at + x.body, ...x.alts.map((_, i) => x.at + x.body + x.alts.slice(0, i + 1).reduce((s, a) => s + a, 0))])
   // and a mark in a first ending is the repeat's last ending's: nobody jumps away before the repeat is played
-  const early = (t: number) => reps.find((x) => x.alts.length > 1 && t > x.at + x.body - 1e-6 && t < repEnd(x) - x.alts[x.alts.length - 1] - 1e-6)
-  const at = marks.map((m) => tick(starts.has(m.m) ? floor(m.at + (m.own ? -1e-6 : 1e-6)) : early(m.at) ? repEnd(early(m.at)!) : Math.min(ceil(m.at), ...stops.filter((b) => b >= m.at - 1e-6))))
-  if (process.env.DBG === 'marks') console.log('MARKS', marks.map((m, i) => `${m.m}@${+(m.at * 4).toFixed(3)}->${+(at[i] / W * 4).toFixed(3)}`).join(' '), 'bars', JSON.stringify(bars.map((b) => [+(b.at * 4).toFixed(2), b.len && b.len * 4, b.d && b.d * 4, b.pos && b.pos * 4])))
+  const early = (t: number) => reps.find((x) => x.alts.length > 1 && t > x.at + x.body + 1e-6 && t < repEnd(x) - x.alts[x.alts.length - 1] + 1e-6)
+  // a sign starts its bar, or the repeat or ending that starts inside that bar (a Trio that begins on a pickup)
+  const opens = reps.flatMap((x) => [x.at, ...x.alts.map((_, i) => x.at + x.body + x.alts.slice(0, i).reduce((s, a) => s + a, 0))])
+  const sign = (m: { at: number; own: boolean }) => ((f) => Math.max(f, ...opens.filter((b) => b > f - 1e-6 && b < m.at - 1e-6)))(floor(m.at + (m.own ? -1e-6 : 1e-6)))
+  // (or to its end when only rests are left in it: the D.C. is written on the last note, the repeat is played first)
+  const sounds = (a: number, b: number) => r.ev.some((e) => e.k === 'on' && e.at > a - 1e-9 && e.at < b - 1e-9)
+  const ends = (t: number) => {
+    const [c, stop] = [ceil(t), Math.min(...stops.filter((b) => b >= t - 1e-6))]
+    return stop > c && !sounds(c, stop) ? stop : Math.min(c, stop)
+  }
+  // a D.C. or D.S. written on the next to last bar jumps after the last one (a bar is all that is left to play of the piece)
+  const jumpEnd = (m: { m: string; at: number }) => {
+    const [c, stop] = [ceil(m.at), Math.min(...stops.filter((b) => b >= m.at - 1e-6), r.len)]
+    return /^d/.test(m.m) && stop > c && stop - c <= bar(c).L + 1e-6 ? stop : ends(m.at)
+  }
+  const at = marks.map((m) => tick(starts.has(m.m) ? sign(m) : early(m.at) ? repEnd(early(m.at)!) : jumpEnd(m)))
 
   const End = tick(r.len)
   const cuts = new Set([0])
@@ -460,7 +474,7 @@ function replay(r: Rec, W: number, until: number): Rec {
   const tick = (x: number) => Math.round(x * W)
   const ev = p.segs.flatMap(([s, e, o]) => r.ev.flatMap((x) => (x.k !== 'rep' && tick(x.at) >= s && tick(x.at) < e ? [{ ...x, at: (o + tick(x.at) - s) / W }] : [])))
   const [s, e, o] = p.segs[p.segs.length - 1]
-  return { len: (o + Math.min(e, tick(r.len)) - s) / W, ev }
+  return { len: (o + Math.min(e, tick(r.len)) - s) / W, ev, unfolded: true }
 }
 
 /** The \midi score of the .ly that plays this MIDI, and how many of the MIDI's onsets its reading misses: a reading matches
@@ -482,11 +496,6 @@ function score(midi: Midi, ly: string) {
     return [x, ...heads.filter((t) => t > on && t - on <= W / 8).map((t) => ({ ...x, delay: (t - on) / W, len: x.len + (t - on) / W, ev: x.ev.map((e) => ({ ...e, at: e.at + (t - on) / W })) }))]
   }
   const [r, miss = Infinity] = readLy(ly).map((x) => (x.unfolded ? replay(x, W, until) : x)).flatMap(delay).map((x) => [x, misses(x)] as const).sort((x, y) => x[1] - y[1])[0] ?? []
-  if (process.env.DBG === 'miss' && r) {
-    const on = new Set(r.ev.flatMap((e) => (e.k === 'on' ? [tick(e.at)] : [])))
-    const grace = r.ev.flatMap((e) => (e.k === 'grace' ? [tick(e.at)] : []))
-    console.log('MISS', notes.filter((n) => ![-1, 0, 1].some((d) => on.has(n.ticks + d)) && !grace.some((g) => n.ticks < g && n.ticks >= g - W / 8)).slice(0, 25).map((n) => `${(n.ticks / (W / 4)).toFixed(3)}q p${n.midi}`).join(' '), 'len', r.len * 4, 'until', until / (W / 4))
-  }
   const off = r ? Math.abs(tick(r.len) - until) : Infinity // length mismatch, ticks
   return { r, miss, off, until, notes: notes.length, ok: miss <= 0.02 * notes.length }
 }
@@ -524,24 +533,29 @@ export function unfold(bytes: Uint8Array, ly: string): { bytes: Uint8Array } | {
   const { r, miss, until, notes, ok } = score(midi, ly)
   if (!r) return { why: 'no score with \\midi' }
   if (!ok) return { why: `the .ly reading misses ${miss} of ${notes} MIDI onsets` }
+  if (r.unfolded && Math.abs(until - 4 * ppq * r.len) > 0.05 * until) return { why: 'the MIDI is not as long as the score with its repeats played out' } // the onset match runs one way
   const p = plan(r, 4 * ppq, until)
   if ('why' in p) return p
-  if (process.env.DBG === 'segs') console.log('SEGS', p.segs.map(([s, e]) => `${+(s / ppq).toFixed(2)}-${+(e / ppq).toFixed(2)}`).join(' '))
-  if (p.segs.length === 1) return { bytes } // no repeat in this MIDI's score, or only \repeat volta 1: a sign, nothing to play twice
+  if (p.segs.length === 1) return { bytes }
+  const lost = midi.tracks.flatMap((t) => t.notes).filter((n) => !p.segs.some(([s, e]) => n.ticks >= s && n.ticks < e)).length
+  if (lost) return { why: `${lost} notes the order of play never reaches` } // no repeat in this MIDI's score, or only \repeat volta 1: a sign, nothing to play twice
   // the bars of the result are laid out by the app from the notes and time signatures (src/quantize.ts), so the barlines the
   // copies make are checked against what it lays out: first against the bars it finds in this MIDI, else against the score's own
-  const first = write(bytes, p.segs, barGrid(midi, bytes), p.delay)
-  if ('bytes' in first || !first.why.startsWith('bars')) return first
-  const second = write(bytes, p.segs, p.bars, p.delay)
-  return 'bytes' in second ? second : process.env.DBG ? { why: `${first.why}\nSECOND ${second.why}` } : first
+  const first = write(bytes, p.segs, barGrid(midi, bytes), p.delay, until)
+  if ('bytes' in first || !/^(bars|a repeat)/.test(first.why)) return first
+  const second = write(bytes, p.segs, p.bars, p.delay, until)
+  return 'bytes' in second ? second : first
 }
 
 /** The MIDI played in the order `segs` says, its barlines (`src`, in the source's ticks) carried along. */
-function write(bytes: Uint8Array, segs: Seg[], src: Bars, delay: number): { bytes: Uint8Array } | { why: string } {
+function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until: number): { bytes: Uint8Array } | { why: string } {
   const midi = new Midi(ab(bytes))
   const ppq = midi.header.ppq
+  let src = src0
   // A join that cuts a bar short (a pickup after a full bar, a bar ending early) leaves a bar of its own length, which the
   // result states as a time signature; a join that completes the bar needs nothing.
+  // the source lays no barline after its last note; the copies of its last stretch go on past it
+  for (let end = Math.max(...segs.map(([, e]) => e)); src[src.length - 1].t + src[src.length - 1].len < end; ) src = [...src, { t: src[src.length - 1].t + src[src.length - 1].len, len: src[src.length - 1].len }]
   const lines = src.map((b) => b.t)
   const barOf = (x: number) => src.findLast((b) => b.t <= x) ?? src[0]
   const pick = src.length > 1 && src[0].len < src[1].len ? src[1].len - src[0].len : 0 // the first bar is a pickup: how short
@@ -565,9 +579,9 @@ function write(bytes: Uint8Array, segs: Seg[], src: Bars, delay: number): { byte
         if (!pe) expected.push(J)
       }
     }
-    for (const t of lines) if (t >= ns && t < ne && !(skip && t === ns)) expected.push(J + t - ns)
+    for (const t of lines) if (t >= ns && t < ne && !(skip && t === ns) && (k < segs.length - 1 || t + delay <= until)) expected.push(J + t - ns) // the app lays no barline after the last note
   })
-  if (fixes.some((f) => !sigOf(f.b - f.a, ppq))) return { why: `a repeat that is not whole bars${process.env.DBG ? ` ${JSON.stringify(fixes)} ${JSON.stringify(src.slice(0, 3))}` : ''}` }
+  if (fixes.some((f) => !sigOf(f.b - f.a, ppq) || f.b - f.a > Math.max(...src.map((x) => x.len)))) return { why: 'a repeat that is not whole bars' }
   // ponytail: a grace note just before a repeat's first beat belongs to the stretch before it, so the second pass plays
   // without it; move graces within W/8 of a jump target into the repeat if anyone hears the difference
   const copies = (t: number) => segs.filter(([s, e]) => t >= s && t < e).map(([s, , o]) => o + t - s)
@@ -613,14 +627,18 @@ function write(bytes: Uint8Array, segs: Seg[], src: Bars, delay: number): { byte
   if (JSON.stringify(back.header.keySignatures) !== JSON.stringify(h.keySignatures.map(({ key, scale, ticks }) => ({ key, scale, ticks })))) return { why: 'keys after writing' }
   const want2 = [...new Set(expected)].sort((a, b) => a - b)
   const got = barGrid(back, outBytes).map((b) => b.t).filter((t) => t <= want2[want2.length - 1] + 1)
-  if (got.length !== want2.length || got.some((t, i) => Math.abs(t - want2[i]) > 1)) return { why: `bars: the written file lays ${got.length} barlines where the copies make ${want2.length}${process.env.DBG ? ` ${JSON.stringify(fixes)} E=${want2.join(',')} O=${got.join(',')}` : ''}` }
+  // the app finds a pickup of its own, so a result with no short bars to state may start its bars at another phase than the
+  // source did; every barline is then the copies' one moved by the same amount
+  const shift = got.length > 1 ? got[1] - want2[1] : 0
+  const same = (x: number) => (t: number, i: number) => Math.abs(t - want2[i] - x) <= 1
+  if (got.length !== want2.length || (!got.every(same(0)) && !(fixes.length === 0 && got.slice(1).every((t, i) => same(shift)(t, i + 1))))) return { why: `bars: the written file lays ${got.length} barlines where the copies make ${want2.length}` }
   return { bytes: outBytes }
 }
 
 /** A Mutopia input with its volta repeats played out, and its .ly read as \repeat unfold (what the MIDI now plays), so the
  * analysis no longer flags it. Unchanged when there is nothing to unfold or it cannot be done. */
-export function withRepeats<E extends { bytes: Uint8Array; ly?: string }>(e: E): E {
+export function withRepeats<E extends { bytes: Uint8Array; ly?: string; matched?: boolean }>(e: E): E {
   if (!e.ly || !/\\repeat\s+"?volta/.test(e.ly) || /\\unfoldRepeats/.test(e.ly)) return e
   const u = unfold(e.bytes, e.ly)
-  return 'why' in u ? e : { ...e, bytes: u.bytes, ly: e.ly.replace(/\\repeat\s+"?volta"?/g, '\\repeat unfold') }
+  return 'why' in u ? e : { ...e, bytes: u.bytes, matched: true, ly: e.ly.replace(/\\repeat\s+"?volta"?/g, '\\repeat unfold') }
 }

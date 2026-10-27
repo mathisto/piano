@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Lay one pipeline output over another: node scripts/library/combine.mjs <base-out> <overlay-out> <result-out>
-// A piece in both takes the overlay's entry (new file, sha, bars, flags); every piece file from both is kept (files are content-addressed,
+// A piece in both takes the overlay's entry (new file, sha, bars, flags) when its file or flags differ; every piece file from both is kept (files are content-addressed,
 // so nothing is ever removed); LICENSES.md follows the file names; `built` is recomputed from what ships, so clients refetch.
 import { createHash } from 'node:crypto'
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -15,7 +15,7 @@ const mine = new Map(B.pieces.map((p) => [p.id, p]))
 let changed = 0
 A.pieces = A.pieces.map((p) => {
   const q = mine.get(p.id)
-  if (!q || q.file === p.file) return p
+  if (!q || (q.file === p.file && q.flags.join() === p.flags.join())) return p // same file and flags: nothing to take (a stale flag dropped in place is taken)
   changed++
   lic = lic.split(p.file).join(q.file)
   return q
