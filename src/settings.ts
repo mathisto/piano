@@ -25,6 +25,8 @@ export interface Settings {
   offset: number // ms, from calibration
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
+  readBest?: number // Read through: the fastest tempo of a clean read-through, so the next one does not start faster
+  readAhead?: boolean // Read through: only the next two bars show once the music moves
 }
 
 const DEFAULTS: Settings = {
