@@ -413,13 +413,13 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 - `.gnote`, one line at the top of Read, Scales, Theory, Technique and Progress, under the page head, the first time that tab is drawn: Ink Soft text at most 72ch and a quiet "Got it" link (44px on touch) that removes it. Remembered per device (`piano.tips`). It states what the tab is for and claims nothing the app does not measure.
 
 ### Connect line
-- `.kbline` heads Theory, the Scales Quiz and the Sight Run builder while no MIDI keyboard is connected: a Panel row with a Line Strong border, "No keyboard connected." in Ink over "Without one, tap the on-screen keys, or use the computer keys A to ;." and a Connect keyboard button. It hides when an input appears and returns when it goes. The three pages also carry the On-screen keys switch (below) under it.
+- `.kbline` heads Theory, the Scales Quiz and the Sight Run builder while no MIDI keyboard is connected: a Panel row with a Line Strong border, "No keyboard connected." in Ink over "Without one, tap the on-screen keys, or use the computer keys A to ;." and a Connect keyboard button. It hides when an input appears and returns when it goes, and on Theory and the Quiz it shows on the trainer list only, not over a card. The three pages also carry the On-screen keys switch (below) under it.
 
 ### Help sheet
 - `dialog.sheet` named Help (the old Shortcuts sheet), opened by `?` or Settings > Help, on touch devices too. Header with close and a scrolling body, no footer. A `dl` (Ink name, Ink Soft text, a two-column grid that stacks under 760px) says what each tab is for; Label `h3` groups follow in Ink Faint with `.fine` paragraphs: how the touch coach works and what it cannot see, how a scale counts as solid (three clean runs in a row), how review spacing works (1, 2, 4, 8, 16 days; the days are a choice, not a proven best), the keyboard shortcuts as a `kbd` grid, and the computer-key piano.
 
 ### On-screen keys
-- `#osk` (`src/osk.ts`, `src/app/osk-ui.ts`, `src/osk.css`), the third row of `#app`, under the page: a Panel strip with a Line Strong top rule. Top bar: octave down and up buttons (44px), the range in words ("C3 to C5"), a Names toggle (`aria-pressed`, an Ink Soft inset ring when on) and a hide button. Keys: 2 to 4 octaves (a white key is at least 48px wide, so 2 at 820px and 3 at 1180px), 124px to 190px tall; white keys Ink, with a letter on every C (C4 is middle C) and on every white key with Names on; black keys Ground at 62% height with an Edge inset ring. A key under a finger is Right-Hand Cyan. Several fingers play a chord; dragging across keys glides.
+- `#osk` (`src/osk.ts`, `src/app/osk-ui.ts`, `src/osk.css`), the third row of `#app`, under the page: a Panel strip with a Line Strong top rule. Top bar: octave down and up buttons (44px), the range in words ("C3 to C5"), a Names toggle (`aria-pressed`, an Ink Soft inset ring when on) and a hide button. Keys: as many whole white keys as keep each at least 44px wide (12 at 590px, 17 at 820px, 25 at 1180px), 124px to 190px tall; in a reading drill it opens on the C below the lowest note the cards ask for, and while it shows the stage's own key strip collapses and the Falling notes switch hides (with a MIDI keyboard the stage keys show as before); white keys Ink, with a letter on every C (C4 is middle C) and on every white key with Names on; black keys Ground at 62% height with an Edge inset ring. A key under a finger is Right-Hand Cyan. Several fingers play a chord; dragging across keys glides.
 - Shown while a Theory card or Quiz card is open, and while a reading drill or Sight Run is open on the play screen; never on menus, results or a song, whose stage has its own keys. On by default when no MIDI keyboard is connected; the "On-screen keys" switch (Theory, Quiz and Sight Run builder, under the Connect line) or the hide button overrides that and the choice is remembered. The keys are `aria-hidden` shapes: the computer keys are the non-touch route.
 
 ### Pulse bars
@@ -447,7 +447,7 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 
 ### Memorise card and strip
 - The start card of a Memorise session hides Perform | Learn (the stage is the choice) and shows a "Stage" segment of five digits 0 to 4 (Display italic 22px, min 44px wide; each radio is named, "Stage 2, every 2nd bar hidden"), the stage's name (kept on the short card) and a "Look first" facts list (key, time, bars, each hand's range, bars that repeat an earlier bar).
-- While playing, `.mem-bar` floats at the top right of the staff pane: Scrim, Line border, 8px radius, 13px Ink Soft with Ink figures: "Stage 2 · Every 2nd bar hidden" and "n right · k slips · clean j of 2", and from stage 1 a small Peek button (page icon) that shows the awaited bar for 2 seconds. At stage 4 (no staff) it sits centred in the empty pane at 15px. It covers the top right of the notation (bar number, top line, high notes); see debt.
+- While playing, `.mem-bar` is its own row above the staff, never over notation: Scrim, Line border, 8px radius, 13px Ink Soft with Ink figures: "Stage 2 · Every 2nd bar hidden" and "n right · k slips · clean j of 2", and from stage 1 a small Peek button (page icon) that shows the awaited bar for 2 seconds. At stage 4 (no staff) it is the same row at 15px.
 - The pass card is the results card's single column: the stage played, slips, peeks, a strip of bars and up to three weak spots; a loop pass reports in the banner. Songs rows show a "Memorised n/4" tag.
 
 ### Look-through card
@@ -482,7 +482,7 @@ A cluster of three ghost icon buttons (fit the whole piece, minus, plus) behind 
 - In a read-through they are masked with the chords (`.mk.ahead`).
 
 ### Dynamics marks (staff)
-- Aim-for dynamic on Technique: p, mf, f are Bravura dynamic glyphs (40px, Ink Soft); cresc. and dim. are 15px italic words in Ink Soft. Once per system between the staves at the left. Accents are a 1.6 round-capped chevron beside notes above C4, opposite the stem. `aria-hidden`.
+- Aim-for dynamic on Technique: p, mf, f are Bravura dynamic glyphs (40px, Ink Soft); cresc. and dim. are 15px italic words in Ink Soft. Once per system between the staves at the left, or above a lone staff past the bar number. Accents are a 1.6 round-capped chevron beside notes above C4, opposite the stem. `aria-hidden`.
 
 ### Hold feedback (staff)
 - After a held note is judged, its head keeps a 1.4px outline: Good Orange when held too long, Miss Red when released early. Perform results report the same fact in words as "held n%".
@@ -667,7 +667,7 @@ Recorded from the build; none of these is a rule for new surfaces.
 - The Sight Run record tag uses the Next style away from its button, stretching the One Lamp Rule (the rhythm echo's struck cells are Ink now).
 - The Key touch hint is a sentence in the drawer, against the copy rule; the Theory and Scales ledes and the Sight Run card carry sentences too.
 - Progress mastery cells are 30px wide with a fine pointer (44px on touch), under the 40px floor.
-- The Memorise strip covers the top right of the staff; `staff.ts` lays out from the whole pane, so CSS cannot move it off the notation. Memorise's Display-italic stage digits differ from other segments, on purpose.
+- Memorise's Display-italic stage digits differ from other segments, on purpose.
 - The metronome's beat dots are unlabelled; Theory Level selects truncate at 820px (native select).
 - The HUD shows a dash and "In a row 0" before a note is played; the "In a row" and "Streak" counters are accuracy runs, kept on purpose.
 - The Compare strip colours a column Great mint or Miss red for better or worse; the line beside it says the same in words, but the colour is spent on a bar, against the Semantic Hue Rule. The On-screen keys use Right-Hand Cyan for a pressed key, a hand hue on chrome. The Start here card ringed in Lamp is a now-marker that is not a button.
