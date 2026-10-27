@@ -17,6 +17,9 @@ import { flash, updateBanner } from './banner'
 
 const SECTIONS = ['today', 'library', 'read', 'scales', 'theory', 'technique', 'progress', 'play'] as const
 
+/** The section on screen now. */
+export const shown = () => SECTIONS.find((v) => $(`#${v}`).classList.contains('on'))
+
 export function view(name: (typeof SECTIONS)[number]) {
   for (const v of SECTIONS) $(`#${v}`).classList.toggle('on', v === name)
   $('#nav').hidden = name === 'play'

@@ -227,7 +227,7 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
   }
 
   // bars in ticks
-  const endTick = Math.max(0, ...notes.map((n) => n.tick + n.dtick))
+  const endTick = notes.reduce((m, n) => Math.max(m, n.tick + n.dtick), 0) // not a spread: 125,000 notes overflow the stack
   const bars: QOut['bars'] = []
   let tick = 0
   let si = 0
@@ -242,6 +242,7 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
     bars.push({ tick, len, n, den })
     tick += len
   }
+  if (tick <= endTick) throw new Error('This piece is longer than 5,000 bars, more than the app can show.') // not a silent cut with the rest read as one bar
   const bq = bars.map((b) => ({ q0: b.tick / ppq, ql: b.len / ppq }))
 
   // onsets: exact files snap to their lattice; performances pick a grid per hand and beat, following the drift

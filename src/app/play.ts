@@ -17,7 +17,7 @@ import { writtenTargets } from '../touch'
 import { $, art } from '../ui'
 import { calibrating, current, dock, drill, drillStats, esc, game, highway, hooks, mem, resOpen, rt, say, setCalibrating, setCurrent, setDock, setDrill, setHighway, setRun, setStaff, staff, starters } from './state'
 import { flash, updateBanner } from './banner'
-import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, screenKeys, syncMode, view, wake, zen } from './stage'
+import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, screenKeys, shown, syncMode, view, wake, zen } from './stage'
 import { libSong, showLibrary } from './library'
 
 /** Open a piece in Learn with two worst bars looped at a lower tempo. */
@@ -63,9 +63,22 @@ export async function openSong(base: Song, mode: Mode) {
     if (w) song.notes.forEach((n, i) => (n.want = w[i]))
   }
   game.known = knownPitches(await store.getDrill())
+  const back = shown()
   view('play')
   void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
-  await ensureStage()
+  try {
+    await ensureStage()
+  } catch {
+    // the stage's code did not arrive (offline, a dropped connection): back to the page it was started from, with the reason, not an empty play screen
+    // the browser remembers a failed import until the page reloads (checked in Chrome: a retry after the network is back fails the same way)
+    const msg = 'The play screen could not load. Check the connection, then reload the page.'
+    setDrill(undefined)
+    setRun(undefined)
+    hooks.rtEnd()
+    hooks.memEnd()
+    await hooks.showSection(!back || back === 'play' ? 'today' : back === 'library' ? 'songs' : back, msg)
+    throw new Error(msg)
+  }
   game.load(song, mode)
   const prog = await store.getProgress(song.id)
   setCurrent({ song, base, level, heat: prog.heat })

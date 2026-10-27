@@ -49,8 +49,12 @@ export function inspectMidi(buf: ArrayBuffer): Report {
       perBar[b] = (perBar[b] ?? 0) + 1
     }
     bars = Math.max(bars, perBar.length)
-    const onsets = [...new Set(tr.notes.map((n) => Math.round(n.time / CHORD)))]
-    const alone = onsets.filter((o) => tr.notes.filter((n) => Math.round(n.time / CHORD) === o).length === 1).length
+    const onsets = new Map<number, number>() // chord slot -> notes in it (a linear count: a 25,000-note file took 28 s with a filter per onset)
+    for (const n of tr.notes) {
+      const k = Math.round(n.time / CHORD)
+      onsets.set(k, (onsets.get(k) ?? 0) + 1)
+    }
+    const alone = [...onsets.values()].filter((c) => c === 1).length
     const ps = tr.notes.map((n) => n.midi)
     tracks.push({
       index,
@@ -59,9 +63,9 @@ export function inspectMidi(buf: ArrayBuffer): Report {
       program: tr.instrument.name,
       percussion: tr.instrument.percussion || tr.channel === 9,
       notes: tr.notes.length,
-      lo: Math.min(...ps),
-      hi: Math.max(...ps),
-      mono: onsets.length ? alone / onsets.length : 0,
+      lo: ps.reduce((a, b) => Math.min(a, b)), // not Math.min(...ps): a spread of 125,000 notes overflows the stack
+      hi: ps.reduce((a, b) => Math.max(a, b)),
+      mono: onsets.size ? alone / onsets.size : 0,
       perBar: Array.from(perBar, (v) => v ?? 0),
     })
   })

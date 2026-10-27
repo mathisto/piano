@@ -1,4 +1,4 @@
-import { get, keys, set } from 'idb-keyval'
+import { get, keys, set } from './kv'
 import type { Catalog, Piece } from './catalog-types'
 import { libraryUrl, loadManifest, type LibraryEntry } from './credits'
 import { served } from './net'
@@ -138,32 +138,50 @@ export const piece = (id: string) => byId.get(id) ?? byId.get(catalog.aliases?.[
 export const inBundle = (id: string) => bundle.has(id)
 export const local = (id: string) => bundle.has(id) || cached.has(id)
 
-/** The bundled catalogue now, the stored network one if any, then a revalidation in the background; onChange runs when that brings a newer one. */
+/** Whether the corpus catalogue could be had: undefined while asking, false when it could not be fetched (offline, 404, damaged). `have`: one is stored from an earlier visit. */
+export const net: { ok?: boolean; have: boolean } = { have: false }
+let changed = () => {}
+
+/** The bundled catalogue now, the stored network one if any, then a revalidation in the background; onChange runs when that brings a newer one or fails with nothing stored. */
 export async function init(onChange: () => void) {
+  changed = onChange
+  net.ok = undefined
   const list = await loadManifest()
   bundle = new Map(list.map((e) => [e.id, e.file]))
   const base = builtin(list)
-  const stored = await get<Catalog>('catalog').catch(() => undefined)
-  use(stored ? merge(stored, base) : base)
-  for (const k of await keys().catch(() => [])) if (String(k).startsWith('libfile:')) cached.add(String(k).slice(8))
+  const stored = await get<Catalog>('catalog')
+  try {
+    use(stored ? merge(stored, base) : base)
+    net.have = !!stored
+  } catch {
+    net.have = false
+    use(base) // a stored catalogue that does not read (an old shape, a damaged write): the bundled pieces, and the corpus is fetched again
+  }
+  for (const k of await keys()) if (String(k).startsWith('libfile:')) cached.add(String(k).slice(8))
   void fetchCatalog(stored?.built).then((c) => {
-    if (!c) return
-    use(merge(c, base))
-    onChange()
-    void set('catalog', c).catch(() => {})
+    if (c) {
+      use(merge(c, base))
+      void set('catalog', c, true)
+    }
+    if (c || (!net.ok && !net.have)) onChange()
   })
 }
 
-/** catalog.json, revalidated with the server (the browser sends its ETag); undefined when offline, unchanged or malformed. */
+/** Ask again, from the Songs page's Try again. */
+export const retry = () => init(changed)
+
+/** catalog.json, revalidated with the server (the browser sends its ETag); undefined when offline, unchanged or malformed. Sets `net.ok`. */
 export async function fetchCatalog(built?: string, f: typeof fetch = fetch): Promise<Catalog | undefined> {
+  net.ok = false
   try {
     const r = await f(new URL('catalog.json', CORPUS).href, { cache: 'no-cache' })
     if (!r.ok) return
     const c = (await r.json()) as Catalog
-    if (c?.v !== 1 || !Array.isArray(c.pieces) || !Array.isArray(c.composers) || !Array.isArray(c.licences) || c.built === built) return
-    return c
+    if (c?.v !== 1 || !Array.isArray(c.pieces) || !Array.isArray(c.composers) || !Array.isArray(c.licences)) return
+    net.ok = true
+    if (c.built !== built) return c
   } catch {
-    return
+    /* offline: the bundled pieces stay */
   }
 }
 
@@ -174,7 +192,7 @@ export interface IO {
   get: (k: string) => Promise<unknown>
   set: (k: string, v: unknown) => Promise<void>
 }
-const IDB: IO = { fetch: (...a) => fetch(...a), get, set }
+const IDB: IO = { fetch: (...a) => fetch(...a), get, set: (k, v) => set(k, v, true) }
 
 export async function sha256(b: ArrayBuffer) {
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', b))].map((x) => x.toString(16).padStart(2, '0')).join('')

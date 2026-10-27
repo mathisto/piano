@@ -50,6 +50,14 @@ function report(name: string, before: Metrics | undefined, s: Song) {
   return m
 }
 
+describe('a piece too long to show', () => {
+  it('is refused in words, not cut at 5,000 bars with the rest read as one', () => {
+    const at = (bars: number) => quantize([{ tick: bars * 4 * PPQ, dtick: PPQ, p: 60, hand: 'R' }], { ppq: PPQ, sigs: [{ tick: 0, n: 4, den: 4 }], tempos: [{ tick: 0, bpm: 120 }] })
+    expect(at(4000).bars.length).toBeGreaterThan(4000)
+    expect(() => at(5200)).toThrow(/longer than 5,000 bars/)
+  })
+})
+
 describe('quantize: a human piano arrangement', () => {
   const f = pianoHuman()
   const s = imp(f)

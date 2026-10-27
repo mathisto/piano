@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { builtin, fetchCatalog, index, merge, pieceBytes, search, sha256, tokens, type IO } from './catalog'
+import { builtin, fetchCatalog, index, merge, net, pieceBytes, search, sha256, tokens, type IO } from './catalog'
 import { synthetic } from './catalog-fixture'
 import type { Catalog } from './catalog-types'
 import type { LibraryEntry } from './credits'
@@ -141,5 +141,17 @@ describe('fetchCatalog', () => {
     expect(await fetchCatalog('', reply({ v: 2, pieces: [] }))).toBeUndefined()
     expect(await fetchCatalog('', reply(c, false))).toBeUndefined()
     expect(await fetchCatalog('', (async () => Promise.reject(new Error('offline'))) as unknown as typeof fetch)).toBeUndefined()
+  })
+
+  it('says whether the corpus answered: unchanged is fine, offline, 404 and damaged are not', async () => {
+    const c = synthetic(2)
+    await fetchCatalog('synthetic', reply(c))
+    expect(net.ok).toBe(true)
+    await fetchCatalog('', reply(c, false))
+    expect(net.ok).toBe(false)
+    await fetchCatalog('', reply({ v: 1, pieces: 'x' }))
+    expect(net.ok).toBe(false)
+    await fetchCatalog('', (async () => Promise.reject(new Error('offline'))) as unknown as typeof fetch)
+    expect(net.ok).toBe(false)
   })
 })

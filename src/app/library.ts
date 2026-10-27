@@ -48,6 +48,7 @@ export async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
   library($('#library'), starts, mine, err)
+  if (err) $('#drop').scrollIntoView({ block: 'nearest' }) // a failed piece far down the page, or a dropped file, must not leave its message above the fold
   const [{ mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()])
   mountLibrary($('#library'), prog, libSong)
 }

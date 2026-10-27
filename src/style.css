@@ -481,9 +481,14 @@ input[type='range']::-moz-range-thumb {
   margin: 0;
   color: var(--ink-2);
 }
+.head-actions .seg {
+  flex-wrap: wrap; /* a page's segmented control wider than the column wraps instead of cutting off its last choice (45 min at 200% zoom) */
+  max-width: 100%;
+}
 .head-actions {
   margin-left: auto;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .err {
@@ -530,6 +535,7 @@ table.songs tr.open {
 table.songs td.name {
   font-weight: 650;
   font-size: 18px;
+  overflow-wrap: anywhere; /* a title with no spaces, or a long composer, wraps inside its column instead of running under the buttons */
 }
 table.songs td.name small {
   display: block;
@@ -753,6 +759,7 @@ table.stages td.name small {
   display: block;
   flex: none;
   width: 340px;
+  max-width: 100%;
 }
 #theory .prow select {
   width: 100%;
@@ -805,6 +812,9 @@ table.stages col.mcol {
 @container stage (max-height: 420px) {
   #stage:has(.banner) #ready {
     bottom: 10px;
+  }
+  #stage:has(.banner) #ready > b {
+    -webkit-line-clamp: 1; /* a long title and credit line with the banner above would otherwise run up under it; the top bar has the title */
   }
 }
 /* a strip too short to hold the card above the keys: it sits on them, title and mode only */
@@ -1355,7 +1365,12 @@ kbd {
   border: 1px solid var(--line);
 }
 .ready b {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; /* a title of 120 characters shows three lines, not a card taller than the stage; the top bar and Credits carry the rest */
+  overflow: hidden;
+  padding-bottom: 0.12em; /* the clamp clips at the box: room for the descenders of a line at 0.95 */
+  overflow-wrap: anywhere;
   text-wrap: balance;
   font: 800 italic 54px/0.95 var(--display);
   letter-spacing: 0.02em;
@@ -1417,8 +1432,9 @@ kbd {
 }
 .dock-row {
   display: flex;
+  flex-wrap: wrap; /* the metronome drops to its own line in a narrow window or at 200% zoom, not off the edge */
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   min-width: 0;
 }
 .dock-row.aids {
@@ -1475,8 +1491,9 @@ kbd {
 }
 .grp {
   display: flex;
+  flex-wrap: wrap; /* the two hands' Play, Listen, Hide choices stack in a 320 px window instead of running off the right */
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
 }
 .grp > .cap {
   color: var(--ink-2);
@@ -1813,6 +1830,19 @@ button.link {
 }
 
 /* ---------- narrower windows ---------- */
+/* a 320 px window (the narrowest split view, or a 640 px one at 200% zoom): the title gives way, so the HUD, the keyboard chip and Settings all stay on screen */
+@media (max-width: 400px) {
+  .song-title,
+  #modeSeg {
+    display: none; /* the start card has the Perform and Learn choice */
+  }
+  .hud {
+    gap: 8px;
+  }
+  .hud b {
+    font-size: 24px;
+  }
+}
 @media (max-width: 1180px) {
   .hud {
     gap: 12px;
@@ -2036,8 +2066,9 @@ body.zen #dock .aids {
 }
 .prow {
   display: flex;
+  flex-wrap: wrap; /* at 200% zoom the meter, level select and Start drop under the name instead of off the right edge */
   align-items: center;
-  gap: 20px;
+  gap: 8px 20px;
   padding: 12px;
   border-top: 1px solid var(--line);
 }
@@ -2046,7 +2077,7 @@ body.zen #dock .aids {
 }
 .pwho {
   flex: 1;
-  min-width: 0;
+  min-width: 7rem; /* the row wraps (see .prow) only when the name would get narrower than this */
 }
 .pwho b {
   display: block;
@@ -2067,6 +2098,7 @@ body.zen #dock .aids {
 }
 .pact {
   flex: none;
+  margin-left: auto; /* stays at the right when the row wraps */
   min-width: 112px; /* Start, Practice and Loop share a right edge and a left edge, so the meters line up */
   display: flex;
   justify-content: flex-end;

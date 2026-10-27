@@ -1,12 +1,12 @@
 import { memTag } from './memory'
 import './library-view.css'
-import { catalog, gradeOf, local, piece, pieceBytes, search, searchIndex } from './catalog'
+import { catalog, gradeOf, local, net, piece, pieceBytes, retry, search, searchIndex } from './catalog'
 import type { Piece } from './catalog-types'
 import { licenceName } from './credits'
 import type { Song } from './song'
 import type { Progress } from './store'
 import { thumb } from './thumb'
-import { art, esc, mmss } from './ui'
+import { art, esc, mmss, notice } from './ui'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
 // so thousands of pieces never become thousands of rows. Thumbnails only for files already on the device, as rows scroll in.
@@ -59,7 +59,19 @@ async function fill() {
 /** Append the open library to the Songs page. Filters survive leaving and coming back. */
 export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, read: (p: Piece) => Promise<Song>) {
   const ps = catalog.pieces
-  if (!ps.length) return
+  // the corpus could not be fetched and nothing is stored: say so, with another go. With no pieces at all (the bundled list failed too) this is the whole section.
+  const lost = net.ok === false && !net.have
+  const again = '<button class="btn ghost" data-libretry>Try again</button>'
+  const wire = (el: ParentNode) =>
+    el.querySelector<HTMLButtonElement>('[data-libretry]')?.addEventListener('click', (e) => {
+      ;(e.target as HTMLButtonElement).disabled = true
+      ;(e.target as HTMLButtonElement).textContent = 'Trying…'
+      void retry()
+    })
+  if (!ps.length) {
+    host.insertAdjacentHTML('beforeend', `<section class="biglib" aria-label="Open library">${notice('The open library could not be loaded. Check the connection.', again)}</section>`)
+    return wire(host)
+  }
   load = read
   const grades = [...new Set(ps.map(gradeOf))].sort((a, b) => a - b)
   const per = new Map<number, number>()
@@ -73,12 +85,14 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     'beforeend',
     `<section class="biglib" aria-labelledby="libCap">
     <p class="label cap" id="libCap">Open library <span id="libCount"></span></p>
+    ${lost ? notice('Showing the pieces that come with the app. The rest of the open library needs a connection.', again) : ''}
     <div class="libtools">
       <label class="libq">${SEARCH}<input type="search" id="libQ" placeholder="Title, composer or opus" aria-label="Search the open library" autocomplete="off" spellcheck="false" value="${esc(ui.q)}"></label>
       ${who.length > 1 ? `<select id="libWho" aria-label="Composer"><option value="">All composers</option>${who.map((c) => `<option value="${c}"${ui.composer === c ? ' selected' : ''}>${esc(catalog.composers[c].name)} (${per.get(c)})</option>`).join('')}</select>` : ''}
       <div class="seg" role="radiogroup" aria-label="Level">${radio('', 'All levels', ui.grade === undefined)}${grades.map((g) => radio(String(g), String(g), ui.grade === g)).join('')}</div>
     </div>
     <table class="songs"><caption class="sr-only">Open library</caption><colgroup><col><col><col style="width:60px"><col class="acol"></colgroup><tbody id="libRows"></tbody></table>
+    <p class="sr-only" id="libFound" role="status"></p>
     <div class="libmore"><p class="fine" id="libShown" role="status"></p><button class="btn ghost" id="libMore">Show ${PAGE} more</button><button class="btn ghost" id="libSave" hidden></button></div>
   </section>`,
   )
@@ -99,6 +113,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     const page = hits.slice(0, ui.shown).map((i) => ps[i])
     $('#libRows').innerHTML = page.length ? page.map((p) => row(p, prog)).join('') : `<tr><td colspan="4" class="empty">No piece matches. Try fewer words${ui.grade === undefined && ui.composer === undefined ? '' : ', or clear the filters'}.</td></tr>`
     $('#libCount').textContent = hits.length.toLocaleString()
+    $('#libFound').textContent = ui.q || ui.grade !== undefined || ui.composer !== undefined ? (hits.length ? `${hits.length.toLocaleString()} ${hits.length === 1 ? 'piece' : 'pieces'} found` : 'No piece found') : '' // a screen reader hears the result of a search or filter
     $('#libShown').textContent = hits.length > page.length ? `${page.length.toLocaleString()} of ${hits.length.toLocaleString()}` : ''
     $('#libMore').hidden = hits.length <= page.length
     if (!ui.saving) {
@@ -148,5 +163,6 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     save.disabled = !failed
     save.textContent = failed ? `${failed} not saved. Try again` : 'Saved for offline'
   }
+  wire(el)
   draw()
 }
