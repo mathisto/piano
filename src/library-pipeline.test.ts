@@ -46,6 +46,10 @@ describe('library pipeline gates', () => {
       expect(all(judge(s, marks ?? '', tempo ?? true))).toContain(gate)
     })
 
+  it('the quoted form \\repeat "volta" is flagged too', () => {
+    expect(judge(base(), '\\repeat "volta" 2 { c4 }').flags).toContain('repeats')
+  })
+
   it('a repeat LilyPond already unfolds into the MIDI is not flagged', () => {
     expect(judge(base(), '\\repeat volta 2 { c4 } \\midi { } \\unfoldRepeats').flags).not.toContain('repeats')
   })

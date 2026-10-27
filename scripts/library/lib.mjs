@@ -237,3 +237,15 @@ export function openscoreMeta(e, upstream) {
     bytes: zip([['META-INF/container.xml', Buffer.from(container)], [root, Buffer.from(xml)]]),
   }
 }
+
+/** What build.mjs reads for a shipped Mutopia id, before any unfolding: the MIDI bytes and the .ly (the piece's, or for movement k
+ * of a -mids.zip work the one pickLy matches to its MIDI). */
+export async function sourceOf(id, pickLy, http) {
+  const [, n, k] = id.split('-')
+  const m = mutopiaMeta(id, (await get(`https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${n}`, http)).toString())
+  const ly = m.ly && (await get(m.ly, http)).toString()
+  if (!k) return { ly, midi: m.midi && (await get(m.midi, http)) }
+  const lys = m.lys ? [...unzip(await get(m.lys, http))] : []
+  const v = movements(await get(m.mids, http), m.mids.split('/').pop().slice(0, -'-mids.zip'.length))[k - 1]
+  return { ly: pickLy(v.bytes, lyCandidates(lys, v.stem, ly)), midi: v.bytes }
+}

@@ -10,7 +10,7 @@ import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
-export { pickLy, unfold } from './repeats'
+export { pickLy, unfold, withRepeats } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
 export interface Input {
@@ -123,7 +123,7 @@ export function judge(s: Song, marks = '', hasTempo = true) {
   if (s.flags?.includes('tempo-estimated')) flags.push('tempo-estimated') // a MusicXML score with only a tempo word: the bpm is the importer's guess
   if (/D\.\s?[CS]\.|\\segno|\\coda|<segno|<coda|dacapo=|dalsegno=|\bFine\b|\bCoda\b/.test(marks)) flags.push('dc-ds')
   // LilyPond's MIDI plays a repeat only under \unfoldRepeats; the MusicXML importer expands them unless it says it could not
-  if ((/\\repeat\s+volta/.test(marks) && !/\\unfoldRepeats/.test(marks)) || s.flags?.includes('repeats-unexpanded')) flags.push('repeats')
+  if ((/\\repeat\s+"?volta/.test(marks) && !/\\unfoldRepeats/.test(marks)) || s.flags?.includes('repeats-unexpanded')) flags.push('repeats')
   if (notes.some((n) => n.tuplet && !(n.tuplet.num === 3 && n.tuplet.den === 2))) flags.push('tuplets')
   const tags = [...(notes.some((n) => n.tieNext) ? ['ties'] : []), ...(notes.some((n) => n.tuplet?.num === 3 && n.tuplet.den === 2) ? ['triplets'] : [])]
 

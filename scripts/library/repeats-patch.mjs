@@ -7,7 +7,7 @@
 // LICENSES.md. The .ly sources are fetched like build.mjs does (cached in .cache/library/http, one request a second on a miss).
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { get, lyCandidates, movements, mutopiaMeta, sha, unzip } from './lib.mjs'
+import { sha, sourceOf } from './lib.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
 const HTTP = `${ROOT}.cache/library/http`
@@ -19,19 +19,6 @@ const { pickLy, run, unfold } = await import(`${ROOT}.cache/library/bin/pipeline
 const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
 const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8')).pieces.map((e) => e.id))
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
-const page = (n) => `https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=${n}`
-
-// the .ly build.mjs reads: the piece's, or for movement k of a -mids.zip work the one pickLy matches to its MIDI
-async function lyOf(id) {
-  const [, n, k] = id.split('-')
-  const m = mutopiaMeta(id, (await get(page(n), HTTP)).toString())
-  const ly = m.ly && (await get(m.ly, HTTP)).toString()
-  if (!k) return ly
-  const lys = m.lys ? [...unzip(await get(m.lys, HTTP))] : []
-  const v = movements(await get(m.mids, HTTP), m.mids.split('/').pop().slice(0, -'-mids.zip'.length))[k - 1]
-  return pickLy(v.bytes, lyCandidates(lys, v.stem, ly))
-}
-
 const before = cat.pieces.map((p) => p.sha256)
 const flagged = cat.pieces.filter((p) => p.source === 'mutopia' && p.flags.includes('repeats') && !pins.has(p.id))
 const inputs = []
@@ -51,7 +38,7 @@ for (const p of flagged) {
     format: p.format,
     bytes: new Uint8Array(readFileSync(`${FROM}/${p.file}`)),
     upstreamSha: p.sha256,
-    ly: await lyOf(p.id),
+    ly: (await sourceOf(p.id, pickLy, HTTP)).ly,
   })
 }
 
