@@ -109,7 +109,7 @@ export class Staff {
     for (; this.seen < this.timeline.length && this.timeline[this.seen].t < t - 0.02; this.seen++) this.timeline[this.seen].el.classList.add('past')
   }
 
-  /** Sight Run's reading ahead: only the next `lookahead` beats of notes show, the rest stay blank until the cursor nears them. 0 shows everything; below 0 covers the next beats instead (Read ahead stages). */
+  /** Sight Run's reading ahead: only the next `lookahead` beats of notes show (a paced run at two beats a card sets twice its cards), the rest stay blank until the cursor nears them. 0 shows everything; below 0 covers the next beats instead (Read ahead stages). */
   lookahead = 0
   /** Read through's reading ahead: once the music moves, only the bar being played and the next `aheadBars - 1` show. 0 shows everything. */
   aheadBars = 0
@@ -139,7 +139,7 @@ export class Staff {
     const t0 = i >= 0 ? g.song.notes[i].t : 0
     // a negative lookahead covers instead: once the first card is played, the next -n beats are hidden, so they must be read ahead
     const hide = (d: number) => (n > 0 ? d > n - 0.5 : t0 > 0 && d >= 0 && d < -n - 0.5 && !(d === 0 && g.song.notes[i] === this.shown))
-    for (const [id, p] of this.byId) p.grp.classList.toggle('ahead', i >= 0 && hide(g.song.notes[id].t - t0))
+    for (const [id, p] of this.byId) p.grp.classList.toggle('ahead', i >= 0 && hide((g.song.notes[id].t - t0) / g.song.spb)) // in beats: a deck at 60 bpm is a second a beat, a paced one is not
   }
 
   /** A wrong key on a covered card shows it again, so a forgotten note never strands the player (the card already counts as missed). */

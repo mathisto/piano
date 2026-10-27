@@ -13,10 +13,12 @@ export interface RunSpec {
   length: number // cards; 0 is endless
   widen: boolean // a clean set stretches the range by one note
   ahead: number // notes visible ahead of the one to play; 0 shows the whole set
+  pace: number // beats a minute of a paced run, where a metronome leads and a miss does not stop it; 0 waits for you
+  every: 1 | 2 // paced: beats each card gets
   name?: string
 }
 
-export const DEFAULT_RUN: RunSpec = { clef: 'treble', lo: 60, hi: 72, acc: 'nat', fifths: 0, size: 1, near: 0.4, weak: 0.5, length: 0, widen: false, ahead: 0 }
+export const DEFAULT_RUN: RunSpec = { clef: 'treble', lo: 60, hi: 72, acc: 'nat', fifths: 0, size: 1, near: 0.4, weak: 0.5, length: 0, widen: false, ahead: 0, pace: 0, every: 1 }
 
 /** The notes each clef lets you pick: a few ledger lines past the staff. */
 export const LIMITS = { treble: [55, 88], bass: [36, 62], grand: [36, 88] } as const

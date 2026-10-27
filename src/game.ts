@@ -60,6 +60,7 @@ export type GameEvent =
 const COUNT_IN = 4
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
+const PACED_EASE = 1.6 // a reader a beat behind the eyes is late, not wrong: a paced run takes a note within 200 ms of the beat
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
 
 export function letter(acc: number): string {
@@ -69,6 +70,7 @@ export function letter(acc: number): string {
 export class Game {
   song!: Song
   mode: Mode = 'perform'
+  paced = false // a reading drill kept to a metronome: a count-in, the click, notes judged on the beat, and the run does not wait
   phase: Phase = 'ready'
   t = 0
   rate = 1
@@ -120,7 +122,8 @@ export class Game {
     for (const fn of this.listeners) fn(e)
   }
 
-  load(song: Song, mode: Mode = 'perform') {
+  load(song: Song, mode: Mode = 'perform', paced = false) {
+    this.paced = paced
     this.song = song
     this.you = { R: 'play', L: 'play' }
     this.parts = new Set()
@@ -140,6 +143,7 @@ export class Game {
       if (mode === 'read') {
         this.rate = 1
         this.loop = null
+        this.wait = !this.paced
         this.hands = { R: 'play', L: 'play' }
       }
     }
@@ -165,7 +169,7 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.paced ? PACED_EASE : EASE[settings.strict] }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -184,7 +188,7 @@ export class Game {
   private lead(): { from: number; to: number } {
     const spb = this.song.spb
     if (this.loop) return { from: this.loop.a - 2 * spb, to: this.loop.a }
-    return this.mode === 'read' ? { from: -READ_LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
+    return this.mode === 'read' && !this.paced ? { from: -READ_LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
   }
 
   /** Beats of count-in left, 4 down to 1, or 0 when not counting. */
@@ -360,13 +364,13 @@ export class Game {
 
   /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. It never runs past the loop end, nor past the note a wait is about to stall on (the beat then sounds as you play it). */
   private metronome(from: number, look: number) {
-    if (this.mode === 'read' || !this.running()) return
+    if ((this.mode === 'read' && !this.paced) || !this.running()) return
     let end = this.t + look
     if (this.loop) end = Math.min(end, this.loop.b)
     const i = this.wait ? this.judge.nextPending() : -1
     if (i >= 0) end = Math.min(end, this.song.notes[i].t)
-    if (settings.metro !== 'off') {
-      for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, settings.metro === 'eighths'))
+    if (settings.metro !== 'off' || this.paced) {
+      for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, !this.paced && settings.metro === 'eighths'))
         audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
     }
     this.nextMetro = Math.max(this.nextMetro, end)

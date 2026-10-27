@@ -7,6 +7,7 @@ import { creditLine } from '../credits'
 import type { GameEvent, Mode } from '../game'
 import { facts, startCard } from '../memory'
 import { knownPitches } from '../quiet'
+import { paceHint } from '../paced'
 import { lookCard } from '../readthrough'
 import { settings } from '../settings'
 import { autoLevel, type Level, LEVELS, simplify } from '../simplify'
@@ -53,7 +54,7 @@ async function buildStage() {
   dock.onHands = () => staff.render()
 }
 
-export async function openSong(base: Song, mode: Mode) {
+export async function openSong(base: Song, mode: Mode, paced = false) {
   game.endPass()
   // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
   const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
@@ -79,7 +80,7 @@ export async function openSong(base: Song, mode: Mode) {
     await hooks.showSection(!back || back === 'play' ? 'today' : back === 'library' ? 'songs' : back, msg)
     throw new Error(msg)
   }
-  game.load(song, mode)
+  game.load(song, mode, paced)
   const prog = await store.getProgress(song.id)
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
@@ -143,7 +144,7 @@ game.on((e: GameEvent) => {
       highway.hit(e.note.p, e.grade, e.note.h)
       staff.ghostHit(e.note.p, e.note.id, e.grade)
       staff.mark(e.note.id, `hit-${e.grade}`)
-      popup(e.grade, e.off, e.note.p, e.note.id, e.vel)
+      if (!game.paced) popup(e.grade, e.off, e.note.p, e.note.id, e.vel) // a paced run keeps the eyes on the staff: the marks are enough
       break
     case 'ok':
       feel(e.note, e.v)
@@ -159,7 +160,7 @@ game.on((e: GameEvent) => {
       break
     case 'miss':
       staff.mark(e.note.id, 'miss')
-      popup('miss', 0, e.note.p, e.note.id)
+      if (!game.paced) popup('miss', 0, e.note.p, e.note.id)
       break
     case 'wrong':
       highway.wrong(e.p)
@@ -222,7 +223,7 @@ export function onPhase() {
       : rt
       ? lookCard({ title: current.song.title, left: rt.left, rate: rt.rate, ahead: !!settings.readAhead, why: rt.why, credit: current.credit })
       : drill
-      ? `<b>${esc(drill.title)}</b><span class="hint">${go}</span>`
+      ? `<b>${esc(drill.title)}</b>${drill.run?.spec.pace ? `<span class="hint">${paceHint({ bpm: drill.run.spec.pace, every: drill.run.spec.every })}</span>` : ''}<span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
         : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`

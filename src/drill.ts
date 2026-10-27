@@ -278,30 +278,37 @@ export function weakest(stats: Stats, n = 3): { name: string; clean: number; rt:
 
 export const BPM = 60
 
-/** Where each note of a deck sits: a chord card on one beat, a melodic fragment on consecutive beats. */
-export function layout(d: Card[]): { beat: number; card: number; p: number; c: Card }[] {
+/** Where each note of a deck sits: a chord card on one beat, a melodic fragment on consecutive beats. `every` spaces the cards (a paced run at two beats a card). */
+export function layout(d: Card[], every = 1): { beat: number; card: number; p: number; c: Card }[] {
   const out: { beat: number; card: number; p: number; c: Card }[] = []
   let beat = 0
   d.forEach((c, card) => {
     c.pitches.forEach((p, k) => out.push({ beat: c.seq ? beat + k : beat, card, p, c }))
-    beat += c.seq ? c.pitches.length : 1
+    beat += c.seq ? c.pitches.length : every
   })
   return out
 }
 
-/** A drill session as a song: one card per beat (a fragment takes four), four beats to a bar, read in wait mode. */
-export function deckSong(id: string, title: string, d: Card[], fifths = 0): Song {
-  const q = 60 / BPM
-  const lay = layout(d)
-  const total = lay.length ? Math.max(...lay.map((x) => x.beat)) + 1 : 0
-  const raw: Raw[] = lay.map((x) => ({ t: x.beat * q, d: q * 0.9, p: x.p, v: 0.7, track: 0, h: x.c.hand, flat: x.c.flat, ...(x.c.sharp && { acc: 1 as const }) }))
+/** A paced run's pulse: the song's tempo and how many beats each card gets. */
+export interface Pulse {
+  bpm: number
+  every: 1 | 2
+}
+
+/** A drill session as a song: one card per beat (a fragment takes four), four beats to a bar, read in wait mode. With a `pulse` it is a real tempo, and the cards sit on its beats. */
+export function deckSong(id: string, title: string, d: Card[], fifths = 0, pulse?: Pulse): Song {
+  const q = 60 / (pulse?.bpm ?? BPM)
+  const every = pulse?.every ?? 1
+  const lay = layout(d, every)
+  const total = lay.length ? Math.max(...lay.map((x) => x.beat)) + every : 0
+  const raw: Raw[] = lay.map((x) => ({ t: x.beat * q, d: q * 0.9 * every, p: x.p, v: 0.7, track: 0, h: x.c.hand, flat: x.c.flat, ...(x.c.sharp && { acc: 1 as const }) }))
   const bars: Bar[] = Array.from({ length: Math.ceil(total / 4) }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
   return build(id, title, raw, bars, fifths)
 }
 
 /** The card each note of a deckSong belongs to, in the song's own note order. */
-export function noteCards(d: Card[], song: Song): number[] {
-  const q = 60 / BPM
-  const at = new Map(layout(d).map((x) => [`${x.beat}:${x.p}`, x.card]))
+export function noteCards(d: Card[], song: Song, pulse?: Pulse): number[] {
+  const q = 60 / (pulse?.bpm ?? BPM)
+  const at = new Map(layout(d, pulse?.every).map((x) => [`${x.beat}:${x.p}`, x.card]))
   return song.notes.map((n) => at.get(`${Math.round(n.t / q)}:${n.p}`) ?? 0)
 }
