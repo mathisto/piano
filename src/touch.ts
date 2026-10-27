@@ -1,4 +1,5 @@
 import type { Hand } from './song'
+import { mean } from './util'
 
 export type Band = 'soft' | 'medium' | 'hard'
 
@@ -47,7 +48,6 @@ export function velStats(samples: { v: number; h: Hand; p?: number }[], e: Edges
   return { n, mean, regions: { low: reg('low'), mid: reg('mid'), high: reg('high') }, sd: n ? Math.sqrt(samples.reduce((a, s) => a + (s.v - mean) ** 2, 0) / n) : 0, hist, hands: { R: hand('R'), L: hand('L') }, bands }
 }
 
-const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length
 const GAP = 12 // each band's average must sit at least this far above the last, or the player did not vary
 
 /** Edges from a run of deliberately soft, medium and hard notes; null if the three did not differ enough. */

@@ -3,6 +3,7 @@ import { RHYTHM, beatMs, biasText, scoreTaps, type EarView, type Play } from './
 import { checkQA } from './ear2'
 import type { TCard } from './theory'
 import './ear.css'
+import { mean } from './util'
 
 /** The sound and the clock of an ear card, and the taps of a rhythm card. One of these per Theory session. */
 export interface EarRun {
@@ -121,7 +122,6 @@ function judge(e: EarRun, c: TCard) {
   e.finish?.(r.ok, r.spread)
 }
 
-const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length
 
 export function earView(e: EarRun): EarView {
   const parts = []

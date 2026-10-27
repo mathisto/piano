@@ -6,7 +6,8 @@ import { licenceName } from './credits'
 import type { Song } from './song'
 import type { Progress } from './store'
 import { thumb } from './thumb'
-import { art, esc, mmss, notice } from './ui'
+import { art, mmss, notice } from './ui'
+import { esc } from './util'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
 // so thousands of pieces never become thousands of rows. Thumbnails only for files already on the device, as rows scroll in.

@@ -4,15 +4,10 @@ import { writtenTargets, type Edges } from './touch'
 import { barAt, type Hand, type Note, type Song } from './song'
 import { settings } from './settings'
 import * as store from './store'
+import { mean, median } from './util'
 
 /** How a run was played over time, from the key downs and ups: timing evenness, legato or staccato, the balance of the hands. */
 
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b)
-  const m = s.length >> 1
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-}
-const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 const mad = (xs: number[]) => {
   const m = median(xs)
   return median(xs.map((x) => Math.abs(x - m))) * 1.48

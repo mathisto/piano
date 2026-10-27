@@ -1,6 +1,7 @@
 import './readthrough.css'
 import { icon } from './icons'
 import type { Progress } from './store'
+import { esc, pct } from './util'
 
 // Read through: a look-through, then one no-stop pass of a new, easy piece. Sight-reading grows with volume of new music
 // a level or two under what you practise (Mishra 2014); late or wrong notes are missed and the music carries on.
@@ -54,8 +55,6 @@ export function barList(bars: number[]): string {
   return s.length < 2 ? s.join('') : `${s.slice(0, -1).join(', ')} and ${s[s.length - 1]}`
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
-export const pct = (r: number) => `${Math.round(r * 100)}%`
 
 /** The look-through card on the stage; the timer, tempo and switch are updated in place by id. */
 export function lookCard(o: { title: string; left: number; rate: number; ahead: boolean; why: string; credit?: string }) {

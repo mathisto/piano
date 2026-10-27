@@ -1,5 +1,6 @@
 import { RHYTHM, biasText, rhythmCards, scoreAt, type TapScore } from './ear'
 import type { TCard } from './theory'
+import { mean, plural } from './util'
 
 /** Pulse trainers: tap a steady beat, the subdivisions of one, or a written rhythm, on any key, against a quarter-note click. Pure scheduling and scoring; the sound is in pulse-play.ts. Time is in quarter-note beats from the start of the card. */
 export const PULSE_IDS = ['keepbeat', 'subdiv', 'holdrhythm'] as const
@@ -28,9 +29,7 @@ export const SUB = { frac: 0.35, bars: 2, lead: 1 }
 export const SWING = 2 / 3 // swung eighths: the second one sits two thirds of the way through the beat
 
 const range = (a: number, z: number, step: number) => Array.from({ length: Math.floor((z - a) / step) + 1 }, (_, i) => a + i * step)
-const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length
 const upTo = (n: number) => Array.from({ length: n }, (_, i) => i)
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
 
 // ---- the cards ----
 const KINDS = {

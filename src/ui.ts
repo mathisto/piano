@@ -30,6 +30,7 @@ import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
 import { guideCard, HELP, keyboardLine, tabNote, type Guide } from './guide'
 import { inputs } from './midi'
 import type { Streak } from './streak'
+import { esc } from './util'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
 
@@ -166,7 +167,6 @@ function table(caption: string, rows: Row[], empty: string) {
     <tbody>${body}</tbody></table>`
 }
 
-export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`

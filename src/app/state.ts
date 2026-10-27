@@ -95,8 +95,6 @@ export const hooks = {} as {
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id)
 
-export const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
-
 export function median(xs: number[]) {
   if (!xs.length) return 0
   const s = [...xs].sort((a, b) => a - b)

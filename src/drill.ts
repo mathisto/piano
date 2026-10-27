@@ -1,9 +1,10 @@
 import { build, type Bar, type Hand, type Raw, type Song } from './song'
+import { isBlack } from './osk'
 import { clefFor, noteName } from './spell'
 
 /** Natural (white-key) pitches from lo to hi inclusive. */
 export const whites = (lo: number, hi: number): number[] =>
-  Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).filter((p) => ![1, 3, 6, 8, 10].includes(p % 12))
+  Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).filter((p) => !isBlack(p))
 
 export interface Stage {
   id: string
@@ -24,8 +25,6 @@ export interface Stage {
 }
 
 const T = (lo: number, hi: number) => whites(lo, hi)
-const BLACKS = [1, 3, 6, 8, 10]
-const isBlack = (p: number) => BLACKS.includes(p % 12)
 const chroma = (lo: number, hi: number) => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
 const major = (tonic: number) => [0, 2, 4, 5, 7, 9, 11, 12].map((i) => tonic + i)
 // natural minor, with the raised seventh under each tonic: the leading tone where it arises

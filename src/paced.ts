@@ -2,6 +2,7 @@ import { timing, type Timing } from './coach'
 import { cardKey, type Card, type Stats } from './drill'
 import type { Grade } from './judge'
 import type { Hand } from './song'
+import { median } from './util'
 
 /** Paced Sight Run: a metronome sets the pace, one card to a beat (or to two), and a miss does not stop it. This is the planning, the scoring and the tempo rule. */
 
@@ -22,11 +23,6 @@ export interface PaceMemo extends Pace {
   rough: number
 }
 
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b)
-  const m = s.length >> 1
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-}
 const even = (n: number) => Math.round(n / 2) * 2
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 

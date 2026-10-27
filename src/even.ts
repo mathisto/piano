@@ -1,5 +1,6 @@
 import type { Edges } from './touch'
 import { noteName } from './spell'
+import { mean, median } from './util'
 import type { Hand } from './song'
 
 /** Touch evenness: how far each note's loudness sits from its neighbours', judged against the player's own soft-to-hard range. */
@@ -18,12 +19,6 @@ export const tolerance = (e: Edges, c: Exclude<Coach, 'off'>) => Math.max(3, Mat
 export const MIN_V = 15 // softer than this the sensor is noise, not touch
 export const MIN_RUN = 6 // a line shorter than this says nothing about evenness
 const NEAR = 3 // neighbours either side that make the reference
-
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b)
-  const m = s.length >> 1
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-}
 
 /** One note per moment, per hand, in time order: a chord's top note stands for it. */
 export function lines<T extends { t: number; p: number; h: Hand }>(hits: T[]): T[][] {
@@ -79,7 +74,6 @@ export function evenness(hits: Hit[], e: Edges, coach: Exclude<Coach, 'off'>, la
 
 /** One thing to try, only from a pattern that repeats: a hand that runs louder, or a kind of note that is off at least three times. */
 function hint(ls: Hit[][], devs: Evenness['devs'], band: number, label: (h: Hit, i: number) => string): string | undefined {
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
   if (ls.length === 2) {
     const [r, l] = ls[0][0].h === 'R' ? ls : [ls[1], ls[0]]
     const gap = mean(r.map((x) => x.v)) - mean(l.map((x) => x.v))

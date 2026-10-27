@@ -5,6 +5,7 @@ import { barList, slipped } from './readthrough'
 import { noteName } from './spell'
 import type { Song } from './song'
 import type { Progress } from './store'
+import { esc } from './util'
 
 // Memorise: Learn (the song waits) with the score fading by bars. Players lean on finger memory, which fails under nerves;
 // seeing the shape (analysis), hearing it and knowing where the hands go hold up better. So the card asks you to look
@@ -91,7 +92,6 @@ export function facts(song: Song): [string, string][] {
 /** "Memorised 3/4" for a Songs row, once any stage is cleared. */
 export const memTag = (p?: Progress) => (p?.memStage ? ` <span class="tag">Memorised ${p.memStage}/${TOP}</span>` : '')
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 const stageSeg = (stage: number) =>
   `<div class="seg mem-seg" role="radiogroup" aria-label="Stage">${STAGES.map((s, i) => `<label title="${s}"><input type="radio" name="memStage" value="${i}" aria-label="Stage ${i}, ${s.toLowerCase()}"${i === stage ? ' checked' : ''}><span>${i}</span></label>`).join('')}</div>`
