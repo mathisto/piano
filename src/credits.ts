@@ -45,7 +45,7 @@ export async function loadManifest(fetchFn: typeof fetch = fetch, base?: string)
 /** 'CC-BY-SA-2.5' -> 'CC BY-SA 2.5', 'CC0-1.0' -> 'CC0 1.0'; 'Public Domain' stays. */
 export const licenceName = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
 
-const SOURCE: Record<Piece['source'], string> = { mutopia: 'Mutopia Project', 'openscore-lieder': 'OpenScore Lieder Corpus', pdmx: 'PDMX' }
+export const SOURCE: Record<Piece['source'], string> = { mutopia: 'Mutopia Project', 'openscore-lieder': 'OpenScore Lieder Corpus', pdmx: 'PDMX', chopin: 'Fryderyk Chopin Institute (chopinscores.org)' }
 const CHANGES: Record<string, string> = { 'voice-folded': 'vocal line folded into the right hand', 'voice-dropped': 'voice part left out' }
 
 const who = (c: Catalog['composers'][number]) => `${c.name}${c.died ? (c.born ? ` (${c.born}–${c.died})` : ` (d. ${c.died})`) : ''}`
