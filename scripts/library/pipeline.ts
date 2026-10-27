@@ -34,6 +34,7 @@ export interface Input {
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
   noFormTempo?: true // leave a score that names no pace as it is, without the form guess (reanalyse --formtempo-only compares the two)
   noPace?: true // read no pace from the .ly: the MIDI's own tempo (reanalyse --ly-only compares the two)
+  pace?: { given: boolean; bpm?: number; exact?: boolean } // the pace to take instead of reading the .ly's (reanalyse --ly-only keeps a movement's published one)
   noPickup?: true // leave the first bar to the detector, as before the .ly's \partial was read (reanalyse --pickup-only compares the two)
   pickup?: number // the anacrusis withRepeats read before it played the repeats out (the unfolded file no longer reads like its .ly)
   matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
@@ -203,9 +204,9 @@ export async function analyse(e: Input): Promise<Analysis> {
       // LilyPond's default is 60: a file at exactly that, or with no tempo event, whose .ly gives no number, has no tempo
       // (a non-60 one with no number in this .ly got it from an \include or a sibling .ly)
       const [n, d] = midi.header.timeSignatures[0]?.timeSignature ?? [4, 4]
-      const pace = e.ly && !e.noPace ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: true }
-      // a movement of a zip (mutopia-N-k) may have been given a sibling's .ly when none matched (pickLy's fallback)
-      if (pace.bpm && /^mutopia-\d+-\d+$/.test(e.id) && !e.matched && !plays(e.bytes, e.ly!)) pace.bpm = undefined
+      // a movement of a zip (mutopia-N-k) may have been given a sibling's .ly, or its book's, when none matched (pickLy's fallback): that .ly names no pace for this file
+      const mine = !e.ly || !/^mutopia-\d+-\d+$/.test(e.id) || !!e.matched || plays(e.bytes, e.ly)
+      const pace = e.pace ?? (!e.ly || e.noPace ? { given: true } : mine ? lyPace(e.ly, d === 8 && n > 3 && n % 3 === 0) : { given: false })
       const flat = midi.header.tempos.every((t) => Math.abs(t.bpm - 60) < 0.01)
       if (!pace.given && flat && pace.bpm) tempo = { bpm: pace.bpm, guess: !pace.exact }
       hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)
@@ -213,7 +214,6 @@ export async function analyse(e: Input): Promise<Analysis> {
       s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)
       if (!tempo && !pace.given && flat && !e.noFormTempo) {
         // nothing in the .ly names a pace: guess one from the form, else 100. A movement of a zip reads the .ly's header only when it is this file's
-        const mine = !/^mutopia-\d+-\d+$/.test(e.id) || e.matched || plays(e.bytes, e.ly!)
         tempo = { bpm: formTempo([e.title, ...(mine ? lyHeads(e.ly!) : [])].join(' '), onsetsOf(s)).bpm, guess: true }
         hasTempo = true
         s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)

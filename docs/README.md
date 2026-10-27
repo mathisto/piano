@@ -57,6 +57,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/tempo2.md`: `Piece.tempo` from the .ly and the first pickup detector pass.
 - `changes/pickup2.md`: the second pickup detector (not merged: no clear gain).
 - `changes/partial.md`: `Piece.pickup` from the .ly `\partial`.
+- `changes/lyreader.md`: the .ly reader covers 648 of 748 Mutopia pieces (was 444): zip includes, tags, `\parallelMusic`, unfold in place; `reanalyse.mjs --ly-only`, 34 more pieces' repeats played out.
 - `changes/formtempo.md`: a pace from the form for scores that name none.
 - `changes/rebuild.md`: re-analysing the published catalogue without changing an id, file or hash.
 
