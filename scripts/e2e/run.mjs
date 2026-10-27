@@ -51,7 +51,8 @@ const INIT = `
       })
     },
     // Perform: once the count-in starts, every note is pressed on its beat by the game's own clock; skip lists note indices left out
-    perform({ skip = [], loud = -1 } = {}) {
+    // pedal: [{ t, down }] sent as CC64 through the MIDI parser at song second t
+    perform({ skip = [], loud = -1, pedal = [] } = {}) {
       return new Promise((res) => {
         const g = P().game, sk = new Set(skip)
         window.__last = undefined
@@ -64,6 +65,7 @@ const INIT = `
           if (!started && (g.phase === 'countin' || g.phase === 'playing')) {
             started = true
             const now = performance.now()
+            for (const e of pedal) setTimeout(() => P().pedal(e.down), g.anchorPerf + ((e.t - g.anchorT) / g.rate) * 1000 - now)
             g.song.notes.forEach((n, i) => {
               if (sk.has(i) || g.modeOf(n) !== 'play') return // the app plays the rest (Listen, or the part it accompanies)
               const at = g.anchorPerf + ((n.t - g.anchorT) / g.rate) * 1000 - now
@@ -750,12 +752,33 @@ const qaFlow = () => fresh({
   },
 })
 
+const pedalFlow = () => fresh({
+  async '20 Pedal: CC64 reaches the coach, one sentence in the results, only when used'(page) {
+    await nav(page, 'technique')
+    await page.selectOption('#tPattern', 'pedal')
+    const run = async (used) => {
+      await page.click('#tStart')
+      await ready(page)
+      await page.click('#go')
+      // down after the first chord, changed on bars 2 and 3 as the chord lands, then held through the last change
+      await ev(page, (u) => { const b = window.__piano.game.song.bars; return window.__e2e.perform({ pedal: u ? [{ t: 0.2, down: true }, ...[1, 2].flatMap((i) => [{ t: b[i].t0 + 0.07, down: false }, { t: b[i].t0 + 0.15, down: true }]), { t: b[3].t1 - 0.1, down: false }] : [] }) }, used)
+      const card = (await (await res(page, 'Results')).textContent()).replace(/\s+/g, ' ')
+      await page.click('#toLib')
+      await wait(page, () => document.querySelector('#technique.on'))
+      return card
+    }
+    const mixed = await run(true)
+    ok(/Pedal: you changed it with the chord 2 of 3 times; in bar 4 the old chord was still ringing/.test(mixed), `mixed run: ${mixed.slice(0, 400)}`)
+    ok(!/Pedal:/.test(await run(false)), 'a Pedal line with no pedal used')
+  },
+})
+
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow),
-  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow),
+  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])
 await feature('11 accessibility: every page and the drawer', page, async () => {

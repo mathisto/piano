@@ -253,7 +253,7 @@ function synthVoice(c: AudioContext, p: number, vel: number): Voice {
 export function noteOn(p: number, vel: number, force = false, as?: string) {
   if (!settings.sound && !force) return
   const c = ready()
-  noteOff(p, true)
+  noteOff(p, true) // a struck key damps its own string first
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   let inst = instrument(as ?? settings.instrument)
   if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note
@@ -262,7 +262,23 @@ export function noteOn(p: number, vel: number, force = false, as?: string) {
   voices.set(p, v)
 }
 
+let pedal = false
+const lifted = new Set<number>() // keys the player let go of while the pedal was down: still ringing
+
+/** The sustain pedal (CC64 at 64 or more). Down: a key coming up leaves its note ringing. Up: the dampers fall on every note whose key is already up. */
+export function sustain(down: boolean) {
+  pedal = down
+  if (!down) for (const p of [...lifted]) noteOff(p)
+}
+
+/** The player's key came up: the damper falls now, or when the pedal lets go. */
+export function keyUp(p: number) {
+  if (pedal && voices.has(p)) lifted.add(p)
+  else noteOff(p)
+}
+
 export function noteOff(p: number, hard = false) {
+  lifted.delete(p)
   const v = voices.get(p)
   if (!v || !ctx) return
   const t = ctx.currentTime

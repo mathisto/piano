@@ -341,8 +341,9 @@ export const songLines = (song: Song, presses: Press[], samples: { v: number; h:
     .map((f) => f.line)
 
 /** The extra results lines; `perform` already shows timing as its histogram caption. */
-export function coachLines(r: { timing: Timing | null; artic: Artic | null; voice: Voicing | null; fixed?: number; mode: string; follow?: string[] }, test: boolean) {
+export function coachLines(r: { timing: Timing | null; artic: Artic | null; voice: Voicing | null; fixed?: number; mode: string; follow?: string[]; pedal?: string | null }, test: boolean) {
   const out: string[] = [...(r.follow ?? [])]
+  if (r.pedal) out.push(r.pedal)
   if (test) out.push('A test run: no touch marks while you played.')
   if (r.timing && r.mode !== 'perform') out.push(timingLine(r.timing))
   if (r.artic) out.push(articLine(r.artic))

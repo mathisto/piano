@@ -2,7 +2,7 @@ import { build, type Bar, type Hand, type Raw, type Song } from './song'
 import { noteName } from './spell'
 import { DEFAULT_EDGES, type Edges } from './touch'
 
-export type Pattern = 'five' | 'scale' | 'arp' | 'contrary' | 'rhythm'
+export type Pattern = 'five' | 'scale' | 'arp' | 'contrary' | 'rhythm' | 'pedal'
 export type Dyn = 'soft' | 'medium' | 'hard' | 'cresc' | 'decresc' | 'accent' | 'even' | 'balance'
 export type Artic = 'legato' | 'staccato'
 
@@ -17,7 +17,7 @@ export interface Opts {
   level?: 1 | 2 | 3 // rhythm cards only: quarters and halves, then eighths, then dotted notes and syncopation
 }
 
-export const PATTERNS: Record<Pattern, string> = { five: 'Five-finger', scale: 'Scale', arp: 'Arpeggio', contrary: 'Contrary motion', rhythm: 'Rhythm' }
+export const PATTERNS: Record<Pattern, string> = { five: 'Five-finger', scale: 'Scale', arp: 'Arpeggio', contrary: 'Contrary motion', rhythm: 'Rhythm', pedal: 'Pedal changes' }
 export const DYNS: Record<Dyn, string> = {
   soft: 'Steady soft',
   medium: 'Steady medium',
@@ -37,7 +37,7 @@ export const KEYS_MINOR: Record<number, number> = { 9: 0, 4: 1, 11: 2, 2: -1, 7:
 const MAJOR = [0, 2, 4, 5, 7, 9, 11, 12]
 const MINOR = [0, 2, 3, 5, 7, 8, 10, 12]
 // Degrees (0 = tonic, 7 = the octave) up and back down.
-const SHAPE: Record<Exclude<Pattern, 'rhythm'>, number[]> = {
+const SHAPE: Record<Exclude<Pattern, 'rhythm' | 'pedal'>, number[]> = {
   five: [0, 1, 2, 3, 4, 3, 2, 1, 0],
   scale: [0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0],
   arp: [0, 2, 4, 7, 4, 2, 0],
@@ -87,9 +87,27 @@ function rhythm(o: Opts): Song {
   return build(`tech:rhythm:${level}:${o.bpm}`, `Rhythm, level ${level}`, raw, bars, 0)
 }
 
+/** Four bars of triads, I IV V I, one a bar with the root below: strike the chord, press the pedal just after, and lift it as the next chord lands. The results sentence (pedal.ts) says how that went. */
+function pedalChords(o: Opts, e: Edges): Song {
+  const q = 60 / o.bpm
+  const I = o.minor ? MINOR : MAJOR
+  const deg = (d: number) => I[d % 7] + 12 * Math.floor(d / 7)
+  const raw: Raw[] = []
+  ;[0, 3, 4, 0].forEach((r, b) => {
+    const w = (h: Hand) => want(o.dyn, 0, 1, true, h, e)
+    for (const k of [0, 2, 4]) raw.push({ t: b * 4 * q, d: 3.8 * q, p: 60 + o.tonic + deg(r + k) - (r >= 4 ? 12 : 0), v: 0.7, track: 0, h: 'R', want: w('R') })
+    raw.push({ t: b * 4 * q, d: 3.8 * q, p: 48 + o.tonic + deg(r) - (r >= 4 ? 12 : 0), v: 0.7, track: 0, h: 'L', want: w('L') })
+  })
+  const bars: Bar[] = Array.from({ length: 4 }, (_, i) => ({ i, t0: i * 4 * q, t1: (i + 1) * 4 * q, n: 4, den: 4 }))
+  const fifths = (o.minor ? KEYS_MINOR : KEYS)[o.tonic] ?? 0
+  const tonic = noteName(60 + o.tonic).replace(/\d+$/, '')
+  return { ...build(`tech:pedal:${o.tonic}${o.minor ? 'm' : ''}:${o.dyn}`, `${tonic} ${o.minor ? 'minor' : 'major'} pedal changes`, raw, bars, fifths), dyn: o.dyn }
+}
+
 /** A practice exercise as a song: quarter notes in 4/4, each carrying the velocity range to aim for. */
 export function exercise(o: Opts, e: Edges = DEFAULT_EDGES): Song {
   if (o.pattern === 'rhythm') return rhythm(o)
+  if (o.pattern === 'pedal') return pedalChords(o, e)
   const q = 60 / o.bpm
   const steps = SHAPE[o.pattern]
   const I = o.minor ? MINOR : MAJOR

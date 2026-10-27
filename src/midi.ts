@@ -20,7 +20,7 @@ export const monitor = { n: 0, text: '' }
 
 let access: MIDIAccess | undefined
 let handler: Handler = () => {}
-let pedalHandler: (down: boolean) => void = () => {}
+let pedalHandler: (down: boolean, ts: number) => void = () => {}
 let want = ''
 
 export const midiSupported = typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator
@@ -29,7 +29,7 @@ export function onMidi(h: Handler) {
   handler = h
 }
 
-export function onPedal(h: (down: boolean) => void) {
+export function onPedal(h: (down: boolean, ts: number) => void) {
   pedalHandler = h
 }
 
@@ -61,10 +61,13 @@ function msg(e: MIDIMessageEvent) {
     handler({ on: false, p: d[1], v: 0, ts })
   } else if (s === 0xb0 || s === 0xe0 || s === 0xc0) {
     monitor.n++
-    if (s === 0xb0 && d[1] === 64) pedalHandler(d[2] >= 64)
+    if (s === 0xb0 && d[1] === 64) pedalHandler(d[2] >= 64, ts) // half pedal: the damper is off the strings from the middle of the travel
     monitor.text = s === 0xb0 ? `controller ${d[1]} = ${d[2]}` : s === 0xc0 ? 'program change' : 'pitch bend'
   }
 }
+
+/** The dev harness (window.__piano.cc) sends a raw message through the same parser a keyboard's goes through. */
+export const feed = (d: number[]) => msg({ data: Uint8Array.from(d), timeStamp: performance.now() } as MIDIMessageEvent)
 
 export function chooseInput(id: string) {
   want = id

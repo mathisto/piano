@@ -4,6 +4,7 @@ import { ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
+import { pedalLine, pedalReport, type PedalEv } from './pedal'
 import { articulation, fixedAt, melodyHand, songLines, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
 import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
@@ -26,6 +27,7 @@ export interface Result {
   artic: Artic | null // legato joins or staccato lengths, when the piece asks for one
   voice: Voicing | null // right hand over left, for melody-over-accompaniment and two-hand songs
   fixed?: number // the one velocity every note came in at (Fixed key touch)
+  pedal: string | null // the sustain pedal against the chord changes, when the pedal was used
   follow: string[] // a song: how its written dynamics and articulation were followed, at most two lines
   dyn?: string // the technique exercise's dynamics, when it was one
   clean: boolean // no misses and at most one wrong note
@@ -77,6 +79,7 @@ export class Game {
   loop: { a: number; b: number } | null = null
   judge!: Judge
   pedal = false // sustain pedal is down
+  pedals: PedalEv[] = [] // its changes this run, in song time
   held = new Map<number, number>() // pitches the player holds -> velocity
   autoUntil = new Map<number, number>() // pitches the app is playing for you -> perf ms
   heat: number[] = []
@@ -194,6 +197,7 @@ export class Game {
   private rescore() {
     this.judge = new Judge(this.song.notes, this.cfg(), this.scored)
     this.presses = []
+    this.pedals = this.pedal ? [{ t: -1e9, down: true }] : []
     this.downAt.clear()
     this.wrongMark = 0
     this.autoI = this.song.notes.findIndex((n) => n.t >= this.t)
@@ -382,6 +386,7 @@ export class Game {
       artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
       voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES, this.song.dyn === 'balance' ? 'R' : melodyHand(this.song.notes)),
       fixed: fixedAt(j.samples().map((x) => x.v)),
+      pedal: settings.coach === 'off' || this.mode === 'read' || this.wait || this.loop ? null : ((r) => r && pedalLine(r))(pedalReport(this.song, this.pedals)),
       follow: settings.coach === 'off' || this.mode === 'read' || this.wait || judged(this.song.id) ? [] : songLines(this.song, this.presses, j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach, this.rate),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
@@ -459,7 +464,7 @@ export class Game {
 
   release(p: number, ts: number, virtual = false) {
     this.held.delete(p)
-    if (settings.sound || virtual) audio.noteOff(p)
+    if (settings.sound || virtual) audio.keyUp(p)
     this.emit({ type: 'release', p })
     const k = this.downAt.get(p)
     if (k) this.presses.push({ i: k.i, down: k.at, up: ts })
@@ -472,7 +477,11 @@ export class Game {
     if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
   }
 
-  sustain(down: boolean) {
+  /** CC64 crossed the half-way mark. Kept as song time (the held clock when paused) so the coach can set it against the chords. */
+  sustain(down: boolean, ts = performance.now()) {
+    if (down === this.pedal) return
     this.pedal = down
+    audio.sustain(down)
+    this.pedals.push({ t: this.tAt(ts) - (settings.offset / 1000) * this.rate, down })
   }
 }

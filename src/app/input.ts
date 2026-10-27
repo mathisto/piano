@@ -40,7 +40,7 @@ export const fromKeyboard = (m: MidiMsg) => {
 }
 onMidi(fromKeyboard)
 mountOsk(fromKeyboard)
-onPedal((d) => game.sustain(d))
+onPedal((d, ts) => game.sustain(d, ts))
 typingKeyboard()
 
 addEventListener('keydown', (e) => {
