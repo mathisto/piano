@@ -30,10 +30,12 @@ const YEAR = new Date().getFullYear()
 export const LAST_DEATH = YEAR - 71 // life + 70 everywhere: died 1955 or earlier in 2026
 export const LAST_PUBLISHED = YEAR - 96 // US: published 1930 or earlier in 2026
 // ids whose first publication by LAST_PUBLISHED was checked by hand although the composer died after it: id -> one line of evidence
-export const PUBLISHED_BY = JSON.parse(readFileSync(new URL('./published-by-1930.json', import.meta.url), 'utf8'))
+// (published-by-1930.json), or id -> { year, evidenceUrl, basis } (lieder-published.json: the IMSLP work page of each song)
+const json = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'))
+export const PUBLISHED_BY = { ...json('./published-by-1930.json'), ...json('./lieder-published.json') }
 
 /** Licence, composer death and publication year (the latest year the edition or composition date names). Empty is a pass.
- * A composer who died after LAST_PUBLISHED may have published late: refused unless the id is in published-by-1930.json. */
+ * A composer who died after LAST_PUBLISHED may have published late: refused unless the id is in published-by-1930.json or lieder-published.json (year <= LAST_PUBLISHED). */
 export function refusals({ id, licence, composer, edition = '', date = '' }, allow) {
   const why = []
   if (!allow.includes(licence)) why.push(`licence ${licence}`)
@@ -42,7 +44,7 @@ export function refusals({ id, licence, composer, edition = '', date = '' }, all
   if (!(died <= LAST_DEATH)) why.push(Number.isNaN(died) ? 'composer death unknown' : `composer died ${died}`)
   const pub = Math.max(0, ...[...`${edition} ${date}`.matchAll(/\b(1[5-9]\d\d|20\d\d)\b/g)].map((m) => Number(m[1])))
   if (pub > LAST_PUBLISHED) why.push(`dated ${pub}`)
-  else if (died > LAST_PUBLISHED && died <= LAST_DEATH && !PUBLISHED_BY[id]) why.push(`composer died ${died}, publication by ${LAST_PUBLISHED} unchecked`)
+  else if (died > LAST_PUBLISHED && died <= LAST_DEATH && !(PUBLISHED_BY[id] && (PUBLISHED_BY[id].year ?? 0) <= LAST_PUBLISHED)) why.push(`composer died ${died}, publication by ${LAST_PUBLISHED} unchecked`)
   return why
 }
 

@@ -146,7 +146,16 @@ describe('licence check', () => {
     expect(refusals({ ...late, id: hold[0] }, allow)).toEqual([`composer died 1949, publication by ${new Date().getFullYear() - 96} unchecked`])
     expect(refusals({ ...late, id: 'mutopia-2162' }, allow)).toEqual([])
     for (const id of hold) expect(PUBLISHED_BY[id], id).toBeUndefined()
-    for (const [id, why] of Object.entries(PUBLISHED_BY)) expect(Math.min(...(why as string).match(/\b1[5-9]\d\d\b/g)!.map(Number)), id).toBeLessThanOrEqual(1930)
+    for (const [id, why] of Object.entries(PUBLISHED_BY)) {
+      if (typeof why === 'string') expect(Math.min(...why.match(/\b1[5-9]\d\d\b/g)!.map(Number)), id).toBeLessThanOrEqual(1930)
+      else {
+        const { year, evidenceUrl } = why as { year: number; evidenceUrl: string }
+        expect(year, id).toBeLessThanOrEqual(1930)
+        expect(evidenceUrl, id).toMatch(/^https:\/\/imslp\.org\/wiki\/\S+$/)
+        expect(refusals({ ...late, id }, allow), id).toEqual([])
+      }
+    }
+    expect(refusals({ ...late, id: 'lieder-x' }, allow)).toHaveLength(1)
   })
 })
 

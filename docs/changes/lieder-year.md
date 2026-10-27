@@ -1,0 +1,34 @@
+# Lieder held by the 1930 rule: first-publication years from IMSLP
+
+**Held list.** There is no list file. A Lieder song is held when `refusals()` (`lib.mjs`) finds the composer died after 1930 (and in or before 1955) and its id is not in an allow-list; the song then shows in `report-lieder.json` as `stage: licence`, `why: composer died N, publication by 1930 unchecked`. The run held **278** (the 278 includes the 36 listed in `hold-lieder.json`, the ones an earlier run had shipped; `hold-lieder.json` only feeds a test that those stay refused, it is not read by the build).
+
+**Mechanism (extended, not duplicated).** `PUBLISHED_BY` in `lib.mjs` is now `published-by-1930.json` (id: one line of evidence, hand-read) plus `lieder-published.json` (id: `{ year, evidenceUrl, basis }`). `refusals()` still asks only "is the id in `PUBLISHED_BY`", and now also that an object entry has `year <= 1930`. `hold-lieder.json` lost the ids it no longer holds. The test checks that every object entry has a year of 1930 or earlier and an `https://imslp.org/wiki/...` URL, and that its id passes the gate.
+
+## Evidence
+
+`lieder-published.json`: **240 songs**, 119 distinct IMSLP work pages. Each upload's `<arranger>` credit names the IMSLP page or file number it was transcribed from; the page was found from that (a work-page URL when given, else the composer's IMSLP category matched on the song or set title, a few by search), then read through the IMSLP MediaWiki API (`api.php?action=query&prop=revisions`, one request a second; the `/wiki/` front end answered 403 to scripts after about 35 requests, the API did not). `year` is the earlier of the page's `Year of First Publication` field and the earliest dated edition in its file list (`{{P|publisher|..|city||year||plate}}`); any dated edition proves first publication was no later. `basis` says which: 202 from the field, 38 from a dated edition. Accepted only when the year is 1930 or earlier. Composers: Chaminade 30 (1886 to 1906), Faisst 27 (1894 to 1926), Kralik 18 (1895 to 1899), Bridge 12, Somervell 10, Beach 10, Elgar 10, Webern 10, Schoenberg 9, Gonzaga 9, Quilter 8, Davies 8, Mackenzie 8, Burleigh 7, Hardelot 7, Gurney 6, Delius 6, and 22 more with 1 to 5 each (Strauss Op. 27 1894, Berg 1928, Zemlinsky 1899, Ives 114 Songs 1922, Obradors Vol. 1 1921 ...). Latest year used: 1928.
+
+Hand fixes: Kralik's 12 `Jugend-Lieder` credit the `Blumenlieder` page (an upload error), so they use `Jugend-Lieder (Kralik, Mathilde)` (Gutmann, Vienna, 1899). Delius `Le ciel est par-dessus le toit` is dated 1910 by the Tischer & Jagenberg score of both songs (6 pages); the page's first-publication field dates only `Il pleure` (1896). `Macushla` is on IMSLP under Dermot MacMurrough, Harold R. White's pen name (Wikipedia: `https://en.wikipedia.org/wiki/Macushla`); Boosey, New York, 1910. The Gurney set page dates `Spring` through the set (1920). Several Faisst pages say "or earlier" (a year after which nothing later is claimed); used as given.
+
+**Reality check.** The page match is by title and checked by program (the page title's composer equals the file's composer; no page read by eye). That check caught the 13 below. Not looked at: whether each IMSLP year is itself right; the Faisst and Kralik years are IMSLP's own research.
+
+## Still held: 38
+
+- **25, the IMSLP page has no dated edition** (only plate numbers, "n.d." or later reprints): Faltis 4 (the page says first published 1939, so these stay out for good), Greger 4, Chaminade 3 (Aubade, Chanson groënlandaise, Rosemonde), Gonzaga 3, Hardelot 2, Jacobs-Bond 2, Tegnér 2, White 2, Bridge `Lament` (H.40, manuscript until 2025), Cowen, Bonis `Allons prier`. Dating by plate number would need a source for the publisher's plate list; none cited.
+- **13, the folder names the wrong composer.** The Boulton `12 New Songs` are by twelve different composers (Barnby, Cellier, Corder, Cowen, Lloyd, Mackenzie, MacCunn, Parry, Somervell, Stanford, Goring Thomas, Wood); Boulton wrote the words. `lieder-lc30888626` (filed under Obradors) is Zemlinsky's `Liebe Schwalbe`, byte-identical to `lieder-lc30893834`. The pipeline takes the composer from the folder, so releasing these would credit the wrong person; left held.
+- **Hole found, not fixed: the live catalogue has the same fault.** 13 live pieces are credited to Walter Parratt (1841 to 1924, composer index 102), the editor of `Choral Songs in Honour of Her Majesty Queen Victoria`; the files name Stanford, Elgar, Parry, Mackenzie, Wood, Somervell, Lloyd, Stainer, Bridge, Martin, Goodhart and Davies. (Elgar d. 1934 would be held by the 1930 rule if credited correctly; the set is 1897.) Clara Schumann's songs sit under the name "Clara Wieck" (her birth name; only a credit oddity). Fix: read the composer from the file's `<creator type="composer">` and take dates from `composers.yaml` or IMSLP; filed for the lead, not done here because live entries must stay untouched.
+
+## Candidate
+
+`node scripts/library/build.mjs --set lieder --out .cache/library/out-lieder-year --merge-with /Users/mathisto/projects/piano-roller/.cache/library/out-final4` (43 s warm; `.cache/library/http` copied from the main checkout, nothing written there).
+
+- 240 songs released by the gate; **237 ship**, 3 fail quality (67: Berg `Nacht`, Bantock `The Ghost Road`, Faisst `Dulde, gedulde dich fein`; the voice fold failed and the piano-only version scores 67). One more piece is new that has nothing to do with this rule: `lieder-lc6482032` (Satie, Mort de Socrate, 980 s, flagged `length`, the extra piece `rebuild.md` already noted). **238 new in all.**
+- Grades of the 238: 1:1, 2:9, 3:63, 4:94, 5:71. Voice: 128 folded, 107 piano-only, 3 solo. All MusicXML. 17 new composers.
+- Output: 2,242 pieces (2,004 live + 238). Checked by script against `out-final4`: every one of the 2,004 catalogue entries equal field for field, in the same order at the front; the composer table's first 158 rows, the 8 licence rows and all 266 aliases identical (composers 158 to 175, licences unchanged, aliases unchanged); the 2,004 piece files byte-identical; every new file's sha256 and size match its entry; no held id shipped; `built` 6c0945c94036549a to 86f6feaf85393f9f. `p/` also carries the live catalogue's 142 unreferenced files, which `--ignore-existing` skips.
+- `npx tsc --noEmit` clean; `npx vitest run` 683 passed, 1 skipped.
+
+## Publish (not run)
+
+1. Merge `feature/lieder-year` to main.
+2. `cd /Users/mathisto/projects/piano-wt-lieder-year && LIBRARY_OUT=.cache/library/out-lieder-year scripts/deploy-library.sh` (reads the output from the worktree; only adds files, catalogue last by rename), or copy the directory to the main checkout's `.cache/library/` first.
+3. Add a line to `ROADMAP.md`; decide on the three failed-quality songs and on `lc6482032`.
