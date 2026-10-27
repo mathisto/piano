@@ -1,7 +1,8 @@
 import * as audio from './audio'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
-import { velStats, type TouchStats } from './touch'
+import { evenness, judged, type Evenness } from './even'
+import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
 import { settings } from './settings'
 import { barAt, type Note, type Song } from './song'
@@ -17,6 +18,7 @@ export interface Result {
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
+  even: Evenness | null // how even the loudness was, when there was a line long enough to judge
   dyn?: string // the technique exercise's dynamics, when it was one
   clean: boolean // no misses and at most one wrong note
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
@@ -30,8 +32,8 @@ export interface Result {
 }
 
 export type GameEvent =
-  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade }
-  | { type: 'ok'; note: Note; rt: number; clean: boolean; vel?: VelGrade } // rt: ms the song waited on this card (0 if you were ahead)
+  | { type: 'hit'; note: Note; grade: Grade; off: number; combo: number; mult: number; vel?: VelGrade; v: number }
+  | { type: 'ok'; note: Note; rt: number; clean: boolean; vel?: VelGrade; v: number } // rt: ms the song waited on this card (0 if you were ahead)
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'milestone'; combo: number }
@@ -329,6 +331,7 @@ export class Game {
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
+      even: settings.coach === 'off' || this.mode === 'read' || !judged(this.song.id, this.song.dyn) ? null : evenness(j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
       dyn: this.song.dyn,
@@ -355,14 +358,14 @@ export class Game {
         const note = this.song.notes[e.i]
         this.offs.push(e.off)
         this.quiet.note((e.grade === 'perfect' || e.grade === 'great') && e.vel !== 'low' && e.vel !== 'high')
-        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel })
+        this.emit({ type: 'hit', note, grade: e.grade, off: e.off, combo: e.combo, mult: e.mult, vel: e.vel, v: this.judge.velAt(e.i) })
         if (MILESTONES.includes(e.combo)) this.emit({ type: 'milestone', combo: e.combo })
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
         this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
-        this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel })
+        this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel, v: this.judge.velAt(e.i) })
       } else if (e.k === 'hold') {
         this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
       } else if (e.k === 'miss') {

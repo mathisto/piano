@@ -6,6 +6,8 @@ import './style.css'
 
 import * as audio from './audio'
 import { Dock } from './dock'
+import { DEFAULT_EDGES } from './touch'
+import { judged, live, tolerance } from './even'
 import { DEFAULT_RUN, LIMITS, SET, award, bestKey, deal, goalMs, newArcade, over, runCards, widened, mult, type Arcade, type RunSpec } from './run'
 import { STAGES, dayNum, noteCards, cardKey, cards, deck, deckSong, dueCards, focus, mastery, nextStage, record, reviewPool, weakest, type Card, type Stage, type Stats } from './drill'
 import { Game, type GameEvent, type Mode, type Result } from './game'
@@ -17,7 +19,7 @@ import { multiplier, type Grade, type VelGrade } from './judge'
 import { chooseInput, connect, inputs, midiSupported, monitor, onMidi, onPedal, typingKeyboard, type MidiMsg } from './midi'
 import { noteName } from './spell'
 import { save, settings } from './settings'
-import { fromSpec, type Song } from './song'
+import { fromSpec, type Hand, type Note, type Song } from './song'
 import { Staff } from './staff'
 import { STARTERS } from './starters'
 import * as store from './store'
@@ -716,6 +718,17 @@ function frame() {
 
 // ---------------------------------------------------------------- game events
 
+// Touch coach, live: how hard each note was struck against the last few of its hand.
+const felt: Record<Hand, { v: number[]; t: number }> = { R: { v: [], t: -1 }, L: { v: [], t: -1 } }
+function feel(n: Note, v: number) {
+  const f = felt[n.h]
+  if (settings.coach === 'off' || !v || game.mode === 'read' || !judged(game.song.id, game.song.dyn) || Math.abs(n.t - f.t) < 0.03) return // a chord is one moment
+  f.t = n.t
+  const d = live(f.v, v)
+  if (d !== null && Math.abs(d) > tolerance(settings.edges ?? DEFAULT_EDGES, settings.coach)) staff.dev(n.id, d)
+  f.v.push(v)
+}
+
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
 
 const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
@@ -793,12 +806,14 @@ game.on((e: GameEvent) => {
       chordUpdate()
       break
     case 'hit':
+      feel(e.note, e.v)
       highway.hit(e.note.p, e.grade, e.note.h)
       staff.ghostHit(e.note.p, e.note.id, e.grade)
       staff.mark(e.note.id, `hit-${e.grade}`)
       popup(e.grade, e.off, e.note.p, e.note.id, e.vel)
       break
     case 'ok':
+      feel(e.note, e.v)
       highway.hit(e.note.p, 'ok', e.note.h)
       staff.ghostHit(e.note.p, e.note.id, 'great')
       staff.mark(e.note.id, 'hit-ok')
@@ -855,6 +870,7 @@ function say(msg: string) {
 
 function onPhase() {
   if (!dock || !current) return
+  if (game.phase === 'ready') for (const f of Object.values(felt)) (f.v = []), (f.t = -1)
   dock.setPhase()
   const r = $('#ready')
   r.hidden = game.phase !== 'ready'
@@ -1317,6 +1333,10 @@ function openDrawer() {
   $('#sCal', d).onclick = () => void startCalibration()
   radios('fx', (v) => {
     settings.fx = Number(v) as 0 | 1 | 2
+    save()
+  })
+  radios('coach', (v) => {
+    settings.coach = v as typeof settings.coach
     save()
   })
   radios('strict', (v) => {

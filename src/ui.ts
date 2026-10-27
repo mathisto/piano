@@ -8,6 +8,7 @@ import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings } from './settings'
 import type { Progress, Stored, TouchEntry } from './store'
+import type { Evenness } from './even'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import type { Stage } from './drill'
@@ -230,6 +231,23 @@ export function tracksDialog(title: string, r: Report | undefined, pick: Selecti
 // ---------- results ----------
 
 /** How hard the keys were struck: a histogram from soft to hard, then the average, spread and hand balance. */
+/** How even the loudness was: a line of words, a bar for each note above or below its neighbours, and one thing to try. */
+export function evenBlock(e: Evenness) {
+  const scale = Math.max(e.band * 2, ...e.devs.map((x) => Math.abs(x.d ?? 0)))
+  const w = Math.min(14, 380 / e.devs.length)
+  const bars = e.devs
+    .map((x, i) => {
+      const h = x.d === null ? 0 : (Math.abs(x.d) / scale) * 34
+      return x.d === null ? '' : `<rect class="${Math.abs(x.d) > e.band ? 'out' : ''}" x="${8 + i * (w + 1)}" y="${x.d >= 0 ? 36 - h : 36}" width="${w}" height="${Math.max(1, h)}" rx="1.5"/>`
+    })
+    .join('')
+  const edge = (e.band / scale) * 34
+  const word = { even: 'Even', nearly: 'Nearly even', uneven: 'Uneven' }[e.rating]
+  return `<div>
+    <svg class="hist even" viewBox="0 0 396 74" role="img" aria-label="Loudness of each note against its neighbours: ${Math.round(e.inside * 100)} percent within plus or minus ${e.band}"><rect class="band" x="0" y="${36 - edge}" width="396" height="${edge * 2}"/><line class="mid" x1="0" x2="396" y1="36" y2="36"/>${bars}<text x="6" y="72">softer than its neighbours below, louder above</text></svg>
+    <div style="color:var(--ink-2)">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</div></div>`
+}
+
 export function touchBlock(t: TouchStats) {
   const peak = Math.max(1, ...t.hist)
   const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
@@ -266,6 +284,7 @@ export function results(r: Result, next: Next | null) {
         : ''
     }
     ${r.touch.n >= 4 ? touchBlock(r.touch) : ''}
+    ${r.even ? evenBlock(r.even) : ''}
     <div class="row">
       ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
@@ -292,6 +311,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
       : ''
   }
   <label class="srow"><span>Count-in click</span><input id="sClick" type="range" min="0" max="1" step="0.05" value="${settings.click}" aria-label="Count-in click volume"></label>
+  ${seg('coach', 'Touch coach', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach)}
   ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
   <div class="srow"><span>Keyboard</span>${
     inputs.length > 1

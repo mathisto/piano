@@ -1,4 +1,5 @@
 import { instrumentId } from './instruments'
+import type { Coach } from './even'
 import type { Opts } from './technique'
 export interface Settings {
   fx: 0 | 1 | 2 // effects: off, calm, arcade
@@ -14,6 +15,7 @@ export interface Settings {
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
+  coach: Coach // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands
   strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
@@ -38,6 +40,7 @@ const DEFAULTS: Settings = {
   fade: true,
   asWritten: false,
   strict: 'standard',
+  coach: 'gentle',
   planMin: 10,
   goal: 60,
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },

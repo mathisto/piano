@@ -430,6 +430,17 @@ export class Staff {
     m.setAttribute('aria-hidden', 'true')
   }
 
+  /** Struck louder or softer than the notes around it: a small triangle over the head (louder) or under it (softer), in ink, so no colour is spent. */
+  dev(noteId: number, d: number) {
+    const p = this.byId.get(noteId)
+    if (!p || p.head.parentElement?.querySelector(`.devmark[data-id="${noteId}"]`)) return
+    const { x } = p
+    const y = d > 0 ? p.y - 15 : p.y + 15
+    const up = d > 0
+    const m = el('path', { class: 'devmark', 'data-id': noteId, d: up ? `M${x - 3.5},${y + 2.5} L${x + 3.5},${y + 2.5} L${x},${y - 3} Z` : `M${x - 3.5},${y - 2.5} L${x + 3.5},${y - 2.5} L${x},${y + 3} Z` }, p.head.parentElement!)
+    m.setAttribute('aria-hidden', 'true')
+  }
+
   /** A note whose key came up early gets a red outline; a note held through gets nothing. */
   cut(noteId: number) {
     this.byId.get(noteId)?.head.classList.add('short')

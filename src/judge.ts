@@ -97,10 +97,15 @@ export class Judge {
   }
 
   /** Velocities of the notes struck so far, for the touch statistics. */
-  samples(): { v: number; h: Hand; p: number }[] {
-    const out: { v: number; h: Hand; p: number }[] = []
-    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h, p: this.notes[i].p }))
+  samples(): { v: number; h: Hand; p: number; t: number }[] {
+    const out: { v: number; h: Hand; p: number; t: number }[] = []
+    this.vel.forEach((v, i) => v && out.push({ v, h: this.notes[i].h, p: this.notes[i].p, t: this.notes[i].t }))
     return out
+  }
+
+  /** Key velocity 1..127 of a struck note, 0 when unknown. */
+  velAt(i: number) {
+    return this.vel[i]
   }
 
   /** Share of targeted notes struck in their velocity range; -1 when nothing was targeted. */

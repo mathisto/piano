@@ -2425,3 +2425,21 @@ dialog.sheet footer .btn {
     flex-direction: column;
   }
 }
+
+/* ---------- touch evenness: the results strip and the marks on the staff ---------- */
+.hist.even .band {
+  fill: var(--wash);
+}
+.hist.even rect:not(.band) {
+  fill: var(--edge);
+}
+.hist.even rect.out {
+  fill: var(--ink);
+}
+.hist.even text {
+  font-size: 11px;
+}
+#staff .devmark {
+  fill: var(--ink);
+  opacity: 0.85;
+}

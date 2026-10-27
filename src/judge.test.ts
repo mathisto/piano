@@ -162,15 +162,15 @@ describe('velocity', () => {
     j.press(62, 2) // from the screen keys: no real velocity
     j.press(64, 3, 1)
     expect(j.samples()).toEqual([
-      { v: 64, h: 'R', p: 60 },
-      { v: 127, h: 'R', p: 64 },
+      { v: 64, h: 'R', p: 60, t: 1 },
+      { v: 127, h: 'R', p: 64, t: 3 },
     ])
   })
 
   it('keeps wait-mode hits too', () => {
     const j = mk([n(0, 1, 60)], { wait: true })
     j.press(60, 0.9, 0.25)
-    expect(j.samples()).toEqual([{ v: 32, h: 'R', p: 60 }])
+    expect(j.samples()).toEqual([{ v: 32, h: 'R', p: 60, t: 1 }])
   })
 })
 
