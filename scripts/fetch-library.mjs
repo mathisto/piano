@@ -140,11 +140,17 @@ function openscoreMeta(e, upstream) {
     xml = xml.replace(new RegExp(`<score-part id="${p}">[\\s\\S]*?</score-part>`), '').replace(dropped, '')
     if (tempo && !/<sound tempo=/.test(xml)) xml = xml.replace(/<note[ >]/, (n) => tempo + n)
   }
+  for (const p of e.foldParts ?? []) {
+    // a voice line kept as a second right hand: a part with two staves puts its first staff in the right hand
+    const re = new RegExp(`(<part id="${p}">[\\s\\S]*?<attributes>(?:(?!</attributes>)[\\s\\S])*?)(</attributes>)`)
+    if (!re.test(xml)) fail(e.id, `part ${p} has no attributes to fold`)
+    xml = xml.replace(re, (m, a, b) => (/<staves>/.test(a) ? m : `${a}<staves>2</staves>${b}`))
+  }
   if (!/<part id="/.test(xml)) fail(e.id, 'no part left after dropping')
   const edition = /<creator type="arranger">([\s\S]*?)<\/creator>/.exec(xml)?.[1]
   const container = `<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="${root}"/></rootfiles></container>\n`
   return {
-    sourceEdition: edition ? text(edition) : 'OpenScore Lieder Corpus',
+    sourceEdition: `${edition ? text(edition) : 'OpenScore Lieder Corpus'}${e.foldParts ? '; the vocal line is folded into the right hand' : ''}`,
     bytes: zip([['META-INF/container.xml', Buffer.from(container)], [root, Buffer.from(xml)]]),
   }
 }
@@ -231,7 +237,7 @@ These files are **data**, not code. The app's source code is MIT-licensed; each 
 |---|---|---|---|---|---|---|
 ${manifest.map(row).join('\n')}
 
-${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((m) => `- \`${m.file}\`: ${lname(m.licence)}, ${m.composer}, ${m.title}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder). OpenScore files here carry only the piano part; the voice line was removed.
+${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((m) => `- \`${m.file}\`: ${lname(m.licence)}, ${m.composer}, ${m.title}`).join('\n')}\n\nThese must be redistributed under the same licence, with the credit above.\n\n` : ''}Mutopia pieces are provided "as is" by volunteers (https://www.mutopiaproject.org/legal.html). OpenScore Lieder files are CC0 and the project asks for a credit (https://github.com/OpenScore/Lieder). OpenScore files here carry the piano part; where a title says melody and piano, the vocal line is folded into the right hand, otherwise the voice line was removed.
 `,
 )
 writeFileSync(OUT + 'manifest.json', JSON.stringify(manifest, null, 1) + '\n')

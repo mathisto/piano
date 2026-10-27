@@ -229,6 +229,17 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
     })
   })
 
+  // the same note written twice for one hand (a voice line doubled by the piano) is one note: keep the longer
+  const first = new Map<string, Ev>()
+  for (const ev of evs.splice(0)) {
+    const k = `${ev.m}:${ev.q}:${ev.p}:${ev.h ?? ''}`
+    const had = first.get(k)
+    if (!ev.h || !had) {
+      if (ev.h) first.set(k, ev)
+      evs.push(ev)
+    } else if (ev.dq > had.dq) had.dq = ev.dq
+  }
+
   // repeats: play the measures in order, so a repeated bar is a bar again in the song
   const order = playOrder(parts[0])
   if (order.some((o, i) => o !== i)) {
