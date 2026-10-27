@@ -279,11 +279,17 @@ describe('musicxml articulation and hairpins', () => {
     expect(n[32].v).toBeCloseTo(0.5)
     expect(n[39].v).toBeCloseTo(0.5)
   })
-  it('a repeated hairpin is two hairpins', () => {
-    const x = touchPiece().replace('<measure number="8">', '<measure number="8"><barline location="left"><repeat direction="forward"/></barline>').replace('</measure><measure number="9">', '<barline location="right"><repeat direction="backward"/></barline></measure><measure number="9">')
-    expect(fromMusicXml(x, 't', 'id').wedges).toHaveLength(2)
+  it('a repeated hairpin is two hairpins, and a repeated letter is written again', () => {
+    const x = touchPiece().replace('<measure number="8">', '<measure number="8"><barline location="left"><repeat direction="forward"/></barline>').replace('</measure><measure number="9">', '<barline location="right"><repeat direction="backward"/></barline></measure><measure number="9">').replace('<measure number="8">', '<measure number="8"><direction><direction-type><dynamics><mf/></dynamics></direction-type></direction>')
+    const r = fromMusicXml(x, 't', 'id')
+    expect(r.wedges).toHaveLength(2)
+    expect(r.marks?.map((m) => m.text)).toEqual(['p', 'mf', 'mf', 'f'])
+  })
+  it('keeps where the dynamic letters are written', () => {
+    expect(s.marks).toEqual([{ t: 0, text: 'p' }, { t: 16, text: 'f' }])
   })
   it('no marks, no curve', () => {
     expect(fromMusicXml(XML, 't', 'id').curve).toBeUndefined()
+    expect(fromMusicXml(XML, 't', 'id').marks).toBeUndefined()
   })
 })

@@ -22,6 +22,9 @@ const G = {
   tuplet: (d: number) => String.fromCharCode(0xe880 + d),
 }
 const digits = (s: string) => s.split('').map((c) => G.digit(Number(c))).join('')
+// a score's marks: articulation above and below (with half its height, to centre it), dynamic letters
+const ART = { stac: ['\ue4a2', '\ue4a3', 1.7], ten: ['\ue4a4', '\ue4a5', 1], acc: ['\ue4a0', '\ue4a1', 4.9] } as const
+const DYN: Record<string, string> = { p: '\ue520', m: '\ue521', f: '\ue522', r: '\ue523', s: '\ue524', z: '\ue525' }
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, parent: Element, text?: string) {
   const e = document.createElementNS(NS, tag)
@@ -310,6 +313,7 @@ export class Staff {
       this.barEls.push([barOf(o.sys, o.x1), el('text', { class: 'ott', x: o.x1 - 6, y: o.y + dy + 5 }, g, o.label)])
       this.barEls.push([barOf(o.sys, o.x1), el('path', { class: 'ottl', d: `M${o.x1 + o.label.length * 7 + 2},${o.y + dy} L${o.x2},${o.y + dy} L${o.x2},${o.y + dy + hook}` }, g)])
     }
+    this.marks(g, L, barOf)
     this.timeline.sort((a, b) => a.t - b.t)
 
     this.dynamics()
@@ -353,6 +357,25 @@ export class Staff {
     }
     for (const a of c.accs) el('text', { class: `smufl acc${a.grace ? ' small' : ''}`, x: a.x, y: a.y + dy, 'text-anchor': 'middle' }, g, G[a.glyph])
     for (const d of c.dots) el('text', { class: 'smufl', x: d.x, y: d.y + dy }, g, G.dot)
+    if (c.art) {
+      const [above, below, half] = ART[c.art.kind]
+      el('text', { class: 'smufl mk', x: c.art.x, y: c.art.y + dy + (c.art.above ? half : -half), 'text-anchor': 'middle' }, g, c.art.above ? above : below)
+    }
+  }
+
+  /** What a score writes about touch beyond the notes: slurs, hairpins, dynamic letters. Ink at 70%, never a hue. */
+  private marks(g: Element, L: Layout, barOf: (sys: number, x: number) => number) {
+    const dyOf = (sys: number) => L.systems[sys].dy
+    for (const s of L.slurs) {
+      const P = (x: number, y: number) => `${x},${y + dyOf(s.sys)}`
+      const t = s.above ? 2.4 : -2.4 // thickest in the middle, toward the notes
+      this.barEls.push([barOf(s.sys, s.x1), el('path', { class: 'mk slur', d: `M${P(s.x1, s.y1)} C${P(...s.c1)} ${P(...s.c2)} ${P(s.x2, s.y2)} C${P(s.c2[0], s.c2[1] + t)} ${P(s.c1[0], s.c1[1] + t)} ${P(s.x1, s.y1)} Z` }, g)])
+    }
+    for (const w of L.wedges) {
+      const y = w.y + dyOf(w.sys)
+      this.barEls.push([barOf(w.sys, w.x1), el('path', { class: 'mk hp', d: `M${w.x2},${y - w.w2} L${w.x1},${y - w.w1} M${w.x1},${y + w.w1} L${w.x2},${y + w.w2}` }, g)])
+    }
+    for (const d of L.dyns) this.barEls.push([barOf(d.sys, d.x), el('text', { class: 'smufl mk', x: d.x, y: d.y + dyOf(d.sys) + 5, 'text-anchor': 'middle' }, g, [...d.text].map((c) => DYN[c] ?? '').join(''))])
   }
 
   /** Technique exercises: the dynamic to aim for. Words go between the staves at the left of the system, accents sit on the notes. */

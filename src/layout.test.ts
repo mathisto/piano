@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { analyze, beamBounds, densest, figure, fitZoom, inkBounds, layout, restPieces, splitValue, windowFor, type Cfg, type Layout } from './layout'
+import { analyze, beamBounds, densest, figure, fitZoom, inkBounds, layout, restPieces, S, splitValue, windowFor, type Cfg, type Layout, type LSlur } from './layout'
+import { fromMusicXml } from './musicxml'
 import { mixed, orchestral, pianoHuman, sixEight, waltz } from './notation-fixtures'
+import { touchPiece } from './score-fixtures'
 import { build, fromMidi, fromSpec, type Bar, type Raw, type Song } from './song'
 import { STARTERS } from './starters'
 
@@ -387,5 +389,107 @@ describe('a bar where one staff is silent', () => {
       expect(r.y).toBeLessThan(L.base[r.clef]) // inside its own staff
       expect(r.y).toBeGreaterThan(L.base[r.clef] - 40)
     }
+  })
+})
+
+describe('score marks', () => {
+  const touch = fromMusicXml(touchPiece(), 'Touch', 'id')
+  const WIDE: Cfg = { view: 'sheet', px: { w: 1180, h: 560 }, zoom: 0.5 } // eight bars to a line
+  /** The slur's curve at x: its control points sit at a third and two thirds, so x is linear in t. */
+  const curveY = (s: LSlur, x: number) => {
+    const t = (x - s.x1) / (s.x2 - s.x1)
+    return (1 - t) ** 3 * s.y1 + 3 * (1 - t) ** 2 * t * s.c1[1] + 3 * (1 - t) * t ** 2 * s.c2[1] + t ** 3 * s.y2
+  }
+  const offLines = (L: Layout, y: number) => {
+    const k = (L.base.treble - y) / S
+    return k < 0 || k > 4 || Math.abs(k - Math.round(k)) > 0.2
+  }
+
+  it('staccato and accents sit away from the stem, in a space, clear of the head and the ledger lines', () => {
+    for (const bar of [0, 8]) {
+      const L = run(touch, SHEET, bar)
+      const marked = L.chords.filter((c) => c.art)
+      expect(marked.map((c) => c.art!.kind)).toEqual(bar ? ['acc', 'acc', 'acc', 'acc'] : Array(8).fill('stac'))
+      for (const c of marked) {
+        const a = c.art!
+        expect(a.above).toBe(!c.up)
+        const h = a.above ? c.heads[c.heads.length - 1] : c.heads[0]
+        expect((h.y - a.y) * (a.above ? 1 : -1)).toBeGreaterThanOrEqual(S)
+        expect(offLines(L, a.y)).toBe(true)
+        for (const l of c.ledgers) expect(Math.abs(l.y - a.y)).toBeGreaterThan(3)
+      }
+    }
+  })
+
+  it('a mark goes past a finger number', () => {
+    const s = song([4, 4], 1, [[64, 0, 1], [72, 1, 1]])
+    for (const n of s.notes) Object.assign(n, { f: 3, art: 'ten' })
+    for (const c of run(s).chords) expect(Math.abs(c.art!.y - c.heads[0].y)).toBeGreaterThanOrEqual(36)
+  })
+
+  it('a slur runs from the first to the last note of its run, under the heads when the stems point up, clear of the heads between', () => {
+    const L = run(touch, SHEET, 0)
+    expect(L.slurs).toHaveLength(1)
+    const s = L.slurs[0]
+    const under = L.chords.filter((c) => c.bar === 2 || c.bar === 3)
+    expect([s.x1, s.x2]).toEqual([under[0].x, under[under.length - 1].x])
+    expect(s.above).toBe(false)
+    for (const c of under.slice(1, -1)) expect(curveY(s, c.x)).toBeGreaterThan(c.heads[0].y + 5)
+  })
+
+  it('a slur cut by the window or a line break stays open at the system edge', () => {
+    const L = run(touch, BOTH, 3) // the slur started in bar 3, off the page
+    expect(L.slurs).toHaveLength(1)
+    expect(L.slurs[0].x1).toBeLessThan(L.chords[0].x - 10)
+    const long = song([4, 4], 8, Array.from({ length: 32 }, (_, i): N => [72, i, 1]))
+    long.notes.forEach((n, i) => (n.slur = i < 31))
+    const P = run(long, { view: 'sheet', px: { w: 820, h: 1180 } })
+    expect(P.systems.length).toBeGreaterThan(1)
+    expect(P.slurs.map((x) => x.sys)).toEqual(P.systems.map((_, i) => i))
+    P.slurs.forEach((x, i) => {
+      expect(x.x1).toBeGreaterThanOrEqual(i ? P.systems[i].x0 - 20 : P.chords[0].x)
+      expect(x.x2).toBeLessThanOrEqual(P.systems[i].x1)
+    })
+  })
+
+  it('a hairpin opens toward its end under a lone staff, clear of the notes', () => {
+    const L = run(touch, WIDE, 4)
+    expect(L.dyns.map((d) => d.text)).toEqual(['p', 'f'])
+    expect(L.wedges).toHaveLength(1)
+    const w = L.wedges[0]
+    expect(w.w1).toBe(0)
+    expect(w.w2).toBeGreaterThan(4)
+    const under = L.chords.filter((c) => c.x >= w.x1 && c.x <= w.x2)
+    expect(under.length).toBeGreaterThan(10)
+    for (const c of under) expect(w.y - w.w2).toBeGreaterThan(Math.max(...c.heads.map((h) => h.y), c.stem?.y2 ?? 0))
+    const ink = inkBounds(L)
+    expect(ink.maxY).toBeLessThanOrEqual(L.h)
+  })
+
+  it('a hairpin cut by the window keeps its opening where it was cut', () => {
+    const L = run(touch, BOTH, 5)
+    expect(L.wedges).toHaveLength(1)
+    expect(L.wedges[0].w1).toBeGreaterThan(0)
+    expect(L.wedges[0].w2).toBeGreaterThan(L.wedges[0].w1)
+  })
+
+  it('on the grand staff, letters and hairpins go between the staves; a hairpin clears the letters at its ends', () => {
+    const s = song([4, 4], 2, [[72, 0, 1], [74, 1, 1], [76, 2, 1], [77, 3, 1], [48, 0, 2], [43, 2, 2], [72, 4, 4], [48, 4, 4]])
+    s.marks = [{ t: 0, text: 'mf' }, { t: 4, text: 'p' }]
+    s.wedges = [{ t0: 0, t1: 3, up: false }]
+    const L = run(s)
+    expect(L.clefs).toEqual(['treble', 'bass'])
+    for (const y of [L.dyns[0].y, L.wedges[0].y]) {
+      expect(y).toBeGreaterThan(L.base.treble)
+      expect(y).toBeLessThan(L.base.bass - 4 * S)
+    }
+    expect(L.wedges[0].x1).toBeGreaterThan(L.dyns[0].x + 15)
+    expect(L.wedges[0].x2).toBeLessThan(L.dyns[1].x - 7)
+    expect([L.wedges[0].w1, L.wedges[0].w2]).toEqual([6, 0])
+  })
+
+  it('a file with no marks draws none', () => {
+    const L = run(song([4, 4], 2, eighths(72, 0, 16)))
+    expect([L.slurs, L.wedges, L.dyns, L.chords.filter((c) => c.art)].map((x) => x.length)).toEqual([0, 0, 0, 0])
   })
 })
