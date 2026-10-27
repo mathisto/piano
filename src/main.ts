@@ -90,7 +90,7 @@ void (async () => {
   })
   await showSection('today')
   // Today is up: fetch what a first tap wants while the app is idle, so a piece or a tab opens without waiting on the network
-  ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view')]).catch(() => {}))
+  ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view'), import('./midi-tracks'), import('./musicxml')]).catch(() => {}))
   updateChip()
   try {
     const p = await navigator.permissions?.query({ name: 'midi' as PermissionName })

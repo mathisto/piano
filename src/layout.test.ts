@@ -3,7 +3,8 @@ import { analyze, beamBounds, densest, figure, fitZoom, inkBounds, layout, restP
 import { fromMusicXml } from './musicxml'
 import { mixed, orchestral, pianoHuman, sixEight, waltz } from './notation-fixtures'
 import { touchPiece } from './score-fixtures'
-import { build, fromMidi, fromSpec, type Bar, type Raw, type Song } from './song'
+import { fromMidi } from './midi-tracks'
+import { build, fromSpec, type Bar, type Raw, type Song } from './song'
 import { STARTERS } from './starters'
 
 const SHEET: Cfg = { view: 'sheet', px: { w: 1180, h: 560 } }

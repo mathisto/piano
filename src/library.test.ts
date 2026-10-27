@@ -4,9 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { builtin } from './catalog'
 import { creditBlock, creditLine, type LibraryEntry } from './credits'
 import { scoreFlags } from './flags'
-import { autoSelect, inspectMidi } from './midi-tracks'
+import { autoSelect, fromMidi, inspectMidi } from './midi-tracks'
 import { fromMusicXml, xmlText } from './musicxml'
-import { fromMidi } from './song'
 
 const DIR = new URL('../public/library/', import.meta.url)
 const manifest: LibraryEntry[] = JSON.parse(readFileSync(new URL('manifest.json', DIR), 'utf8'))

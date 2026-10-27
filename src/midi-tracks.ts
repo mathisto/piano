@@ -1,5 +1,8 @@
+// The MIDI reader (@tonejs/midi): loaded with the first file opened, not at boot (docs/changes/perf.md).
 import { Midi } from '@tonejs/midi'
-import type { Hand } from './song'
+import { quantize } from './quantize'
+import { assignHands, build, COMFORT, density, estimateFifths, estimateKeys, type Bar, type Hand, type Raw, type Song } from './song'
+import { spellWindow } from './spell'
 
 export interface TrackInfo {
   index: number // position in the file, the key for selecting it
@@ -65,15 +68,6 @@ export function inspectMidi(buf: ArrayBuffer): Report {
   return { tracks, bars, seconds: midi.duration }
 }
 
-const p95 = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length * 0.95)] : 0)
-
-/** Notes per bar, 95th percentile, over a set of tracks. */
-export function density(tracks: TrackInfo[], bars: number) {
-  return p95(Array.from({ length: bars }, (_, b) => tracks.reduce((a, t) => a + (t.perBar[b] ?? 0), 0)))
-}
-
-export const COMFORT = 16 // notes in a bar the staff can show without turning into a smear
-
 // General MIDI programs that make an accompaniment on their own: pianos, guitars, harp
 const keyed = (program: string) => /piano|clavi|harpsichord|guitar|harp|celesta|glock|music box|marimba|vibraphone/i.test(program)
 
@@ -103,4 +97,71 @@ export function autoSelect(r: Report): Selection {
   const tracks = [lead, comp].filter((t): t is TrackInfo => !!t)
   if (!tracks.length) return all
   return { tracks: tracks.map((t) => t.index), hands: lead ? { [lead.index]: 'R' } : {} }
+}
+
+const MAJOR_FIFTHS: Record<string, number> = {
+  C: 0, G: 1, D: 2, A: 3, E: 4, B: 5, 'F#': 6, 'C#': 7,
+  F: -1, Bb: -2, Eb: -3, Ab: -4, Db: -5, Gb: -6, Cb: -7,
+}
+
+/** The MIDI reader names the major key that has the signature, for a minor piece too (C minor arrives as 'Eb'), so the scale needs no correction. */
+function keyToFifths(key: string): number {
+  return MAJOR_FIFTHS[key] ?? 0
+}
+
+export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60, pick?: Selection): Song {
+  const midi = new Midi(buf)
+  const raw: Raw[] = []
+  const ticks: { tick: number; dtick: number }[] = []
+  midi.tracks.forEach((tr, track) => {
+    if (pick ? !pick.tracks.includes(track) : tr.instrument.percussion) return
+    for (const n of tr.notes) {
+      raw.push({ t: n.time, d: Math.max(n.duration, 0.03), p: n.midi, v: n.velocity, track, h: pick?.hands[track] })
+      ticks.push({ tick: n.ticks, dtick: n.durationTicks })
+    }
+  })
+  if (!raw.length) throw new Error('No notes found in this file.')
+
+  const ppq = midi.header.ppq
+  const hands = assignHands(raw, split)
+  const z = quantize(
+    ticks.map((k, i) => ({ ...k, p: raw[i].p, hand: hands[i] })),
+    {
+      ppq,
+      sigs: midi.header.timeSignatures.map((s) => ({ tick: s.ticks, n: s.timeSignature[0], den: s.timeSignature[1] })),
+      tempos: midi.header.tempos.map((t) => ({ tick: t.ticks, bpm: t.bpm })),
+    },
+  )
+  const bars: Bar[] = z.bars.map((b, i) => ({
+    i,
+    t0: midi.header.ticksToSeconds(b.tick),
+    t1: midi.header.ticksToSeconds(b.tick + b.len),
+    n: b.n,
+    den: b.den,
+    ...(i === 0 && z.pickup && { ql: z.pickup }),
+  }))
+  // key changes as the file states them: the reader repeats each event once per track, a key before its first event is C
+  const keys: { bar: number; fifths: number }[] = []
+  for (const k of [...midi.header.keySignatures].sort((a, b) => a.ticks - b.ticks)) {
+    const bar = z.bars.findLastIndex((b) => b.tick <= k.ticks + ppq / 8)
+    if (keys[keys.length - 1]?.bar === bar) keys.pop()
+    if (keys[keys.length - 1]?.fifths !== keyToFifths(k.key)) keys.push({ bar, fifths: keyToFifths(k.key) })
+  }
+  if (keys.length && keys[0].bar > 0) keys.unshift({ bar: 0, fifths: 0 })
+  raw.forEach((r, i) => Object.assign(r, { q: z.q[i], dq: z.dq[i], grace: z.grace[i] }))
+  const fifths = keys.length ? keys[0].fifths : estimateFifths(raw.filter((r) => !r.grace))
+  const acc = spellWindow(raw.map((r) => r.p), z.q, fifths)
+  raw.forEach((r, i) => (r.acc = acc[i]))
+  const tracks = new Set(raw.map((r) => r.track))
+  if (tracks.size >= 3) for (const r of raw) r.part = r.track // two tracks are the two hands; more are parts the app can play for you
+  const song = build(id, title, raw, bars, fifths, split)
+  if (tracks.size >= 3) song.parts = midi.tracks.map((tr, i) => tr.name || tr.instrument.name || `Track ${i + 1}`)
+  const est = keys.length ? keys : estimateKeys(song.notes, bars.length)
+  if (est.length > 1) song.keys = est
+  const flags = [
+    ...(midi.header.tempos.length ? [] : ['no-tempo']),
+    ...(new Set(raw.map((r) => r.track)).size >= 3 && raw.some((r) => !r.h) ? ['three-track-midi'] : []), // hands fell back to a split at one pitch
+  ]
+  if (flags.length) song.flags = flags
+  return song
 }

@@ -5,7 +5,8 @@ import * as audio from './audio'
 import { Game } from './game'
 import { fromMusicXml, xmlText } from './musicxml'
 import { Midi } from '@tonejs/midi'
-import { fromMidi, fromSpec, type Song } from './song'
+import { fromMidi } from './midi-tracks'
+import { fromSpec, type Song } from './song'
 
 vi.mock('./audio', () => ({ noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn() }))
 

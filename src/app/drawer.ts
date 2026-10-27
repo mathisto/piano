@@ -3,7 +3,6 @@ import * as audio from '../audio'
 import * as lib from '../catalog'
 import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs, monitor } from '../midi'
-import { buildSummary, reportLink } from '../report'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
@@ -120,6 +119,7 @@ function openDrawer() {
     await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
   }
   $('#sSummary', d).onclick = async () => {
+    const { buildSummary } = await import('../report')
     const titles: Record<string, string> = Object.fromEntries([...STARTERS.map((s) => [s.spec.id, s.spec.title]), ...(await store.listSongs()).map((s) => [s.id, s.title]), ...lib.catalog.pieces.map((p) => [`lib:${p.id}`, p.title])])
     await shareFile(new File([buildSummary(JSON.parse(await store.exportAll()), titles)], 'piano-practice-summary.txt', { type: 'text/plain' }))
   }
@@ -176,7 +176,7 @@ $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi(
 /** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
 async function openCredits() {
   const d = $('#credits') as HTMLDialogElement
-  const prog = await store.allProgress()
+  const [prog, { reportLink }] = await Promise.all([store.allProgress(), import('../report')])
   const mine = lib.catalog.pieces.filter((p) => lib.cached.has(p.id) || prog.has(`lib:${p.id}`)).sort((a, b) => a.title.localeCompare(b.title))
   d.innerHTML = creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href }, (i) => reportLink(lib.catalog, mine[i]))
   d.showModal()

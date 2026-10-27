@@ -37,4 +37,7 @@ describe('theoryDue', () => {
     expect(theoryDue(st, 100)).toMatchObject({ trainer: 'chords', level: 4, due: 1 })
     expect(theoryDue(st, 90)).toBeUndefined()
   })
+  it('a due key outside every deck is still none', () => {
+    expect(theoryDue({ 'no-such-card': { due: 1 } } as never, 100)).toBeUndefined()
+  })
 })

@@ -1,6 +1,6 @@
 import { memTag } from './memory'
 import './library-view.css'
-import { catalog, gradeOf, local, pieceBytes, search, searchIndex } from './catalog'
+import { catalog, gradeOf, local, piece, pieceBytes, search, searchIndex } from './catalog'
 import type { Piece } from './catalog-types'
 import { licenceName } from './credits'
 import type { Song } from './song'
@@ -9,13 +9,15 @@ import { thumb } from './thumb'
 import { art, esc, mmss } from './ui'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
-// so thousands of pieces never become thousands of rows. Thumbnails only for files already on the device.
+// so thousands of pieces never become thousands of rows. Thumbnails only for files already on the device, as rows scroll in.
 
 const PAGE = 50
 const SEARCH = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>'
 const ui = { q: '', grade: undefined as number | undefined, composer: undefined as number | undefined, shown: PAGE, saving: false }
-const meta = new Map<string, { thumb: string; len: number }>()
-const filling = new Set<string>()
+const meta = new Map<string, { thumb: string; len: number }>() // kept across visits
+const todo: Piece[] = []
+let busy = false
+let load: (p: Piece) => Promise<Song>
 
 const surname = (name: string) => name.split(' ').pop()!
 const sig = (f: number) => (f > 0 ? `${f}♯ · ` : f < 0 ? `${-f}♭ · ` : '')
@@ -34,13 +36,13 @@ function row(p: Piece, prog: Map<string, Progress>) {
     <button class="btn ghost" data-mem="lib:${esc(p.id)}" aria-label="Memorise ${esc(p.title)}">Memorise</button></div></td></tr>`
 }
 
-/** Read the files already on the device, four at a time, for a thumbnail and a length. */
-async function fill(ps: Piece[], load: (p: Piece) => Promise<Song>) {
-  const todo = ps.filter((p) => local(p.id) && !meta.has(p.id) && !filling.has(p.id))
-  todo.forEach((p) => filling.add(p.id))
-  const next = async (): Promise<void> => {
-    const p = todo.shift()
-    if (!p) return
+/** Read a file already on the device for a thumbnail and a length, one at a time and only for rows scrolled into view:
+ *  parsing all ~40 bundled files on arrival took ~1.2 s of CPU at 4x and held up the next tap. */
+async function fill() {
+  if (busy) return
+  busy = true
+  for (let p; (p = todo.shift()); ) {
+    if (meta.has(p.id)) continue
     try {
       const song = await load(p)
       meta.set(p.id, { thumb: thumb(song), len: song.end })
@@ -50,16 +52,15 @@ async function fill(ps: Piece[], load: (p: Piece) => Promise<Song>) {
     } catch {
       /* a piece that will not parse still opens and reports its own error */
     }
-    filling.delete(p.id)
-    return next()
   }
-  await Promise.all([next(), next(), next(), next()])
+  busy = false
 }
 
 /** Append the open library to the Songs page. Filters survive leaving and coming back. */
-export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, load: (p: Piece) => Promise<Song>) {
+export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, read: (p: Piece) => Promise<Song>) {
   const ps = catalog.pieces
   if (!ps.length) return
+  load = read
   const grades = [...new Set(ps.map(gradeOf))].sort((a, b) => a - b)
   const per = new Map<number, number>()
   for (const p of ps) per.set(p.composer, (per.get(p.composer) ?? 0) + 1)
@@ -84,6 +85,13 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, loa
   const el = host.querySelector<HTMLElement>('.biglib')!
   const $ = <T extends HTMLElement>(s: string) => el.querySelector(s) as T
   const save = $<HTMLButtonElement>('#libSave')
+  const seen = new IntersectionObserver((es) => {
+    for (const e of es.filter((e) => e.isIntersecting)) {
+      seen.unobserve(e.target)
+      todo.push(piece((e.target as HTMLElement).dataset.lib!)!)
+    }
+    void fill()
+  }, { rootMargin: '200px' })
   const away = () => (ui.grade === undefined ? [] : search(searchIndex, '', { grade: ui.grade }).map((i) => ps[i]).filter((p) => !local(p.id)))
 
   const draw = () => {
@@ -98,7 +106,9 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, loa
       save.disabled = false
       save.textContent = `Save level ${ui.grade} for offline`
     }
-    void fill(page, load)
+    todo.length = 0
+    seen.disconnect()
+    for (const tr of $('#libRows').querySelectorAll<HTMLElement>('tr[data-lib]')) if (local(tr.dataset.lib!) && !meta.has(tr.dataset.lib!)) seen.observe(tr)
   }
 
   $<HTMLInputElement>('#libQ').addEventListener('input', (e) => {

@@ -2,8 +2,6 @@
 import * as lib from '../catalog'
 import { dayNum } from '../drill'
 import { type Ctx, nextOf, path as gradePath, type Start } from '../grades'
-import { LADDER } from '../ladder-data'
-import { ladderState } from '../ladder'
 import { type PlanMin, theoryDue } from '../plan'
 import { pickPiece } from '../readthrough'
 import { DEFAULT_RUN } from '../run'
@@ -108,6 +106,7 @@ export async function showProgress() {
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
   const gp = gradePath(await pathCtx(ts))
+  const [{ ladderState }, { LADDER }] = await Promise.all([import('../ladder'), import('../ladder-data')])
   const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
     const x = lib.piece(id)
     return x && { title: x.title, composer: lib.catalog.composers[x.composer]?.name ?? '' }

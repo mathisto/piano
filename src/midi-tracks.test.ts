@@ -1,8 +1,7 @@
 import { Midi } from '@tonejs/midi'
 import { describe, expect, it } from 'vitest'
-import { autoSelect, inspectMidi, namedHands } from './midi-tracks'
+import { autoSelect, fromMidi, inspectMidi, namedHands } from './midi-tracks'
 import { orchestral } from './notation-fixtures'
-import { fromMidi } from './song'
 
 describe('midi tracks', () => {
   it('reports each track that has notes', () => {
