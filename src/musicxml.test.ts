@@ -285,6 +285,10 @@ describe('musicxml jumps, keys, spelling, tuplets, cues and tempo', () => {
     expect(scoreFlags(read(meas(words('Allegro') + note('C'))))).toEqual(['tempo-estimated'])
     expect(scoreFlags(read(meas(words('Allegro') + note('C'), note('D') + words('Adagio'))))).toEqual(['tempo-estimated'])
     expect(scoreFlags(read(meas(words('rit.') + note('C'))))).toEqual(['no-tempo']) // a word that names no pace is not an estimate
+    const nothing = wrap(meas(note('C')))
+    expect(scoreFlags(fromMusicXml(nothing, 't', 'x', { bpm: 150, guess: true }))).toEqual(['tempo-estimated']) // the catalogue's guess, for a score that names none
+    expect(fromMusicXml(nothing, 't', 'x', { bpm: 150, guess: true }).bars[0].t1).toBeCloseTo(1.6)
+    expect(fromMusicXml(wrap(meas(words('Allegro') + note('C'))), 't', 'x', { bpm: 150, guess: true }).bars[0].t1).toBeCloseTo(4 * 60 / 132) // a tempo word is the score's own: kept
   })
 
   it('mid-piece: a tempo word takes over where it is written, Tempo I brings the first back; a number beats a word', () => {

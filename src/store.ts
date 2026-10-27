@@ -96,7 +96,7 @@ export async function removeSong(id: string) {
 export async function toSong(s: Stored, split: number): Promise<Song> {
   if (s.kind === 'xml') {
     const { fromMusicXml, xmlText } = await import('./musicxml')
-    return fromMusicXml(await xmlText(s.bytes), s.title, s.id)
+    return fromMusicXml(await xmlText(s.bytes), s.title, s.id, s.tempo)
   }
   const { autoSelect, fromMidi, inspectMidi } = await import('./midi-tracks')
   return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)), s.tempo, s.pickup)

@@ -20,7 +20,7 @@ export interface Piece {
   bars: number
   sec: number
   bpm: number
-  tempo?: number // quarter-note bpm the app plays a MIDI at instead of the file's own: from the .ly's tempo word (a guess, flagged 'tempo-estimated') or its metronome mark; the file is unchanged, so its sha256 and any copy kept on a device stay valid
+  tempo?: number // quarter-note bpm the app plays at instead of the file's own (a MusicXML score that names none too): from the .ly's tempo word or the score's form (a guess, flagged 'tempo-estimated') or its metronome mark; the file is unchanged, so its sha256 and any copy kept on a device stay valid
   pickup?: number // quarter notes in the short first bar, read from the .ly (0 = it states none); the app lays its barlines from it instead of guessing them from the notes. Absent: the guess stays
   notes: number
   lo: number

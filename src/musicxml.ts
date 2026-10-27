@@ -1,3 +1,4 @@
+import type { Tempo } from './midi-tracks'
 import { expand } from './playorder'
 import { build, estimateFifths, type Bar, type Hand, type Raw, type Song } from './song'
 
@@ -206,7 +207,7 @@ export function playOrder(parts: El[], flags: string[] = []): number[] {
   return order
 }
 
-export function fromMusicXml(xml: string, title: string, id: string): Song {
+export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tempo): Song {
   const root = parseXml(xml)
   if (root.n === 'score-timewise') throw new Error('Time-wise MusicXML is not supported. Export as partwise.')
   if (root.n !== 'score-partwise') throw new Error('This is not a MusicXML score.')
@@ -412,7 +413,10 @@ export function fromMusicXml(xml: string, title: string, id: string): Song {
   const tempos1 = tempos.length ? firstPart(tempos) : wordBpm.filter((w) => w.bpm)
   tempos.length = 0
   tempos.push(...tempos1)
-  if (!tempos.length) flags.push('no-tempo')
+  if (!tempos.length && tempo) {
+    tempos.push({ pi: 0, m: 0, q: 0, bpm: tempo.bpm }) // the catalogue's pace for a score that names none
+    if (tempo.guess) flags.push('tempo-estimated')
+  } else if (!tempos.length) flags.push('no-tempo')
   else if (estimated) flags.push('tempo-estimated')
   let kc = keyM.find((k) => k !== undefined)
   const keyOf = Array.from({ length: kids(parts[0], 'measure').length }, (_, m) => (kc = keyM[m] ?? kc))

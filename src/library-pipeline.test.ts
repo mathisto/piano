@@ -106,9 +106,14 @@ describe('the pace a Mutopia .ly names', () => {
     expect(a.tempo).toBe(100)
     expect(a.flags).toEqual([])
   })
-  it('a score that names no pace stays at no-tempo, and a number or a tempo set elsewhere is left alone', async () => {
-    expect((await analyse(midi(60, '{ c4 }'))).flags).toEqual(['no-tempo'])
-    expect((await analyse(midi(undefined, '{ c4 }'))).flags).toEqual(['no-tempo'])
+  it('a score that names no pace gets the default 100, or its form, flagged as a guess; a number or a tempo set elsewhere is left alone', async () => {
+    for (const e of [midi(60, '{ c4 }'), midi(undefined, '{ c4 }')]) {
+      const a = await analyse(e)
+      expect([a.tempo, a.flags]).toEqual([100, ['tempo-estimated']])
+    }
+    expect((await analyse({ ...midi(60, '\\header { piece = "Mazurka" }'), id: 'mutopia-9' })).tempo).toBe(140) // the form is in the .ly's header
+    expect((await analyse({ ...midi(60, '{ c4 }'), title: 'Waltz in A' })).tempo).toBe(150) // or the title
+    expect((await analyse({ ...midi(60, '\\header { piece = "Mazurka" }'), id: 'mutopia-9-2' })).tempo).toBe(100) // a movement of a zip whose .ly is not its own (it does not play this file): no form
     for (const e of [midi(60, '\\tempo "Allegro" 4=60'), midi(96, '\\header { piece = "Allegro" }'), midi(96, '{ c4 }'), midi(60)]) {
       const a = await analyse(e)
       expect(a.tempo).toBeUndefined()

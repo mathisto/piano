@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { Midi } from '@tonejs/midi'
 import { fromMidi, inspectMidi, type Selection, type Tempo } from '../../src/midi-tracks'
+import { formTempo, onsetsOf } from '../../src/formtempo'
 import { fromMusicXml, tempoWord, xmlText } from '../../src/musicxml'
 import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
@@ -31,6 +32,7 @@ export interface Input {
   bytes: Uint8Array // as shipped: MIDI, or a piano-only .mxl
   upstreamSha: string // sha256 of the file as fetched, before normalising
   ly?: string // the LilyPond source of a Mutopia MIDI, read for repeats, D.C. and tempo marks
+  noFormTempo?: true // leave a score that names no pace as it is, without the form guess (reanalyse --formtempo-only compares the two)
   noPickup?: true // leave the first bar to the detector, as before the .ly's \partial was read (reanalyse --pickup-only compares the two)
   matched?: boolean // withRepeats read this .ly against the MIDI before playing its repeats out: it is the score that plays it
   voice?: 'folded' | 'dropped' // a song: its vocal line folded into the right hand, or left out (flagged voice-folded, voice-dropped)
@@ -183,6 +185,10 @@ export function lyPace(ly: string, compound = false): { given: boolean; bpm?: nu
   return { given: false }
 }
 
+export * from '../../src/formtempo' // for formtempo-eval.mjs
+const LY_HEAD = /\b(?:title|subtitle|piece|meter)\s*=\s*(?:\\markup\s*)?("(?:[^"\\]|\\.)*"|\{[^{}]*\})/g // the header's strings that can name a form
+const lyHeads = (ly: string) => [...ly.replace(/%.*$/gm, ' ').matchAll(LY_HEAD)].map((m) => m[1])
+
 export async function analyse(e: Input): Promise<Analysis> {
   const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], tracks: 0, fp: new Set<string>() }
   try {
@@ -203,9 +209,21 @@ export async function analyse(e: Input): Promise<Analysis> {
       hasTempo = !!tempo || (e.ly ? pace.given || !flat : midi.header.tempos.length > 0)
       pickup = e.ly && !e.noPickup ? lyPickup(e.bytes, e.ly, e.matched) : undefined // plays()'s test is inside: a .ly that is not this file's says nothing
       s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)
+      if (!tempo && !pace.given && flat && !e.noFormTempo) {
+        // nothing in the .ly names a pace: guess one from the form, else 100. A movement of a zip reads the .ly's header only when it is this file's
+        const mine = !/^mutopia-\d+-\d+$/.test(e.id) || e.matched || plays(e.bytes, e.ly!)
+        tempo = { bpm: formTempo([e.title, ...(mine ? lyHeads(e.ly!) : [])].join(' '), onsetsOf(s)).bpm, guess: true }
+        hasTempo = true
+        s = fromMidi(ab(e.bytes), e.title, e.id, 60, pick, tempo, pickup)
+      }
     } else {
       marks = await xmlText(ab(e.bytes))
       s = fromMusicXml(marks, e.title, e.id)
+      if (s.flags?.includes('no-tempo') && !e.noFormTempo) {
+        // only a form in the table (already 100 otherwise): the title names it
+        const g = formTempo(e.title, onsetsOf(s))
+        if (g.form) s = fromMusicXml(marks, e.title, e.id, (tempo = { bpm: g.bpm, guess: true }))
+      }
       tracks = (marks.match(/<part id="/g) ?? []).length
       hasTempo = !s.flags?.includes('no-tempo') // a <sound tempo>, a <metronome> or a tempo word (that one flagged 'tempo-estimated')
     }
