@@ -274,7 +274,8 @@ function touchBlock(t: TouchStats, hands = true) {
     <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
 }
 
-export function results(r: Result, next: Next | null, note = '') {
+/** `from`: the page the Back button returns to, named on it; a scale or exercise is a run, not a song. */
+export function results(r: Result, next: Next | null, note = '', from: 'Songs' | 'Scales' | 'Technique' = 'Songs') {
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
@@ -297,7 +298,7 @@ export function results(r: Result, next: Next | null, note = '') {
   <div class="results"><div class="card song-res" role="dialog" aria-label="Results">
     <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : r.clean ? icon('check') : icon('loop')}</div>
     <div class="stats">
-    <h2>${perform ? 'Song complete' : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
+    <h2>${perform ? (from === 'Songs' ? 'Song complete' : 'Run complete') : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
     <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
     ${note ? `<p class="line">${note}</p>` : ''}
     ${perform ? `<p class="line sub">${lean}</p>` : ''}
@@ -308,7 +309,7 @@ export function results(r: Result, next: Next | null, note = '') {
     <div class="row">
       ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
-      <button class="btn" id="toLib">Songs</button>
+      <button class="btn" id="toLib">${from}</button>
     </div>
   </div></div>`
 }
@@ -585,7 +586,7 @@ function overTime(h: HistoryEntry[]) {
       return `<div class="otc"><small class="label">${KIND_NAME[k]}</small>
         <svg class="hist spark" viewBox="0 0 ${W} 52" preserveAspectRatio="none" role="img" aria-label="${KIND_NAME[k]} accuracy over your last ${xs.length} sessions, now ${Math.round(avg(recent) * 100)} percent">
           <line class="mid" x1="6" x2="${W - 6}" y1="${Y(1)}" y2="${Y(1)}" stroke-dasharray="3 5"/><polyline points="${xs.map((e, i) => `${X(i)},${Y(e.acc)}`).join(' ')}"/></svg>
-        <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} on the five before`}</span></div></div>`
+        <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'point' : 'points'} on the five before`}</span></div></div>`
     })
     .join('')
   return cards ? `<div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
@@ -748,7 +749,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
     </div>
     <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
     <div class="run-opts">
-      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'} (${esc(offer.why)}). A clean run on two days raises it ${PACE.step}.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
+      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'} (${esc(offer.why)}). A clean run on two days raises it by ${PACE.step} bpm.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
     <div class="row-actions run-go">${b && !s.pace ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
     ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
   </section>`

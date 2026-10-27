@@ -594,7 +594,7 @@ table.songs td.thumb {
   .thumb .art + svg {
     display: none;
   }
-  .thumb svg:first-child {
+  table.songs .thumb svg:first-child {
     width: 78px; /* a file with no cover keeps its first bars, cropped to the column */
   }
 }
@@ -640,8 +640,9 @@ table.songs td.thumb {
   padding-inline: 0;
 }
 @media (max-width: 640px) {
-  table.stages .tag.next {
+  table.stages .tag {
     display: block; /* the name column is too narrow to hold it beside the name: under it, flush with the name, not 10px in */
+    width: fit-content;
     margin: 6px 0 0;
   }
 }
@@ -700,7 +701,7 @@ table.songs tr.band th {
 }
 .tech-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* "Steady medium" fits its select */
   align-items: end;
   gap: 16px;
   margin-bottom: 20px;
@@ -765,8 +766,19 @@ table.stages td.name small {
   width: 100%;
 }
 @media (max-width: 1000px) {
+  /* the level select drops under the blurb at the full width its longest name needs, instead of clipping it */
+  #theory .prow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
   #theory .prow .field {
-    width: 220px;
+    grid-column: 1;
+    grid-row: 2;
+    width: min(100%, 380px);
+  }
+  #theory .prow .pact {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 table.stages col.mcol {
@@ -1883,6 +1895,19 @@ button.link {
   table.songs col {
     width: auto !important;
   }
+  /* a stage table at 590 px: the name keeps most of the row, the meter, time and action take what they need */
+  table.stages col.mcol {
+    width: 130px !important;
+  }
+  table.stages col[style]:not(:last-child) {
+    width: 64px !important;
+  }
+  table.stages col:last-child {
+    width: 110px !important;
+  }
+  table.songs:not(.stages) col[style] {
+    width: 60px !important; /* the Best figure keeps a narrow column; on equal shares it took a third of the row */
+  }
   table.songs:not(.stages) col:first-child,
   table.songs:not(.stages) th:first-child,
   table.songs td.thumb {
@@ -2471,6 +2496,9 @@ dialog.sheet footer .btn {
 .run .field:has(.slider),
 .run .field:has(#sgForm) {
   grid-column: span 2; /* "Diminished 7th arpeggio" */
+}
+.run .slider {
+  min-height: var(--control); /* the same height as the selects beside it, so the labels share a baseline */
 }
 .run .slider input {
   min-width: 0;

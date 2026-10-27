@@ -59,7 +59,7 @@ async function onDone(r: Result) {
   const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
   if (who) note = `Judged on your part only: <b>${esc(who.you)}</b>.${who.app ? ` The app played ${esc(who.app)}.` : ''} ${note}`
-  res.innerHTML = results(r, next, note)
+  res.innerHTML = results(r, next, note, current.song.id.startsWith('scale:') ? 'Scales' : current.song.id.startsWith('tech:') ? 'Technique' : 'Songs')
   if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(current!.song.id, 1))
   void import('./take-ui').then((t) => t.takeCard(res)) // Listen back and Compare with last time (loaded with the stage)
