@@ -7,7 +7,7 @@ import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { $, drawer } from '../ui'
-import { current, game, highway, hooks, say } from './state'
+import { current, game, highway, hooks, say, sheets } from './state'
 import { connectMidi, midiLine, midiState, updateChip } from './banner'
 import { lens, shareFile } from './library'
 import { leave } from './play'
@@ -176,9 +176,10 @@ $('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi(
 /** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
 async function openCredits() {
   const d = $('#credits') as HTMLDialogElement
-  const [prog, { reportLink }, { creditsDialog }] = await Promise.all([store.allProgress(), import('../report'), import('../ui-sheets')])
+  const [prog, { reportLink }, ui] = await Promise.all([store.allProgress(), import('../report'), sheets(d)])
+  if (!ui) return
   const mine = lib.catalog.pieces.filter((p) => lib.cached.has(p.id) || prog.has(`lib:${p.id}`)).sort((a, b) => a.title.localeCompare(b.title))
-  d.innerHTML = creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href }, (i) => reportLink(lib.catalog, mine[i]))
+  d.innerHTML = ui.creditsDialog(mine.map((p) => creditBlock(lib.catalog, p)), { app: libraryUrl('LICENSES.md'), corpus: new URL('LICENSES.md', lib.CORPUS).href }, (i) => reportLink(lib.catalog, mine[i]))
   d.showModal()
   d.scrollTop = 0
 }
@@ -192,7 +193,9 @@ export async function openSetup() {
     /* private mode: it may show again next time */
   }
   closeDrawer()
-  d.innerHTML = (await import('../ui-sheets')).setupDialog(midiLine(), inputs().length > 0, settings.offset)
+  const ui = await sheets(d)
+  if (!ui) return
+  d.innerHTML = ui.setupDialog(midiLine(), inputs().length > 0, settings.offset)
   const away = (f: () => void) => () => {
     d.close()
     if (current) leave()

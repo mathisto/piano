@@ -25,6 +25,7 @@ What it does: one profile plays a day (0 to 10, in order); the other features ea
 - 18 Staff marks: the fixture score (`src/score-fixtures.ts`) imported through Add files; staccato, accent, slur, hairpin and dynamic letters all drawn on the staff during a run; played flat, the results name the flat crescendo and the long staccatos
 - 19 Read: after `__piano.solidUpTo(3)` the three stages carry the Fluent tag; at 2 s a card they read "Solid · Fluent at 1.5 s" with For speed, which starts a speed set
 - 21 Lead sheet (`docs/changes/lead2.md`): a bundled Lied, Lead sheet from the card at 1180x820, chord symbols drawn, no left hand, the chord switch kept across reopening, axe on the card, and a run that records no Ready, Best or box
+- 22 Sheets (`docs/changes/sheets.md`): Credits (free line, the four Sounds blocks, links `_blank` `noopener`, Escape and Close return focus, axe), Set up from Settings, Options on a generated two-track MIDI. 22b the page chunk held, then refused: Scales, Read and Progress show their title at once, then the body; refused, each says "This page could not load" and the three sheets say "Check the connection, then reload the page."
 
 Dev hook added: `__piano.theory()` returns the Theory session in progress (src/main.ts). No src change for the later features: they use `__piano.solidUpTo`, `__piano.mem`, `__take.sink`, the game's `auto` events and `game.modeOf`.
 
@@ -41,4 +42,4 @@ Dev hook added: `__piano.theory()` returns the Theory session in progress (src/m
 
 ## Not covered
 
-Real MIDI and Web MIDI permission, sound output, real touch latency, WebKit and the iPad app, importing MIDI files and the tracks dialog, delay and touch-range calibration, Today's plan rows and Start here's days 2 to 7, a ladder piece that must be downloaded, Memorise stages 2 to 4 and Peek, the Hear last time button, the practice summary and Report a problem, Read through's Next piece, weak-notes review, zoom and the divider, the network corpus.
+Real MIDI and Web MIDI permission, sound output, real touch latency, WebKit and the iPad app, importing MIDI files (the tracks dialog is feature 22), delay and touch-range calibration, Today's plan rows and Start here's days 2 to 7, a ladder piece that must be downloaded, Memorise stages 2 to 4 and Peek, the Hear last time button, the practice summary and Report a problem, Read through's Next piece, weak-notes review, zoom and the divider, the network corpus.

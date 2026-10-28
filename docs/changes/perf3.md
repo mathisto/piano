@@ -16,7 +16,7 @@ Stayed in `ui.ts` because boot code needs them: `head`, `meter`, `weekBlock`, `F
 Not moved: `coach.ts` (11 kB; `game.ts` needs `marks`), `scales.ts` and `drill.ts` (the stores and Today need them), `guide.ts` (Today's first-week card), `capacitor/core` (15.5 kB, platform check at boot). Next biggest after this: `scales.ts` 17, `capacitor/core` 15.5, `drill.ts` 15, `game.ts` 13.8, `app/stage.ts` 12.
 
 First use on a slow link: `showSection` now draws the page's title (`<div class="lib-head wait">`) into a section that has never been drawn, so a tap on Scales shows "Scales" at once and the body when `ui-views` arrives (checked with each chunk delayed 2.5 s: Scales, Read, Technique, Progress, Credits and Set up all appear, no console errors; Options on an imported two-track MIDI with `ui-sheets` delayed 2 s). Credits, Set up and Options open when their chunk is in, as they already did for their data. The e2e `nav` helper waits for a child that is not `.wait`.
-Wart, not chased: if the `ui-sheets` chunk fails to load (offline with no service worker), `openSetup` rejects unhandled and the sheet does not open; first-run Set up is the case that matters, and the service worker precaches every chunk.
+If the `ui-sheets` chunk fails to load, the sheet says so (fixed in `sheets.md`).
 Ratchet: `bundle.test.ts` BUDGET 241 200 (measured 240 6xx, about 580 B margin) and `ui-sheets|ui-views|ui-results` added to the modules that must not be in boot.
 
 ## 2. The pedal coach uses the Lead sheet's tuned chord match

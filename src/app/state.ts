@@ -115,6 +115,16 @@ export function worstBars(heat: number[], bars = game.song.bars.length): { a: nu
   return { a: at, b: Math.min(bars - 1, at + 1) }
 }
 
+/** The sheets' code (Credits, Set up, Options). If it did not arrive (offline), the sheet says so in plain words; undefined then. */
+export async function sheets(d: HTMLDialogElement) {
+  try {
+    return await import('../ui-sheets')
+  } catch {
+    d.innerHTML = '<div class="body"><p>Check the connection, then reload the page.</p></div><footer><button class="btn" data-close autofocus>Close</button></footer>'
+    d.showModal()
+  }
+}
+
 export function say(msg: string) {
   $('#live').textContent = msg
 }

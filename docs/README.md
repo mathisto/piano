@@ -83,6 +83,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `device-checks.md`: ten minutes on the iPad and the FP-10, line by line, for everything checked only in headless Chrome.
 - `changes/prune.md`: dead code and duplicate helpers removed (`src/util.ts`), one dependency dropped.
 - `changes/perf3.md`: 33 kB off the boot JS (`ui.ts` split into lazy views, results and sheets); the pedal coach uses the tuned chord match (`src/chords.ts`).
+- `changes/sheets.md`: e2e feature 22 (Credits, Set up and Options from Settings; slow and refused page and sheet chunks); a sheet whose code does not arrive says so instead of rejecting unhandled.
 - `changes/beatmark.md`: the paced run beat shows in a slim bar between the header and the staff, not in the dock.
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
 

@@ -8,7 +8,7 @@ import { STARTERS } from '../starters'
 import * as store from '../store'
 import { thumb } from '../thumb'
 import { $, library, type Row, starterRows, userRows } from '../ui'
-import { current, hooks, starters } from './state'
+import { current, hooks, sheets, starters } from './state'
 
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
@@ -62,7 +62,9 @@ export async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
   if (!s) return
   const midi = s.kind !== 'xml'
-  const [{ autoSelect, inspectMidi }, { tracksDialog }] = await Promise.all([import('../midi-tracks'), import('../ui-sheets')])
+  const dlg = $('#tracks') as HTMLDialogElement
+  const [{ autoSelect, inspectMidi }, ui] = await Promise.all([import('../midi-tracks'), sheets(dlg)])
+  if (!ui) return
   const r = midi ? inspectMidi(s.bytes) : undefined
   let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
   const song = await store.toSong(s, settings.split)
@@ -74,10 +76,9 @@ export async function openTracks(id: string) {
     ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
     ...(r ? ([['Drums', r.tracks.some((t) => t.percussion) ? 'Present, left out' : 'None']] as [string, string][]) : []),
   ]
-  const dlg = $('#tracks') as HTMLDialogElement
   const order = [...pick.tracks] // the tracks in use first, fixed while the dialog is open
   const draw = () => {
-    dlg.innerHTML = tracksDialog(s.title, r, pick, noteName, facts, order)
+    dlg.innerHTML = ui.tracksDialog(s.title, r, pick, noteName, facts, order)
     dlg.querySelectorAll<HTMLInputElement>('input[data-tk]').forEach((c) => {
       c.onchange = () => {
         const i = Number(c.dataset.tk)

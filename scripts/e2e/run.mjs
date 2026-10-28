@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const { chromium } = await import('playwright-core')
+const { Midi } = await import('@tonejs/midi').then((m) => m.Midi ? m : m.default)
 const AXE = readFileSync(new URL('../../node_modules/axe-core/axe.min.js', import.meta.url), 'utf8')
 const OUT = mkdtempSync(join(tmpdir(), 'piano-e2e-'))
 const T0 = Date.now()
@@ -134,9 +135,10 @@ ${AXE}`
 
 const browser = await chromium.launch({ channel: 'chrome', headless: !process.env.E2E_HEADED, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] })
 
-async function open(opts = {}) {
+async function open(opts = {}, routes) {
   const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 }, acceptDownloads: true, ...opts })
   await ctx.addInitScript(INIT)
+  await routes?.(ctx) // before the first load, so a chunk the page prefetches is held or refused too
   const page = await ctx.newPage()
   page.errs = []
   page.on('pageerror', (e) => page.errs.push(`pageerror: ${e.message}`))
@@ -836,10 +838,118 @@ const leadFlow = () => fresh({
   },
 })
 
+const sheetsFlow = async () => {
+  const twoTracks = () => {
+    const m = new Midi()
+    for (const [name, base] of [['Right hand', 72], ['Left hand', 48]]) {
+      const t = m.addTrack()
+      t.name = name
+      for (let i = 0; i < 16; i++) t.addNote({ midi: base + (i % 5), time: i * 0.5, duration: 0.4 })
+    }
+    const f = join(OUT, 'two-track.mid')
+    writeFileSync(f, m.toArray())
+    return f
+  }
+  const sheet = (page, id) => page.waitForSelector(`dialog#${id}[open]`, { timeout: 5000 })
+  const shut = async (page, id, how, back) => { // how: 'Escape' or the selector of a Close/Done button
+    if (how === 'Escape') await page.keyboard.press('Escape')
+    else await page.click(`#${id} ${how}`)
+    await wait(page, (i) => !document.querySelector(`dialog#${i}[open]`), id)
+    ok(await ev(page, (sel) => document.activeElement?.matches(sel), back), `focus did not return to ${back} after ${how}`)
+  }
+  await fresh({
+    async '22 Sheets: Credits, Set up and Options open from Settings, close with focus back, axe clean'(page) {
+      await page.click('#settingsBtn')
+      await page.waitForSelector('#drawer:not([hidden])')
+      await page.click('#sCredits')
+      await sheet(page, 'credits')
+      const c = await text(page, '#credits')
+      ok(c.includes('Free, no subscription, no ads, no account.'), 'Credits: no free line')
+      ok((await page.$$('#credits .credlist pre')).length >= 4 && /Salamander/.test(c) && /Wurlitzer/.test(c) && /Versilian/.test(c) && /MuseScore_General/.test(c), 'Credits: the four sounds blocks are not all there')
+      const links = await page.$$eval('#credits a', (a) => a.map((x) => [x.target, x.rel, x.href]))
+      ok(links.length >= 6 && links.every(([t, r, h]) => t === '_blank' && /noopener/.test(r) && /^https?:/.test(h)), `Credits: links ${JSON.stringify(links.filter(([t, r]) => t !== '_blank' || !/noopener/.test(r)))}`)
+      ok(!/https?:\/\//.test(await ev(page, () => [...document.querySelectorAll('#credits pre')].map((p) => p.cloneNode(true)).map((p) => (p.querySelectorAll('a').forEach((a) => a.remove()), p.textContent)).join(' '))), 'Credits: a URL left as plain text')
+      await axe(page, 'Credits', '#credits')
+      await shut(page, 'credits', 'Escape', '#sCredits')
+      await page.click('#sCredits')
+      await sheet(page, 'credits')
+      await shut(page, 'credits', 'footer [data-close]', '#sCredits')
+
+      await page.click('#sSetup') // closes the drawer, then the sheet
+      await sheet(page, 'setup')
+      ok(/Four checks/.test(await text(page, '#setup')) && (await page.$$('#setup .prow')).length === 4, 'Set up: not the four rows')
+      await axe(page, 'Set up from Settings', '#setup')
+      await shut(page, 'setup', 'footer [data-close]', '#settingsBtn') // Done
+
+      await nav(page, 'songs')
+      await page.setInputFiles('#file', twoTracks())
+      await page.click('#library button[data-tracks]')
+      await sheet(page, 'tracks')
+      ok(/2 of 2 in use/.test(await text(page, '#tkSum')) && (await page.$$('#tracks .tkrow')).length === 2, 'Options: not two tracks, both in use')
+      await page.click('#tracks .tkrow:first-child .switch')
+      await wait(page, () => /1 of 2 in use/.test(document.querySelector('#tkSum')?.textContent))
+      await axe(page, 'Options', '#tracks')
+      await page.click('#tkCancel')
+      await wait(page, () => !document.querySelector('dialog#tracks[open]'))
+      ok(await ev(page, () => document.activeElement?.matches('#library button[data-tracks]')), 'Options: focus did not return to the Options button')
+    },
+  })
+
+  // 22b: the page chunk is slow, then refused. A route handler awaits `gate`, so the title is checked while the body is certainly not there.
+  if (ONLY.test('22b')) {
+    let go
+    const gate = new Promise((r) => (go = r))
+    const slow = await open({}, (ctx) => ctx.route(/\/src\/ui-(views|sheets)\.ts/, async (r) => (await gate, r.continue())))
+    await skipSetup(slow)
+    await feature('22b Slow chunk: the page title at once, the body when it arrives', slow, async () => {
+      const tabs = ['scales', 'read', 'progress']
+      for (const t of tabs) {
+        await slow.click(`label:has(input[name=nav][value=${t}])`)
+        await wait(slow, (id) => document.querySelector(`#${id}.on > .lib-head.wait h1`), t, 3000)
+        ok((await slow.$$(`#${t} > :not(.wait)`)).length === 0, `${t}: a body before the chunk arrived`)
+      }
+      await slow.waitForTimeout(1500) // the slow link
+      go()
+      for (const t of tabs) await wait(slow, (id) => document.querySelector(`#${id} > :not(.wait)`), t)
+      ok(await slow.$('#progress h1'), 'Progress: no heading once drawn')
+    })
+    await slow.context().close()
+
+    const dead = await open({}, (ctx) => ctx.route(/\/src\/ui-(views|sheets)\.ts/, (r) => r.abort()))
+    await skipSetup(dead)
+    await feature('22b Refused chunk: plain words, no blank page, no unhandled rejection', dead, async () => {
+      for (const t of ['scales', 'read', 'progress']) {
+        await nav(dead, t)
+        ok(/This page could not load/.test(await text(dead, `#${t}`)), `${t}: no plain-words message`)
+      }
+      await nav(dead, 'songs')
+      await dead.setInputFiles('#file', twoTracks())
+      await dead.waitForSelector('#library button[data-tracks]')
+      await dead.click('#settingsBtn')
+      for (const [btn, id] of [['#sCredits', 'credits'], ['#sSetup', 'setup']]) {
+        if (!(await dead.isVisible('#drawer'))) await dead.click('#settingsBtn')
+        await dead.click(btn)
+        await sheet(dead, id)
+        ok(/Check the connection, then reload the page\./.test(await text(dead, `#${id}`)), `${id}: no plain-words message`)
+        await dead.click(`#${id} [data-close]`)
+      }
+      await dead.click('#library button[data-tracks]')
+      await sheet(dead, 'tracks')
+      ok(/Check the connection, then reload the page\./.test(await text(dead, '#tracks')), 'tracks: no plain-words message')
+      await dead.click('#tracks [data-close]')
+      await nav(dead, 'today') // still usable
+      const own = (e) => /ERR_FAILED|Failed to load resource|dynamically imported module/.test(e) // the refusals themselves, and the page catch that reports them
+      ok(!dead.errs.some((e) => e.startsWith('pageerror')), `unhandled: ${dead.errs.find((e) => e.startsWith('pageerror'))}`)
+      dead.errs.splice(0, dead.errs.length, ...dead.errs.filter((e) => !own(e)))
+    })
+    await dead.context().close()
+  }
+}
+
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
-  mainFlow().then(async (p) => (await lane(guideFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
+  mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
