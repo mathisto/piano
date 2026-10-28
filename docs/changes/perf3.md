@@ -29,3 +29,6 @@ Cost in boot: +about 680 B (it was already boot code through `pedal.ts`; the mat
 ## Verified
 `npx tsc --noEmit` clean; `npx vitest run` 57 files, 760 passed, 4 skipped; `npm run build`. `E2E_ONLY` runs, all passing: 0, 0b, 1, 2, 2b, 3, 4 (all trainers in the first pass; keys and chords again after the last edit), 6, 8, 9a, 9b, 10, 11 (axe), 12, 13, 19, 20 (Pedal), 21 (Lead sheet). The full `npm run e2e` was not run. Not covered by any e2e feature, checked by hand with Playwright against `vite preview`: Credits, Options (tracks dialog), Set up from the drawer.
 Not measured: `scripts/perf.mjs` (Today time); the boot JS is 33 kB smaller, but the numbers are not taken.
+
+## Load bench after this change (lead, 2026-10-27)
+`node scripts/perf.mjs 5` at 4x CPU, headless Chrome: Today 315 ms (309 to 325), script 161 ms, task 290 ms, Songs 237 ms, first piece to start card 1,418 ms, 235 kB of JS before Today. Against the perf.md branch figures (Today 456 to 466 ms, 302 kB) that is about a third sooner on a different day's machine load, so read it as a direction, not a measured A/B.
