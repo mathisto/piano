@@ -34,6 +34,11 @@ describe('chordsOf', () => {
     raw.push({ t: 1, d: 0.2, p: 71, v: 0.7, track: 0, h: 'R' })
     expect(chordsOf(build('p', 'p', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0)).map((c) => c.name)).toEqual(['C', 'C'])
   })
+  it('reads the chord struck on the beat over the notes that come after it', () => {
+    const raw: Raw[] = [55, 59, 62].map((p) => ({ t: 0, d: 0.5, p, v: 0.7, track: 0, h: 'L' as const }))
+    raw.push(...[60, 64].map((p) => ({ t: 0.5, d: 0.5, p, v: 0.7, track: 0, h: 'R' as const })))
+    expect(chordsOf(build('b', 'b', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0)).map((c) => c.name)).toEqual(['G']) // G B D on the beat, then C E: the later notes alone would tie C with G
+  })
   it('gives the app a block chord with its bass below', () => {
     expect(chordsOf(piece([[43, 47, 50], [48, 52, 55]]))[0]).toMatchObject({ t: 0, d: 1, bar: 0, keys: [43, 55, 59, 50] }) // G: bass G2, then G3 B3 D3
   })

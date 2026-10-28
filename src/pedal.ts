@@ -19,8 +19,8 @@ interface Change {
   bar: number // 0-based
 }
 
-/** The best-fitting chord for the notes sounding in [a, b): template match on pitch classes weighted by how long each sounds, as [root pitch class, index into `shapes`]. A fourth tone must beat the triad by `extra` (lead sheets: a passing note is not a seventh). Null for silence. */
-export function chordIn(song: Song, a: number, b: number, shapes = SHAPES, extra = 0): [number, number] | null {
+/** The best-fitting chord for the notes sounding in [a, b): template match on pitch classes weighted by how long each sounds, as [root pitch class, index into SHAPES]. Null for silence. (The Lead sheet reads its chords with its own match, lead.ts.) */
+function chordIn(song: Song, a: number, b: number): [number, number] | null {
   const w = new Array<number>(12).fill(0)
   for (const n of song.notes) {
     const len = Math.min(b, n.t + n.d) - Math.max(a, n.t)
@@ -31,11 +31,11 @@ export function chordIn(song: Song, a: number, b: number, shapes = SHAPES, extra
   let best: [number, number] = [0, 0]
   let top = -Infinity
   for (let r = 0; r < 12; r++)
-    shapes.forEach((s, k) => {
+    SHAPES.forEach((s, k) => {
       const set = s.map((i) => (r + i) % 12)
       const inside = set.reduce((x, pc) => x + w[pc], 0)
       const missing = set.filter((pc) => !w[pc]).length
-      const score = (inside - (sum - inside)) / sum - 0.15 * missing - extra * (set.length - 3)
+      const score = (inside - (sum - inside)) / sum - 0.15 * missing
       if (score > top + 1e-9) [top, best] = [score, [r, k]]
     })
   return best
