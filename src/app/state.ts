@@ -116,12 +116,16 @@ export function worstBars(heat: number[], bars = game.song.bars.length): { a: nu
 }
 
 /** The sheets' code (Credits, Set up, Options). If it did not arrive (offline), the sheet says so in plain words; undefined then. */
+/** A dialog whose code could not load says so in plain words, with a Close button. */
+export function chunkFailed(d: HTMLDialogElement) {
+  d.innerHTML = '<div class="body"><p>Check the connection, then reload the page.</p></div><footer><button class="btn" data-close autofocus>Close</button></footer>'
+  d.showModal()
+}
 export async function sheets(d: HTMLDialogElement) {
   try {
     return await import('../ui-sheets')
   } catch {
-    d.innerHTML = '<div class="body"><p>Check the connection, then reload the page.</p></div><footer><button class="btn" data-close autofocus>Close</button></footer>'
-    d.showModal()
+    chunkFailed(d)
   }
 }
 

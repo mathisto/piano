@@ -8,7 +8,7 @@ import { STARTERS } from '../starters'
 import * as store from '../store'
 import { thumb } from '../thumb'
 import { $, library, type Row, starterRows, userRows } from '../ui'
-import { current, hooks, sheets, starters } from './state'
+import { chunkFailed, current, hooks, sheets, starters } from './state'
 
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
@@ -63,8 +63,10 @@ export async function openTracks(id: string) {
   if (!s) return
   const midi = s.kind !== 'xml'
   const dlg = $('#tracks') as HTMLDialogElement
-  const [{ autoSelect, inspectMidi }, ui] = await Promise.all([import('../midi-tracks'), sheets(dlg)])
+  const [tracks, ui] = await Promise.all([import('../midi-tracks').catch(() => null), sheets(dlg)])
   if (!ui) return
+  if (!tracks) return chunkFailed(dlg)
+  const { autoSelect, inspectMidi } = tracks
   const r = midi ? inspectMidi(s.bytes) : undefined
   let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
   const song = await store.toSong(s, settings.split)
