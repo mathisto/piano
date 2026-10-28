@@ -42,6 +42,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/marks.md`: staccato, tenuto, accents, slurs, hairpins and dynamic letters drawn on the staff.
 - `changes/lead.md`: the Lead sheet level of Notes shown: melody and chord symbols read from the harmony, the app playing the chords.
 - `changes/lead2.md`: Lead sheet round two: Notes shown on a short stage, the chord switch kept, runs at a reduced level not counting toward Ready, e2e feature 21.
+- `changes/chordeval.md`: the Lead sheet chords against written harmony: the corpus has one chord symbol in one piece, so no evaluation was possible; the count and where ground truth could come from.
 - `changes/pedal.md`: the sustain pedal from CC64: the sampler, the results line, the Technique exercise.
 
 **Importer and library pipeline**
