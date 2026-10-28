@@ -132,7 +132,8 @@ The newest features (each note's own "not verified" list is the full one):
 - Score marks (`marks.md`): real library scores are covered by tests only. In a crowded gap between the staves a letter can cross a stem (letters now clear the heads, `polish7.md`), and slurs and beams there are not avoided. A slur with both ends off the page is not drawn; a slur's end on a tied note is drawn at the note's first head.
 - Touch on real pieces (`realtouch.md`): a second hairpin after an end-less one starts from the old level; lines name the stretch, not the moment.
 - Truth pass (`truth.md`): the Ready tag carries no title saying it needs two clean days near the written tempo.
-- Paced Sight Run (`paced.md`): the 90%/60% cut-offs, 4 bpm step and 200 ms window are guesses; built and checked in headless Chrome only.
+- Paced Sight Run (`paced.md`, `beatmark.md`): the 90%/60% cut-offs, 4 bpm step and 200 ms window are guesses; the beat shows in a 13px bar between the header and the staff (a 4px segment is a guess for peripheral vision; Perform's dots still sit in the dock); built and checked in headless Chrome only.
+- Lead sheet (`lead.md`, `lead2.md`): a Notes shown level with chord symbols read from the harmony at half-bar resolution (guesses, not compared with a published analysis; Wiegenlied bar 6 reads E-flat maj7/D from a passing D) and an optional chord play-along nobody has heard; a run at any level above Full records heat only and does not count toward Ready (to keep Thin chords and Melody and bass counting, change `lv > 0` to `lv >= 3` in `src/app/results.ts`); headless Chrome only.
 - Pedal (`pedal.md`): built against synthetic CC64 only; the thresholds and half-bar chord detection are guesses; the written pedal is not imported.
 
 Sight Run and Read through:
