@@ -11,7 +11,7 @@ import * as store from '../store'
 import { streak as dayStreak } from '../streak'
 import { nextRecipe, stateOf, SYLLABUS, type TechStats } from '../syllabus'
 import { exercise, PATTERNS } from '../technique'
-import { $, progressView, todayView } from '../ui'
+import { $, todayView } from '../ui'
 import { dayKey, improved, lastWeek, weekOf } from '../week'
 import { firstUse, type Go, guideDay, guideDid, guideSave, guideState } from '../guide'
 import { drillStats, hooks, stageById, worstBars } from './state'
@@ -106,7 +106,7 @@ export async function showProgress() {
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
   const gp = gradePath(await pathCtx(ts))
-  const [{ ladderState }, { LADDER }] = await Promise.all([import('../ladder'), import('../ladder-data')])
+  const [{ ladderState }, { LADDER }, { progressView }] = await Promise.all([import('../ladder'), import('../ladder-data'), import('../ui-views')])
   const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
     const x = lib.piece(id)
     return x && { title: x.title, composer: lib.catalog.composers[x.composer]?.name ?? '' }

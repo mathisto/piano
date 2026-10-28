@@ -52,6 +52,8 @@ async function showSection(name: Section, err = '') {
   tab.parentElement!.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // a narrow window scrolls the tabs
   const id = name === 'songs' ? 'library' : name
   view(id)
+  const el = $(`#${id}`)
+  if (name !== 'today' && !el.firstChild) el.innerHTML = `<div class="lib-head wait"><h1>${name[0].toUpperCase() + name.slice(1)}</h1></div>` // a first visit on a slow link: the page's title now, its body when the code arrives
   try {
     if (name === 'today') await showToday()
     else if (name === 'songs') await showLibrary(err)
@@ -113,7 +115,7 @@ void (async () => {
   })
   await showSection('today')
   // Today is up: fetch what a first tap wants while the app is idle, so a piece or a tab opens without waiting on the network
-  ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view'), import('./midi-tracks'), import('./musicxml')]).catch(() => {}))
+  ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view'), import('./midi-tracks'), import('./musicxml'), import('./ui-views'), import('./ui-sheets')]).catch(() => {}))
   updateChip()
   try {
     const p = await navigator.permissions?.query({ name: 'midi' as PermissionName })

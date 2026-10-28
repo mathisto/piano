@@ -2,9 +2,8 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { annAt, chordOf, EPS, keyOf, parseRn, triad, type Cls } from './chordeval'
-import { chordAt, SHAPES, TUNE } from './lead'
+import { chordAt, SHAPES, TUNE, windows } from './chords'
 import { parseXml, fromMusicXml, xmlText } from './musicxml'
-import { windows } from './pedal'
 import type { Note, Song } from './song'
 
 /** The evaluation run: `CHORDEVAL=1 npx vitest run src/chordeval.run.test.ts`. Reads the When in Rome corpus from .cache/chordeval/wir (git-ignored, never committed); skipped when the variable is not set. */

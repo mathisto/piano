@@ -1,7 +1,8 @@
 // Scales: the stages, a free pick, and the degree quiz.
 import { type Card as ScaleCard, type Form, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, quizDeal, quizRecord, quizRight, type QuizStats, scaleSong, STAGES as SCALE_STAGES } from '../scales'
 import * as store from '../store'
-import { $, type QuizState, type ScalePick, scalesView } from '../ui'
+import { $ } from '../ui'
+import type { QuizState, ScalePick } from '../ui-views'
 import { openSong } from './play'
 
 let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
@@ -32,6 +33,7 @@ export async function showScales() {
   const stats = await store.getScales()
   const f = nextScaleStage(stats)
   if (scaleTab === 'quiz' && !quiz) await newQuiz()
+  const { scalesView } = await import('../ui-views')
   scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick, quiz)
 }
 

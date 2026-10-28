@@ -184,7 +184,7 @@ const ev = (page, fn, arg) => page.evaluate(fn, arg)
 const wait = (page, fn, arg, timeout = 30000) => page.waitForFunction(fn, arg, { timeout, polling: 50 })
 async function nav(page, tab) {
   await page.click(`label:has(input[name=nav][value=${tab}])`)
-  await wait(page, (id) => document.querySelector(`#${id}.on`)?.children.length, tab === 'songs' ? 'library' : tab)
+  await wait(page, (id) => document.querySelector(`#${id}.on > :not(.wait)`), tab === 'songs' ? 'library' : tab)
 }
 // a page visited before keeps its old content until the new one is drawn: wait for the new one
 async function redraw(page, tab) {

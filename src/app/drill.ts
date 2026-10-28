@@ -4,7 +4,7 @@ import { after, PACED_CARDS, score, type Struck } from '../paced'
 import { bestKey, deal, DEFAULT_RUN, goalMs, newTally, runCards, type RunSpec, SET, tally, widened } from '../run'
 import { noteName } from '../spell'
 import * as store from '../store'
-import { $, drillResults, pacedResults, runResults, runTitle } from '../ui'
+import { $, runTitle } from '../ui'
 import { dayKey } from '../week'
 import { drill, drillStats, game, hooks, median, resOpen, run, say, setDrill, setDrillStats, setRun, setRunSpec, staff, type RunCtx } from './state'
 import { leave, openSong } from './play'
@@ -126,7 +126,7 @@ async function pacedFinish(r: RunCtx) {
   void store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
   const names = sc.missed.map((i) => d.cards[i].pitches.map((p) => noteName(p, r.spec.fifths)).join(' '))
   const res = $('#res')
-  res.innerHTML = pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note })
+  res.innerHTML = (await import('../ui-results')).pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note })
   resOpen(true)
   $('#runAgain', res).focus()
   say(`Run finished. ${sc.hit} of ${sc.n} cards on the beat.`)
@@ -152,7 +152,7 @@ export async function runFinish() {
   if (r.arc.cards) void store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) })
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const res = $('#res')
-  res.innerHTML = runResults({
+  res.innerHTML = (await import('../ui-results')).runResults({
     spec: r.spec,
     arc: r.arc,
     medianMs: median(r.rts),
@@ -215,7 +215,7 @@ export async function drillDone() {
   const m = stage ? mastery(stage, drillStats, d.goal) : undefined
   const nxt = nextStage(drillStats)
   const res = $('#res')
-  res.innerHTML = drillResults({
+  res.innerHTML = (await import('../ui-results')).drillResults({
     stage: d.title,
     cards: d.cards.length,
     clean: d.cleanN / d.cards.length,

@@ -1,3 +1,4 @@
+import { chordAt, windows } from './chords'
 import type { Song } from './song'
 
 /** Sustain pedal (MIDI CC64) against the harmony of the written piece. Pure: a song and a list of pedal events in, one plain sentence out. */
@@ -11,42 +12,9 @@ export const EARLY = 0.5 // beats: a lift this long before the new chord still c
 const LATE = 0.25 // beats: the old chord may ring this long into the new one (the "legato pedal" lifts just after the new chord lands)
 const MIN_CHANGES = 2 // chord changes the pedal must touch before a sentence is worth saying
 
-// Chord templates as pitch-class offsets from the root, simplest first (a tie goes to the earlier one).
-const SHAPES = [[0, 4, 7], [0, 3, 7], [0, 4, 7, 10], [0, 3, 6]]
-
 interface Change {
   t: number
   bar: number // 0-based
-}
-
-/** The best-fitting chord for the notes sounding in [a, b): template match on pitch classes weighted by how long each sounds, as [root pitch class, index into SHAPES]. Null for silence. (The Lead sheet reads its chords with its own match, lead.ts.) */
-function chordIn(song: Song, a: number, b: number): [number, number] | null {
-  const w = new Array<number>(12).fill(0)
-  for (const n of song.notes) {
-    const len = Math.min(b, n.t + n.d) - Math.max(a, n.t)
-    if (len > 0) w[n.p % 12] += len
-  }
-  const sum = w.reduce((x, y) => x + y, 0)
-  if (!sum) return null
-  let best: [number, number] = [0, 0]
-  let top = -Infinity
-  for (let r = 0; r < 12; r++)
-    SHAPES.forEach((s, k) => {
-      const set = s.map((i) => (r + i) % 12)
-      const inside = set.reduce((x, pc) => x + w[pc], 0)
-      const missing = set.filter((pc) => !w[pc]).length
-      const score = (inside - (sum - inside)) / sum - 0.15 * missing
-      if (score > top + 1e-9) [top, best] = [score, [r, k]]
-    })
-  return best
-}
-
-/** The windows a chord is read in: each bar cut in halves, or left whole in odd metres. */
-export function* windows(song: Song): Generator<{ bar: number; a: number; b: number }> {
-  for (const bar of song.bars) {
-    const cuts = bar.n % 2 === 0 && bar.n >= 4 ? [bar.t0, (bar.t0 + bar.t1) / 2, bar.t1] : [bar.t0, bar.t1]
-    for (let i = 0; i + 1 < cuts.length; i++) yield { bar: bar.i, a: cuts[i], b: cuts[i + 1] }
-  }
 }
 
 /** Where the harmony moves: each window is given a chord, and a change is where the chord differs from the one before. */
@@ -55,8 +23,9 @@ export function changes(song: Song): Change[] {
   const out: Change[] = []
   let prev: string | null = null
   for (const w of windows(song)) {
-    const c = chordIn(song, w.a, w.b)?.join(':')
-    if (c === undefined) continue
+    const m = chordAt(song, w.a, w.b)
+    if (!m) continue
+    const c = `${m.root}:${m.k}`
     if (prev !== null && c !== prev) out.push({ t: w.a, bar: w.bar })
     prev = c
   }

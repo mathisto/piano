@@ -6,7 +6,8 @@ import { stateOf, SYLLABUS } from '../syllabus'
 import { exercise, type Opts, PATTERNS } from '../technique'
 import { thumb } from '../thumb'
 import { calibrate } from '../touch'
-import { $, CAL_NOTES, techniqueView, type TouchCal } from '../ui'
+import { $, CAL_NOTES } from '../ui'
+import type { TouchCal } from '../ui-views'
 import { hooks } from './state'
 import { openSong } from './play'
 
@@ -15,6 +16,7 @@ export async function showTechnique() {
   const ts = await store.getTech()
   const today = dayNum()
   const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) }))
+  const { techniqueView } = await import('../ui-views')
   techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)), path)
   el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
     const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)

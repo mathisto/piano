@@ -9,7 +9,7 @@ import { settings } from '../settings'
 import { LEVELS } from '../levels'
 import * as store from '../store'
 import { applyRun } from '../syllabus'
-import { $, cardName, results } from '../ui'
+import { $, cardName } from '../ui'
 import { esc } from '../util'
 import { dayKey } from '../week'
 import { calibrating, current, dock, drill, game, hooks, mem, resOpen, rt, say, worstBars } from './state'
@@ -64,7 +64,7 @@ async function onDone(r: Result) {
   const res = $('#res')
   if (who) note = `Judged on your part only: <b>${esc(who.you)}</b>.${who.app ? ` The app played ${esc(who.app)}.` : ''} ${note}`
   if (lv) note = `Notes shown: ${LEVELS[lv]}, not the whole piece, so this run does not count toward Ready. ${note}`
-  res.innerHTML = results(r, next, note, current.song.id.startsWith('scale:') ? 'Scales' : current.song.id.startsWith('tech:') ? 'Technique' : 'Songs')
+  res.innerHTML = (await import('../ui-results')).results(r, next, note, current.song.id.startsWith('scale:') ? 'Scales' : current.song.id.startsWith('tech:') ? 'Technique' : 'Songs')
   if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(current!.song.id, 1))
   void import('./take-ui').then((t) => t.takeCard(res)) // Listen back and Compare with last time (loaded with the stage)

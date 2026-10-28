@@ -1,34 +1,20 @@
+import { keyName, type Card } from './scales'
 import { memTag } from './memory'
 import { loadState } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
-import type { Result } from './game'
-import type { Next } from './pace'
 import { inBundle } from './catalog'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings, KEY_TOUCH } from './settings'
-import { coachLines, marks as liveMarks, timingLine, type Timing } from './coach'
-import type { HistoryEntry, Progress, Stored, TouchEntry } from './store'
-import type { Evenness } from './even'
-import { COMFORT, density, type Song } from './song'
+import type { Progress, Stored } from './store'
+import { type Song } from './song'
 import type { Starter } from './starters'
-import { fluentMs, type Stage, type Stats } from './drill'
-import { LIMITS, type RunSpec, type Tally } from './run'
-import { PACE, type Pace } from './paced'
-import { TRAINERS, untimed, type TCard, type Trainer } from './theory'
-import { earAsk, earBlock, replayBtn, type EarView } from './ear'
-import { isPulse, pulseBars } from './pulse'
-import { checkNote, degreeName, explain, fingering, keyLabels, keyName, quizRight, why, type Card, type Form, type QCard, type Stage as ScaleStage } from './scales'
-import type { Report, Selection, TrackInfo } from './midi-tracks'
-import { band, DEFAULT_EDGES, type TouchStats } from './touch'
-import { ARTICS, DYNS, KEYS, KEYS_MINOR, PATTERNS, type Opts } from './technique'
-import { pathSection, startAttr, streakHtml } from './habit-ui'
-import type { Level, Row as GradeRow, Start } from './grades'
-import type { LadderLevel } from './ladder'
+import { type RunSpec } from './run'
+import { startAttr, streakHtml } from './habit-ui'
+import type { Start } from './grades'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
-import { guideCard, HELP, keyboardLine, tabNote, type Guide } from './guide'
-import { inputs } from './midi'
+import { guideCard, HELP, tabNote, type Guide } from './guide'
 import type { Streak } from './streak'
 import { esc } from './util'
 
@@ -169,45 +155,18 @@ function table(caption: string, rows: Row[], empty: string) {
 }
 
 
-const head = (title: string, actions = '', lede = '') =>
+// Two tiers: the fill climbs to Solid in Ink Soft; past Solid, a second fill in Ink climbs to Fluent over it.
+export const meter = (pct: number, solid: boolean, label: string, fluent?: number) =>
+  `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
+export const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
+export const FREE = 'Free, no subscription, no ads, no account.'
+export const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evenness.'
+export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
+
+export const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
 
-/** The Connect line, and with `osk` the switch for the on-screen keys (app/osk-ui.ts). */
-const noKeyboard = (osk = false) => keyboardLine(inputs().length > 0) + (osk ? `<label class="switch osk-sw"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs().length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>` : '')
 
-const SOUNDS = [
-  'Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
-  'Electric piano: Wurlitzer EP200 by Greg Sullivan (sullivang.net), mapped by kinwie\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
-  'Harp, church organ, strings: Versilian Community Sample Library (harp, organ sampled by Simon Dalzell of Ivy Audio) and VSCO 2 Community Edition, by Versilian Studios\nLicence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)',
-  'Music box: MuseScore_General, from FluidR3 by Frank Wen, adapted by S. Christian Collins\nLicence: MIT (https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md)',
-]
-const links = (s: string) => s.replace(/https?:\/\/[^\s)]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`) // on escaped text; the iPad app hands _blank to the system browser
-/** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
-export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
-  return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><p class="fine free">${FREE}</p><h3>Sounds</h3>
-    <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div>
-    <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence. Every score and its licence: <a href="${licences.app}" target="_blank" rel="noopener">pieces in the app</a>, <a href="${licences.corpus}" target="_blank" rel="noopener">the whole library</a>.</p>
-    <div class="credlist">${blocks.length ? blocks.map((b, i) => `<pre>${links(esc(b))}</pre>${after(i)}`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
-    <footer><button class="btn" data-close>Close</button></footer>`
-}
-
-const FREE = 'Free, no subscription, no ads, no account.'
-const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evenness.'
-const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
-
-/** First run, and Settings > Set up: four checks, each one skippable; the sheet is a list, not a wizard. */
-export function setupDialog(midi: string, connected: boolean, delay: number) {
-  const e = settings.edges ?? DEFAULT_EDGES
-  return `<header><div><h2>Set up</h2><p>Four checks. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><div class="plan">
-      <div class="prow"><div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button></div></div>
-      <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span></div><div class="pact"><button class="btn ghost" id="suTouch">Set touch range</button></div></div>
-      <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span></div><div class="pact"><button class="btn ghost" id="suDelay">Calibrate</button></div></div>
-      <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>
-    </div></div>
-    <footer><span class="fine free">${FREE}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
-}
 
 /** A line of plain words at the top of a page, with an optional button: what is wrong and what can be done about it. */
 export const notice = (text: string, action = '', cls = '') => `<p class="notice${cls}" role="status"><span>${esc(text)}</span>${action}</p>`
@@ -220,107 +179,7 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
     ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }
 
-// ---------- choosing the tracks of a MIDI file ----------
 
-export function tracksDialog(title: string, r: Report | undefined, pick: Selection, noteName: (p: number) => string, facts: [string, string][], order: number[] = []) {
-  const hand = (t: TrackInfo): string => pick.hands[t.index] ?? 'auto'
-  const used = r ? r.tracks.filter((t) => pick.tracks.includes(t.index)) : []
-  const busy = r ? density(used, r.bars) : 0
-  const multi = !!r && r.tracks.length > 1
-  return `
-    <header><div><h2>Options</h2><p>${esc(title)}</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body">
-    <dl class="facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
-    ${
-      multi
-        ? `<h3>Tracks</h3><p class="fine" id="tkSum" role="status">${used.length} of ${r!.tracks.length} in use${busy > COMFORT ? '. Crowded: try fewer.' : ''}</p>
-    <div class="tklist">${[...r!.tracks]
-      .sort((a, b) => (order.indexOf(a.index) + 1 || 99) - (order.indexOf(b.index) + 1 || 99))
-      .map((t) => {
-        const on = pick.tracks.includes(t.index)
-        return `<div class="tkrow${t.percussion ? ' perc' : ''}">
-        <label class="switch"><input type="checkbox" data-tk="${t.index}"${on ? ' checked' : ''}><i></i><span><b>${esc(t.name)}</b><small>${esc(t.program)}${t.percussion ? ', drums' : ''} · ${t.notes} notes · ${noteName(t.lo)} to ${noteName(t.hi)}</small></span></label>
-        ${on ? `<select data-tkh="${t.index}" aria-label="Hand for ${esc(t.name)}"><option value="auto"${hand(t) === 'auto' ? ' selected' : ''}>By pitch</option><option value="R"${hand(t) === 'R' ? ' selected' : ''}>Right hand</option><option value="L"${hand(t) === 'L' ? ' selected' : ''}>Left hand</option></select>` : ''}</div>`
-      })
-      .join('')}</div>`
-        : ''
-    }
-    </div>
-    <footer><button class="btn ghost" id="tkRemove" title="Remove this file from this browser">Remove</button><span class="grow"></span><button class="btn ghost" id="tkShare" title="Share the original file">Share</button>${multi ? '<button class="btn ghost" id="tkAuto">Pick for me</button>' : ''}<button class="btn" id="tkCancel">${multi ? 'Cancel' : 'Close'}</button>${multi ? '<button class="btn primary" id="tkApply">Use these</button>' : ''}</footer>`
-}
-
-// ---------- results ----------
-
-/** How hard the keys were struck: a histogram from soft to hard, then the average, spread and hand balance. */
-/** How even the loudness was: a bar for each note above or below its neighbours (the chart), and a line of words with one thing to try. */
-function evenBlock(e: Evenness) {
-  const scale = Math.max(e.band * 2, ...e.devs.map((x) => Math.abs(x.d ?? 0)))
-  const w = Math.min(14, 380 / e.devs.length)
-  const bars = e.devs
-    .map((x, i) => {
-      const h = x.d === null ? 0 : (Math.abs(x.d) / scale) * 34
-      return x.d === null ? '' : `<rect class="${Math.abs(x.d) > e.band ? 'out' : ''}" x="${8 + i * (w + 1)}" y="${x.d >= 0 ? 36 - h : 36}" width="${w}" height="${Math.max(1, h)}" rx="1.5"/>`
-    })
-    .join('')
-  const edge = (e.band / scale) * 34
-  const word = { even: 'Even', nearly: 'Nearly even', uneven: 'Uneven' }[e.rating]
-  return {
-    chart: `<div><svg class="hist even" viewBox="0 0 396 74" role="img" aria-label="Loudness of each note against its neighbours: ${Math.round(e.inside * 100)} percent within plus or minus ${e.band}"><rect class="band" x="0" y="${36 - edge}" width="396" height="${edge * 2}"/><line class="mid" x1="0" x2="396" y1="36" y2="36"/>${bars}<text x="6" y="72">softer than its neighbours below, louder above</text></svg></div>`,
-    line: `<p class="line sub">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</p>`,
-  }
-}
-
-function touchBlock(t: TouchStats, hands = true) {
-  const peak = Math.max(1, ...t.hist)
-  const bars = t.hist.map((n, i) => `<rect x="${i * 48 + 6}" y="${60 - (n / peak) * 56}" width="40" height="${(n / peak) * 56 + 0.5}" rx="2"/>`).join('')
-  const x = 6 + (t.mean / 128) * 384
-  const hand = hands && t.hands.R.n && t.hands.L.n ? ` · right hand ${Math.round(t.hands.R.mean)}, left ${Math.round(t.hands.L.mean)}` : ''
-  const regs = (['low', 'mid', 'high'] as const).filter((r) => t.regions[r].n >= 4)
-  const where = regs.length >= 2 ? ` · ${regs.map((r) => `${r === 'mid' ? 'middle' : r} keys ${Math.round(t.regions[r].mean)}`).join(', ')}` : ''
-  return `<div>
-    <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Key velocity, soft to hard, average ${Math.round(t.mean)}">${bars}<line class="mid" x1="${x}" x2="${x}" y1="0" y2="62"/><text x="6" y="80">soft</text><text x="390" y="80" text-anchor="end">hard</text></svg>
-    <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
-}
-
-/** `from`: the page the Back button returns to, named on it; a scale or exercise is a run, not a song. */
-export function results(r: Result, next: Next | null, note = '', from: 'Songs' | 'Scales' | 'Technique' = 'Songs') {
-  const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
-  for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
-  const peak = Math.max(1, ...bins)
-  const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
-  const lean = r.timing ? timingLine(r.timing) : Math.abs(mean) < 8 ? 'Your timing is centred.' : mean < 0 ? `You tend to play about ${Math.round(-mean)} ms early.` : `You tend to play about ${Math.round(mean)} ms late.`
-  const hist = bins
-    .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
-    .join('')
-  const perform = r.mode === 'perform'
-  const even = r.even ? evenBlock(r.even) : null
-  // the sentences stay in view; the charts behind them, and the touch figures, fold under More
-  const more =
-    (perform
-      ? `<div><div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span><span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
-      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
-      : '') +
-    (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
-    (even?.chart ?? '')
-  return `
-  <div class="results"><div class="card song-res" role="dialog" aria-label="Results">
-    <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : r.clean ? icon('check') : icon('loop')}</div>
-    <div class="stats">
-    <h2>${perform ? (from === 'Songs' ? 'Song complete' : 'Run complete') : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
-    ${note ? `<p class="line">${note}</p>` : ''}
-    ${perform ? `<p class="line sub">${lean}</p>` : ''}
-    ${even?.line ?? ''}
-    ${coachLines(r, liveMarks === 'none' && !!r.even)}
-    ${more ? `<details class="all more"><summary>More</summary>${more}</details>` : ''}
-    </div>
-    <div class="row">
-      ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
-      <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
-      <button class="btn" id="toLib">${from}</button>
-    </div>
-  </div></div>`
-}
 
 // ---------- settings ----------
 
@@ -365,130 +224,8 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <p class="fine foot"><button class="link" id="sSetup">Set up</button> <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Help</button></p>`
 }
 
-// ---------- reading drills ----------
 
-export interface StageRow {
-  stage: Stage
-  pct: number
-  solid: boolean
-  seen: number
-  total: number
-  rt: number // mean response time of seen cards, ms (0 = none yet)
-  fluent: number // 0..1, mastery against the Fluent clock
-  fast: boolean // the Fluent tier reached
-  next: boolean
-  due: number // seen cards whose review is due
-}
-
-const GROUPS: [string, (id: string) => boolean][] = [
-  ['Treble clef', (id) => id.startsWith('t-')],
-  ['Bass clef', (id) => id.startsWith('b-')],
-  ['Both clefs', (id) => id === 'mixed' || id === 'grand' || id === 'oct8'],
-  ['Accidentals and keys', (id) => id === 'sharps' || id === 'flats' || id.startsWith('keys-')],
-  ['Melodies', (id) => id.startsWith('tune-')],
-  ['Chords', (id) => id === 'ints' || id === 'triads'],
-]
-
-// Two tiers: the fill climbs to Solid in Ink Soft; past Solid, a second fill in Ink climbs to Fluent over it.
-const meter = (pct: number, solid: boolean, label: string, fluent?: number) =>
-  `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
-
-export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, tab: 'stages' | 'run', run = '') {
-  let group = ''
-  const timed = rows.some((r) => r.rt) // no column of dashes before the first card
-  const body = rows
-    .map((r) => {
-      const g = GROUPS.find(([, f]) => f(r.stage.id))![0]
-      const band = g !== group ? `<tr class="band"><th colspan="${timed ? 4 : 3}" scope="colgroup">${g}</th></tr>` : ''
-      group = g
-      const pct = Math.round(r.pct * 100)
-      const speed = r.solid && !r.fast && !r.next // Solid, not yet Fluent: the button practises against the tighter clock
-      const sub = r.fast ? '' : r.solid ? `Solid · Fluent at ${fluentMs(r.stage) / 1000} s` : r.seen ? `${r.seen} of ${r.total} seen` : ''
-      return `${band}<tr>
-        <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.fast ? ' <span class="tag">Fluent</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
-        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`, r.fluent)}<b>${r.solid ? Math.round(r.fluent * 100) : pct}%</b></div>${sub ? `<small style="color:var(--ink-3)">${sub}</small>` : ''}</td>
-        ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practice ${esc(r.stage.name)}${speed ? ' for speed' : ''}">${r.next ? icon('play') : ''}${speed ? 'For speed' : 'Practice'}</button></div></td></tr>`
-    })
-    .join('')
-  el.innerHTML = `
-    ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
-    ${tab === 'run' ? noKeyboard(true) + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
-      <colgroup><col><col class="mcol">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
-      <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
-      <tbody>${body}</tbody></table>`}`
-}
-
-const opt = (v: string | number, label: string, cur: string | number) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${label}</option>`
-
-export interface TouchCal {
-  step: 0 | 1 | 2 // soft, medium, hard
-  got: number // notes played in this step
-}
-
-const CAL_STEPS = ['soft', 'medium', 'hard'] as const
 export const CAL_NOTES = 10
-
-/** The player's soft, medium and hard edges, and the ten-notes-each calibration that sets them. */
-function touchStrip(cal: TouchCal | null, msg: string) {
-  const e = settings.edges ?? DEFAULT_EDGES
-  const inner = cal
-    ? `<span>Play <b>${CAL_NOTES} ${CAL_STEPS[cal.step]}</b> notes: <b>${cal.got} of ${CAL_NOTES}</b></span>
-       <span class="row-actions"><button class="btn" id="calCancel">Cancel</button></span>`
-    : `<div class="bands" role="img" aria-label="Soft 1 to ${e.soft}, medium ${e.soft + 1} to ${e.hard - 1}, hard ${e.hard} to 127"><small class="label">Touch range</small><div><span style="flex:${e.soft}">Soft 1–${e.soft}</span><span style="flex:${e.hard - 1 - e.soft}">Medium ${e.soft + 1}–${e.hard - 1}</span><span style="flex:${128 - e.hard}">Hard ${e.hard}+</span></div></div>
-       <span class="row-actions">${settings.edges ? '<button class="btn ghost" id="calReset">Use defaults</button>' : ''}<button class="btn" id="calStart">Set touch range</button></span>`
-  return `<div class="tcard strip" role="status">${inner}</div>${msg ? `<p class="note" role="status">${esc(msg)}</p>` : ''}`
-}
-
-const KEY_NAMES = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
-
-export interface PathRow {
-  id: string
-  label: string
-  group: string
-  state: 'new' | 'learning' | 'solid' | 'due'
-}
-
-export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, msg = '', preview = '', path: PathRow[] = []) {
-  const sel = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
-  const keyVal = `${o.tonic}${o.minor ? 'm' : ''}`
-  const keys = (map: Record<number, number>, minor: boolean) =>
-    Object.keys(map).map(Number).sort((a, b) => map[a] - map[b]).map((pc) => opt(`${pc}${minor ? 'm' : ''}`, `${KEY_NAMES[pc]} ${minor ? 'minor' : 'major'}`, keyVal)).join('')
-  const rhythm = o.pattern === 'rhythm'
-  el.innerHTML = `
-    ${head('Technique')}
-    <div class="tech-form">
-      ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
-      ${
-        rhythm
-          ? sel('tLevel', 'Level', [[1, 'Quarters and halves'], [2, 'Eighths'], [3, 'Dotted and off-beat']].map(([v, l]) => opt(v, l as string, o.level ?? 1)).join(''))
-          : sel('tKey', 'Key', `<optgroup label="Major">${keys(KEYS, false)}</optgroup><optgroup label="Minor">${keys(KEYS_MINOR, true)}</optgroup>`) +
-            (o.pattern === 'pedal' ? '' : sel('tHands', 'Hands', [['R', 'Right'], ['L', 'Left'], ['both', 'Both']].map(([v, l]) => opt(v, l, o.hands)).join('')) +
-              sel('tDyn', 'Dynamics', Object.entries(DYNS).map(([v, l]) => opt(v, l, o.dyn)).join('')) +
-              sel('tArtic', 'Articulation', Object.entries(ARTICS).map(([v, l]) => opt(v, l, o.artic ?? 'normal')).join('')))
-      }
-      ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} bpm`, o.bpm)).join(''))}
-      <button class="btn primary" id="tStart">${icon('play')}Start</button>
-    </div>
-    ${preview ? `<div class="tprev thumb">${preview}</div>` : ''}
-    ${touchStrip(cal, msg)}
-    ${pathBlock(path)}`
-}
-
-const STATE_WORD = { new: '', learning: 'Learning', solid: 'Solid', due: 'Due' }
-
-/** The syllabus: what is next, with the rest folded away. Every row starts on its own; nothing is locked. */
-function pathBlock(path: PathRow[]) {
-  if (!path.length) return ''
-  const solid = path.filter((p) => p.state === 'solid').length
-  const row = (p: PathRow) =>
-    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">Start</button></div></div>`
-  const next = path.filter((p) => p.state !== 'solid').slice(0, 5)
-  const rest = path.filter((p) => !next.includes(p))
-  return `<p class="label cap">Path · ${solid} of ${path.length} solid</p>
-    <div class="plan">${next.map(row).join('')}</div>
-    ${rest.length ? `<details class="all"><summary>${rest.length} more</summary><div class="plan">${rest.map(row).join('')}</div></details>` : ''}`
-}
 
 /** A plan row that starts something through the same route as the Path: a title, a line and what to start. */
 interface Go {
@@ -519,7 +256,7 @@ export interface TodayData {
   recap?: { minutes: number; played: number; suggest: number; better?: string } // last week, shown early in the week
 }
 
-const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) => `
+export const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) => `
   <div class="week" role="img" aria-label="${w.days.filter((d) => d.played).length} days practised this week, ${w.minutes} of ${goal} minutes">
     ${w.days.map((d) => `<span class="day${d.played ? ' on' : ''}${d.today ? ' today' : ''}"><i></i>${d.label}</span>`).join('')}
   </div>
@@ -562,380 +299,10 @@ export function todayView(el: HTMLElement, d: TodayData) {
     <div class="plan">${rows}</div>`
 }
 
-export interface ProgressData {
-  streak: Streak
-  path: Level[]
-  ladder: LadderLevel[]
-  next?: GradeRow // the one requirement to work on next
-  week: TodayData['week']
-  goal: number
-  stages: StageRow[]
-  tech: PathRow[]
-  log: TouchEntry[]
-  history: HistoryEntry[]
-  stats: Stats // reading, card by card
-}
 
-const KIND_NAME: Record<HistoryEntry['kind'], string> = { read: 'Reading drills', run: 'Sight Run', scale: 'Scales', theory: 'Theory', song: 'Songs', tech: 'Technique' }
 
-/** One small chart per kind of practice: accuracy session by session, and whether the latest few are better than the few before. */
-function overTime(h: HistoryEntry[]) {
-  const cards = (Object.keys(KIND_NAME) as HistoryEntry['kind'][])
-    .map((k) => {
-      const xs = h.filter((e) => e.kind === k).slice(-24)
-      if (xs.length < 2) return ''
-      const W = 260
-      const X = (i: number) => 6 + (i / (xs.length - 1)) * (W - 12)
-      const Y = (a: number) => 46 - Math.max(0, (a - 0.4) / 0.6) * 40 // the chart runs from 40 to 100 percent
-      const avg = (a: HistoryEntry[]) => a.reduce((s, e) => s + e.acc, 0) / a.length
-      const recent = xs.slice(-5)
-      const before = xs.slice(-10, -5)
-      const delta = before.length >= 3 ? Math.round((avg(recent) - avg(before)) * 100) : null
-      return `<div class="otc"><small class="label">${KIND_NAME[k]}</small>
-        <svg class="hist spark" viewBox="0 0 ${W} 52" preserveAspectRatio="none" role="img" aria-label="${KIND_NAME[k]} accuracy over your last ${xs.length} sessions, now ${Math.round(avg(recent) * 100)} percent">
-          <line class="mid" x1="6" x2="${W - 6}" y1="${Y(1)}" y2="${Y(1)}" stroke-dasharray="3 5"/><polyline points="${xs.map((e, i) => `${X(i)},${Y(e.acc)}`).join(' ')}"/></svg>
-        <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'point' : 'points'} on the five before`}</span></div></div>`
-    })
-    .join('')
-  return cards ? `<p class="note">Accuracy, session by session, up to the last 24. Each chart runs from 40% to 100%; the dashed line is 100%.</p><div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
-}
-
-/** Which notes you read well: one bar per semitone across the keyboard, filled by how often, how cleanly and how fast. */
-function knownStrip(stats: Stats) {
-  const best = new Map<number, number>()
-  for (const [k, s] of Object.entries(stats)) {
-    const [size, , p] = k.split(':')
-    if (size !== '1') continue
-    const m = Math.min(1, s.n / 12) * s.clean * Math.min(1, 3000 / Math.max(s.rt, 1))
-    best.set(Number(p), Math.max(best.get(Number(p)) ?? 0, m))
-  }
-  if (!best.size) return ''
-  const lo = 36
-  const hi = 96
-  const w = 600 / (hi - lo + 1)
-  const bars = Array.from({ length: hi - lo + 1 }, (_, i) => {
-    const p = lo + i
-    const m = best.get(p)
-    return `<rect x="${(i * w).toFixed(1)}" y="2" width="${(w - 1).toFixed(1)}" height="40" rx="1.5" class="${m === undefined ? 'unseen' : 'seen'}"${m === undefined ? '' : ` style="--m:${(0.15 + 0.85 * m).toFixed(2)}"`}><title>${noteName(p)}${m === undefined ? ', not met yet' : `, ${Math.round(m * 100)}%`}</title></rect>${p % 12 === 0 ? `<text x="${p === hi ? 600 : (i * w).toFixed(1)}"${p === hi ? ' text-anchor="end"' : ''} y="56">${noteName(p)}</text>` : ''}`
-  }).join('')
-  return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter is better: met often, answered cleanly and quickly. Dark outlines are notes you have not drilled yet.</p>`
-}
-
-export function progressView(el: HTMLElement, d: ProgressData) {
-  const solid = d.stages.filter((r) => r.solid).length
-  const runs = d.log.filter((r) => r.id !== 'calibration')
-  const pts = runs.slice(-30)
-  const e = settings.edges ?? DEFAULT_EDGES
-  const X = (i: number) => 8 + (pts.length > 1 ? (i / (pts.length - 1)) * 584 : 292)
-  const Y = (v: number) => 146 - (v / 127) * 140
-  const spark = pts.length
-    ? `<svg class="hist spark" viewBox="0 0 600 150" role="img" aria-label="Average velocity of your last ${pts.length} sessions">
-        <line class="mid" x1="8" x2="592" y1="${Y(e.soft)}" y2="${Y(e.soft)}" stroke-dasharray="3 5"/><line class="mid" x1="8" x2="592" y1="${Y(e.hard)}" y2="${Y(e.hard)}" stroke-dasharray="3 5"/><text x="592" y="${Y(e.hard) - 5}" text-anchor="end">hard</text><text x="592" y="${Y(e.soft) - 5}" text-anchor="end">soft</text>
-        <polyline points="${pts.map((r, i) => `${X(i)},${Y(r.mean)}`).join(' ')}"/>${pts.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r.mean)}" r="3.5"/>`).join('')}</svg>`
-    : ''
-  const rows = runs
-    .slice(-8)
-    .reverse()
-    .map((r) => `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode)}</small></td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : ''}</td></tr>`)
-    .join('')
-  el.innerHTML = `
-    ${head('Progress')}
-    <h2 class="sec">This week</h2>
-    <div class="tcard">${weekBlock(d.week, d.goal, d.streak)}
-      <label class="field inline"><span>Weekly goal</span><select id="pGoal">${[30, 60, 90, 120, 180].map((m) => opt(m, `${m} min`, d.goal)).join('')}</select></label></div>
-    <h2 class="sec">Over time</h2>
-    ${overTime(d.history)}
-    ${knownStrip(d.stats)}
-    <h2 class="sec">Reading</h2>
-    <p class="note">${solid} of ${d.stages.length} stages solid.</p>
-    <div class="cells">${GROUPS.map(([g, f]) => {
-      const rs = d.stages.filter((r) => f(r.stage.id))
-      return `<div class="cgrp" role="group" aria-label="${g}, ${rs.filter((r) => r.solid).length} of ${rs.length} solid"><small class="label">${g}</small><div class="crow">${rs.map((r) => `<button class="cell${r.solid ? ' solid' : ''}" data-stage="${r.stage.id}" title="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%" aria-label="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%${r.solid ? ', solid' : ''}"><b style="height:${Math.round(r.pct * 100)}%"></b></button>`).join('')}</div></div>`
-    }).join('')}</div>
-    <h2 class="sec">Technique</h2>
-    <p class="note">${d.tech.filter((t) => t.state === 'solid').length} of ${d.tech.length} exercises solid${d.tech.some((t) => t.state === 'due') ? `, ${d.tech.filter((t) => t.state === 'due').length} due` : ''}.</p>
-    <div class="cells">${[...new Set(d.tech.map((t) => t.group))]
-      .map((g) => {
-        const ts = d.tech.filter((t) => t.group === g)
-        return `<div class="cgrp" role="group" aria-label="${esc(g)}, ${ts.filter((t) => t.state === 'solid').length} of ${ts.length} solid"><small class="label">${esc(g)}</small><div class="crow">${ts
-          .map((t) => `<button class="cell${t.state === 'solid' ? ' solid' : t.state === 'due' ? ' due' : ''}" data-recipe="${t.id}" title="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}" aria-label="${esc(t.label)}${STATE_WORD[t.state] ? ', ' + STATE_WORD[t.state].toLowerCase() : ''}"><b style="height:${t.state === 'solid' || t.state === 'due' ? 100 : t.state === 'learning' ? 50 : 0}%"></b></button>`)
-          .join('')}</div></div>`
-      })
-      .join('')}</div>
-    ${pathSection(d.path, d.next, d.ladder)}
-    <h2 class="sec">Touch</h2>
-    ${spark ? `${spark}<table class="songs"><caption class="sr-only">Recent sessions</caption><thead><tr><th scope="col">Date</th><th scope="col">Piece</th><th scope="col" class="num">Average</th><th scope="col" class="num">Spread</th><th scope="col" class="num">Right / left</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="note">Finish a song on a real keyboard and its touch shows up here.</p>'}`
-}
-
-export interface DrillSummary {
-  stage: string
-  cards: number
-  clean: number // 0..1
-  medianMs: number
-  weakest: { name: string; clean: number; rt: number }[]
-  before: number // mastery 0..1
-  after: number
-  solid: boolean
-  nextName: string
-  fast: boolean // a Fluent set: before, after and solid are the Fluent tier
-  goalMs: number
-}
-
-export function drillResults(d: DrillSummary) {
-  const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
-  return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Drill results">
-    <h2>${esc(d.stage)}: set complete</h2>
-    <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · median <b>${secs(d.medianMs)}</b> a card</p>
-    <div>
-      <p class="line" style="margin-bottom:6px">${d.fast ? 'Fluent' : 'Stage mastery'} went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${
-        d.solid
-          ? d.fast ? '. Fluent.' : '. Solid. The next tier is Fluent: the same cards, faster. Practice for speed from the stage list.'
-          : `. It is ${d.fast ? 'fluent' : 'solid'} when every card is first-try right in under ${secs(d.goalMs)}.`
-      }</p>
-      <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, `${d.fast ? 'Fluent' : 'Stage mastery'} after this set`)}<b>${Math.round(d.after * 100)}%</b></div>
-    </div>
-    ${d.solid ? `<p class="line">Next up: <b>${esc(d.nextName)}</b></p>` : ''}
-    ${
-      d.weakest.length
-        ? `<div><p class="line" style="margin-bottom:6px">Needs the most work</p><ul style="margin:0;padding-left:20px;color:var(--ink-2)">${d.weakest
-            .map((w) => `<li>${esc(w.name)}: ${Math.round(w.clean * 100)}% first try, ${secs(w.rt)}</li>`)
-            .join('')}</ul></div>`
-        : ''
-    }
-    <div class="row">
-      <button class="btn primary big" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
-      <button class="btn" id="toStages">All stages</button>
-    </div>
-  </div></div>`
-}
-
-// ---------------------------------------------------------------- Sight Run
-
-const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
-const RANGES: Record<RunSpec['clef'], [string, number, number][]> = {
-  treble: [['Middle C octave', 60, 72], ['Five fingers', 60, 67], ['The staff', 64, 77], ['With ledger lines', 60, 84]],
-  bass: [['Octave below', 48, 60], ['Five fingers', 48, 55], ['The staff', 43, 57], ['With ledger lines', 36, 60]],
-  grand: [['Around middle C', 55, 67], ['The staff', 43, 77], ['Wide', 36, 84]],
-}
 export const RUN_START: Record<RunSpec['clef'], [number, number]> = { treble: [60, 72], bass: [48, 60], grand: [43, 77] }
-const WHITE = (p: number) => ![1, 3, 6, 8, 10].includes(p % 12)
-const KEYS_RUN: [number, string][] = [[1, 'Key of G'], [2, 'Key of D'], [3, 'Key of A'], [4, 'Key of E'], [-1, 'Key of F'], [-2, 'Key of B♭'], [-3, 'Key of E♭'], [-4, 'Key of A♭']]
-const runNotes = (s: RunSpec) => (s.fifths ? KEYS_RUN.find(([f]) => f === s.fifths)?.[1] ?? 'In a key' : s.acc === 'nat' ? 'Naturals' : s.acc === 'sharp' ? 'With sharps' : 'With flats')
 export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
-const runLine = (s: RunSpec) => `${runTitle(s)} · ${runNotes(s)}${s.length ? ` · ${s.length} cards` : ''}${s.pace ? ` · paced, ${s.pace} bpm` : ''}`
-
-/** The Sight Run builder on the Read page, and the saved runs under it. */
-export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { streak: number; ms: number }>, bestKey: (s: RunSpec) => string, offer: Pace & { why: string }) {
-  const [min, max] = LIMITS[s.clef]
-  const names = Array.from({ length: max - min + 1 }, (_, i) => min + i).filter(WHITE)
-  const picks = (cur: number) => names.map((p) => `<option value="${p}"${p === cur ? ' selected' : ''}>${noteName(p)}</option>`).join('')
-  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
-  const slider = (id: string, label: string, lo: string, hi: string, v: number) => `<label class="field"><span>${label}</span><span class="slider"><small>${lo}</small><input id="${id}" type="range" min="0" max="1" step="0.1" value="${v}"><small>${hi}</small></span></label>`
-  const notes = s.fifths ? `k${s.fifths}` : s.acc
-  const saved = presets
-    .map((p, i) => {
-      const b = best[bestKey(p)]
-      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Longest streak ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
-    })
-    .join('')
-  const b = best[bestKey(s)]
-  return `<section class="tcard run" aria-label="Sight Run">
-    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range and how the notes jump about. ${s.pace ? 'A beat leads and the run does not stop for a miss: look ahead and keep going.' : 'It waits for you, and keeps going until you finish.'}</p></div></div>
-    <div class="tech-form">
-      ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rLo', 'From', picks(s.lo))}
-      ${field('rHi', 'To', picks(s.hi))}
-      ${field('rNotes', 'Notes', (s.size > 1 ? [['nat', 'Naturals']] : [['nat', 'Naturals'], ['sharp', 'With sharps'], ['flat', 'With flats']]).map(([v, l]) => `<option value="${v}"${v === notes ? ' selected' : ''}>${l}</option>`).join('') + KEYS_RUN.map(([f, l]) => `<option value="k${f}"${notes === `k${f}` ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rSize', 'Cards', [[1, 'Single notes'], [2, 'Intervals'], [3, 'Triads']].map(([v, l]) => `<option value="${v}"${v === s.size ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rPaced', 'Pace', [[0, 'Waits for me'], [1, 'Steady beat']].map(([v, l]) => `<option value="${v}"${(v === 1) === !!s.pace ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${s.pace ? `<label class="field"><span>Tempo</span><span class="slider"><input id="rPace" type="range" min="${PACE.min}" max="${PACE.max}" step="2" value="${s.pace}" aria-valuetext="${s.pace} beats a minute"><small id="rPaceV" class="bpm">${s.pace} bpm</small></span></label>${field('rEvery', 'A card every', [[1, 'Beat'], [2, 'Two beats']].map(([v, l]) => `<option value="${v}"${v === s.every ? ' selected' : ''}>${l}</option>`).join(''))}` : ''}
-      ${field('rLength', 'Length', [[0, s.pace ? '16 cards' : 'Endless'], ...(s.pace ? [] : [[10, '10 cards']]), [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rAhead', 'Reading ahead', (s.pace ? [[4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes']] : [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']]).map(([v, l]) => `<option value="${v}"${v === (s.pace && s.ahead < 2 ? 3 : s.ahead) ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${slider('rNear', 'Jumps', 'Leaps', 'Steps', s.near)}
-      ${slider('rWeak', 'Shuffle', 'Even', 'My weak notes', s.weak)}
-    </div>
-    <div class="chips" role="group" aria-label="Ranges">${RANGES[s.clef].map(([l, lo, hi]) => `<button class="chip-btn${s.lo === lo && s.hi === hi ? ' on' : ''}" data-rr="${lo}:${hi}">${l}</button>`).join('')}</div>
-    <div class="run-opts">
-      ${s.pace ? `<p class="fine">Offered for this range: <b>${offer.bpm} bpm</b>, a card every ${offer.every === 1 ? 'beat' : 'two beats'}. ${esc(offer.why)} A clean run on two days raises it by ${PACE.step} bpm.</p>` : `<label class="switch"><input type="checkbox" id="rWiden"${s.widen ? ' checked' : ''}><i></i><span><b>Widen as I improve</b><small>A clean set adds a note to the range</small></span></label>`}</div>
-    <div class="row-actions run-go">${b && !s.pace ? `<span class="fine">Your longest streak on this range: <b>${b.streak}</b></span>` : ''}<button class="btn ghost" id="rSave">Save this run</button><button class="btn primary" id="rStart">${icon('play')}Start</button></div>
-    ${saved ? `<p class="label cap">Your runs</p><div class="plan">${saved}</div>` : ''}
-  </section>`
-}
-
-export interface RunSummary {
-  spec: RunSpec
-  arc: Tally
-  medianMs: number
-  record: boolean
-  best?: { streak: number; ms: number }
-  notes: { p: number; n: number; miss: number; ms: number }[]
-  weakest: string[]
-}
-
-export function runResults(d: RunSummary) {
-  const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
-  const top = Math.max(3000, ...d.notes.map((n) => n.ms / n.n))
-  const strip = [...d.notes]
-    .sort((a, b) => a.p - b.p)
-    .map((n) => `<div class="hbar" style="--h:${Math.round(((n.ms / n.n) / top) * 100)}%;--m:${Math.round((n.miss / n.n) * 100)}%" title="${esc(noteName(n.p, d.spec.fifths))}: ${secs(n.ms / n.n)}, ${n.miss} missed of ${n.n}"><i></i><span>${esc(noteName(n.p, d.spec.fifths))}</span></div>`)
-    .join('')
-  return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
-    <h2>Run complete</h2>
-    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
-    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
-    ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
-    ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
-    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
-  </div></div>`
-}
-
-export interface PacedSummary {
-  spec: RunSpec
-  n: number // cards judged
-  hit: number // of them on the beat
-  cells: (boolean | undefined)[] // each card: on the beat, missed, not reached
-  missed: string[] // the missed cards by name, in order
-  timing: Timing | null
-  wrong: number // keys struck that were no note on the beat
-  note: string // what the tempo rule says
-}
-
-/** A paced run's results: cards on the beat in plain numbers, the run as a strip of cards, timing, the notes missed and the next tempo. No score, no rank. */
-export function pacedResults(d: PacedSummary) {
-  const first = d.cells.findIndex((c) => c === undefined)
-  const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Card ${i + 1}: missed"` : ''}></i>`).join('')
-  const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
-  return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
-    <h2>Run complete</h2>
-    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
-    <p class="line">Hit <b>${d.hit} of ${d.n}</b> on the beat at <b>${d.spec.pace} bpm</b>, a card ${cardWord}${first >= 0 ? `. You finished after ${first} of ${d.cells.length} cards.` : '.'}</p>
-    <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
-    ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
-    <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
-    <p class="line">${esc(d.note)}</p>
-    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
-  </div></div>`
-}
-
-// ---------------------------------------------------------------- Scales
-
-export interface ScaleRow {
-  stage: ScaleStage
-  pct: number
-  solid: boolean
-  done: number
-  total: number
-  next: boolean
-  card: Card
-}
-export interface ScalePick extends Card {
-  bpm: number
-}
-
-const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together', contrary: 'Contrary motion' } as const
-const FORMS: Record<Form, string> = { major: 'Major', natural: 'Natural minor', harmonic: 'Harmonic minor', melodic: 'Melodic minor', chromatic: 'Chromatic', arpMajor: 'Major arpeggio', arpMinor: 'Minor arpeggio', dom7: 'Dominant 7th arpeggio', dim7: 'Diminished 7th arpeggio' }
+export const HANDS = { R: 'Right hand', L: 'Left hand', both: 'Hands together', contrary: 'Contrary motion' } as const
 export const cardName = (c: Card) => `${keyName(c.tonic, c.form)}, ${HANDS[c.hands].toLowerCase()}, ${c.oct === 1 ? 'one octave' : 'two octaves'}`
 
-export interface QuizState {
-  cards: QCard[]
-  i: number
-  ok: number
-  streak: number
-  best: number
-  picked?: number // set once the card is answered
-}
-
-const DEG = [1, 2, 3, 4, 5, 6, 7]
-
-/** One card of the quiz: which degree takes the 4th finger. After the answer it shows the reason. */
-function quizBody(q: QuizState) {
-  if (q.i >= q.cards.length)
-    return `<section class="tcard run" aria-label="Quiz results"><h2>${q.ok} of ${q.cards.length}</h2><p class="line">Best streak <b>${q.best}</b>. ${q.ok === q.cards.length ? 'Every key.' : 'The keys you missed come back sooner next time.'}</p><div class="row-actions run-go"><button class="btn primary" id="qAgain">${icon('restart')}Again</button></div></section>`
-  const c = q.cards[q.i]
-  const done = q.picked !== undefined
-  const right = done && quizRight(c, q.picked!)
-  const hand = c.hand === 'R' ? 'right hand' : 'left hand'
-  return `<section class="tcard run" aria-label="Quiz" data-osk><p class="fine">Card ${q.i + 1} of ${q.cards.length}${q.streak > 1 ? ` · streak ${q.streak}` : ''}</p>
-    <h2>${esc(keyName(c.tonic, c.form))}, ${hand}</h2>
-    <p class="line">Which degree takes the 4th finger? Press the note on your keyboard, or tap a number.</p>
-    <div class="chips" role="group" aria-label="Degree">${DEG.map((d) => `<button class="chip-btn${done && d === q.picked ? ' on' : ''}" data-qd="${d}"${done ? ' disabled' : ''} aria-label="Degree ${d}, ${degreeName(c.tonic, c.form, d)}${done && quizRight(c, d) ? ', the answer' : ''}">${d}${done && quizRight(c, d) ? icon('check') : ''}</button>`).join('')}</div>
-    ${done ? `<p class="line" role="status"><b>${right ? 'Yes.' : 'Not quite.'}</b> ${esc(why(c.tonic, c.form, c.hand))} Up the scale: <b>${fingering(c.tonic, c.form, c.hand).split('').join(' ')}</b>. ${esc(checkNote({ tonic: c.tonic, form: c.form, hands: c.hand, oct: 1 }, c.hand))}</p><div class="row-actions run-go"><button class="btn primary" id="qNext">${q.i + 1 === q.cards.length ? 'Finish' : 'Next'}</button></div>` : ''}</section>`
-}
-
-export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'pick' | 'quiz', p: ScalePick, quiz?: QuizState) {
-  const ex = explain(p)
-  const field = (id: string, label: string, body: string) => `<label class="field"><span>${label}</span><select id="${id}">${body}</select></label>`
-  const body =
-    tab === 'quiz' && quiz
-      ? quizBody(quiz)
-      : tab === 'stages'
-      ? `<table class="songs stages"><caption class="sr-only">Scale stages</caption>
-      <colgroup><col><col class="mcol"><col style="width:150px"></colgroup>
-      <thead><tr><th scope="col">Stage</th><th scope="col">Solid</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
-      <tbody>${rows
-        .map(
-          (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm}.${r.solid ? '' : ` Up next: ${esc(cardName(r.card))}.`}</small></td>
-        <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`,
-        )
-        .join('')}</tbody></table>`
-      : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
-      ${field('sgForm', 'Scale', Object.entries(FORMS).map(([v, l]) => `<option value="${v}"${v === p.form ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('sgKey', 'Key', keyLabels(p.form).map((n, i) => `<option value="${i}"${i === p.tonic ? ' selected' : ''}>${n}</option>`).join(''))}
-      ${field('sgHands', 'Hands', Object.entries(HANDS).map(([v, l]) => `<option value="${v}"${v === p.hands ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('sgOct', 'Octaves', [[1, 'One'], [2, 'Two']].map(([v, l]) => `<option value="${v}"${v === p.oct ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('sgBpm', 'Tempo', [50, 60, 66, 72, 80, 90, 100, 112, 120].map((b) => `<option value="${b}"${b === p.bpm ? ' selected' : ''}>${b}, eighth notes</option>`).join(''))}
-    </div>
-    <p class="line">${ex.lead}: right hand <b>${ex.r}</b>, left hand <b>${ex.l}</b>.</p>
-    ${ex.why.map((w) => `<p class="fine">${esc(w)}</p>`).join('')}
-    <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
-  el.innerHTML = `
-    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
-    ${tab === 'quiz' && !(quiz && quiz.i < quiz.cards.length) ? noKeyboard(true) : ''}${body}`
-}
-
-// ---------------------------------------------------------------- Theory
-
-export interface TheoryRunView {
-  trainer: Trainer
-  cards: TCard[]
-  i: number
-  step: number // which chord of a progression is being asked
-  ok: number
-  streak: number
-  best: number
-  answered?: 'ok' | 'miss'
-  missed: string[]
-  medianMs: number
-  ear?: EarView
-}
-
-/** The trainer list, or one card of a session, or its results. */
-export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run?: TheoryRunView) {
-  let body: string
-  if (!run) {
-    body = `<div class="plan">${TRAINERS.map(
-      (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span></div>
-      ${t.levels.length ? `<label class="field inline"><span class="sr-only">Level of ${esc(t.name)}</span><select data-tlevel="${t.id}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}
-      <div class="pact"><button class="btn ghost" data-trainer="${t.id}">Start</button></div></div>`,
-    ).join('')}</div>`
-  } else if (run.i >= run.cards.length) {
-    const n = run.cards.length
-    body = `<section class="tcard run" aria-label="Session results"><h2>${run.ok} of ${n} first time</h2>
-      <p class="line">Best streak <b>${run.best}</b>${untimed(run.trainer) || isPulse(run.trainer) ? '' : ` · median <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card`}.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}${run.ear?.summary ? ` ${esc(run.ear.summary)}` : ''}</p>
-      <div class="row-actions run-go"><button class="btn ghost" id="thMenu">All trainers</button><button class="btn primary" id="thAgain">${icon('restart')}Again</button></div></section>`
-  } else {
-    const c = run.cards[run.i]
-    const t = TRAINERS.find((x) => x.id === run.trainer)!
-    body = `<section class="tcard run" aria-label="${esc(t.name)}" data-osk><p class="fine">${esc(t.name)} · card ${run.i + 1} of ${run.cards.length}${run.streak > 1 ? ` · streak ${run.streak}` : ''}</p>
-      <h2>${esc(c.prompt)}</h2>
-      ${c.steps.length > 1 ? `<p class="line">${c.steps[0].pcs.length > 1 ? 'Chord' : 'Note'} <b>${Math.min(run.step + 1, c.steps.length)}</b> of ${c.steps.length}</p>` : ''}
-      <p class="line" role="status">${run.answered === 'ok' ? '<b>Yes.</b>' : run.answered === 'miss' ? `<b>Not quite.</b> ${esc(c.show)}.` : c.play ? earAsk(c) : 'Play it on your keyboard.'}</p>
-      ${c.play?.kind === 'pulse' ? pulseBars(c.play) : ''}${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
-      <div class="row-actions run-go">${c.play && run.ear && !run.answered ? replayBtn(run.ear) : ''}<button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
-  }
-  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${run ? '' : noKeyboard(true)}${body}`
-}

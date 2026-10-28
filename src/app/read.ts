@@ -3,7 +3,8 @@ import { cardKey, cards, dueCards, fluentMs, focus, mastery, reviewPool, STAGES 
 import { PACE, suggest } from '../paced'
 import { bestKey, DEFAULT_RUN, LIMITS, runCards, type RunSpec } from '../run'
 import * as store from '../store'
-import { $, readView, RUN_START, runForm, runTitle, type StageRow } from '../ui'
+import { $, RUN_START, runTitle } from '../ui'
+import type { StageRow } from '../ui-views'
 import { drillStats, runSpec, setDrillStats, setRunSpec, stageById } from './state'
 import { saveRun, startDrill, startRun } from './drill'
 
@@ -23,6 +24,7 @@ export async function stageRows(): Promise<StageRow[]> {
 export async function showRead() {
   const saved = await store.getRuns()
   if (saved.last) setRunSpec({ ...DEFAULT_RUN, ...saved.last })
+  const { readView, runForm } = await import('../ui-views')
   readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey, offer(runSpec, saved.paced?.[bestKey(runSpec)])))
 }
 

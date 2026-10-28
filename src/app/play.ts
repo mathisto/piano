@@ -34,7 +34,7 @@ export async function fixBars(id: string, a: number, b: number) {
 }
 
 /** The play screen's code (Pixi, the staff, the dock, the recorder): fetched at idle after boot, awaited by the first piece. */
-export const stageCode = () => Promise.all([import('../highway'), import('../staff'), import('../dock'), import('./take-ui'), import('../report')])
+export const stageCode = () => Promise.all([import('../highway'), import('../staff'), import('../dock'), import('./take-ui'), import('../report'), import('../ui-results')])
 let reportLink: typeof import('../report').reportLink // for the start card, which only shows once the stage is built
 
 // one build, shared by pieces opened at once; a failed one (offline, chunk not fetched) is tried again by the next piece

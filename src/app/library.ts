@@ -7,7 +7,7 @@ import { noteName } from '../spell'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { thumb } from '../thumb'
-import { $, library, type Row, starterRows, tracksDialog, userRows } from '../ui'
+import { $, library, type Row, starterRows, userRows } from '../ui'
 import { current, hooks, starters } from './state'
 
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
@@ -62,7 +62,7 @@ export async function openTracks(id: string) {
   const s = (await store.listSongs()).find((x) => x.id === id)
   if (!s) return
   const midi = s.kind !== 'xml'
-  const { autoSelect, inspectMidi } = await import('../midi-tracks')
+  const [{ autoSelect, inspectMidi }, { tracksDialog }] = await Promise.all([import('../midi-tracks'), import('../ui-sheets')])
   const r = midi ? inspectMidi(s.bytes) : undefined
   let pick = s.pick ?? (r ? autoSelect(r) : { tracks: [], hands: {} })
   const song = await store.toSong(s, settings.split)
