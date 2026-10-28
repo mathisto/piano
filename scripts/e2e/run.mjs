@@ -403,14 +403,12 @@ async function mainFlow() {
     await nav(page, 'songs')
     await page.click('#library tr.open[data-open="starter-greensleeves"]')
     await ready(page)
-    await page.keyboard.press('v') // falling notes only: at 1180x820 the both-panes stage is too short for the full card
     await page.waitForSelector('#ready label:has(input[name=level][value="2"])')
     await axe(page, 'start card', '#ready')
     await ev(page, () => (document.querySelector('#ready b').dataset.old = '1'))
     await page.click('#ready label:has(input[name=level][value="2"])')
     // the piece opens again with fewer notes: wait for the new card, or Escape races the reopen
     await wait(page, () => document.querySelector('#ready b:not([data-old])') && document.querySelector('#ready input[name=level][value="2"]')?.checked)
-    for (const v of ['sheet', 'both']) await page.keyboard.press('v'), await wait(page, (v) => JSON.parse(localStorage.getItem('piano.settings')).view === v, v)
     await leave(page, 'library')
   })
 
@@ -805,12 +803,45 @@ const pedalFlow = () => fresh({
   },
 })
 
+const leadFlow = () => fresh({
+  async '21 Lead sheet: chord symbols, no left hand, the chord switch kept, a run is not the piece'(page) {
+    const open = async () => {
+      await nav(page, 'songs')
+      await page.fill('#libQ', 'Die Rose, die Lilie')
+      await page.click('#library [data-libplay="lieder-lc4976849"][data-mode=perform]')
+      await ready(page)
+    }
+    await open()
+    const hand = () => ev(page, () => window.__piano.game.song.notes.some((n) => n.h === 'L'))
+    ok(await hand(), 'the piece opened with no left hand to drop')
+    ok(!(await page.$('#compOn')), 'the chord switch offered before Lead sheet')
+    await ev(page, () => (document.querySelector('#ready b').dataset.old = '1'))
+    await page.click('#ready label:has(input[name=level][value="4"])') // the default Both view at 1180x820: the row must be on the card
+    await wait(page, () => document.querySelector('#ready b:not([data-old])') && document.querySelector('#ready input[name=level][value="4"]')?.checked)
+    ok(!(await hand()), 'a left-hand note in the lead sheet')
+    ok((await ev(page, () => document.querySelectorAll('#staff .cname').length)) > 0, 'no chord symbols on the staff')
+    await axe(page, 'start card, Lead sheet', '#ready')
+    await page.click('#ready label.switch:has(#compOn)')
+    await wait(page, () => JSON.parse(localStorage.getItem('piano.settings')).comp === true)
+    await leave(page, 'library')
+    await open() // the level and the switch come back with the piece
+    ok(await page.isChecked('#compOn'), 'the chord switch was not kept')
+    await ev(page, () => window.__piano.game.setRate(1.25)) // a long song: Perform at its top tempo
+    await page.click('#go')
+    await ev(page, () => window.__e2e.perform())
+    const card = (await (await res(page, 'Results')).textContent()).replace(/\s+/g, ' ')
+    ok(/Lead sheet, not the whole piece, so this run does not count toward Ready/.test(card), card.slice(0, 300))
+    const p = await ev(page, () => window.__e2e.idb('prog:lib:lieder-lc4976849'))
+    ok(!p?.days?.length && !p?.best && !p?.plays && !p?.box, JSON.stringify({ ...p, heat: undefined })) // heat is kept; Ready, Best and the review box are not
+  },
+})
+
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow),
-  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow),
+  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])
 await feature('11 accessibility: every page and the drawer', page, async () => {

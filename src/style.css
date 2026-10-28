@@ -816,8 +816,21 @@ table.stages col.mcol {
   #ready b {
     font-size: 34px;
   }
-  #ready :is(.cap, .seg ~ .seg, .legend) {
+  #ready :is(.cap, .legend) {
     display: none;
+  }
+  /* Notes shown and the chord switch are on the card: the Play button says what the mode line says, and the chord line sits beside its switch, so the card still fits above the keys */
+  #ready:has(.shows) > .seg + .hint {
+    display: none;
+  }
+  #ready .chords {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  #ready .chords .ghostsw {
+    margin: 0;
   }
 }
 /* the banner (no keyboard yet, or a note) takes the top of a short stage: the card drops onto the keys, which are no use before Play anyway */
@@ -834,8 +847,9 @@ table.stages col.mcol {
   #ready {
     bottom: 10px;
   }
-  #ready .hint {
-    display: none;
+  #ready .hint,
+  #ready div.shows {
+    display: none; /* the Notes shown row goes first: the strip is the keys, with the mode and the title above */
   }
   /* with 'You play' the card outgrows the strip: the title goes, the top bar already carries it */
   #ready:has(.accomp) > b {

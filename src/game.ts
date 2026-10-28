@@ -96,7 +96,6 @@ export class Game {
   private anchorT = 0
   private autoI = 0
   private compI = 0
-  comp = false // Lead sheet: the app plays the song's chords (a block chord on each half bar); kept until the page reloads
   private nextClick = 0
   private nextMetro = 0 // song time up to which the metronome has handed clicks to the audio clock
   private stallAt = 0
@@ -337,7 +336,7 @@ export class Game {
     for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t <= this.t; ) {
       const c = ch[this.compI++]
       const ms = ((c.d * 0.9) / this.rate) * 1000
-      if (this.comp)
+      if (settings.comp)
         for (const p of c.keys) {
           audio.noteOn(p, 0.45, true) // like Listen: the app is the one playing
           setTimeout(() => audio.noteOff(p), ms)

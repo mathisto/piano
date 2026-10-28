@@ -6,15 +6,15 @@
   max-width: 46ch;
   margin-inline: auto;
 }
-/* a short stage (iPad landscape) keeps the card small: caption and choice on one line, no hint */
+/* a short stage (iPad landscape) keeps the card small: caption and choice on one line, no hint. Notes shown (.shows) is laid out the same way */
 @container stage (max-height: 420px) {
-  #ready .accomp {
+  #ready :is(.accomp, .shows) {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
   }
-  #ready .accomp .cap {
+  #ready :is(.accomp, .shows) .cap {
     display: block;
     margin: 0;
   }
@@ -22,8 +22,8 @@
     display: none;
   }
 }
-/* the 'No keyboard yet' banner takes the top of the stage: the taller card drops onto the keys, which are no use before Play */
-#stage:has(.banner) #ready:has(.accomp) {
+/* the 'No keyboard yet' banner takes the top of the stage: the taller card (You play, or a lead sheet's chord switch) drops onto the keys, which are no use before Play */
+#stage:has(.banner) #ready:has(:is(.accomp, .chords)) {
   top: auto;
   bottom: 10px;
   transform: translateX(-50%);

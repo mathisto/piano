@@ -5,6 +5,7 @@ import { Game } from './game'
 import { chordsOf } from './lead'
 import { layout, analyze, windowFor } from './layout'
 import { fromMusicXml, xmlText } from './musicxml'
+import { settings } from './settings'
 import { canLead, simplify } from './simplify'
 import { build, type Bar, type Raw } from './song'
 
@@ -61,7 +62,7 @@ describe('Lead sheet level', () => {
     const g = new Game()
     g.load(song, 'perform')
     const run = (comp: boolean) => {
-      g.comp = comp
+      settings.comp = comp
       g.load(song, 'perform')
       vi.mocked(audio.noteOn).mockClear()
       g.toggle()

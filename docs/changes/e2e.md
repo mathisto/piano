@@ -24,6 +24,7 @@ What it does: one profile plays a day (0 to 10, in order); the other features ea
 - 17 Memorise: two clean Learn passes at stage 0 move to stage 1. 17b the metronome: B cycles beats, eighths, off; four beat dots, the lit one moves
 - 18 Staff marks: the fixture score (`src/score-fixtures.ts`) imported through Add files; staccato, accent, slur, hairpin and dynamic letters all drawn on the staff during a run; played flat, the results name the flat crescendo and the long staccatos
 - 19 Read: after `__piano.solidUpTo(3)` the three stages carry the Fluent tag; at 2 s a card they read "Solid · Fluent at 1.5 s" with For speed, which starts a speed set
+- 21 Lead sheet (`docs/changes/lead2.md`): a bundled Lied, Lead sheet from the card at 1180x820, chord symbols drawn, no left hand, the chord switch kept across reopening, axe on the card, and a run that records no Ready, Best or box
 
 Dev hook added: `__piano.theory()` returns the Theory session in progress (src/main.ts). No src change for the later features: they use `__piano.solidUpTo`, `__piano.mem`, `__take.sink`, the game's `auto` events and `game.modeOf`.
 
@@ -33,7 +34,7 @@ Dev hook added: `__piano.theory()` returns the Theory session in progress (src/m
 2. **Export misses four key families.** `scale:quiz` (Quiz stats), `plan:<day>` (Today's ticks), `simp:<id>` (Notes shown per piece) and `snap:<week>` (the weekly snapshots behind the Monday recap; only this week's is rebuilt on boot) are not in `exportAll`/`importAll` (store.ts). Repro: feature 9b.
 3. **The stage keeps rendering after you leave a song.** The Pixi ticker never stops: in headless Chrome a 10 ms timer on the Theory page fires 77 times in 3 s once a song has been opened, 300 times before (worst gap 298 ms). On the iPad that is battery. Fix: stop `app.ticker` while `#play` is hidden.
 4. **Clear keeps `piano.setup` and `piano.legend`** in localStorage, so after Clear the first-run Set up sheet and the colour legend never show again. Your call whether that is wanted.
-5. **At 1180x820 (iPad landscape), both panes**, the stage is under 420 px, so the start card's container query hides the hint, cover, legend and the Notes shown choice; it is only reachable by switching to falling notes (V). Intended?
+5. **At 1180x820 (iPad landscape), both panes**, the stage is under 420 px, so the start card's container query hides the hint, cover, legend and the Notes shown choice; it was only reachable by switching to falling notes (V). Fixed in lead2: Notes shown stays as one line; under 260 px it is still hidden.
 6. **Escape right after choosing Notes shown** (inside about 200 ms) leaves, then the reopen finishes and puts you back in the piece. Rare by hand; the suite waits for the reopen.
 7. **The Help sheet could not be scrolled from the keyboard** (axe `scrollable-region-focusable` at 1180x820: its body overflows and holds nothing focusable). Fixed: `tabindex="0"` on `.helpbody` (src/guide.ts). Feature 12 guards it.
 8. **Clear removes only `piano.settings` from localStorage**, so besides bug 4 it keeps `piano.guide` (a hidden or skipped Start here stays so, and the first-use day stays, so a player who clears after day 8 never sees the card), `piano.tips` (the tab notes never come back) and `piano.ghost`. Repro: feature 10 prints what is left. Same call as 4.

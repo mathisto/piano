@@ -36,6 +36,7 @@ export interface Settings {
   readBest?: number // Read through: the fastest tempo of a clean read-through, so the next one does not start faster
   osk?: boolean // on-screen keys under Theory and the Quiz: unset follows whether a MIDI keyboard is connected
   oskNames?: boolean // a letter on every white key of the on-screen keys, not just the Cs
+  comp: boolean // Lead sheet: the app plays the chords (a block chord on each half bar); only a lead sheet has chords, so it is no-op on other levels
   readAhead?: boolean // Read through: only the next two bars show once the music moves
 }
 
@@ -65,6 +66,7 @@ const DEFAULTS: Settings = {
   offset: 0,
   split: 60,
   device: '',
+  comp: false,
 }
 
 const KEY = 'piano.settings'
