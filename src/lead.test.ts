@@ -47,7 +47,7 @@ describe('chordsOf', () => {
 describe('Lead sheet level', () => {
   const s = piece([[48, 52, 55, 72], [43, 47, 50, 74], [48, 52, 55, 76], [43, 47, 50, 72]])
   it('keeps the top line and adds the chords; the left hand goes', () => {
-    const l = simplify(s, 4)
+    const l = simplify(s, 4, chordsOf)
     expect(l.notes.map((n) => n.p)).toEqual([72, 74, 76, 72])
     expect(l.chords?.map((c) => c.name)).toEqual(['C', 'G', 'C', 'G'])
     expect(simplify(s, 3).chords).toBeUndefined()
@@ -55,7 +55,7 @@ describe('Lead sheet level', () => {
     expect(canLead(simplify(s, 3))).toBe(false)
   })
   it('draws a symbol where the chord changes, above the staff', () => {
-    const song = simplify(piece([[48, 52, 55, 72], [48, 52, 55, 74], [43, 47, 50, 72], [43, 47, 50, 71]]), 4)
+    const song = simplify(piece([[48, 52, 55, 72], [48, 52, 55, 74], [43, 47, 50, 72], [43, 47, 50, 71]]), 4, chordsOf)
     const an = analyze(song)
     const cfg = { view: 'sheet' as const, px: { w: 900, h: 400 }, zoom: 1 }
     const L = layout(an, windowFor(an, 0, cfg), cfg)
@@ -63,7 +63,7 @@ describe('Lead sheet level', () => {
     expect(L.syms.every((x) => x.y < L.base[L.clefs[0]] - 4 * 10)).toBe(true) // above the staff
   })
   it('the app plays the chords on the half bars only when asked', () => {
-    const song = simplify(piece([[48, 52, 55, 72], [43, 47, 50, 74]]), 4)
+    const song = simplify(piece([[48, 52, 55, 72], [43, 47, 50, 74]]), 4, chordsOf)
     const g = new Game()
     g.load(song, 'perform')
     const run = (comp: boolean) => {
@@ -83,7 +83,7 @@ describe('on a Lied with a voice part', () => {
   it('the melody is the voice line, and the chords come from the piano', async () => {
     const b = readFileSync('public/library/lieder-lc4976849.mxl')
     const full = await fromMusicXml(await xmlText(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer), 'x', 'lieder-lc4976849')
-    const l = simplify(full, 4)
+    const l = simplify(full, 4, chordsOf)
     const sung = full.notes.filter((n) => n.part === 0 || n.also === 0).length
     expect(sung).toBeGreaterThan(20)
     expect(l.notes.length).toBe(sung)

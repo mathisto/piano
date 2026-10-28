@@ -59,7 +59,7 @@ export async function openSong(base: Song, mode: Mode, paced = false) {
   game.endPass()
   // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
   const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
-  const song = simplify(base, level)
+  const song = simplify(base, level, level === 4 ? (await import('../lead')).chordsOf : undefined) // lazy: the chord reader is not boot JS
   if (settings.asWritten && !song.dyn && mode !== 'read') {
     const w = writtenTargets(song.notes, settings.edges)
     if (w) song.notes.forEach((n, i) => (n.want = w[i]))
