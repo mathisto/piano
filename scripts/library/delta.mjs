@@ -21,5 +21,5 @@ L.pieces = L.pieces.map((p) => {
 })
 L.built = createHash('sha256').update(J([L.composers, L.licences, L.aliases ?? {}, L.pieces])).digest('hex').slice(0, 16)
 cpSync(live, out, { recursive: true })
-writeFileSync(`${out}/catalog.json`, J(L) + "\n")
+writeFileSync(`${out}/catalog.json`, J(L) + '\n')
 console.log(`${changed} pieces changed, kept as published: ${skipped.join(' ')}; built ${L.built}`)

@@ -20,7 +20,7 @@ A.pieces = A.pieces.map((p) => {
   lic = lic.split(p.file).join(q.file)
   return q
 })
-A.built = createHash('sha256').update(JSON.stringify(A.pieces)).digest('hex').slice(0, 16)
+A.built = createHash('sha256').update(JSON.stringify([A.composers, A.licences, A.aliases ?? {}, A.pieces])).digest('hex').slice(0, 16) // as reanalyse.mjs: a change to the tables alone is a new built too
 mkdirSync(`${out}/p`, { recursive: true })
 for (const d of [base, over]) cpSync(`${d}/p`, `${out}/p`, { recursive: true, force: false, errorOnExist: false })
 writeFileSync(`${out}/catalog.json`, JSON.stringify(A))
