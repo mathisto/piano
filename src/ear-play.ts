@@ -1,6 +1,7 @@
 import * as audio from './audio'
 import { RHYTHM, beatMs, biasText, scoreTaps, type EarView, type Play } from './ear'
 import { checkQA } from './ear2'
+import { settings } from './settings'
 import type { TCard } from './theory'
 import './ear.css'
 import { mean } from './util'
@@ -83,8 +84,9 @@ export function playCard(e: EarRun, c: TCard, open: () => boolean, finish: (ok: 
   return e.deaf
 }
 
-/** A key pressed on a rhythm card is a tap, any key; the keys of one chord are one tap. The bar is judged a moment after the last tap, or when it ends. */
+/** A key pressed on a rhythm card is a tap, any key; the keys of one chord are one tap. The bar is judged a moment after the last tap, or when it ends. `ts` is when the key's message arrived: the calibration offset is taken off it, as in a piece. */
 export function earTap(e: EarRun, c: TCard, ts: number) {
+  ts -= settings.offset
   if (ts - (e.taps[e.taps.length - 1] ?? -1e9) < RHYTHM.merge) return
   e.taps.push(ts)
   const n = (c.play as { onsets: number[] }).onsets.length
@@ -97,7 +99,7 @@ export function earTap(e: EarRun, c: TCard, ts: number) {
 
 /** A note played in the answer window of a question-and-answer card; the two bars are judged when they end. */
 export function earNote(e: EarRun, p: number, ts: number) {
-  const t = ts - e.t0
+  const t = ts - settings.offset - e.t0
   if (t < 8 * beatMs()) e.notes.push({ p, t })
 }
 

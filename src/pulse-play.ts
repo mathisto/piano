@@ -1,6 +1,7 @@
 import * as audio from './audio'
 import { RHYTHM } from './ear'
 import { type EarRun, schedule } from './ear-play'
+import { settings } from './settings'
 import { endBeat, openBeat, pulseText, scorePulse, type PulsePlay } from './pulse'
 import type { TCard } from './theory'
 import './pulse.css'
@@ -30,6 +31,7 @@ export function playPulse(e: EarRun, c: TCard, open: () => boolean, finish: (ok:
 
 /** A key pressed on a pulse card is a tap, any key; the keys of one chord are one tap. Keep the beat is judged when its last click has sounded; the others a moment after the last wanted tap. */
 export function pulseTap(e: EarRun, c: TCard, ts: number) {
+  ts -= settings.offset // as in earTap
   if (ts - (e.taps[e.taps.length - 1] ?? -1e9) < RHYTHM.merge) return
   e.taps.push(ts)
   const p = c.play as PulsePlay
