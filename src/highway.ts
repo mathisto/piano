@@ -376,7 +376,8 @@ export class Highway {
     const top = H + 4
     const draw = (k: K) => {
       const down = g.held.has(k.p)
-      const auto = (g.autoUntil.get(k.p) ?? 0) > performance.now()
+      const [from, until] = g.autoUntil.get(k.p) ?? [0, 0]
+      const auto = from <= performance.now() && performance.now() < until
       const ghost = need.has(k.p)
       const kh = k.black ? this.kbH * 0.6 : this.kbH - 4
       let fill: number = k.black ? C.keyBlack : C.keyWhite
