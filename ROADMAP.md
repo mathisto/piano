@@ -155,6 +155,7 @@ Play and staff:
 - Hands for single-track MIDI split at one pitch, no per-note override.
 - Timing windows (45, 80, 125 ms) and scoring weights are tuned by feel.
 - Web MIDI needs Chrome, Edge or Firefox on a computer; the iPad app has its own path.
+- iPad MIDI timing (30 Oct, `ios-native.md` F2): each packet carries its own host time, mapped onto `performance.now()` by the quickest of five `now()` round trips, resynced every 30 s and after a sleep. Seen on the iPad: the sync runs (round trip under WebKit's 1 ms clock grain). Not yet measured: the spread of judged timing over USB against Bluetooth, before and after.
 - Cloudflare injects a Web Analytics beacon at the edge; the app sends nothing itself.
 - The Key touch hint in the drawer is a sentence, against the "no paragraphs" rule.
 - The 30-minute break toast was not waited out live; the streak midnight edge is unit-tested only.

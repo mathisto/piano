@@ -86,7 +86,7 @@ Scale [C]: about 16.2k lines of non-test TypeScript (23k with tests), 171 lines 
 ### Timestamps: best practice and the fix
 `MIDITimeStamp` is host time (mach absolute time) at the moment the event occurred; 0 means now [9][V]. Best practice: carry each event's own host time across the bridge and map it into `performance.now()` with an offset, rather than an age measured before an asynchronous hop.
 
-1. Native: per packet, `t = ns(packet.timeStamp)` (with 0 meaning `clock_gettime_nsec_np(CLOCK_UPTIME_RAW)`), sent in ms. Same clock as mach time, no timebase, and not on Apple's required-reason list [43][V][S].
+1. Native: per packet, `t = ns(packet.timeStamp)` (with 0 meaning `clock_gettime_nsec_np(CLOCK_UPTIME_RAW)`), sent in ms. Same clock as mach time, not on Apple's required-reason list [43][V][S]. (Correction, 30 Oct: the packet's own stamp is in mach ticks, so `mach_timebase_info` still converts it; only reading the time moved off `mach_absolute_time()`.)
 2. Native method `now()` returns the same clock in ms.
 3. JS: on start, and every 30 s while playing, call `now()` five times; for each, `offset = (t0 + t1)/2 - native`; keep the offset from the call with the smallest `t1 - t0`. Then `timeStamp = t + offset`. Error is at most RTT/2 of the best sample.
 4. Assumption [M]: WebKit's `performance.now()` runs on the same monotonic uptime clock, so the offset does not drift. Re-syncing every 30 s covers any drift. Safari coarsens `performance.now()` to about 1 ms [S, Chrome blog's survey of other browsers], far below the 45 ms judging window.
@@ -182,8 +182,8 @@ Days are for one developer plus an agent at this repo's pace, **including device
 | # | Item | Days | Why first |
 |---|---|---|---|
 | F0 | **Decision for the owner: pay the $99.** | 0 | Ends 7-day expiry; unlocks TestFlight and iCloud; needed for any App Store future |
-| F1 | **Bluetooth pairing sheet** with the iOS 27 workaround; button in Set up and the MIDI chip; `NSBluetoothAlwaysUsageDescription` | 0.5 | Unblocks the owner's Bluetooth path on iPadOS 27; every peer has it |
-| F2 | **MIDI timestamps**: per-packet host times, `CLOCK_UPTIME_RAW`, `now()` plus min-RTT offset; unit-test the offset maths | 0.5 | Judging stops absorbing main-thread stalls; also removes the privacy-manifest reason |
+| F1 | **Built 29 Oct, not yet tried on the iPad.** **Bluetooth pairing sheet** with the iOS 27 workaround; button in Set up and the MIDI chip; `NSBluetoothAlwaysUsageDescription` | 0.5 | Unblocks the owner's Bluetooth path on iPadOS 27; every peer has it |
+| F2 | **Done 30 Oct.** **MIDI timestamps**: per-packet host times, `CLOCK_UPTIME_RAW`, `now()` plus min-RTT offset; unit-test the offset maths | 0.5 | Judging stops absorbing main-thread stalls; also removes the privacy-manifest reason |
 | F3 | **Auto-backup** of the JSON export to Documents (Files-visible) at session end; `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace` | 0.5 | Protects against "never delete the app" and data loss |
 | F4 | **Shell hygiene**: delete the `Main.storyboard` keys and file; add `PrivacyInfo.xcprivacy` and `ITSAppUsesNonExemptEncryption`; native audio interruption and route observers (reactivate the session; tell JS on Bluetooth A2DP) | 0.5 | One-time, prevents review and lifecycle bugs |
 | F5 | **Audio measurement** (section 2, step 1) plus web-side fixes: Listen back on the audio clock, `outputLatency` read, Bluetooth-speaker warning | 1 | Decides whether native audio is worth building |
