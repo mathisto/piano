@@ -1,3 +1,4 @@
+import 'pixi.js/unsafe-eval' // the page's CSP has no 'unsafe-eval': Pixi's shader uploads without new Function()
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import type { Game } from './game'
 import type { Grade } from './judge'

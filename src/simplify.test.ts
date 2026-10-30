@@ -45,9 +45,12 @@ describe('simplify', () => {
     expect(s.hi).toBe(74)
   })
 
-  it('drops tiny ornaments from level 1 up', () => {
-    const s = simplify(song([{ t: 0, p: 60, h: 'R', d: 0.05 }, { t: 0.1, p: 62, h: 'R' }]), 1)
-    expect(s.notes.map((n) => n.p)).toEqual([62])
+  it('drops grace notes from level 1 up, and keeps short notes that are not ornaments', () => {
+    const orn = song([{ t: 0, p: 60, h: 'R', d: 0.05 }, { t: 0.1, p: 62, h: 'R' }])
+    orn.notes[0].grace = true // as the importers flag it
+    expect(simplify(orn, 1).notes.map((n) => n.p)).toEqual([62])
+    const fast = song([{ t: 0, p: 60, h: 'R', d: 0.06 }, { t: 0.125, p: 62, h: 'R', d: 0.06 }, { t: 0.25, p: 64, h: 'R', d: 0.06 }]) // staccato sixteenths at a quick tempo
+    for (const l of [1, 2, 3] as const) expect(simplify(fast, l).notes.map((n) => n.p)).toEqual([60, 62, 64])
   })
 })
 

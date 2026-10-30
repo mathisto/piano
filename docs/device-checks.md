@@ -27,5 +27,8 @@ Everything below was built and checked in headless Chrome only. Each line says w
 ## Scales and fingerings (check against the Alfred book)
 11. `docs/changes/fingers.md` has the arpeggio checklist in Alfred's page order, one line per fingering. Mark each line right or wrong; the listed alternatives are the places schools differ.
 
+## Content Security Policy (`docs/changes/datafix.md`)
+12. Launch the iPad app from Xcode with the console open: Today shows, the Songs list fills from the corpus, a piece opens and plays, and the console has no line saying "Refused" or "Content Security Policy".
+
 ## Report
 Tell me line numbers that were wrong, plus anything that looked cramped or sounded odd. Nothing else needs doing.

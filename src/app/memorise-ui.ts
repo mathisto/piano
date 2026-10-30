@@ -87,7 +87,7 @@ export async function memDone(r: Result) {
   const c = current!
   const p = memPass(r.clean, r.heat)
   // from stage 3 up the piece is played from memory: it joins spaced review like a clean Perform run
-  const prog = await store.commit(c.song.id, r.heat, undefined, p.from >= 3 ? r.clean && !p.peeks : undefined)
+  const prog = await store.commit(c.song.id, r.heat, c.song.bars.length, undefined, p.from >= 3 ? r.clean && !p.peeks : undefined)
   c.heat = prog.heat
   dock.setSong(c.song, prog.heat)
   void store.markPlan(dayKey(), 'piece')

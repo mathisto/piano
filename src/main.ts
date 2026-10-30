@@ -110,6 +110,7 @@ const stored = (k: string) => {
 
 void (async () => {
   await probe()
+  void navigator.storage?.persist?.()?.catch(() => {}) // ask the browser not to evict the songs and progress under storage pressure (Safari drops site data unasked)
   await lib.init(() => {
     if ($('#library').classList.contains('on')) void showLibrary()
   })
@@ -135,4 +136,4 @@ if (import.meta.env.DEV) {
 }
 
 // Offline after the first visit (src/sw.ts). Not in the iPad app (capacitor:), whose files are on the device, nor in dev.
-if (import.meta.env.PROD && /^https?:$/.test(location.protocol)) void navigator.serviceWorker?.register(`${import.meta.env.BASE_URL}sw.js?v=${typeof __COMMIT__ === 'string' ? __COMMIT__ : ''}`).then((r) => r.update()).catch(() => {}) // update(): browsers recheck sw.js only once a day on their own; ?v=commit is a new URL each deploy, so an edge that holds /sw.js for hours cannot serve the old one
+if (import.meta.env.PROD && /^https?:$/.test(location.protocol)) void navigator.serviceWorker?.register(`${import.meta.env.BASE_URL}sw.js?v=${typeof __COMMIT__ === 'string' ? __COMMIT__ : ''}`).catch(() => {}) // ?v=commit is a new URL each deploy: registering it starts the update at once, and an edge that holds /sw.js for hours cannot serve the old one

@@ -10,9 +10,9 @@ import { LEVELS } from '../levels'
 import * as store from '../store'
 import { applyRun } from '../syllabus'
 import { $, cardName } from '../ui'
-import { esc } from '../util'
+import { esc, worstBars } from '../util'
 import { dayKey } from '../week'
-import { calibrating, current, dock, drill, game, hooks, mem, resOpen, rt, say, worstBars } from './state'
+import { calibrating, current, dock, drill, game, hooks, mem, resOpen, rt, say } from './state'
 import { syncMode } from './stage'
 import { leave, onPhase } from './play'
 import { rtDone } from './readthrough-ui'
@@ -32,12 +32,13 @@ async function onDone(r: Result) {
   const prog = await store.commit(
     current.song.id,
     r.heat,
+    current.song.bars.length,
     r.mode === 'perform' && !partial ? { acc: r.acc } : undefined,
     r.mode === 'read' || game.loop || partial ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
   )
   current.heat = prog.heat
   void store.markPlan(dayKey(), current.song.id.startsWith('scale:') ? 'scale' : current.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
-  if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.getTech().then((ts) => store.saveTech(applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum())))
+  if (current.song.id.startsWith('tech:') && r.mode === 'perform') void store.saveTech((ts) => applyRun(ts, current!.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum()))
   dock.setSong(current.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
@@ -49,17 +50,19 @@ async function onDone(r: Result) {
   let note = ''
   const sc = parseId(current.song.id)
   if (sc && r.mode === 'perform') {
-    const stats = await store.getScales()
     const ok = passed(r)
-    const before = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]?.best ?? 0
-    recordScale(stats, sc.card, sc.bpm, ok)
-    await store.saveScales(stats)
+    let before = 0
+    const stats = await store.saveScales((st) => {
+      before = st[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]?.best ?? 0
+      recordScale(st, sc.card, sc.bpm, ok)
+      return st
+    })
     const s = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]
     note = ok
       ? s.best > before ? `Three clean runs in a row: <b>${esc(cardName(sc.card))}</b> is solid at ${sc.bpm}.` : `A clean run, ${s.streak} of ${CLEAN_RUNS} at ${sc.bpm}.`
       : `This run did not count: ${!r.clean ? 'a missed or wrong note' : r.acc < 0.85 ? 'the timing slipped' : 'the touch was uneven'}. The count starts again.`
   }
-  const worst = worstBars(r.heat)
+  const worst = worstBars(r.heat, current.song.bars.length)
   const next = r.mode === 'read' ? null : nextStep({ clean: r.clean, wait: game.wait, rate: game.rate, worst })
   const res = $('#res')
   if (who) note = `Judged on your part only: <b>${esc(who.you)}</b>.${who.app ? ` The app played ${esc(who.app)}.` : ''} ${note}`

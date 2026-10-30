@@ -27,6 +27,9 @@ export async function fixBars(id: string, a: number, b: number) {
   await openById(id, 'learn')
   if (!current || current.song.id !== id) return
   const bars = current.song.bars
+  a = Math.min(a, bars.length - 1) // a suggestion made for a longer version of the piece
+  b = Math.min(Math.max(a, b), bars.length - 1)
+  if (a < 0) return
   game.setRate(0.7)
   game.setLoop({ a: bars[a].t0, b: bars[b].t1 })
   syncMode()
@@ -82,7 +85,7 @@ export async function openSong(base: Song, mode: Mode, paced = false) {
     throw new Error(msg)
   }
   game.load(song, mode, paced)
-  const prog = await store.getProgress(song.id)
+  const prog = await store.getProgress(song.id, song.bars.length)
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
@@ -180,7 +183,7 @@ game.on((e: GameEvent) => {
       onPhase()
       break
     case 'pass':
-      if (current && game.mode !== 'read') void store.commit(current.song.id, e.heat)
+      if (current && game.mode !== 'read') void store.commit(current.song.id, e.heat, current.song.bars.length)
       break
     case 'done':
       void hooks.onDone(e.result)

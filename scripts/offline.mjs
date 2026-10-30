@@ -22,7 +22,6 @@ const keys = await page.evaluate(async () => (await caches.keys()).sort())
 check('caches', keys.some((k) => k.startsWith('pf-shell-')), keys.join())
 const fetched = (u) => page.evaluate((u) => fetch(u).then((r) => r.status, () => 0), u)
 const piece = (await fetched('/corpus/p/test.mid')) === 200
-if (piece) await fetched('/corpus/catalog.json')
 
 await ctx.setOffline(true)
 await page.reload()
@@ -35,9 +34,16 @@ await page.waitForTimeout(1500)
 check('offline: a song opens (lazy chunks come from the cache)', (await page.$$('canvas')).length >= 1)
 if (piece) {
   check('offline: corpus piece served from cache', (await fetched('/corpus/p/test.mid')) === 200)
-  check('offline: catalogue served from cache', (await fetched('/corpus/catalog.json')) === 200)
 }
+check('offline: the catalogue is not the worker\'s to keep (src/catalog.ts has its own copy)', (await fetched('/corpus/catalog.json')) === 0)
 check('offline: an uncached request fails, not hangs', (await fetched('/corpus/p/never-seen.mid')) === 0)
+// the edge answering for a server that is down (Cloudflare 502, 530): the cached shell, not the error page
+await ctx.setOffline(false)
+let bad = 0
+await ctx.route((u) => u.pathname === '/', (r) => (bad++, r.fulfill({ status: 502, body: 'Bad gateway' })))
+await page.reload()
+check('a 502 for the page: the cached shell boots', bad > 0 && (await page.waitForSelector('#today.on', { timeout: 10000 }).then(() => true, () => false)), `${bad} answered 502`)
+await ctx.unrouteAll()
 check('no page errors', errors.length === 0, errors.join(' | '))
 await browser.close()
 process.exit(failed ? 1 : 0)

@@ -95,21 +95,6 @@ export const hooks = {} as {
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id)
 
-export function worstBars(heat: number[], bars = game.song.bars.length): { a: number; b: number } | null {
-  let best = 0
-  let at = -1
-  for (let i = 0; i < heat.length; i++) {
-    const s = (heat[i] ?? 0) + (heat[i + 1] ?? 0)
-    if (s > best) {
-      best = s
-      at = i
-    }
-  }
-  if (at < 0) return null
-  return { a: at, b: Math.min(bars - 1, at + 1) }
-}
-
-/** The sheets' code (Credits, Set up, Options). If it did not arrive (offline), the sheet says so in plain words; undefined then. */
 /** A dialog whose code could not load says so in plain words, with a Close button. */
 export function chunkFailed(d: HTMLDialogElement) {
   d.innerHTML = '<div class="body"><p>Check the connection, then reload the page.</p></div><footer><button class="btn" data-close autofocus>Close</button></footer>'

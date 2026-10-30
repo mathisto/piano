@@ -50,6 +50,19 @@ function report(name: string, before: Metrics | undefined, s: Song) {
   return m
 }
 
+describe('the last bar', () => {
+  const bars = (...ns: [tick: number, dtick: number][]) => quantize(ns.map(([tick, dtick]) => ({ tick, dtick, p: 60, hand: 'R' as const })), { ppq: PPQ, sigs: [{ tick: 0, n: 4, den: 4 }], tempos: [{ tick: 0, bpm: 120 }] }).bars.length
+  it('a piece whose last note ends on the barline has no empty bar after it', () => {
+    expect(bars([0, 4 * PPQ])).toBe(1)
+    expect(bars([0, 2 * PPQ], [2 * PPQ, 2 * PPQ])).toBe(1)
+  })
+  it('a note released a hair past the barline is clipped there; one that rings on, or starts on it, gets its bar', () => {
+    expect(bars([0, 4 * PPQ + 10])).toBe(1)
+    expect(bars([0, 5 * PPQ])).toBe(2)
+    expect(bars([0, PPQ], [4 * PPQ, 0])).toBe(2)
+  })
+})
+
 describe('a piece too long to show', () => {
   it('is refused in words, not cut at 5,000 bars with the rest read as one', () => {
     const at = (bars: number) => quantize([{ tick: bars * 4 * PPQ, dtick: PPQ, p: 60, hand: 'R' }], { ppq: PPQ, sigs: [{ tick: 0, n: 4, den: 4 }], tempos: [{ tick: 0, bpm: 120 }] })

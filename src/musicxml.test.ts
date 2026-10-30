@@ -13,9 +13,8 @@ const XML = `<?xml version="1.0" encoding="UTF-8"?>
  <measure number="1">
   <attributes><divisions>2</divisions><key><fifths>1</fifths></key><time><beats>3</beats><beat-type>4</beat-type></time><staves>2</staves></attributes>
   <direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>120</per-minute></metronome></direction-type><sound tempo="120"/></direction>
-  <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><tie type="start"/><staff>1</staff></note>
-  <note><chord/><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><staff>1</staff></note>
-  <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><staff>1</staff></note>
+  <note><pitch><step>G</step><octave>4</octave></pitch><duration>6</duration><tie type="start"/><staff>1</staff></note>
+  <note><chord/><pitch><step>B</step><octave>4</octave></pitch><duration>6</duration><staff>1</staff></note>
   <backup><duration>6</duration></backup>
   <note><pitch><step>G</step><octave>2</octave></pitch><duration>6</duration><staff>2</staff></note>
  </measure>
@@ -48,7 +47,7 @@ describe('musicxml', () => {
     const g4 = s.notes.filter((n) => n.p === 67)
     expect(g4).toHaveLength(1) // the tie merged two notes into one
     expect(g4[0].t).toBe(0)
-    expect(g4[0].d).toBeCloseTo(1.5 * 0.96, 1) // a dotted half: 2 + 1 quarters
+    expect(g4[0].d).toBeCloseTo(2 * 0.96, 1) // a dotted half tied to a quarter: 3 + 1 quarters
     expect(s.notes.find((n) => n.p === 71)?.t).toBe(0) // chord note shares the onset
     expect(s.notes.find((n) => n.p === 66)).toMatchObject({ h: 'R', bar: 1 }) // F sharp
     expect(s.notes.filter((n) => n.h === 'L').map((n) => n.p)).toEqual([43, 48, 50])
@@ -382,5 +381,47 @@ describe('musicxml articulation and hairpins', () => {
   it('no marks, no curve', () => {
     expect(fromMusicXml(XML, 't', 'id').curve).toBeUndefined()
     expect(fromMusicXml(XML, 't', 'id').marks).toBeUndefined()
+  })
+})
+
+describe('musicxml as other programs write it', () => {
+  const score = (measures: string) => `<?xml version="1.0"?><score-partwise><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">${measures}</part></score-partwise>`
+  const note = (step: string, dur: number, more = '') => `<note><pitch><step>${step}</step><octave>4</octave></pitch><duration>${dur}</duration>${more}</note>`
+  const head = '<attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>'
+  const at60 = { bpm: 60, guess: false }
+
+  it('reads UTF-16 with a byte order mark, either way round', async () => {
+    const s = score(`<measure number="1">${head}${note('C', 4)}</measure>`)
+    for (const le of [true, false]) {
+      const u = new Uint8Array(2 + s.length * 2)
+      u.set(le ? [0xff, 0xfe] : [0xfe, 0xff])
+      for (let i = 0; i < s.length; i++) u[2 + 2 * i + (le ? 0 : 1)] = s.charCodeAt(i)
+      expect(fromMusicXml(await xmlText(u.buffer), 't', 'x').notes).toHaveLength(1)
+    }
+  })
+
+  it('decodes numeric character references', () => {
+    const e = parseXml('<a t="&#x2013;"><words>M&#228;&#xDF;ig &amp; &#128512;</words></a>')
+    expect(e.c[0].t).toBe('Mäßig & 😀')
+    expect(e.a.t).toBe('–')
+  })
+
+  it('a change of divisions inside a measure counts from where it is written', () => {
+    const s = fromMusicXml(score(`<measure number="1">${head}${note('C', 2)}<attributes><divisions>2</divisions></attributes>${note('E', 4)}</measure>`), 't', 'x', at60)
+    expect(s.notes.map((n) => n.t)).toEqual([0, 2])
+    expect(s.bars).toHaveLength(1)
+    expect(s.bars[0].t1).toBeCloseTo(4)
+  })
+
+  it('a tie joins the held note it reaches: end to start, a held arpeggio into its chord, never a stray stop bars later; <tied> alone is a tie too', () => {
+    const bar = (notes: string, n: number) => `<measure number="${n}">${n === 1 ? head : ''}${notes}</measure>`
+    const stray = fromMusicXml(score(bar(note('C', 1, '<tie type="start"/>') + note('D', 3), 1) + bar(note('D', 4), 2) + bar(note('C', 4, '<tie type="stop"/>'), 3)), 't', 'x', at60)
+    expect(stray.notes.filter((n) => n.p === 60).map((n) => n.t)).toEqual([0, 8]) // never closed, then the same pitch two bars on: a note of its own
+    const arp = fromMusicXml(score(bar(note('C', 1, '<tie type="start"/>') + note('E', 1, '<tie type="start"/>') + note('C', 2, '<tie type="stop"/>') + note('E', 2, '<chord/><tie type="stop"/>'), 1)), 't', 'x', at60)
+    expect(arp.notes.map((n) => [n.p, n.t])).toEqual([[60, 0], [64, 1]]) // C then E, held into the chord: nothing struck again
+    expect(arp.notes[0].d).toBeCloseTo(4 * 0.96, 1) // C sounds to the end of the chord
+    const tied = fromMusicXml(score(`<measure number="1">${head}${note('C', 2, '<notations><tied type="start"/></notations>')}${note('C', 2, '<notations><tied type="stop"/></notations>')}</measure>`), 't', 'x', at60)
+    expect(tied.notes).toHaveLength(1)
+    expect(tied.notes[0].d).toBeCloseTo(4 * 0.96, 1)
   })
 })

@@ -12,8 +12,7 @@ import { leave, openSong } from './play'
 
 export async function saveRun(s: RunSpec) {
   setRunSpec(s)
-  const saved = await store.getRuns()
-  await store.saveRuns({ ...saved, last: s })
+  await store.saveRuns((r) => ({ ...r, last: s }))
 }
 
 export async function startDrill(which: Stage | 'review', fast = false) {
@@ -119,10 +118,12 @@ async function pacedFinish(r: RunCtx) {
   const sc = score(d.cards, struck())
   if (!sc.n) return leave()
   const { pace: bpm, every } = r.spec
-  const saved = await store.getRuns()
   const k = bestKey(r.spec)
-  const out = after(saved.paced?.[k], { bpm, every, n: sc.n, hit: sc.hit, day: dayNum() })
-  await store.saveRuns({ ...saved, paced: { ...saved.paced, [k]: out.memo } })
+  let out!: ReturnType<typeof after>
+  await store.saveRuns((saved) => {
+    out = after(saved.paced?.[k], { bpm, every, n: sc.n, hit: sc.hit, day: dayNum() })
+    return { ...saved, paced: { ...saved.paced, [k]: out.memo } }
+  })
   void markRun()
   void store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
   const names = sc.missed.map((i) => d.cards[i].pitches.map((p) => noteName(p, r.spec.fifths)).join(' '))
@@ -143,13 +144,15 @@ export async function runFinish() {
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
   if (r.spec.pace) return pacedFinish(r)
   await store.saveDrill(drillStats)
-  const saved = await store.getRuns()
   const k = bestKey(r.spec)
-  const prev = saved.best[k]
-  const record = r.arc.best > (prev?.streak ?? 0)
   const ms = median(r.rts)
-  saved.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
-  await store.saveRuns(saved)
+  let record = false
+  const saved = await store.saveRuns((st) => {
+    const prev = st.best[k]
+    record = r.arc.best > (prev?.streak ?? 0)
+    st.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
+    return st
+  })
   if (r.arc.cards) void store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) })
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const res = $('#res')

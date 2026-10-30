@@ -46,6 +46,8 @@ export interface NOut {
   grace?: boolean
 }
 
+const TIE = 0.2 // quarters: a note ringing less than this past a barline is written as ending there, not tied over
+
 function barIndex(bars: BarQ[], q: number) {
   let lo = 0
   let hi = bars.length - 1
@@ -89,7 +91,7 @@ export function notate(items: NIn[], bars: BarQ[]): NOut[] {
         const perfEnd = c.q + Math.max(...c.ids.map((i) => items[i].dq))
         const qb = c.q - bars[bar].q0
         const rest = Math.round((Math.min(perfEnd, next) - barEnd) * 12) / 12
-        const tie = next > barEnd + 1e-6 && perfEnd - barEnd > 0.2 && rest >= 1 / 12
+        const tie = next > barEnd + 1e-6 && perfEnd - barEnd > TIE && rest >= 1 / 12
         const room = Math.min(next, barEnd) - c.q
         const given = c.ids.map((i) => items[i].tuplet).find(Boolean)
         const three = isTripletPos(qb) || isTripletValue(room) ? { num: 3, den: 2 } : undefined
@@ -227,7 +229,13 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
   }
 
   // bars in ticks
-  const endTick = notes.reduce((m, n) => Math.max(m, n.tick + n.dtick), 0) // not a spread: 125,000 notes overflow the stack
+  // as many as reach every onset (one played up to EARLY before a barline is the next bar's) and every note that rings on past a barline;
+  // a note that ends on the last barline, or less than TIE past it (notate clips it there), needs no bar after it
+  let lastOn = 0
+  let endTick = 0
+  for (const n of notes) (lastOn = Math.max(lastOn, n.tick)), (endTick = Math.max(endTick, n.tick + n.dtick)) // not a spread: 125,000 notes overflow the stack
+  if (!exact) lastOn += EARLY * ppq
+  const more = (tick: number) => tick <= lastOn || endTick - tick > TIE * ppq
   const bars: QOut['bars'] = []
   let tick = 0
   let si = 0
@@ -235,14 +243,14 @@ export function quantize(notes: QIn[], o: QOpts): QOut {
     bars.push({ tick: 0, len: Math.round(pickup * ppq), n: sigs[0].n, den: sigs[0].den })
     tick = bars[0].len
   }
-  while (tick <= endTick && bars.length < 5000) {
+  while (more(tick) && bars.length < 5000) {
     while (si + 1 < sigs.length && sigs[si + 1].tick <= tick) si++
     const { n, den } = sigs[si]
     const len = Math.round((n * 4 * ppq) / den)
     bars.push({ tick, len, n, den })
     tick += len
   }
-  if (tick <= endTick) throw new Error('This piece is longer than 5,000 bars, more than the app can show.') // not a silent cut with the rest read as one bar
+  if (more(tick)) throw new Error('This piece is longer than 5,000 bars, more than the app can show.') // not a silent cut with the rest read as one bar
   const bq = bars.map((b) => ({ q0: b.tick / ppq, ql: b.len / ppq }))
 
   // onsets: exact files snap to their lattice; performances pick a grid per hand and beat, following the drift
