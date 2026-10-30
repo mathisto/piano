@@ -79,8 +79,7 @@ export function skeleton(app: HTMLElement) {
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
-        <div id="banner"></div>
-        <div id="ready" class="ready" hidden></div>
+        <div class="stagecol"><div id="banner"></div><div id="ready" class="ready" hidden></div></div>
         <div id="count" class="countin" hidden aria-hidden="true"></div>
         <div id="res" hidden></div>
         <div id="live" class="sr-only" aria-live="polite" style="position:absolute;left:-9999px"></div>

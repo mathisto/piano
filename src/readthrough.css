@@ -2,10 +2,6 @@
 body.readthru #modeSeg {
   display: none; /* one pass at one setting: no Perform | Learn switch mid-piece */
 }
-.ready .rt-row,
-.ready .rt-row * {
-  pointer-events: auto;
-}
 .ready .rt-timer {
   display: flex;
   align-items: center;

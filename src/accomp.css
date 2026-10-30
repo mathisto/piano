@@ -22,12 +22,6 @@
     display: none;
   }
 }
-/* the 'No keyboard yet' banner takes the top of the stage: the taller card (You play, or a lead sheet's chord switch) drops onto the keys, which are no use before Play */
-#stage:has(.banner) #ready:has(:is(.accomp, .chords)) {
-  top: auto;
-  bottom: 10px;
-  transform: translateX(-50%);
-}
 @container stage (max-height: 420px) {
   #stage:has(.banner) #ready:has(.accomp) > .seg + .hint {
     display: none; /* the mode line: the Play button says the same. The credit stays */
