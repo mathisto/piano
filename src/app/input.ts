@@ -15,7 +15,7 @@ import { mountOsk } from './osk-ui'
 
 export const fromKeyboard = (m: MidiMsg) => {
   if (m.on) {
-    chipFlash(m.p)
+    chipFlash()
     if (!played) {
       setPlayed(true)
       updateBanner()

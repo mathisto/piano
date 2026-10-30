@@ -276,8 +276,9 @@ export class Staff {
     })
 
     this.traces(L)
-    // the cursor sits behind the noteheads so it never covers what you are about to play
+    // the cursor is the bottom layer, under the staff lines as well as the notes: a guide, never a mark on the music
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
+    svg.prepend(this.cursor)
     const g = el('g', { class: 'notes' }, svg)
     for (const c of L.chords) this.chord(g, c, dyOf(c.sys))
     for (const b of L.beams) {

@@ -2,7 +2,6 @@
 import { chooseInput, connect, inputs, midiSupported } from '../midi'
 import { native, pairBluetooth } from '../native-midi'
 import { settings } from '../settings'
-import { noteName } from '../spell'
 import { $ } from '../ui'
 import { esc } from '../util'
 import { current, game, hooks, played } from './state'
@@ -94,13 +93,10 @@ document.addEventListener('click', (e) => (e.target as HTMLElement).closest('[da
 document.addEventListener('click', (e) => (e.target as HTMLElement).closest('[data-pair]') && pairBluetooth())
 
 let chipTimer = 0
-export function chipFlash(p: number) {
+/** A key came in: the chip's ring lights for a moment (the keyboard is sending). Its words stay the keyboard's name; the held-chord readout names keys. */
+export function chipFlash() {
   const chip = $('#dev')
   chip.classList.add('live')
-  $('#devName').textContent = noteName(p)
   clearTimeout(chipTimer)
-  chipTimer = window.setTimeout(() => {
-    chip.classList.remove('live')
-    updateChip()
-  }, 450)
+  chipTimer = window.setTimeout(() => chip.classList.remove('live'), 450)
 }

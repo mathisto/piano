@@ -368,7 +368,7 @@ export class Game {
         const req = this.judge.required(this.t)
         if (req.length) {
           const n = this.song.notes[req[0]]
-          this.t = Math.min(this.t, n.t)
+          this.t = n.t // on the note: the wait looks CLUSTER ahead (a spread chord is one chord), so the clock may be short of it, and the cursor with it
           this.stallAt = perf
           this.stallBar = n.bar
           this.setPhase('waiting')

@@ -1037,6 +1037,7 @@ body.reading .hud small {
 #staff .cursor {
   stroke: var(--lamp);
   stroke-width: 1.5;
+  opacity: 0.7; /* under the staff lines and a little faded: it guides, the notes stay the thing read */
   stroke-linecap: round;
   filter: drop-shadow(0 0 4px var(--lamp-glow));
 }
