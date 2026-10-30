@@ -77,18 +77,24 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func start(_ call: CAPPluginCall) {
-        if !started {
-            started = true
-            mach_timebase_info(&timebase)
-            MIDIClientCreateWithBlock("piano" as CFString, &client) { [weak self] _ in
-                DispatchQueue.main.async { self?.refresh() } // a keyboard was plugged in or removed
+        // on the main thread: CoreMIDI reports a keyboard turned on or paired later on the thread that made the client, and only
+        // if that thread has a run loop, which Capacitor's plugin queue has not (the FP-10 paired while the app ran was never seen)
+        DispatchQueue.main.async {
+            if !self.started {
+                self.started = true
+                mach_timebase_info(&self.timebase)
+                MIDIClientCreateWithBlock("piano" as CFString, &self.client) { [weak self] _ in
+                    DispatchQueue.main.async { self?.refresh() } // a keyboard was plugged in or removed
+                }
+                MIDIInputPortCreateWithProtocol(self.client, "piano in" as CFString, ._1_0, &self.port) { [weak self] list, refCon in
+                    self?.receive(list, refCon)
+                }
+                // and on coming back to the app: a keyboard paired in Settings meanwhile, should a notification go missing
+                NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in self?.refresh() }
             }
-            MIDIInputPortCreateWithProtocol(client, "piano in" as CFString, ._1_0, &port) { [weak self] list, refCon in
-                self?.receive(list, refCon)
-            }
-            refresh()
+            self.refresh()
+            call.resolve(["sources": self.sources])
         }
-        call.resolve(["sources": sources])
     }
 
     /// Apple's sheet that finds Bluetooth MIDI keyboards and pairs one on a tap. A paired keyboard shows up as a
