@@ -69,21 +69,21 @@ typography:
     lineHeight: 0.95
     letterSpacing: "0.02em"
   body-lg:
-    fontFamily: "Hanken Grotesk Variable, system-ui, sans-serif"
+    fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
     fontSize: "18px"
     fontWeight: 650
     lineHeight: 1.45
   body:
-    fontFamily: "Hanken Grotesk Variable, system-ui, sans-serif"
+    fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
     fontSize: "15px"
     fontWeight: 400
     lineHeight: 1.45
     fontFeature: "tabular-nums"
   label:
-    fontFamily: "Hanken Grotesk Variable, system-ui, sans-serif"
+    fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
     fontSize: "13px"
-    fontWeight: 700
-    lineHeight: 1
+    fontWeight: 600
+    lineHeight: 1.2
     letterSpacing: "0.1em"
   notation:
     fontFamily: "Bravura"
@@ -293,7 +293,7 @@ A navy-ink night palette with one amber lamp, two hand hues, and a four-step jud
 ## Typography
 
 **Display Font:** Barlow Condensed 800 italic (fallback Arial Narrow, sans-serif); 700 upright is loaded for Pixi key labels.
-**Body Font:** Hanken Grotesk Variable (fallback system-ui). Body sets `tabular-nums` globally so counters never jitter.
+**Body Font:** the platform's own (`-apple-system, system-ui`): San Francisco on the iPad and the Mac, nothing to download (Hanken Grotesk until 30 Oct 2026). Body sets `tabular-nums` globally so counters never jitter.
 **Notation Font:** Bravura (SMuFL, OFL, self-hosted woff2) for every staff glyph: noteheads, clefs, rests, accidentals, flags, tuplet numerals, time-signature digits, the articulation marks and the dynamic letters (p, m, f, r, s, z, so p to ff, sf and the like).
 
 **Character:** A scoreboard shout over a quiet instruction manual.
@@ -310,7 +310,18 @@ UI text has three sizes: 13 (label, kbd, fine print, song-row sub-lines), 15 (bo
 - **Stage words:** ready title 54px (38px under 820px tall), count-in 160px, results figure 88px top right of the card (a percentage, a stage, or a 72px check in Learn), staff grade word 17px. Display italic, over a soft Shade.
 
 ### Named Rules
-**The Announce Versus Read Rule.** Display italic is for what is announced (accuracy, judgement, headings, big actions). Anything read in a sentence is Hanken.
+**The Two Voices Rule** (was Announce Versus Read). Barlow Condensed italic capitals are for what is announced: page titles, the big figures (results, HUD, count-in), judgements, the results verdict, the Listening back pill, the dock's Play. Everything tapped or read is the system font in sentence case: section and sheet titles (600, 18 to 22px), labels (600 13px; no tracked capitals anywhere), controls and sentences.
+
+### The design language (30 Oct 2026; research in `docs/research/design-language.md`)
+Seven rules every screen is checked against:
+1. **Two voices.** As above.
+2. **One lamp.** At most one amber fill per screen, on the background of the primary verb.
+3. **Icons, Apple's way.** One family, Lucide (`src/icons.ts`, path data copied in; ISC, credited): 24px grid, 2px round stroke; play and pause filled. Tabs carry an icon and their word. Universal verbs may be icon-only with an accessible name (restart, loop, close, back, more, settings, zoom). App verbs keep their word, with the icon where one fits (Start, Practice, Learn take the play icon on every row, not only the lamp one). A menu's items have icons on all or none; a segmented control never mixes words and icons.
+4. **One icon family.** No icon drawn by hand next to Lucide's.
+5. **Three actions at most** on show on any summary or end surface (a primary, Again, a More menu, and the way back apart); the rest go in the More menu.
+6. **The right container.** Choices go in a pop-up anchored to their button (Tempo, Practice, a row's More), tasks in a sheet, playing full screen with the controls fading.
+7. **Touch.** 44pt targets, nothing hover-only, reduced motion honoured, no imitation glass, chrome never glows (the lamp's glow is a now-marker, not chrome).
+SF Symbols are not used: Apple's licence ties them to apps for Apple platforms and the same code is the public website.
 
 ## Layout
 
@@ -559,7 +570,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - **Do** build every modal as `dialog.sheet`; header with close, scrolling body, pinned footer.
 - **Do** mark every disclosure with the shared +/− marker.
 - **Do** show tags as outlined Ink Soft words; only Next is lamp, on the primary's row.
-- **Do** use Barlow Condensed 800 italic for announced values and Hanken for reading text; keep numerals tabular.
+- **Do** use Barlow Condensed 800 italic for announced values and the system font for everything read or tapped; keep numerals tabular.
 - **Do** mirror any new colour in `src/palette.ts` if Pixi draws it.
 - **Do** show mastery and effort as Ink meters, cells, charts and dots plus a number or word.
 - **Do** collapse CSS motion under `prefers-reduced-motion`; on the canvas the hit glow fades at one size and the waiting ring and ghost key hold steady (Calm is the only tier).
@@ -589,8 +600,8 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 | Colour | R / L / L-edge | #3fe0ff / #ff4fa3 / #ff7bbd | hands |
 | Colour | perfect / great / good / bad | #d7ff3d / #34e89a / #ff8a3d / #ff4a3d | judgement |
 | Type, Display italic | 17 / 22 / 24 / 28 / 30 / 34 / 40 / 54 | staff grade word / section / Over time figure / title, big button, tempo, drawer h2 / HUD numeral / results h2, chord / page h1, judge / ready title | announced |
-| Type, Display italic, stage | 160 / 190 | count-in / results accuracy | announced |
-| Type, Hanken | 12 / 13 / 15 / 18 | HUD caption, bar numbers / label, kbd, fine, sub-line / body, controls / row name, ready sentence | read |
+| Type, Display italic, stage | 160 / 88 | count-in / results figure | announced |
+| Type, system | 12 / 13 / 15 / 18 / 20 / 22 | HUD caption, bar numbers / label, kbd, fine, sub-line / body, controls / row name, ready sentence | read |
 | Spacing | 4 / 8 / 12 / 16 / 24 / 32 | gaps, card gaps, bar padding, section gaps, page top | rhythm |
 | Spacing | 6, 10, 14, 18, 20 | inside controls, rows and cards | local |
 | Page | `32px clamp(16px,6vw,96px) 64px`, measure 1100px | every non-play page | One Measure |

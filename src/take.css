@@ -79,9 +79,7 @@
 }
 .cmp-grid .cap {
   color: var(--ink-3);
-  font: 700 13px/1 var(--ui);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font: 600 13px/1.2 var(--ui);
 }
 .cmp-grid svg {
   display: block;

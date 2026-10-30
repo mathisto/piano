@@ -35,13 +35,13 @@ export function skeleton(app: HTMLElement) {
   <header class="bar">
     <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="9 9 48 36" width="40" height="30" fill="currentColor" aria-hidden="true"><rect x="10" y="10" width="8" height="34" rx="2"/><rect x="10" y="10" width="20" height="8" rx="2"/><rect x="24" y="10" width="8" height="22" rx="2"/><rect x="10" y="24" width="22" height="8" rx="2"/><rect x="38" y="10" width="8" height="34" rx="2"/><rect x="38" y="10" width="18" height="8" rx="2"/><rect x="38" y="24" width="14" height="8" rx="2"/></svg></button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
-      <label><input type="radio" name="nav" value="today" checked><span>Today</span></label>
-      <label><input type="radio" name="nav" value="songs"><span>Songs</span></label>
-      <label><input type="radio" name="nav" value="read"><span>Read</span></label>
-      <label><input type="radio" name="nav" value="scales"><span>Scales</span></label>
-      <label><input type="radio" name="nav" value="theory"><span>Theory</span></label>
-      <label><input type="radio" name="nav" value="technique"><span>Technique</span></label>
-      <label><input type="radio" name="nav" value="progress"><span>Progress</span></label>
+      <label><input type="radio" name="nav" value="today" checked><span>${icon('today')}Today</span></label>
+      <label><input type="radio" name="nav" value="songs"><span>${icon('songs')}Songs</span></label>
+      <label><input type="radio" name="nav" value="read"><span>${icon('read')}Read</span></label>
+      <label><input type="radio" name="nav" value="scales"><span>${icon('scales')}Scales</span></label>
+      <label><input type="radio" name="nav" value="theory"><span>${icon('theory')}Theory</span></label>
+      <label><input type="radio" name="nav" value="technique"><span>${icon('technique')}Technique</span></label>
+      <label><input type="radio" name="nav" value="progress"><span>${icon('progress')}Progress</span></label>
     </div>
     <div class="song-title" id="title" role="heading" aria-level="1"></div>
     <button class="btn" id="stagesBtn" hidden>All stages</button>
@@ -240,23 +240,23 @@ export const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) =
   </div>
   <div class="goal"><div class="meter${w.minutes >= goal ? ' solid' : ''}"><i style="width:${Math.min(100, Math.round((w.minutes / goal) * 100))}%"></i></div><span><b>${w.minutes}</b> of ${goal} min</span></div>${streak ? streakHtml(streak) : ''}`
 
-const go = (c: string, s: Start, word: string) => `<button class="btn${c}" data-today="start" data-start="${startAttr(s)}">${c.includes('primary') ? icon('play') : ''}${word}</button>`
+const go = (c: string, s: Start, word: string) => `<button class="btn${c}" data-today="start" data-start="${startAttr(s)}">${icon('play')}${word}</button>`
 
 /** The day as a short list in practice order; nothing is locked and each row stands alone. */
 export function todayView(el: HTMLElement, d: TodayData) {
   type R = { key: string; min: number; title: string; sub: string; mid?: string; act: (cls: string) => string }
   const all: R[] = [
-    { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${c.includes('primary') ? icon('play') : ''}Start</button>` },
-    { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${c.includes('primary') ? icon('play') : ''}Practice</button>` },
-    { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${c.includes('primary') ? icon('play') : ''}${d.last.first ? 'Start' : 'Continue'}</button>` },
-    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${c.includes('primary') ? icon('play') : ''}Read through</button>` }] : []),
+    { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${icon('play')}Start</button>` },
+    { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practice</button>` },
+    { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
+    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
     ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">Play</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
     ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
     ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
-    { key: 'run', min: 3, title: 'Sight Run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${c.includes('primary') ? icon('play') : ''}Start</button>` },
-    ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${c.includes('primary') ? icon('play') : ''}Practice</button>` }] : []),
+    { key: 'run', min: 3, title: 'Sight Run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${icon('play')}Start</button>` },
+    ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${icon('play')}Practice</button>` }] : []),
   ]
   const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
   // what is still to do comes first, in practice order; finished steps sink to the bottom as a record of the day
