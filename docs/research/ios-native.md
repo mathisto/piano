@@ -182,7 +182,7 @@ Days are for one developer plus an agent at this repo's pace, **including device
 | # | Item | Days | Why first |
 |---|---|---|---|
 | F0 | **Decision for the owner: pay the $99.** | 0 | Ends 7-day expiry; unlocks TestFlight and iCloud; needed for any App Store future |
-| F1 | **Built 29 Oct, not yet tried on the iPad.** **Bluetooth pairing sheet** with the iOS 27 workaround; button in Set up and the MIDI chip; `NSBluetoothAlwaysUsageDescription` | 0.5 | Unblocks the owner's Bluetooth path on iPadOS 27; every peer has it |
+| F1 | **Built 30 Oct, not yet tried on the iPad.** **Bluetooth pairing sheet** with the iOS 27 workaround; button in Set up and the MIDI chip; `NSBluetoothAlwaysUsageDescription` | 0.5 | Unblocks the owner's Bluetooth path on iPadOS 27; every peer has it |
 | F2 | **Done 30 Oct.** **MIDI timestamps**: per-packet host times, `CLOCK_UPTIME_RAW`, `now()` plus min-RTT offset; unit-test the offset maths | 0.5 | Judging stops absorbing main-thread stalls; also removes the privacy-manifest reason |
 | F3 | **Auto-backup** of the JSON export to Documents (Files-visible) at session end; `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace` | 0.5 | Protects against "never delete the app" and data loss |
 | F4 | **Shell hygiene**: delete the `Main.storyboard` keys and file; add `PrivacyInfo.xcprivacy` and `ITSAppUsesNonExemptEncryption`; native audio interruption and route observers (reactivate the session; tell JS on Bluetooth A2DP) | 0.5 | One-time, prevents review and lifecycle bugs |
