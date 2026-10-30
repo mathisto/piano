@@ -86,6 +86,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/sheets.md`: e2e feature 22 (Credits, Set up and Options from Settings; slow and refused page and sheet chunks); a sheet whose code does not arrive says so instead of rejecting unhandled.
 - `changes/beatmark.md`: the paced run beat shows in a slim bar between the header and the staff, not in the dock.
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
+- `changes/shellfix.md`: Escape pauses before it leaves, a stale piece open stays off the screen, leaving returns to where the piece was opened, redraws keep focus, the start card and banner share one column; the iPad app gets Bluetooth pairing, a privacy manifest, the screen awake only during a run, one root view controller, iPad only and a build number from git.
 
 ## Research (`research/`)
 

@@ -4,8 +4,8 @@ import { build, type Rolldown } from 'vite'
 import { expect, test } from 'vitest'
 
 // bytes of minified JS in the entry chunk and every chunk it imports statically: Rolldown may split shared modules out of
-// the entry, so the entry alone can undercount. 663 958 before the stage went lazy, 308 718 before the parsers did, 274 000 (budget) before the credits, setup, track sheets, page views and results did.
-export const BUDGET = 241_200
+// the entry, so the entry alone can undercount. 663 958 before the stage went lazy, 308 718 before the parsers did, 274 000 (budget) before the credits, setup, track sheets, page views and results did, 241 200 (budget) before @capacitor/core did (the iPad app only).
+export const BUDGET = 235_000
 
 test('boot JS is under budget and holds none of the lazy features', async () => {
   const out = (await build({ logLevel: 'silent', build: { write: false } })) as Rolldown.RolldownOutput
