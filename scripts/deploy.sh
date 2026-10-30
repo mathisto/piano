@@ -14,7 +14,9 @@ npm run build --silent
 git rev-parse HEAD > dist/version.txt
 
 tar -C dist -cf - . | ssh "$HOST" "set -e
-  rm -rf $DEST/dist.new && mkdir -p $DEST/dist.new
+  rm -rf $DEST/dist.new && mkdir -p $DEST/dist.new/assets
+  # a tab still running the last build asks for its own hashed chunks: carry the recent ones over (content-addressed, so a name never changes meaning)
+  [ -d $DEST/dist/assets ] && find $DEST/dist/assets -type f -mtime -7 -exec cp -p {} $DEST/dist.new/assets/ \;
   tar -C $DEST/dist.new -xf -
   chown -R www-data:www-data $DEST/dist.new
   [ -d $DEST/dist ] && mv $DEST/dist $DEST/dist.old-$STAMP
