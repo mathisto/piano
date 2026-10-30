@@ -88,6 +88,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/beatmark.md`: the paced run beat shows in a slim bar between the header and the staff, not in the dock.
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
 - `changes/datafix.md`: import merges per record and backs up first, exports carry imported songs, read-modify-write saves queue (and lock across tabs), stale heat, the service worker on a 502 and across a deploy, no empty last bar, MusicXML UTF-16, character references, mid-measure divisions and ties, simplify keeps short notes, CSP.
+- `changes/perf4.md`: 19 kB off the boot JS: the ear and pulse decks and the trainers load with the Theory page or when a card is due (`src/theory-cards.ts` keeps the Path's decks); the Help text loads with the sheets.
 
 ## Research (`research/`)
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { dayOfKey, firstUse, guideDay, HELP, STEPS, TIP, tabNote } from './guide'
+import { dayOfKey, firstUse, guideDay, STEPS, TIP, tabNote } from './guide'
+import { HELP } from './ui-sheets'
 
 const all = STEPS.map((s) => s.key)
 const states = (g: ReturnType<typeof guideDay>) => g!.rows.map((r) => r.state)

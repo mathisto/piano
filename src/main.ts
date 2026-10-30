@@ -73,6 +73,12 @@ async function showSection(name: Section, err = '') {
 }
 Object.assign(hooks, { showSection })
 
+// the Help sheet's text loads with the other sheets: whoever opens it (the drawer, the ? key) sees its title at once
+new MutationObserver(() => {
+  const b = $('#help .helpbody')
+  if (!b.firstChild) void import('./ui-sheets').then((m) => (b.innerHTML = m.HELP), () => (b.innerHTML = '<p>Check the connection, then reload the page.</p>'))
+}).observe($('#help'), { attributeFilter: ['open'] })
+
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = () => (run && !run.done && (run.arc.cards || (run.spec.pace && game.judge.judged)) ? void runFinish() : leave())
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) r.onchange = () => void showSection(r.value as Section)

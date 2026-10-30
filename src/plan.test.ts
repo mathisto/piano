@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PLAN_LENGTHS, planOf, theoryDue } from './plan'
 import { record } from './drill'
-import { chordCards } from './theory'
+import { chordCards } from './theory-cards'
 
 const ALL = ['warm', 'scale', 'read', 'run', 'theory', 'path', 'piece', 'again', 'fix', 'review']
 const sum = (rows: { min: number }[]) => rows.reduce((a, r) => a + r.min, 0)
@@ -30,14 +30,14 @@ describe('planOf', () => {
 })
 
 describe('theoryDue', () => {
-  it('none until a card is due, then the deck it is in', () => {
-    expect(theoryDue({}, 100)).toBeUndefined()
+  it('none until a card is due, then the deck it is in', async () => {
+    expect(await theoryDue({}, 100)).toBeUndefined()
     const st = {}
     record(st, chordCards(4)[0].id, true, 1000, 90) // due day 91
-    expect(theoryDue(st, 100)).toMatchObject({ trainer: 'chords', level: 4, due: 1 })
-    expect(theoryDue(st, 90)).toBeUndefined()
+    expect(await theoryDue(st, 100)).toMatchObject({ trainer: 'chords', level: 4, due: 1 })
+    expect(await theoryDue(st, 90)).toBeUndefined()
   })
-  it('a due key outside every deck is still none', () => {
-    expect(theoryDue({ 'no-such-card': { due: 1 } } as never, 100)).toBeUndefined()
+  it('a due key outside every deck is still none', async () => {
+    expect(await theoryDue({ 'no-such-card': { due: 1 } } as never, 100)).toBeUndefined()
   })
 })

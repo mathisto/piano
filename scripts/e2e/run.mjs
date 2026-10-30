@@ -579,8 +579,8 @@ const guideFlow = () => fresh({
     await boot(page)
     ok(!(await page.$(card)), 'Hide not remembered')
     await page.keyboard.press('?')
-    await page.waitForSelector('dialog#help[open]')
-    ok(/How the touch coach works/.test(await text(page, '#help')), 'Help has no coach section')
+    await page.waitForSelector('dialog#help[open] h2')
+    await wait(page, () => /How the touch coach works/.test(document.querySelector('#help').textContent), undefined, 5000) // the text arrives with ui-sheets
     await axe(page, 'Help sheet', '#help')
     await page.keyboard.press('Escape')
     await page.waitForSelector('dialog#help:not([open])', { state: 'attached' })
@@ -899,10 +899,10 @@ const sheetsFlow = async () => {
   if (ONLY.test('22b')) {
     let go
     const gate = new Promise((r) => (go = r))
-    const slow = await open({}, (ctx) => ctx.route(/\/src\/ui-(views|sheets)\.ts/, async (r) => (await gate, r.continue())))
+    const slow = await open({}, (ctx) => ctx.route(/\/src\/(ui-(views|sheets)|app\/theory-ui)\.ts/, async (r) => (await gate, r.continue())))
     await skipSetup(slow)
     await feature('22b Slow chunk: the page title at once, the body when it arrives', slow, async () => {
-      const tabs = ['scales', 'read', 'progress']
+      const tabs = ['scales', 'read', 'progress', 'theory']
       for (const t of tabs) {
         await slow.click(`label:has(input[name=nav][value=${t}])`)
         await wait(slow, (id) => document.querySelector(`#${id}.on > .lib-head.wait h1`), t, 3000)
@@ -915,10 +915,10 @@ const sheetsFlow = async () => {
     })
     await slow.context().close()
 
-    const dead = await open({}, (ctx) => ctx.route(/\/src\/ui-(views|sheets)\.ts/, (r) => r.abort()))
+    const dead = await open({}, (ctx) => ctx.route(/\/src\/(ui-(views|sheets)|app\/theory-ui)\.ts/, (r) => r.abort()))
     await skipSetup(dead)
     await feature('22b Refused chunk: plain words, no blank page, no unhandled rejection', dead, async () => {
-      for (const t of ['scales', 'read', 'progress']) {
+      for (const t of ['scales', 'read', 'progress', 'theory']) {
         await nav(dead, t)
         ok(/This page could not load/.test(await text(dead, `#${t}`)), `${t}: no plain-words message`)
       }
@@ -937,6 +937,10 @@ const sheetsFlow = async () => {
       await sheet(dead, 'tracks')
       ok(/Check the connection, then reload the page\./.test(await text(dead, '#tracks')), 'tracks: no plain-words message')
       await dead.click('#tracks [data-close]')
+      await dead.keyboard.press('?')
+      await wait(dead, () => /Check the connection, then reload the page\./.test(document.querySelector('dialog#help[open] .helpbody')?.textContent), undefined, 5000)
+      ok(/Help/.test(await text(dead, '#help h2')), 'help: no title')
+      await dead.keyboard.press('Escape')
       await nav(dead, 'today') // still usable
       const own = (e) => /ERR_FAILED|Failed to load resource|dynamically imported module/.test(e) // the refusals themselves, and the page catch that reports them
       ok(!dead.errs.some((e) => e.startsWith('pageerror')), `unhandled: ${dead.errs.find((e) => e.startsWith('pageerror'))}`)

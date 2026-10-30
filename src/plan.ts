@@ -1,5 +1,5 @@
 import { dayNum, type Stats } from './drill'
-import { TRAINERS, deckOf, type Trainer } from './theory'
+import type { Trainer } from './theory-cards'
 
 export type PlanMin = 5 | 10 | 20 | 30 | 45
 export const PLAN_LENGTHS: PlanMin[] = [5, 10, 20, 30, 45]
@@ -31,10 +31,11 @@ export function planOf(len: PlanMin, have: Iterable<string>): { key: string; min
   return rows
 }
 
-/** The Theory trainer and level with the most cards due for review, if any. */
-export function theoryDue(stats: Stats, today = dayNum()): { trainer: Trainer; level: number; name: string; due: number } | undefined {
-  let best: ReturnType<typeof theoryDue>
+/** The Theory trainer and level with the most cards due for review, if any. The decks load only when a card is due. */
+export async function theoryDue(stats: Stats, today = dayNum()) {
+  let best: { trainer: Trainer; level: number; name: string; due: number } | undefined
   if (!Object.values(stats).some((s) => (s.due ?? Infinity) <= today)) return best // nothing due: no deck to build (it ran at every boot)
+  const { TRAINERS, deckOf } = await import('./theory')
   for (const t of TRAINERS)
     for (let level = 1; level <= Math.max(1, t.levels.length); level++) {
       const due = deckOf(t.id, level).filter((c) => (stats[c.id]?.due ?? Infinity) <= today).length

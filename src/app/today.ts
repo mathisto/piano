@@ -36,7 +36,7 @@ export async function showToday() {
   const ctx = await pathCtx(ts)
   const nx = nextOf(gradePath(ctx))
   const sst = nextScaleStage(ctx.scales)
-  const td = theoryDue(ctx.theory)
+  const td = await theoryDue(ctx.theory).catch(() => undefined) // the Theory code did not load: Today without its Theory row
   const PATH_STEP = { scale: 'scale', read: 'read', tech: 'warm', theory: 'theory' } // the plan step that does a requirement
   // one snapshot a week lets the recap say what got better; the recap shows on Monday and Tuesday
   const week = weekOf(days).days

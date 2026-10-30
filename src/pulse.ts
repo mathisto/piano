@@ -1,5 +1,5 @@
 import { RHYTHM, biasText, rhythmCards, scoreAt, type TapScore } from './ear'
-import type { TCard } from './theory'
+import type { TCard } from './theory-cards'
 import { mean, plural } from './util'
 
 /** Pulse trainers: tap a steady beat, the subdivisions of one, or a written rhythm, on any key, against a quarter-note click. Pure scheduling and scoring; the sound is in pulse-play.ts. Time is in quarter-note beats from the start of the card. */

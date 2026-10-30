@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { check, chordCards, cadenceCards, deal, deckOf, degreeCards, intervalCards, keyCards, type TCard } from './theory'
+import { check, deal, deckOf } from './theory'
+import { chordCards, cadenceCards, degreeCards, intervalCards, keyCards, type TCard } from './theory-cards'
 
 const card = (cs: TCard[], id: string) => cs.find((c) => c.id === id)!
 

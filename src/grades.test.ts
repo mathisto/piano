@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { REQS, nextOf, path, type Ctx } from './grades'
 import { STAGES as DRILL, cards, cardKey, record as rec, type Stats } from './drill'
 import { STAGES as SCALES, cardsOf, cardKey as skey } from './scales'
-import { chordCards } from './theory'
+import { chordCards } from './theory-cards'
 
 const empty = (): Ctx => ({ scales: {}, drill: {}, tech: {}, theory: {}, day: 100 })
 

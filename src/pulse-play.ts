@@ -3,7 +3,7 @@ import { RHYTHM } from './ear'
 import { type EarRun, schedule } from './ear-play'
 import { settings } from './settings'
 import { endBeat, openBeat, pulseText, scorePulse, type PulsePlay } from './pulse'
-import type { TCard } from './theory'
+import type { TCard } from './theory-cards'
 import './pulse.css'
 
 const DEMO = 8 // beats: after a miss the click and the answer are played again, up to here (the count-in bar and the first tap bar)

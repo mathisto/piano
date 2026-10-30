@@ -1,4 +1,4 @@
-// Help for a new learner: the first-week card on Today, the one-line note on each tab, the Help sheet and the "connect your keyboard" line.
+// Help for a new learner: the first-week card on Today, the one-line note on each tab and the "connect your keyboard" line (the Help sheet's text is in ui-sheets.ts).
 import './guide.css'
 import { icon } from './icons'
 
@@ -127,31 +127,3 @@ export function tabNote(tab: string): string {
 /** Shown while no MIDI keyboard is connected; banner.ts hides it when one is and shows it again if it goes. */
 export const keyboardLine = (connected: boolean) =>
   `<p class="kbline" role="status"${connected ? ' hidden' : ''}><span><b>No keyboard connected.</b> Without one, play the on-screen keys, or use the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" data-connect>Connect keyboard</button></p>`
-
-// ---------- the Help sheet ----------
-
-export const HELP = `<header><h2>Help</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-  <div class="body helpbody" tabindex="0">
-    <h3>What each tab is for</h3>
-    <dl>
-      <dt>Today</dt><dd>A plan for the day, 5 to 45 minutes, and your week.</dd>
-      <dt>Songs</dt><dd>Starter pieces, your own files and a free library. Open one to play it.</dd>
-      <dt>Read</dt><dd>Name the notes on the staff and find them on your keys. Sight Run is a longer run of new notes.</dd>
-      <dt>Scales</dt><dd>Scales and arpeggios with fingering, a stage at a time.</dd>
-      <dt>Theory</dt><dd>Chords, keys, intervals, cadences, ear and rhythm, answered on your keyboard.</dd>
-      <dt>Technique</dt><dd>Short exercises for steady timing and an even touch.</dd>
-      <dt>Progress</dt><dd>Your week, accuracy over time and the notes you read well.</dd>
-    </dl>
-    <h3>Lead sheet</h3>
-    <p class="fine">On a piece with a left hand, Notes shown can be Lead sheet: the melody (the voice line of a melody-and-piano song, else the top note of the right hand) with a chord symbol above it where the chord changes. The chords are read from the harmony of the notes, one guess for each bar or half bar, so they are an aid and not the composer's marks, and a passing note can fool them. "App plays the chords" sounds a block chord, bass below, on each one, and is remembered. A run at any Notes shown level but Full is not the whole piece, so it does not count toward Ready.</p>
-    <h3>How the touch coach works</h3>
-    <p class="fine">Your keyboard reports how hard each key was struck and when. The coach compares each note with its neighbours and marks one that is clearly louder or softer: a small triangle over for louder, under for softer. It also measures timing and note length.</p>
-    <p class="fine">It cannot see your fingers, wrist or posture, so even numbers do not prove good technique. Treat the marks as measurements, and ask a teacher about what they cannot show. The marks fade as your touch evens out, and some runs have none on purpose. A keyboard set to a fixed touch cannot be measured.</p>
-    <h3>How a scale counts as solid</h3>
-    <p class="fine">Three runs in a row at a tempo, each with every note right, in time and not uneven in touch. A run that misses starts the count again. A stage is solid when all its scales are.</p>
-    <h3>How review spacing works</h3>
-    <p class="fine">A card or piece you get right comes back later: after about 1 day, then 2, 4, 8 and 16. One you miss comes back sooner. Anything due shows a Due tag. Spreading reviews out is one of the better-supported ways to remember; the exact days are our choice, not a proven best.</p>
-    <h3>Keyboard shortcuts</h3>
-    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>B</kbd><span>Metronome</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This help</span></div>
-    <p class="fine">Hearing every note twice? Turn Local Control off on the keyboard. No keyboard: <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p>
-  </div>`

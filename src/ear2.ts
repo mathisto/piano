@@ -1,5 +1,5 @@
-import { MAJOR, MINOR, RHYTHM, beatMs, biasText, noteAt, pc, scoreTaps, seeded, tonicMidi } from './ear'
-import { INV, NAMES, QUAL, cadenceCards, type TCard } from './theory'
+import { MINOR, RHYTHM, beatMs, biasText, noteAt, scoreTaps, seeded, tonicMidi } from './ear'
+import { INV, MAJOR, NAMES, QUAL, cadenceCards, pc, type TCard } from './theory-cards'
 
 /** Chord ear and question-and-answer phrases. Pure generators and checkers; the sound and the clock are in ear-play.ts. Note: top-level code here must not touch ear.ts or theory.ts (an import cycle). */
 

@@ -14,7 +14,7 @@ import { type RunSpec } from './run'
 import { startAttr, streakHtml } from './habit-ui'
 import type { Start } from './grades'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
-import { guideCard, HELP, tabNote, type Guide } from './guide'
+import { guideCard, tabNote, type Guide } from './guide'
 import type { Streak } from './streak'
 import { esc } from './util'
 
@@ -52,8 +52,7 @@ export function skeleton(app: HTMLElement) {
   <dialog id="tracks" class="sheet" aria-label="Options"></dialog>
   <dialog id="credits" class="sheet" aria-label="Credits"></dialog>
   <dialog id="setup" class="sheet" aria-label="Set up"></dialog>
-  <dialog id="help" class="sheet" aria-label="Help">${HELP}
-  </dialog>
+  <dialog id="help" class="sheet" aria-label="Help"><header><h2>Help</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header><div class="body helpbody" tabindex="0"></div></dialog>
   <main id="main" style="display:grid;min-height:0">
     <section id="today" class="view on" aria-label="Today"></section>
     <section id="library" class="view" aria-label="Songs"></section>

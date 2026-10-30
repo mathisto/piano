@@ -2,7 +2,7 @@ import { STAGES as DRILL, fluentMs, mastery as drillMastery, type Stats } from '
 import { cardKey, cardsOf, mastery as scaleMastery, STAGES as SCALES, type ScaleStats } from './scales'
 import { SYLLABUS, stateOf, type TechStats } from './syllabus'
 import type { Opts } from './technique'
-import { deckOf, type Trainer } from './theory'
+import { keyDeck, type KeyTrainer, type Trainer } from './theory-cards'
 
 /**
  * A generic five-level path of technical requirements, drawn from what the public graded syllabi ask at each stage:
@@ -78,8 +78,8 @@ const tech = (level: number, name: string, detail: string, pick: (o: Opts) => bo
 // ponytail: a card is solid after two answers at 80% first try or better; a deck counts as solid at 80% of its cards.
 // Upgrade to the Leitner box once Theory exposes it.
 const SOLID_CARDS = 0.8
-const theory = (level: number, name: string, detail: string, trainer: Trainer, lv: number, only?: RegExp): Req => {
-  const deck = deckOf(trainer, lv).filter((k) => !only || only.test(k.id))
+const theory = (level: number, name: string, detail: string, trainer: KeyTrainer, lv: number, only?: RegExp): Req => {
+  const deck = keyDeck(trainer, lv).filter((k) => !only || only.test(k.id))
   return {
     level,
     name,

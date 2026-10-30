@@ -2,7 +2,7 @@ import * as audio from './audio'
 import { RHYTHM, beatMs, biasText, scoreTaps, type EarView, type Play } from './ear'
 import { checkQA } from './ear2'
 import { settings } from './settings'
-import type { TCard } from './theory'
+import type { TCard } from './theory-cards'
 import './ear.css'
 import { mean } from './util'
 

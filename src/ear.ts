@@ -1,5 +1,5 @@
 import type { PulsePlay } from './pulse'
-import { NAMES, type TCard } from './theory'
+import { MAJOR, NAMES, pc, type TCard } from './theory-cards'
 
 /** Ear trainers: the app plays, the player plays it back. Pure logic only; the sound is in ear-play.ts. */
 export type Play =
@@ -12,8 +12,6 @@ export type Play =
 export const RHYTHM = { bpm: 80, window: 110, maxBias: 250, merge: 60, grace: 400 }
 const NOTE_MS = 600 // a phrase note and the gap to the next
 
-export const pc = (n: number) => ((n % 12) + 12) % 12
-export const MAJOR = [0, 2, 4, 5, 7, 9, 11]
 export const MINOR = [0, 2, 3, 5, 7, 8, 10]
 
 /** A small deterministic generator, so the same level always deals the same cards and the spaced review can find them again. */
