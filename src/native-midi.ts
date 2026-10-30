@@ -50,14 +50,14 @@ const plugin = native
   : undefined
 
 /** Apple's Bluetooth MIDI sheet: lists the keyboards in range and pairs one on a tap. The app only. */
-export const pairBluetooth = () => void plugin?.then((n) => n.pairBluetooth())
+export const pairBluetooth = () => void plugin?.then((n) => n.pairBluetooth()).catch((e) => console.warn('Bluetooth pairing', e))
 
 let awake = false
 /** Keep the screen on while a run plays; normal auto-lock otherwise. The app only (a browser tab has no say). */
 export function setAwake(on: boolean) {
   if (on === awake || !plugin) return
   awake = on
-  void plugin.then((n) => n.setAwake({ on }))
+  plugin.then((n) => n.setAwake({ on })).catch(() => {}) // an older app build without it: the screen just follows auto-lock
 }
 
 if (plugin && !Reflect.has(navigator, 'requestMIDIAccess')) {
