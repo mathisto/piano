@@ -17,7 +17,8 @@ const links = (s: string) => s.replace(/https?:\/\/[^\s)]+/g, (u) => `<a href="$
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><p class="fine free">${FREE}</p><h3>Sounds</h3>
-    <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div>
+    <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div><h3>Icons</h3>
+    <div class="credlist"><pre>${links(esc('Lucide, by Lucide Contributors (lucide.dev)\nLicence: ISC (https://github.com/lucide-icons/lucide/blob/main/LICENSE)'))}</pre></div>
     <h3>Scores</h3><p class="fine">Scores in the open library are public domain or openly licensed. Each piece keeps its own licence. Every score and its licence: <a href="${licences.app}" target="_blank" rel="noopener">pieces in the app</a>, <a href="${licences.corpus}" target="_blank" rel="noopener">the whole library</a>.</p>
     <div class="credlist">${blocks.length ? blocks.map((b, i) => `<pre>${links(esc(b))}</pre>${after(i)}`).join('') : '<p class="fine">Pieces you play or save for offline appear here.</p>'}</div></div>
     <footer><button class="btn" data-close>Close</button></footer>`

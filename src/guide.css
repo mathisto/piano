@@ -12,9 +12,7 @@
 }
 .guide h2 {
   margin: 0;
-  font: 800 italic 22px/1 var(--display);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font: 600 18px/1.25 var(--ui);
 }
 .guide header p {
   margin: 6px 0 0;

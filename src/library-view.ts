@@ -190,7 +190,7 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
-          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
+          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${icon('play')}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
           ${rowMenu(r.title, `<button class="btn ghost" role="menuitem" data-play="${esc(r.id)}" data-mode="perform">Perform</button>
             <button class="btn ghost" role="menuitem" data-listen="${esc(r.id)}">Listen</button>
             <button class="btn ghost" role="menuitem" data-rt="${esc(r.id)}">Read through</button>

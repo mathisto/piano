@@ -3,7 +3,6 @@ declare const __COMMIT__: string | undefined // set in vite.config.ts
 import './native-midi' // first: it must exist before midi.ts reads requestMIDIAccess
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800-italic.css'
-import '@fontsource-variable/hanken-grotesk'
 import './style.css'
 // the feature stylesheets, in the cascade order they had before the split (each module still imports its own)
 import './metronome.css'

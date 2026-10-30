@@ -61,7 +61,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
         <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.fast ? ' <span class="tag">Fluent</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`, r.fluent)}<b>${r.solid ? Math.round(r.fluent * 100) : pct}%</b></div>${sub ? `<small style="color:var(--ink-3)">${sub}</small>` : ''}</td>
         ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practice ${esc(r.stage.name)}${speed ? ' for speed' : ''}">${r.next ? icon('play') : ''}${speed ? 'For speed' : 'Practice'}</button></div></td></tr>`
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practice ${esc(r.stage.name)}${speed ? ' for speed' : ''}">${icon('play')}${speed ? 'For speed' : 'Practice'}</button></div></td></tr>`
     })
     .join('')
   el.innerHTML = `
@@ -357,7 +357,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
         .map(
           (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm}.${r.solid ? '' : ` Up next: ${esc(cardName(r.card))}.`}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${r.next ? icon('play') : ''}Practice</button></div></td></tr>`,
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${icon('play')}Practice</button></div></td></tr>`,
         )
         .join('')}</tbody></table>`
       : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
@@ -398,7 +398,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
     body = `<div class="plan">${TRAINERS.map(
       (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span></div>
       ${t.levels.length ? `<label class="field inline"><span class="sr-only">Level of ${esc(t.name)}</span><select data-tlevel="${t.id}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}
-      <div class="pact"><button class="btn ghost" data-trainer="${t.id}">Start</button></div></div>`,
+      <div class="pact"><button class="btn ghost" data-trainer="${t.id}">${icon('play')}Start</button></div></div>`,
     ).join('')}</div>`
   } else if (run.i >= run.cards.length) {
     const n = run.cards.length
