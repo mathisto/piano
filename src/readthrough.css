@@ -59,9 +59,6 @@ body.readthru #modeSeg {
   }
 }
 
-.rt-card .big-grade {
-  grid-row: span 6;
-}
 .rt-bars-wrap {
   display: grid;
   gap: 8px;
@@ -84,13 +81,14 @@ body.readthru #modeSeg {
   background: var(--bad);
   opacity: calc(0.55 + var(--h) * 0.45);
 }
+.rt-ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-3);
+  font: 600 13px/1 var(--ui);
+}
 .card .line.rt-sub {
   font-size: 15px;
-}
-@media (max-width: 760px) {
-  .rt-card .big-grade {
-    grid-row: auto;
-  }
 }
 #staff .beam.ahead,
 #staff .rest.ahead {

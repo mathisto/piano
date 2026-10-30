@@ -27,6 +27,15 @@ async function onDone(r: Result) {
   if (calibrating) return calibrated(r)
   if (rt) return rtDone(r)
   if (mem) return memDone(r)
+  if (game.hands.R === 'listen' && game.hands.L === 'listen') {
+    // a listen: nothing was played, so nothing to save or score. Back to the start card with the hands yours again
+    game.accomp({ R: 'play', L: 'play' }, [])
+    game.setWait(true)
+    game.restart()
+    syncMode()
+    onPhase()
+    return say('Your turn: press Play, or the first note.')
+  }
   const who = yourPart(game.song, game.hands, game.parts) // one part of the piece: judged, but not a run of the piece
   const lv = c.level // Notes shown above Full leaves notes out, so it is not the piece as written either: Ready asks for the piece as written
   const partial = !!who || lv > 0

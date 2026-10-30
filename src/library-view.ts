@@ -6,7 +6,8 @@ import { licenceName } from './credits'
 import type { Song } from './song'
 import type { Progress } from './store'
 import { thumb } from './thumb'
-import { art, mmss, notice } from './ui'
+import { art, head, mmss, notice, type Row } from './ui'
+import { icon } from './icons'
 import { esc } from './util'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
@@ -32,9 +33,10 @@ function row(p: Piece, prog: Map<string, Progress>) {
   const len = p.sec || m?.len
   return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${art(`lib:${p.id}`)}${m?.thumb ?? (local(p.id) ? '' : facts(p))}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
     <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">Learn</button>
-    <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="perform" aria-label="Perform ${esc(p.title)}">Perform</button>
-    <button class="btn ghost" data-rt="lib:${esc(p.id)}" aria-label="Read through ${esc(p.title)}">Read through</button>
-    <button class="btn ghost" data-mem="lib:${esc(p.id)}" aria-label="Memorise ${esc(p.title)}">Memorise</button></div></td></tr>`
+    ${rowMenu(p.title, `<button class="btn ghost" role="menuitem" data-libplay="${esc(p.id)}" data-mode="perform">Perform</button>
+    <button class="btn ghost" role="menuitem" data-listen="lib:${esc(p.id)}">Listen</button>
+    <button class="btn ghost" role="menuitem" data-rt="lib:${esc(p.id)}">Read through</button>
+    <button class="btn ghost" role="menuitem" data-mem="lib:${esc(p.id)}">Memorise</button>`)}</div></td></tr>`
 }
 
 /** Read a file already on the device for a thumbnail and a length, one at a time and only for rows scrolled into view:
@@ -171,4 +173,43 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
   }
   wire(el)
   draw()
+}
+
+// the Songs page's tables: the starters and your files (the open library's rows are below in row())
+/** A song row's other ways in, behind one button: the row keeps one action and one line (main.ts opens and closes it). */
+export const rowMenu = (title: string, items: string) =>
+  `<button class="btn ghost icon" data-more aria-label="More for ${esc(title)}" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu rowmenu" role="menu" aria-label="${esc(title)}" hidden>${items}</div>`
+
+function table(caption: string, rows: Row[], empty: string) {
+  const best = rows.some((r) => r.prog?.best) // no column of dashes before the first score
+  const body = rows.length
+    ? rows
+        .map(
+          (r) => `<tr class="open" data-open="${esc(r.id)}">
+        <td class="thumb">${art(r.id)}${r.thumb}</td>
+        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
+        ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
+        <td class="acts"><div class="row-actions">
+          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
+          ${rowMenu(r.title, `<button class="btn ghost" role="menuitem" data-play="${esc(r.id)}" data-mode="perform">Perform</button>
+            <button class="btn ghost" role="menuitem" data-listen="${esc(r.id)}">Listen</button>
+            <button class="btn ghost" role="menuitem" data-rt="${esc(r.id)}">Read through</button>
+            <button class="btn ghost" role="menuitem" data-mem="${esc(r.id)}">Memorise</button>
+            ${r.tracks ? `<button class="btn ghost" role="menuitem" data-tracks="${esc(r.id)}">Options</button>` : ''}`)}
+        </div></td></tr>`,
+        )
+        .join('')
+    : `<tr><td colspan="${best ? 4 : 3}" class="empty">${empty}</td></tr>`
+  return `<table class="songs"><caption>${caption}</caption>
+    <colgroup><col><col>${best ? '<col style="width:90px">' : ''}<col class="acol"></colgroup>
+    ${rows.length ? `<thead><tr><th scope="col"><span class="sr-only">Preview</span></th><th scope="col">Piece</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span class="sr-only">Actions</span></th></tr></thead>` : ''}
+    <tbody>${body}</tbody></table>`
+}
+
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
+  el.innerHTML = `
+    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
+    <p class="err" role="alert" id="drop">${esc(err)}</p>
+    ${table('Starter pieces', starters, '')}
+    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
 }

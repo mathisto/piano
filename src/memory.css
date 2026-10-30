@@ -76,18 +76,3 @@ body.memorise #modeSeg {
   font-size: 0.4em;
   color: var(--ink-3);
 }
-/* four row actions: two by two, so no row wraps one button onto a line of its own */
-table.songs:not(.stages) td.acts .row-actions {
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
-  justify-content: end;
-}
-/* a wide window has room for the four in one row: rows half as tall in a list of hundreds */
-@media (min-width: 1100px) {
-  table.songs col.acol {
-    width: 432px;
-  }
-  table.songs:not(.stages) td.acts .row-actions {
-    grid-template-columns: repeat(4, max-content);
-  }
-}

@@ -557,6 +557,25 @@ td.acts .row-actions {
   flex-wrap: wrap;
   gap: 4px 8px;
 }
+/* a song row: one action and a More menu, on one line */
+table.songs:not(.stages) col.acol {
+  width: 190px;
+}
+table.songs:not(.stages) td.acts {
+  position: relative;
+}
+.popmenu.rowmenu {
+  top: calc(100% - 8px);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  min-width: 190px;
+  gap: 2px;
+  padding: 6px;
+}
+.rowmenu .btn {
+  justify-content: flex-start;
+}
 @media (max-width: 1000px) {
   table.songs col.acol {
     width: 320px;
@@ -1585,26 +1604,36 @@ kbd {
   padding: 20px;
   z-index: 3;
 }
+/* a results card: the words on the left, the figure top right at a size that leaves them the card, the actions along the bottom */
 .card {
-  width: min(880px, 100%);
+  width: min(760px, 100%);
   background: var(--panel);
   border: 1px solid var(--edge);
   border-radius: var(--r-3);
   padding: 28px 32px;
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px 28px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px 32px;
+  align-items: start;
+}
+.card > .stats {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.card > .big-grade {
+  grid-column: 2;
+  grid-row: 1;
+  font: 800 italic 88px/0.85 var(--display);
+  font-variant-numeric: tabular-nums;
 }
 .card .big-grade svg.i {
-  width: 150px;
-  height: 150px;
+  width: 72px;
+  height: 72px;
   stroke-width: 3;
-}
-.card .big-grade {
-  font: 800 italic 190px/0.8 var(--display);
-  grid-row: span 4;
-  padding-right: 0;
 }
 .card h2 {
   margin: 0;

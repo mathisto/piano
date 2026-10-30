@@ -8,6 +8,7 @@ const P: Record<string, [string, boolean]> = {
   page: ['<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 12h8M8 15h8"/>', false],
   grip: ['<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>', true],
   minus: ['<path d="M5 12h14"/>', false],
+  more: ['<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>', true],
   x: ['<path d="M6 6l12 12M18 6L6 18"/>', false],
   back: ['<path d="M15 5l-7 7 7 7"/>', false],
   check: ['<path d="M5 12.5l4.5 4.5L19 7"/>', false],

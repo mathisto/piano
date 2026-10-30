@@ -184,6 +184,12 @@ async function feature(name, page, fn) {
 }
 const ev = (page, fn, arg) => page.evaluate(fn, arg)
 const wait = (page, fn, arg, timeout = 30000) => page.waitForFunction(fn, arg, { timeout, polling: 50 })
+// a song row keeps one action on show; the others are in its More menu, opened first when the target is in there
+const rowClick = async (page, sel) => {
+  const b = page.locator(sel).first()
+  if (await b.evaluate((e) => !!e.closest('.rowmenu'))) await b.locator('xpath=ancestor::td[1]//button[@data-more]').click()
+  await b.click()
+}
 async function nav(page, tab) {
   await page.click(`label:has(input[name=nav][value=${tab}])`)
   await wait(page, (id) => document.querySelector(`#${id}.on > :not(.wait)`), tab === 'songs' ? 'library' : tab)
@@ -362,7 +368,7 @@ async function mainFlow() {
 
   await feature('5 Read through: look-through, start early, play, summary, Fix these', page, async () => {
     await nav(page, 'songs')
-    await page.click('#library [data-rt^=starter-twinkle]')
+    await rowClick(page, '#library [data-rt^=starter-twinkle]')
     await ready(page)
     ok(await page.isVisible('#rtGo'), 'no look-through card')
     await wait(page, () => document.querySelector('#rtLeft')?.textContent !== '0:30', undefined, 3000) // the look-through counts down
@@ -553,7 +559,7 @@ async function fresh(fs, opts) {
 }
 const openStarter = async (page, id, mode = 'perform') => {
   await nav(page, 'songs')
-  await page.click(`#library button[data-play="${id}"][data-mode=${mode}]`)
+  await rowClick(page, `#library button[data-play="${id}"][data-mode=${mode}]`)
   await ready(page)
 }
 
@@ -750,7 +756,7 @@ const accompFlow = () => fresh({
     await openStarter(page, 'starter-five-finger')
     await run('#ready label:has(input[name=you][value=R])', 'The app plays the left hand')
     await page.fill('#libQ', 'Die Rose, die Lilie')
-    await page.click('#library [data-libplay="lieder-lc4976849"][data-mode=perform]')
+    await rowClick(page, '#library [data-libplay="lieder-lc4976849"][data-mode=perform]')
     await ready(page)
     await ev(page, () => window.__piano.game.setRate(1.25)) // a long song: Perform at its top tempo
     await run('#ready .accomp label:has-text("Piano")', 'The app plays the voice part')
@@ -758,7 +764,7 @@ const accompFlow = () => fresh({
 })
 
 const recorderFlow = () => fresh({
-  async '16 Recorder: two runs, Compare, Listen back, Ghost'(page) {
+  async '16 Recorder: two runs, Compare, Listen back, Ghost; Listen to a piece'(page) {
     await openStarter(page, 'starter-five-finger')
     ok(!(await page.$('#ghostOn')), 'a Ghost switch before any run')
     await page.click('#go')
@@ -782,13 +788,19 @@ const recorderFlow = () => fresh({
     const heard = await ev(page, () => window.__heard)
     ok(heard === n, `listen back played ${heard} of ${n} notes`)
     await leave(page, 'library')
+    // Listen, from a row's menu: the app plays the piece and judges nothing; at the end the start card is back and the hands are yours
+    await rowClick(page, '#library [data-listen="starter-five-finger"]')
+    await wait(page, () => window.__piano.game.hands.R === 'listen' && window.__piano.game.hands.L === 'listen' && ['countin', 'playing'].includes(window.__piano.game.phase))
+    await wait(page, () => window.__piano.game.phase === 'ready' && window.__piano.game.hands.R === 'play', undefined, 60000)
+    ok(await ev(page, () => document.querySelector('#res').hidden), 'a listen ended on a results card')
+    await leave(page, 'library')
   },
 })
 
 const memFlow = () => fresh({
   async '17 Memorise: two clean passes move stage 0 to 1'(page) {
     await nav(page, 'songs')
-    await page.click('#library button[data-mem="starter-five-finger"]')
+    await rowClick(page, '#library button[data-mem="starter-five-finger"]')
     await ready(page)
     ok(/Stage 0/.test(await text(page, '#memBar')), 'not at stage 0')
     for (let pass = 1; pass <= 2; pass++) {
@@ -828,7 +840,7 @@ const marksFlow = () => fresh({
     await nav(page, 'songs')
     await page.setInputFiles('#file', f)
     const id = await (await page.waitForSelector('#library tr.open[data-open]:not([data-open^="starter-"])')).getAttribute('data-open')
-    await page.click(`#library button[data-play="${id}"][data-mode=perform]`)
+    await rowClick(page, `#library button[data-play="${id}"][data-mode=perform]`)
     await ready(page)
     // the staff shows a window of bars: note every kind of mark drawn while it moves
     await ev(page, () => {
@@ -886,7 +898,7 @@ const leadFlow = () => fresh({
     const open = async () => {
       await nav(page, 'songs')
       await page.fill('#libQ', 'Die Rose, die Lilie')
-      await page.click('#library [data-libplay="lieder-lc4976849"][data-mode=perform]')
+      await rowClick(page, '#library [data-libplay="lieder-lc4976849"][data-mode=perform]')
       await ready(page)
     }
     await open()
@@ -959,7 +971,7 @@ const sheetsFlow = async () => {
 
       await nav(page, 'songs')
       await page.setInputFiles('#file', twoTracks())
-      await page.click('#library button[data-tracks]')
+      await rowClick(page, '#library button[data-tracks]')
       await sheet(page, 'tracks')
       ok(/2 of 2 in use/.test(await text(page, '#tkSum')) && (await page.$$('#tracks .tkrow')).length === 2, 'Options: not two tracks, both in use')
       await page.click('#tracks .tkrow:first-child .switch')
@@ -967,7 +979,7 @@ const sheetsFlow = async () => {
       await axe(page, 'Options', '#tracks')
       await page.click('#tkCancel')
       await wait(page, () => !document.querySelector('dialog#tracks[open]'))
-      ok(await ev(page, () => document.activeElement?.matches('#library button[data-tracks]')), 'Options: focus did not return to the Options button')
+      ok(await ev(page, () => document.activeElement?.matches('#library button[data-more]')), 'Options: focus did not return to the Options button')
     },
   })
 
@@ -1000,7 +1012,7 @@ const sheetsFlow = async () => {
       }
       await nav(dead, 'songs')
       await dead.setInputFiles('#file', twoTracks())
-      await dead.waitForSelector('#library button[data-tracks]')
+      await dead.waitForSelector('#library button[data-tracks]', { state: 'attached' })
       await dead.click('#settingsBtn')
       for (const [btn, id] of [['#sCredits', 'credits'], ['#sSetup', 'setup']]) {
         if (!(await dead.isVisible('#drawer'))) await dead.click('#settingsBtn')
@@ -1009,7 +1021,7 @@ const sheetsFlow = async () => {
         ok(/Check the connection, then reload the page\./.test(await text(dead, `#${id}`)), `${id}: no plain-words message`)
         await dead.click(`#${id} [data-close]`)
       }
-      await dead.click('#library button[data-tracks]')
+      await rowClick(dead, '#library button[data-tracks]')
       await sheet(dead, 'tracks')
       ok(/Check the connection, then reload the page\./.test(await text(dead, '#tracks')), 'tracks: no plain-words message')
       await dead.click('#tracks [data-close]')

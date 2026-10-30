@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { library, type Row } from './ui'
+import { library } from './library-view'
+import type { Row } from './ui'
 
 it('a catalogue id cannot break out of its data attribute', () => {
   const el = { innerHTML: '' } as HTMLElement

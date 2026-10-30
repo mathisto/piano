@@ -137,11 +137,13 @@ export function passCard(r: PassReport, back = 'Songs') {
   const cells = Array.from({ length: r.bars }, (_, i) => `<i class="${(r.heat[i] ?? 0) > 0 ? 'hot' : ''}" style="--h:${((r.heat[i] ?? 0) / max).toFixed(2)}" title="Bar ${i + 1}"></i>`).join('')
   return `<div class="results"><div class="card rt-card mem-card" role="dialog" aria-label="Memorise pass">
     <div class="big-grade" aria-label="Stage ${r.from} of ${TOP}">${r.from}<small>/${TOP}</small></div>
+    <div class="stats">
     <h2>${STAGES[r.from]}</h2>
     <p class="line"><b>${r.slips}</b> ${r.slips === 1 ? 'slip' : 'slips'} · <b>${r.peeks}</b> ${r.peeks === 1 ? 'peek' : 'peeks'}</p>
     <p class="line">${verdict(r)}</p>
     <div class="rt-bars-wrap"><div class="rt-bars" role="img" aria-label="${bad.length ? `Trouble in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
       <p class="line rt-sub">${weak.length ? `Weak spots: ${weak.length === 1 ? 'bar' : 'bars'} ${barList(weak)}. Look at ${weak.length === 1 ? 'it' : 'them'} with the score, then hide ${weak.length === 1 ? 'it' : 'them'} again.` : 'No weak spots this pass.'}</p></div>
+    </div>
     <div class="row">
       <button class="btn primary big" id="memAgain">${icon('restart')}Stage ${r.to.stage}</button>
       <button class="btn" id="toLib">${back}</button>

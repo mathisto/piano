@@ -14,16 +14,6 @@
 #staff.marks-faint .devmark {
   opacity: 0.35;
 }
-/* the results: the heading, the sentences and More stack beside the grade, which no longer has to span their rows */
-.song-res .big-grade {
-  grid-row: auto;
-}
-.song-res .stats {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
 .card .line.sub {
   font-size: 15px;
 }

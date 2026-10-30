@@ -1,5 +1,4 @@
 import { keyName, type Card } from './scales'
-import { memTag } from './memory'
 import { loadState, outputLatency } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
 import { inBundle } from './catalog'
@@ -138,30 +137,6 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
   }))
 }
 
-function table(caption: string, rows: Row[], empty: string) {
-  const best = rows.some((r) => r.prog?.best) // no column of dashes before the first score
-  const body = rows.length
-    ? rows
-        .map(
-          (r) => `<tr class="open" data-open="${esc(r.id)}">
-        <td class="thumb">${art(r.id)}${r.thumb}</td>
-        <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
-        ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
-        <td class="acts"><div class="row-actions">
-          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${r.cont ? icon('play') : ''}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
-          <button class="btn ghost" data-play="${esc(r.id)}" data-mode="perform" aria-label="Perform ${esc(r.title)}">Perform</button>
-          <button class="btn ghost" data-rt="${esc(r.id)}" aria-label="Read through ${esc(r.title)}">Read through</button>
-          <button class="btn ghost" data-mem="${esc(r.id)}" aria-label="Memorise ${esc(r.title)}">Memorise</button>
-          ${r.tracks ? `<button class="btn ghost" data-tracks="${esc(r.id)}" aria-label="Options for ${esc(r.title)}">Options</button>` : ''}
-        </div></td></tr>`,
-        )
-        .join('')
-    : `<tr><td colspan="${best ? 4 : 3}" class="empty">${empty}</td></tr>`
-  return `<table class="songs"><caption>${caption}</caption>
-    <colgroup><col><col>${best ? '<col style="width:90px">' : ''}<col class="acol"></colgroup>
-    ${rows.length ? `<thead><tr><th scope="col"><span class="sr-only">Preview</span></th><th scope="col">Piece</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span class="sr-only">Actions</span></th></tr></thead>` : ''}
-    <tbody>${body}</tbody></table>`
-}
 
 
 // Two tiers: the fill climbs to Solid in Ink Soft; past Solid, a second fill in Ink climbs to Fluent over it.
@@ -180,13 +155,6 @@ export const head = (title: string, actions = '', lede = '') =>
 /** A line of plain words at the top of a page, with an optional button: what is wrong and what can be done about it. */
 export const notice = (text: string, action = '', cls = '') => `<p class="notice${cls}" role="status"><span>${esc(text)}</span>${action}</p>`
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
-  el.innerHTML = `
-    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
-    <p class="err" role="alert" id="drop">${esc(err)}</p>
-    ${table('Starter pieces', starters, '')}
-    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
-}
 
 
 

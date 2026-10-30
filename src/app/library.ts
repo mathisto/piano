@@ -7,7 +7,7 @@ import { noteName } from '../spell'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { thumb } from '../thumb'
-import { $, library, type Row, starterRows, userRows } from '../ui'
+import { $, type Row, starterRows, userRows } from '../ui'
 import { chunkFailed, current, hooks, sheets, starters } from './state'
 
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
@@ -47,9 +47,9 @@ export async function libraryData() {
 export async function showLibrary(err = '') {
   const { starts, mine, last } = await libraryData()
   last.cont = true
+  const [{ library, mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()]) // the page's code: fetched at idle after boot, so usually here already
   library($('#library'), starts, mine, err)
   if (err) $('#drop').scrollIntoView({ block: 'nearest' }) // a failed piece far down the page, or a dropped file, must not leave its message above the fold
-  const [{ mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()])
   mountLibrary($('#library'), prog, libSong)
 }
 

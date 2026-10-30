@@ -320,6 +320,17 @@ export async function openLibrary(id: string, mode: Mode) {
   }
 }
 
+/** Listen: the app plays the whole piece through its piano (whatever Sound says), the score and the falling notes following; nothing is judged or kept. Opening the next piece gives the hands back. */
+export async function listenTo(id: string) {
+  const t = navAt + 1 // openById takes the next ticket: a page chosen while it loads wins
+  await openById(id, 'learn')
+  if (navAt !== t || !current) return
+  game.accomp({ R: 'listen', L: 'listen' }, [])
+  game.setWait(false)
+  syncMode()
+  game.toggle()
+}
+
 export async function openById(id: string, mode: Mode) {
   if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
   const i = STARTERS.findIndex((s) => s.spec.id === id)
