@@ -1,11 +1,15 @@
 // The banner over the stage, the keyboard chip in the top bar, and connecting a MIDI keyboard.
 import { chooseInput, connect, inputs, midiSupported } from '../midi'
+import { native, pairBluetooth } from '../native-midi'
 import { settings } from '../settings'
 import { noteName } from '../spell'
 import { $ } from '../ui'
 import { esc } from '../util'
 import { current, game, hooks, played } from './state'
 import { syncOsk } from './osk-ui'
+
+/** The iPad app's way to a Bluetooth keyboard: Apple's pairing sheet. A browser has none. */
+export const PAIR = native ? '<button class="btn" data-pair>Connect a Bluetooth keyboard</button>' : ''
 
 export let midiState: 'idle' | 'ok' | 'blocked' | 'unsupported' = midiSupported ? 'idle' : 'unsupported'
 let noteTimer = 0
@@ -29,6 +33,7 @@ export function updateBanner() {
   else if (!current || played || have) html = ''
   else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer. You can still play with the computer keyboard (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> …).</span>`
   else if (midiState === 'blocked') html = `<span><b>MIDI access is blocked.</b> Allow it in the address bar, then reload. Computer keys work meanwhile.</span>`
+  else if (native) html = `<span><b>No keyboard connected.</b> Plug it in over USB, or pair it over Bluetooth. The keys on the screen play meanwhile.</span>${PAIR}`
   else
     html = `<span><b>No keyboard yet.</b> Plug in over USB, then connect. Or play with the computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd>.</span><button class="btn" id="connectBtn">Connect keyboard</button>`
   b.innerHTML = html ? `<div class="banner" role="status">${html}</div>` : ''
@@ -83,6 +88,7 @@ export async function connectMidi() {
 }
 
 document.addEventListener('click', (e) => (e.target as HTMLElement).closest('[data-connect]') && void connectMidi())
+document.addEventListener('click', (e) => (e.target as HTMLElement).closest('[data-pair]') && pairBluetooth())
 
 let chipTimer = 0
 export function chipFlash(p: number) {

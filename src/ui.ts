@@ -194,7 +194,7 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
 
 // ---------- settings ----------
 
-export function drawer(el: HTMLElement, inputs: Input[]) {
+export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
   const seg = (name: string, label: string, opts: [string, string][], cur: string) =>
     `<div class="srow"><span>${label}</span><div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}"${cur === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div></div>`
   const device = settings.sound
@@ -218,7 +218,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     inputs.length > 1
       ? `<select id="sDevice"><option value="">All</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
       : `<b>${inputs.length ? esc(inputs[0].name) : 'None found'}</b>`
-  }</div>
+  }</div>${pair && `<div class="srow"><span></span>${pair}</div>`}
   <p id="sMon" class="fine" role="status" hidden></p>
   <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
   <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sSummary" title="A plain text summary of your practice, to send to a teacher">Practice summary</button><button class="btn sm" id="sImport">Import</button><button class="btn sm" id="sClear">Clear</button><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>

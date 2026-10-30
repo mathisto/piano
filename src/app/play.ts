@@ -6,6 +6,7 @@ import * as coach from '../coach'
 import { creditLine } from '../credits'
 import type { GameEvent, Mode } from '../game'
 import { facts, startCard } from '../memory'
+import { setAwake } from '../native-midi'
 import { knownPitches } from '../quiet'
 import { paceHint } from '../paced'
 import { lookCard } from '../readthrough'
@@ -195,6 +196,7 @@ game.on((e: GameEvent) => {
       flash(`Tempo ${Math.round(e.rate * 100)}%`)
       break
     case 'phase':
+      setAwake(e.phase === 'countin' || e.phase === 'playing' || e.phase === 'waiting') // the iPad stays lit through a run, Learn's waits included
       onPhase()
       break
     case 'pass':

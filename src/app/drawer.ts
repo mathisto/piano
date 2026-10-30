@@ -3,12 +3,13 @@ import * as audio from '../audio'
 import * as lib from '../catalog'
 import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs, monitor } from '../midi'
+import { native, pairBluetooth } from '../native-midi'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { $, drawer, keepFocus } from '../ui'
 import { current, game, highway, hooks, say, sheets } from './state'
-import { connectMidi, midiLine, midiState, updateChip } from './banner'
+import { connectMidi, midiLine, midiState, PAIR, updateChip } from './banner'
 import { lens, shareFile } from './library'
 import { leave } from './play'
 import { startCalibration } from './calibration'
@@ -20,7 +21,7 @@ function openDrawer() {
   const d = $('#drawer')
   const open = d.querySelector('details')?.open
   keepFocus(d, () => {
-    drawer(d, inputs())
+    drawer(d, inputs(), PAIR)
     if (open) d.querySelector('details')!.open = true
   })
   const wasOpen = !d.hidden
@@ -173,7 +174,7 @@ document.addEventListener('pointerdown', (e) => {
   if (!$('#drawer').hidden && !(e.target as HTMLElement).closest('#drawer, #settingsBtn, #dev, dialog')) closeDrawer()
 }, true)
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
-$('#dev').onclick = () => (midiState === 'ok' ? openDrawer() : void connectMidi())
+$('#dev').onclick = () => (native && !inputs().length ? pairBluetooth() : midiState === 'ok' ? openDrawer() : void connectMidi()) // the app with no keyboard: pair one
 
 /** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
 async function openCredits() {
@@ -197,7 +198,7 @@ export async function openSetup() {
   closeDrawer()
   const ui = await sheets(d)
   if (!ui) return
-  d.innerHTML = ui.setupDialog(midiLine(), inputs().length > 0, settings.offset)
+  d.innerHTML = ui.setupDialog(midiLine(), inputs().length > 0, settings.offset, PAIR)
   const away = (f: () => void) => () => {
     d.close()
     if (current) leave()
