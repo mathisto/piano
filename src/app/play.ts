@@ -118,10 +118,7 @@ export function leave() {
   staff.lookahead = 0
   game.endPass()
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
-  if (calibrating) {
-    settings.offset = calibrating.prevOffset
-    setCalibrating(undefined)
-  }
+  setCalibrating(false)
   setCurrent(undefined)
   $('#stagesBtn').hidden = true
   document.body.classList.remove('reading')

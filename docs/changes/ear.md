@@ -19,4 +19,4 @@ Prompts always use the app's own piano (`noteOn(..., force)`), clap and click (`
 New: `src/ear.ts`, `src/ear.test.ts`, `src/ear-play.ts`, `src/ear.css`. Small edits: `theory.ts` (trainer ids, `Step.abs`, card `play` and `name`, deck dispatch), `main.ts` (Theory section: prompt, tap routing, `finishTheory` split out of `judgeTheory`), `ui.ts` (4 spots in `theoryView`), `audio.ts` (`clap`, `click` force).
 
 ## Not verified
-Real sound on the iPad output; a real keyboard (tested with synthetic key presses in headless Chrome); Bluetooth or speaker latency shows up as bias by design. Dev-only `window.__ear` exposes the live card and tap clock for tests.
+Real sound on the iPad output; a real keyboard (tested with synthetic key presses in headless Chrome); taps have the calibration offset taken off (since 2026-10-30, `enginefix.md`), so a calibrated setup's Bluetooth or speaker latency does not show up as bias; an uncalibrated one's still does. Dev-only `window.__ear` exposes the live card and tap clock for tests.

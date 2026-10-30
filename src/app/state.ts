@@ -56,7 +56,7 @@ export let highway!: Highway
 export let staff!: Staff
 export let dock!: Dock
 export let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
-export let calibrating: { prevOffset: number } | undefined
+export let calibrating = false
 export let played = false
 export let run: RunCtx | undefined
 export let runSpec: RunSpec = { ...DEFAULT_RUN }
@@ -94,12 +94,6 @@ export const hooks = {} as {
 }
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id)
-
-export function median(xs: number[]) {
-  if (!xs.length) return 0
-  const s = [...xs].sort((a, b) => a - b)
-  return s[s.length >> 1]
-}
 
 export function worstBars(heat: number[], bars = game.song.bars.length): { a: number; b: number } | null {
   let best = 0

@@ -32,6 +32,11 @@ describe('ticks', () => {
     const t = ticks([bar(0, 0, 1, 4, 4, 2), bar(1, 1, 3)], 0, 3, false) // two quarters, then 4/4
     expect(t.map((x) => [x.t, x.kind])).toEqual([[0, 'beat'], [0.5, 'beat'], [1, 'down'], [1.5, 'beat'], [2, 'beat'], [2.5, 'beat']])
   })
+  it('counts a half-beat pickup back from its end: its eighth is an off-beat, with no click of its own', () => {
+    const t = ticks([bar(0, 0, 0.25, 4, 4, 0.5), bar(1, 0.25, 2.25)], 0, 1, true) // an eighth, then 4/4
+    expect(t.map((x) => [x.t, x.kind])).toEqual([[0, 'sub'], [0.25, 'down'], [0.5, 'sub'], [0.75, 'beat']])
+    expect(beatAt([bar(0, 0, 0.25, 4, 4, 0.5)], 0.1)).toEqual({ k: 0, n: 1 })
+  })
   it('starts mid-song and in a loop window', () => {
     expect(ticks(four, 2.4, 3.1, false).map((x) => x.t)).toEqual([2.5, 3])
     expect(ticks(four, 5, 6, false)).toEqual([])

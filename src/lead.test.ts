@@ -9,7 +9,7 @@ import { settings } from './settings'
 import { canLead, simplify } from './simplify'
 import { build, type Bar, type Raw } from './song'
 
-vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn() }))
+vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn(), hush: vi.fn() }))
 
 // 120 bpm, 4/4: a half bar is 1 s. One entry per half bar: the pitches that sound all through it.
 const piece = (halves: number[][], fifths = 0) => {

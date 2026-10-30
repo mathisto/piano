@@ -34,7 +34,7 @@ export const fromKeyboard = (m: MidiMsg) => {
       if (d) answerQuiz(d)
       return // the quiz owns the keyboard while it is open
     }
-    if (drill && game.phase === 'ready' && $('#res').hidden) game.toggle() // on a reading drill the first key is the Play button
+    if (drill && game.phase === 'ready' && $('#res').hidden && !game.start(m.p)) return void sound() // on a reading drill the first key is the Play button
     game.press(m.p, m.v, m.ts, m.virtual)
   } else game.release(m.p, m.ts, m.virtual)
 }

@@ -40,7 +40,7 @@ describe('judge', () => {
     expect(j.tick(1.2)).toEqual([{ k: 'miss', i: 0 }])
     expect(j.tick(2)).toEqual([])
     expect(j.counts.miss).toBe(1)
-    expect(j.done).toBe(true)
+    expect(j.nextPending()).toBe(-1)
   })
 
   it('matches each chord note independently', () => {
@@ -56,12 +56,6 @@ describe('judge', () => {
     j.press(60, 1.05)
     expect(j.counts.perfect + j.counts.great + j.counts.good).toBe(1)
     expect(j.press(60, 1.06)[0]).toMatchObject({ k: 'hit' })
-  })
-
-  it('scores a hit by its grade alone, however long the run', () => {
-    const j = mk(Array.from({ length: 12 }, (_, i) => n(i, i, 60)))
-    for (let i = 0; i < 12; i++) j.press(60, i)
-    expect(j.score).toBe(12 * 100)
   })
 
   it('scales windows with tempo: half speed doubles the song-time window', () => {
@@ -110,12 +104,10 @@ describe('holds', () => {
     expect(j.holdPct).toBe(1)
   })
 
-  it('takes points back for a short release, never below half, and leaves the combo alone', () => {
+  it('grades a short release and leaves the combo alone', () => {
     const j = hold([nd(0, 1, 60, 2)])
     j.press(60, 1)
-    expect(j.score).toBe(100)
     expect(j.release(60, 1.1, false)[0]).toMatchObject({ grade: 'short' })
-    expect(j.score).toBe(50)
     expect(j.combo).toBe(1)
     expect(j.holdPct).toBe(0)
   })
@@ -133,14 +125,12 @@ describe('holds', () => {
     const s = hold([nd(0, 1, 60, 0.5)], 'strict')
     s.press(60, 1)
     expect(s.release(60, 3, false)[0]).toMatchObject({ grade: 'long' })
-    expect(s.score).toBeLessThan(100)
   })
 
   it('excuses an early release while the sustain pedal is down', () => {
     const j = hold([nd(0, 1, 60, 2)])
     j.press(60, 1)
     expect(j.release(60, 1.1, true)[0]).toMatchObject({ grade: 'held' })
-    expect(j.score).toBe(100)
   })
 
   it('is stricter about the same shortfall than lenient', () => {
@@ -223,7 +213,43 @@ describe('reopening notes', () => {
     expect(j.required(1)).toEqual([])
     j.reopen([0, 1])
     expect(j.required(1)).toEqual([0, 1])
-    expect(j.hits).toBe(0)
     expect(j.press(60, 1)[0]).toMatchObject({ k: 'ok', i: 0 })
+  })
+})
+
+describe('late hits', () => {
+  const late = (notes: Note[], cfg = {}) => mk(notes, { beat: 0.5, ...cfg })
+
+  it('the right key up to a beat after the window is a late hit, not a miss and a wrong note', () => {
+    const j = late([n(0, 1, 60)])
+    expect(j.tick(1.3)).toEqual([]) // still open to a late press
+    expect(j.press(60, 1.3)[0]).toMatchObject({ k: 'hit', grade: 'late', off: expect.closeTo(300, 5) })
+    expect([j.wrong, j.counts.miss, j.counts.late]).toEqual([0, 0, 1])
+    expect(j.accuracy).toBe(0.25)
+  })
+
+  it('a beat, never more than half a second; past that it is a miss and a wrong note', () => {
+    expect(late([n(0, 1, 60)]).press(60, 1.7)[0]).toEqual({ k: 'wrong', p: 60 }) // 125 + 500 ms is the edge
+    expect(late([n(0, 1, 60)], { beat: 2 }).press(60, 1.6)[0]).toMatchObject({ grade: 'late' })
+    expect(late([n(0, 1, 60)], { beat: 2 }).press(60, 1.7)[0]).toMatchObject({ k: 'wrong' })
+    const j = late([n(0, 1, 60)])
+    expect(j.tick(1.63)).toEqual([{ k: 'miss', i: 0 }])
+  })
+
+  it('a press in the next note’s window goes to that note, not late to the one before', () => {
+    const j = late([n(0, 1, 60), n(1, 1.4, 60)])
+    expect(j.press(60, 1.38)[0]).toMatchObject({ i: 1, grade: 'perfect' })
+  })
+})
+
+describe('an asymmetric window (the paced Sight Run)', () => {
+  const at = (ms: number) => mk([n(0, 1, 60)], { ease: [1.2, 2] }).press(60, 1 + ms / 1000)[0]
+  it('runs from 150 ms early to 250 ms late, each side graded on its own width', () => {
+    expect(at(-145)).toMatchObject({ grade: 'good' })
+    expect(at(-155)).toMatchObject({ k: 'wrong' })
+    expect(at(245)).toMatchObject({ grade: 'good' })
+    expect(at(255)).toMatchObject({ k: 'wrong' })
+    expect(at(-60)).toMatchObject({ grade: 'great' }) // 60 of 150 is 50 of 125
+    expect(at(85)).toMatchObject({ grade: 'perfect' }) // 85 of 250
   })
 })

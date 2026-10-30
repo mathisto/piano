@@ -69,6 +69,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 **Shell, speed, tests, polish**
 - `changes/split.md`: `main.ts` split into the `src/app/` modules, and the rules to keep.
 - `changes/e2e.md`: the end-to-end suite and the bugs it found.
+- `changes/enginefix.md`: engine audit fixes: the count-in on the bar's beat grid, calibration, the app's notes on the audio clock, late hits, the paced window, the pedal coach from the bass, MIDI input, takes, disconnect.
 - `changes/harden.md`: the hardening pass: failure paths, big imports, narrow layouts.
 - `changes/perf.md`: load time: the play screen and three features load on first use.
 - `changes/offline.md`: the service worker that makes the hosted app work offline.

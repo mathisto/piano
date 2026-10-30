@@ -26,7 +26,7 @@ interface Spark {
   from?: number
 }
 
-const gradeColor: Record<Grade, number> = { perfect: C.perfect, great: C.great, good: C.good, miss: C.bad }
+const gradeColor: Record<Grade, number> = { perfect: C.perfect, great: C.great, good: C.good, late: C.good, miss: C.bad }
 
 function radial(size: number, stops: [number, string][]): Texture {
   const c = document.createElement('canvas')
@@ -151,7 +151,6 @@ export class Highway {
     this.bgGlow.width = this.W * 1.4
     this.bgGlow.height = fullH * 1.2
     this.bgGlow.position.set(-this.W * 0.2, -fullH * 0.1)
-    this.labelTex.clear()
   }
 
   get recY() {
@@ -377,7 +376,8 @@ export class Highway {
     const top = H + 4
     const draw = (k: K) => {
       const down = g.held.has(k.p)
-      const auto = (g.autoUntil.get(k.p) ?? 0) > performance.now()
+      const [from, until] = g.autoUntil.get(k.p) ?? [0, 0]
+      const auto = from <= performance.now() && performance.now() < until
       const ghost = need.has(k.p)
       const kh = k.black ? this.kbH * 0.6 : this.kbH - 4
       let fill: number = k.black ? C.keyBlack : C.keyWhite

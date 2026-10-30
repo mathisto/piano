@@ -9,6 +9,7 @@ interface Voice {
   g: GainNode
   end: (when: number) => void
   release: number // damper time on key-up
+  app?: boolean // the app plays it on its own clock (Listen, chords, accompaniment): hush() stops it
 }
 const voices = new Map<number, Voice>() // by pitch, oldest first
 
@@ -32,7 +33,8 @@ function ready(): AudioContext | undefined {
 }
 
 function make() {
-  ;(navigator as unknown as { audioSession?: { type: string } }).audioSession?.type && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = 'playback') // iOS: not muted by the silent switch
+  const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession
+  if (session) session.type = 'playback' // iOS: not muted by the silent switch
   ctx = new AudioContext({ latencyHint: 'interactive' })
   master = ctx.createGain()
   master.connect(ctx.destination)
@@ -127,6 +129,18 @@ function audioTime(c: AudioContext, after: number): number {
   return Math.abs(t - c.currentTime - after) < 0.1 ? t : c.currentTime + after
 }
 
+const ahead = new Set<AudioScheduledSourceNode>() // clicks and claps handed to the audio clock and not yet over
+const keep = (s: AudioScheduledSourceNode) => {
+  ahead.add(s)
+  s.onended = () => ahead.delete(s)
+}
+
+/** Stop what the app handed to the audio clock: clicks and claps not yet sounded, and the notes it is playing for you. For a pause, a seek, a restart, a loop going round. */
+export function hush() {
+  for (const s of ahead) s.stop() // each leaves the set as it ends
+  for (const [p, v] of voices) if (v.app) noteOff(p, true)
+}
+
 /** A wood-block tick: a short noise knock on a pair of dying tones, lower on the first beat. `after` seconds from now, on the audio clock, so the beat does not wait for an animation frame. `soft` scales the level (the metronome's eighths). */
 export function click(accent: boolean, after = 0, force = false, soft = 1) {
   const level = force ? settings.click || 0.6 : settings.click // the rhythm trainer needs its click even when the count-in is silent
@@ -147,6 +161,7 @@ export function click(accent: boolean, after = 0, force = false, soft = 1) {
     o.connect(g).connect(out)
     o.start(t)
     o.stop(t + len + 0.01)
+    keep(o)
   }
   const knock = c.createBufferSource() // the 5 ms of wood meeting wood
   const n = c.createBuffer(1, Math.floor(c.sampleRate * 0.005), c.sampleRate)
@@ -159,13 +174,14 @@ export function click(accent: boolean, after = 0, force = false, soft = 1) {
   kg.gain.value = 0.7
   knock.connect(bp).connect(kg).connect(out)
   knock.start(t)
+  keep(knock)
 }
 
 /** A hand clap for the rhythm trainer: two short bursts of band-passed noise a few ms apart, on the audio clock. */
 export function clap(after = 0) {
   const c = ready()
   if (!c) return
-  const t = c.currentTime + after
+  const t = audioTime(c, after)
   const out = c.createGain()
   out.gain.value = 0.9
   out.connect(c.destination)
@@ -180,6 +196,7 @@ export function clap(after = 0) {
     bp.Q.value = 0.8
     src.connect(bp).connect(out)
     src.start(t + d)
+    keep(src)
   }
 }
 
@@ -197,7 +214,7 @@ export function mix(vel: number, have: (k: number) => boolean, layers = 3): [num
   return ks.map((k, i): [number, number] => [k, Math.sqrt(w[i] / sum)]).filter(([, g]) => g > 0)
 }
 
-function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number): Voice | undefined {
+function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number, t: number): Voice | undefined {
   if (!inst.roots.length) return undefined // the synth has no recordings to pick from
   const s = pickSample(p, inst)
   const key = `${inst.base}/${s.name}`
@@ -221,8 +238,8 @@ function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number):
     const pg = c.createGain()
     pg.gain.value = w
     src.connect(pg).connect(lp)
-    src.start()
-    if (s.loop) src.stop(c.currentTime + 30) // ponytail: a note nobody releases stops after 30 s instead of droning on
+    src.start(t)
+    if (s.loop) src.stop(t + 30) // ponytail: a note nobody releases stops after 30 s instead of droning on
     return src
   })
   srcs[0].onended = () => {
@@ -233,15 +250,15 @@ function sampleVoice(c: AudioContext, inst: Instrument, p: number, vel: number):
 }
 
 // ponytail: two-partial synth, kept as the fallback while a sampled instrument loads and as an instrument choice of its own.
-function synthVoice(c: AudioContext, p: number, vel: number): Voice {
+function synthVoice(c: AudioContext, p: number, vel: number, t: number): Voice {
   const f = 440 * 2 ** ((p - 69) / 12)
   const g = c.createGain()
   const peak = 0.15 + 0.5 * vel
   const decay = 2.5 - Math.min(p, 96) / 60
-  g.gain.setValueAtTime(0, c.currentTime)
-  g.gain.linearRampToValueAtTime(peak, c.currentTime + 0.006)
-  g.gain.exponentialRampToValueAtTime(peak * 0.25, c.currentTime + 0.35)
-  g.gain.exponentialRampToValueAtTime(0.0005, c.currentTime + decay)
+  g.gain.setValueAtTime(0, t)
+  g.gain.linearRampToValueAtTime(peak, t + 0.006)
+  g.gain.exponentialRampToValueAtTime(peak * 0.25, t + 0.35)
+  g.gain.exponentialRampToValueAtTime(0.0005, t + decay)
   const a = c.createOscillator()
   const b = c.createOscillator()
   a.type = 'triangle'
@@ -253,28 +270,34 @@ function synthVoice(c: AudioContext, p: number, vel: number): Voice {
   a.connect(g)
   b.connect(bg).connect(g)
   g.connect(master!)
-  a.start()
-  b.start()
+  a.start(t)
+  b.start(t)
   a.onended = () => {
     if (voices.get(p)?.g === g) voices.delete(p)
     g.disconnect()
   }
-  a.stop(c.currentTime + decay + 0.05)
-  b.stop(c.currentTime + decay + 0.05)
+  a.stop(t + decay + 0.05)
+  b.stop(t + decay + 0.05)
   return { g, end: (t) => (a.stop(t), b.stop(t)), release: 0.3 }
 }
 
-/** `as` is another instrument for this one note (the app's voice line on strings); until it has loaded the chosen instrument plays it. */
-export function noteOn(p: number, vel: number, force = false, as?: string) {
+/** `as` is another instrument for this one note (the app's voice line on strings); until it has loaded the chosen instrument plays it. `at` is a note the app plays on the audio clock: `after` seconds from now, for `dur` seconds, and hush() stops it. */
+export function noteOn(p: number, vel: number, force = false, as?: string, at?: { after: number; dur: number }) {
   if (!settings.sound && !force) return
   const c = ready()
   if (!c) return
-  noteOff(p, true) // a struck key damps its own string first
+  const t = at ? audioTime(c, at.after) : c.currentTime
+  if (!at) noteOff(p, true) // a struck key damps its own string first; a note the app plays ahead has its own end
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   let inst = instrument(as ?? settings.instrument)
   if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note
   if (as && loadState(inst.id) !== 'ready') inst = instrument(settings.instrument)
-  const v = sampleVoice(c, inst, p, vel) ?? synthVoice(c, p, vel)
+  const v = sampleVoice(c, inst, p, vel, t) ?? synthVoice(c, p, vel, t)
+  if (at) {
+    v.app = true
+    v.g.gain.setTargetAtTime(0, t + at.dur, v.release / 5) // the damper, from whatever level the note has decayed to
+    v.end(t + at.dur + v.release + 0.05)
+  }
   voices.set(p, v)
 }
 

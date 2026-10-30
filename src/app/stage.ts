@@ -241,7 +241,7 @@ export function syncMode() {
 
 // ---------------------------------------------------------------- per-frame
 
-let last = { score: -1, combo: -1, count: 0 }
+let last = { judged: -1, combo: -1, count: 0 }
 
 // Time spent playing, per local day. It only goes up, so it can measure effort without shaming anyone.
 let sessionSec = 0
@@ -273,9 +273,9 @@ export function frame() {
   dock.frame()
   const j = game.judge
   if (game.mode === 'perform') {
-    if (j.score !== last.score || !j.judged) $('#hScore').textContent = j.judged ? `${Math.round(j.accuracy * 100)}%` : '–' // a dash until a note has been judged
+    if (j.judged !== last.judged) $('#hScore').textContent = j.judged ? `${Math.round(j.accuracy * 100)}%` : '–' // a dash until a note has been judged
     if (j.combo !== last.combo) $('#hCombo').textContent = String(j.combo)
-    last = { ...last, score: j.score, combo: j.combo }
+    last = { ...last, judged: j.judged, combo: j.combo }
   }
   const n = game.count
   if (n !== last.count) {
@@ -317,7 +317,7 @@ export function feel(n: Note, v: number) {
   f.v.push(v)
 }
 
-const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
+const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', late: 'Late', miss: 'Miss' }
 
 const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
 
@@ -331,7 +331,7 @@ export function popup(grade: Grade | null, off: number, p: number, noteId: numbe
   }
   const el = $('#judge')
   el.dataset.g = grade ?? (vel === 'ok' ? 'perfect' : 'good')
-  const timing = grade === null || grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'
+  const timing = grade === null || grade === 'perfect' || grade === 'miss' || grade === 'late' ? '' : off < 0 ? '‹ early' : 'late ›'
   const touch = vel ? TOUCH[vel] : ''
   el.innerHTML = `${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
   const x = Math.min(highway.W - 90, Math.max(90, highway.center(p)))

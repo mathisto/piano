@@ -489,8 +489,8 @@ export class Staff {
     // clear of the highest ink on the page (beams, stems, ledger lines), but inside the view
     const ink = (this.svg.querySelector('.notes') as SVGGraphicsElement | null)?.getBBox().y ?? staffTop
     const y = Math.max(16, Math.min(staffTop, ink - 10))
-    const word = grade ? (grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : 'Good') : ''
-    const arrow = !grade || grade === 'perfect' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
+    const word = grade ? (grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : grade === 'late' ? 'Late' : 'Good') : ''
+    const arrow = !grade || grade === 'perfect' || grade === 'late' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
     const t = el('text', { class: 'gr', 'data-g': grade ?? (touch === 'touch ✓' ? 'perfect' : 'good'), x: p.x, y }, this.svg, [word + arrow, touch].filter(Boolean).join(' · '))
     t.setAttribute('aria-hidden', 'true')
     t.addEventListener('animationend', () => t.remove())

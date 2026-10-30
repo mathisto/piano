@@ -1,6 +1,6 @@
 import { byApp, voiceOf } from './accomp'
 import * as audio from './audio'
-import { ticks } from './metronome'
+import { grid, ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
@@ -16,9 +16,7 @@ export type Phase = 'ready' | 'countin' | 'playing' | 'waiting' | 'paused' | 'do
 export type HandMode = 'play' | 'listen' | 'hide'
 
 export interface Result {
-  score: number
   acc: number
-  grade: string
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
@@ -47,9 +45,10 @@ export type GameEvent =
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
-  | { type: 'release'; p: number }
-  | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
-  | { type: 'auto'; note: Note }
+  | { type: 'release'; p: number; t: number } // t is song time, like a press's
+  | { type: 'pedal'; down: boolean; t: number }
+  | { type: 'hold'; note: Note; grade: HoldGrade } // a key came up; how it compared with the written length
+  | { type: 'auto'; note: Note } // a note the app plays for you was handed to the audio clock (the e2e counts them)
   | { type: 'phase'; phase: Phase }
   | { type: 'loop'; clean: boolean }
   | { type: 'short' } // a key came up before its note had been held long enough to move on
@@ -57,15 +56,13 @@ export type GameEvent =
   | { type: 'pass'; heat: number[] } // a stretch of practice ended; commit its trouble spots
   | { type: 'done'; result: Result }
 
-const COUNT_IN = 4
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
-const PACED_EASE = 1.6 // a reader a beat behind the eyes is late, not wrong: a paced run takes a note within 200 ms of the beat
+const LOOK = 0.25 // seconds: clicks and the app's notes go to the audio clock this far ahead, so a slow frame cannot make them late
+export const CALIBRATION = 'calibration' // the song id of the latency calibration (src/app/calibration.ts)
+const CALIBRATION_EASE = 3 // its window is +/-375 ms: a setup 150 ms late must still leave a sample to measure
+const PACED_EASE: [number, number] = [1.2, 2] // a reader a beat behind the eyes is late far more often than early: a paced run takes a note from 150 ms before the beat to 250 ms after
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
-
-export function letter(acc: number): string {
-  return acc >= 0.97 ? 'S' : acc >= 0.9 ? 'A' : acc >= 0.8 ? 'B' : acc >= 0.7 ? 'C' : 'D'
-}
 
 export class Game {
   song!: Song
@@ -83,7 +80,7 @@ export class Game {
   pedal = false // sustain pedal is down
   pedals: PedalEv[] = [] // its changes this run, in song time
   held = new Map<number, number>() // pitches the player holds -> velocity
-  autoUntil = new Map<number, number>() // pitches the app is playing for you -> perf ms
+  autoUntil = new Map<number, [number, number]>() // pitches the app is playing for you -> perf ms from, until
   heat: number[] = []
   offs: number[] = []
   showNotes = false // reading drills hide the falling notes and key names unless asked
@@ -109,6 +106,16 @@ export class Game {
   known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
   autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
   ghost: { p: number[]; t: number[]; d: number[]; h: ('R' | 'L')[] } | null = null // Ghost: the last take's keys, drawn faintly on the staff and lanes (src/app/take-ui.ts)
+
+  /** The latency calibration: a wide window, the click on whatever the settings say, and presses taken as they come (offset 0) without touching the saved offset. */
+  get calib() {
+    return this.song.id === CALIBRATION
+  }
+
+  /** The calibration offset in ms: what presses are corrected by. */
+  get offset() {
+    return this.calib ? 0 : settings.offset
+  }
 
   /** Which panes to show. Reading drills always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {
@@ -170,7 +177,7 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.paced ? PACED_EASE : EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[settings.strict], beat: this.song.spb }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -185,17 +192,24 @@ export class Game {
     this.setPhase('ready', true)
   }
 
-  /** The count-in: four beats before the song, two before a loop, none in Read (the card waits for you). */
-  private lead(): { from: number; to: number } {
-    const spb = this.song.spb
-    if (this.loop) return { from: this.loop.a - 2 * spb, to: this.loop.a }
-    return this.mode === 'read' && !this.paced ? { from: -READ_LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
+  /** The count-in, from `from` to `to` a click every `dt`, on the beat grid of the bar it leads into (metronome.ts), so a tempo change is counted at the new tempo. Two beats into a loop. Into the song, a bar (two of a two-beat metre) counted back from the first full bar, so a pickup comes in on its own beat, and a bar more when the pickup would leave under half of it. None in Read: the card waits for you. */
+  private lead(): { from: number; to: number; dt: number } {
+    if (this.mode === 'read' && !this.paced) return { from: -READ_LEAD, to: -Infinity, dt: 1 }
+    const bars = this.song.bars
+    const to = this.loop ? this.loop.a : 0
+    const b = this.loop ? bars[barAt(bars, to)] : (bars.find((x) => !x.ql) ?? bars[0])
+    const { count, dt } = grid(b)
+    const n = (this.loop ? 2 : count < 3 ? 2 * count : count) * dt
+    const from = (b.ql ? b.t1 : b.t0) - n
+    return { from: to - from < n / 2 ? from - n : from, to, dt }
   }
 
-  /** Beats of count-in left, 4 down to 1, or 0 when not counting. */
+  /** Clicks of count-in left, counting down to 1, or 0 when not counting. */
   get count() {
-    const { to } = this.lead()
-    return this.running() && this.t < to ? Math.min(COUNT_IN, Math.max(1, Math.ceil((to - this.t) / this.song.spb - 1e-6))) : 0
+    const { from, to, dt } = this.lead()
+    if (!this.running() || this.t >= to) return 0
+    const n = Math.ceil((to - from) / dt - 1e-6)
+    return Math.max(1, n - Math.floor((this.t - from) / dt + 1e-6))
   }
 
   /** Re-score after a setting change without leaving the song. */
@@ -205,10 +219,6 @@ export class Game {
     this.pedals = this.pedal ? [{ t: -1e9, down: true }] : []
     this.downAt.clear()
     this.wrongMark = 0
-    this.autoI = this.song.notes.findIndex((n) => n.t >= this.t)
-    if (this.autoI < 0) this.autoI = this.song.notes.length
-    this.compI = this.song.chords?.findIndex((c) => c.t >= this.t) ?? -1
-    if (this.compI < 0) this.compI = this.song.chords?.length ?? 0
   }
 
   /** Hand the trouble bars from this pass to whoever saves them, then start a fresh tally. */
@@ -237,11 +247,17 @@ export class Game {
     return this.running() ? this.anchorT + ((perf - this.anchorPerf) / 1000) * this.rate : this.t
   }
 
+  /** Move the clock. What was handed to the audio clock ahead of the old time is stopped, and is handed again from the new one. */
   seek(t: number) {
     this.t = t
     this.anchor(performance.now())
-    this.nextClick = Math.ceil((t - 1e-6) / this.song.spb)
+    audio.hush()
+    const { from, dt } = this.lead()
+    this.nextClick = Math.max(0, Math.ceil((t - from) / dt - 1e-6))
     this.nextMetro = t
+    const after = (xs: { t: number }[] = []) => ((i) => (i < 0 ? xs.length : i))(xs.findIndex((x) => x.t >= t))
+    this.autoI = after(this.song.notes)
+    this.compI = after(this.song.chords)
   }
 
   /** Jump while playing or paused (the scrubber): everything before `t` stops counting. */
@@ -266,8 +282,16 @@ export class Game {
       this.anchor(this.lastPerf)
       this.setPhase(this.t < this.lead().to ? 'countin' : 'playing')
     } else {
+      this.seek(this.tAt(performance.now())) // the clicks and notes already handed ahead stop with it
       this.setPhase('paused')
     }
+  }
+
+  /** A reading drill's first key is its Play button: it starts the run, and is to be judged (true) only when it is the first card's note, never in a paced run's count-in. */
+  start(p: number): boolean {
+    this.toggle()
+    const i = this.judge.nextPending()
+    return this.phase !== 'countin' && i >= 0 && this.song.notes.some((n) => n.t === this.song.notes[i].t && n.p === p)
   }
 
   setRate(r: number) {
@@ -303,7 +327,7 @@ export class Game {
     this.lastPerf = perf
     const dt = this.running() ? ((perf - this.anchorPerf) / 1000) * this.rate : 0
     if (this.running()) this.t = this.anchorT + dt
-    for (const [p, until] of this.autoUntil) if (until < perf) this.autoUntil.delete(p)
+    for (const [p, [, until]] of this.autoUntil) if (until < perf) this.autoUntil.delete(p)
     if (!this.running() && this.phase !== 'waiting') return
     if (this.hold && perf >= this.hold.until) {
       this.hold = undefined
@@ -312,39 +336,31 @@ export class Game {
     }
 
     const lead = this.lead()
-    const spb = this.song.spb
-    const look = 0.1 * this.rate // beats go to the audio clock a tenth of a second early, so a click is not late by up to a frame
-    while (this.nextClick * spb <= this.t + look && this.nextClick * spb < lead.to - 1e-6) {
-      const at = this.nextClick * spb
-      audio.click(at <= lead.from + 1e-6, Math.max(0, (at - this.t) / this.rate))
-      this.nextClick++
-    }
+    const look = LOOK * this.rate
+    for (let at = lead.from + this.nextClick * lead.dt; at <= this.t + look && at < lead.to - 1e-6; at = lead.from + ++this.nextClick * lead.dt)
+      audio.click(this.nextClick === 0, Math.max(0, (at - this.t) / this.rate), this.calib) // the first click of the count is the accented one
     if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
-    this.metronome(lead.to, look)
+    const end = this.horizon(look)
+    this.metronome(lead.to, end)
 
-    // listen-hand notes play themselves
-    while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t <= this.t) {
+    // the notes the app plays for you (a Listen hand, a part, the chords) go to the audio clock like the clicks, each with its length
+    const at = (t: number, d: number) => ({ after: Math.max(0, (t - this.t) / this.rate), dur: d / this.rate })
+    while (this.autoI < this.song.notes.length && this.song.notes[this.autoI].t < end) {
       const n = this.song.notes[this.autoI++]
       if (this.modeOf(n) !== 'listen') continue
-      audio.noteOn(n.p, n.v, true, voiceOf(this.song, n)) // Listen always sounds: the app is the one playing this hand
-      const ms = (n.d / this.rate) * 1000
-      this.autoUntil.set(n.p, perf + ms)
-      setTimeout(() => audio.noteOff(n.p), ms)
+      const a = at(n.t, n.d)
+      audio.noteOn(n.p, n.v, true, voiceOf(this.song, n), a) // Listen always sounds: the app is the one playing this hand
+      const from = perf + a.after * 1000
+      this.autoUntil.set(n.p, [this.autoUntil.get(n.p)?.[0] ?? from, from + a.dur * 1000]) // the same key again while lit or due: lit from the first one on
       this.emit({ type: 'auto', note: n })
     }
-
-    for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t <= this.t; ) {
+    for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t < end; ) {
       const c = ch[this.compI++]
-      const ms = ((c.d * 0.9) / this.rate) * 1000
-      if (settings.comp)
-        for (const p of c.keys) {
-          audio.noteOn(p, 0.45, true) // like Listen: the app is the one playing
-          setTimeout(() => audio.noteOff(p), ms)
-        }
+      if (settings.comp) for (const p of c.keys) audio.noteOn(p, 0.45, true, undefined, at(c.t, c.d * 0.9)) // like Listen: the app is the one playing
     }
 
     if (this.phase === 'playing') {
-      this.dispatch(this.judge.tick(this.t))
+      this.dispatch(this.judge.tick(this.t - (this.offset / 1000) * this.rate)) // on the clock the presses are judged on
       if (this.wait) {
         const req = this.judge.required(this.t)
         if (req.length) {
@@ -357,6 +373,7 @@ export class Game {
         }
       }
       if (this.loop && this.t >= this.loop.b) {
+        this.dispatch(this.judge.tick(Infinity)) // a note still open to a late hit is missed: the pass is over
         const j = this.judge
         const clean = j.total > 0 && j.counts.miss === 0 && j.wrong <= 1
         this.endPass()
@@ -375,14 +392,18 @@ export class Game {
     }
   }
 
-  /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. It never runs past the loop end, nor past the note a wait is about to stall on (the beat then sounds as you play it). */
-  private metronome(from: number, look: number) {
-    if ((this.mode === 'read' && !this.paced) || !this.running()) return
+  /** Song time up to which sound may go to the audio clock: `look` ahead, never past the loop end, nor past the note a wait is about to stall on (that beat, and the app's notes with it, then sound as you play it). */
+  private horizon(look: number) {
     let end = this.t + look
     if (this.loop) end = Math.min(end, this.loop.b)
     const i = this.wait ? this.judge.nextPending() : -1
-    if (i >= 0) end = Math.min(end, this.song.notes[i].t)
-    if (settings.metro !== 'off' || this.paced) {
+    return i >= 0 ? Math.min(end, this.song.notes[i].t) : end
+  }
+
+  /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. */
+  private metronome(from: number, end: number) {
+    if ((this.mode === 'read' && !this.paced) || !this.running()) return
+    if (settings.metro !== 'off' || this.paced || this.calib) {
       for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, !this.paced && settings.metro === 'eighths'))
         audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
     }
@@ -390,31 +411,36 @@ export class Game {
   }
 
   private finish() {
-    const j = this.judge
+    this.dispatch(this.judge.tick(Infinity))
+    const { judge: j, song, mode, rate } = this
+    const read = mode === 'read'
+    const coach = settings.coach
+    const quiet = coach === 'off' || read
+    const v = j.samples()
+    const edges = settings.edges ?? DEFAULT_EDGES
+    const hit = (i: number) => j.grade[i] && j.grade[i] !== 'miss'
     const result: Result = {
-      score: j.score,
       acc: j.accuracy,
-      grade: letter(j.accuracy),
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
-      touch: velStats(j.samples(), settings.edges),
-      even: settings.coach === 'off' || this.mode === 'read' || !judged(this.song.id, this.song.dyn) ? null : evenness(j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach),
-      timing: this.mode === 'read' ? null : timing(this.song.notes.flatMap((n, i) => (j.grade[i] && j.grade[i] !== 'miss' ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
-      artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
-      voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES, this.song.dyn === 'balance' ? 'R' : melodyHand(this.song.notes)),
-      fixed: fixedAt(j.samples().map((x) => x.v)),
-      pedal: settings.coach === 'off' || this.mode === 'read' || this.wait || this.loop ? null : ((r) => r && pedalLine(r))(pedalReport(this.song, this.pedals)),
-      follow: settings.coach === 'off' || this.mode === 'read' || this.wait || judged(this.song.id) ? [] : songLines(this.song, this.presses, j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach, this.rate),
+      touch: velStats(v, settings.edges),
+      even: quiet || !judged(song.id, song.dyn) ? null : evenness(v, edges, coach),
+      timing: read ? null : timing(song.notes.flatMap((n, i) => (hit(i) ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
+      artic: read || !(song.artic ?? (song.id.startsWith('scale:') && 'legato')) ? null : articulation(song.artic ?? 'legato', song.notes, this.presses, rate),
+      voice: read || (judged(song.id) && song.dyn !== 'balance') ? null : voicing(v, edges, song.dyn === 'balance' ? 'R' : melodyHand(song.notes)),
+      fixed: fixedAt(v.map((x) => x.v)),
+      pedal: quiet || this.wait || this.loop ? null : ((r) => r && pedalLine(r))(pedalReport(song, this.pedals, song.notes.map((n, i) => (hit(i) ? n.t + (j.off[i] / 1000) * rate : undefined)))), // against the chords as you struck them
+      follow: quiet || this.wait || judged(song.id) ? [] : songLines(song, this.presses, v, edges, coach, rate),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
-      dyn: this.song.dyn,
+      dyn: song.dyn,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
       heat: this.heat.slice(),
       total: j.total,
-      mode: this.mode,
-      rate: this.rate,
+      mode,
+      rate,
     }
     this.heat = []
     this.setPhase('done')
@@ -439,7 +465,7 @@ export class Game {
         this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel, v: this.judge.velAt(e.i) })
       } else if (e.k === 'hold') {
-        this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
+        this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
         this.quiet.note(false)
@@ -453,15 +479,19 @@ export class Game {
     }
   }
 
+  /** Song time of a key or pedal at performance.now() time `ts`, corrected for the calibration offset; the held clock while waiting or stopped. */
+  at(ts: number) {
+    return this.running() ? this.tAt(ts) - (this.offset / 1000) * this.rate : this.t
+  }
+
   /** A note-on from the keyboard. `ts` is the MIDI event's performance.now() timestamp. */
   press(p: number, vel: number, ts: number, virtual = false) {
     this.held.set(p, vel)
     if (settings.sound || virtual) audio.noteOn(p, vel, true) // the screen and computer keys have no speaker of their own
-    const live = this.running() || this.phase === 'waiting'
-    const t = live ? this.tAt(ts) - (settings.offset / 1000) * this.rate : this.t
-    this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
-    if (!live) return
-    const evs = this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel)
+    const t = this.at(ts)
+    this.emit({ type: 'press', p, vel, t })
+    if (!this.running() && this.phase !== 'waiting') return
+    const evs = this.judge.press(p, t, virtual ? 0 : vel)
     for (const e of evs) if (e.k === 'hit' || e.k === 'ok') this.downAt.set(p, { i: e.i, at: ts })
     this.dispatch(evs)
     if (this.phase === 'waiting') {
@@ -482,7 +512,7 @@ export class Game {
   release(p: number, ts: number, virtual = false) {
     this.held.delete(p)
     if (settings.sound || virtual) audio.keyUp(p)
-    this.emit({ type: 'release', p })
+    this.emit({ type: 'release', p, t: this.at(ts) })
     const k = this.downAt.get(p)
     if (k) this.presses.push({ i: k.i, down: k.at, up: ts })
     this.downAt.delete(p)
@@ -491,7 +521,14 @@ export class Game {
       this.hold = undefined
       this.emit({ type: 'short' })
     }
-    if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
+    if (this.running()) this.dispatch(this.judge.release(p, this.at(ts), this.pedal))
+  }
+
+  /** The keyboard went away: every key it held comes up, and the pedal, with no hold grade (it was not the player's doing). */
+  letGo(ts = performance.now()) {
+    this.judge.letGo()
+    for (const p of [...this.held.keys()]) this.release(p, ts)
+    this.sustain(false, ts)
   }
 
   /** CC64 crossed the half-way mark. Kept as song time (the held clock when paused) so the coach can set it against the chords. */
@@ -499,6 +536,8 @@ export class Game {
     if (down === this.pedal) return
     this.pedal = down
     audio.sustain(down)
-    this.pedals.push({ t: this.tAt(ts) - (settings.offset / 1000) * this.rate, down })
+    const t = this.at(ts)
+    this.pedals.push({ t, down })
+    this.emit({ type: 'pedal', down, t })
   }
 }

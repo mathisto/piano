@@ -8,7 +8,7 @@ import { Midi } from '@tonejs/midi'
 import { fromMidi } from './midi-tracks'
 import { fromSpec, type Song } from './song'
 
-vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn() }))
+vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn(), hush: vi.fn() }))
 
 // bundled OpenScore songs with the voice folded into the piano's right hand: in lc6917116 the piano doubles every sung note, in lc4976849 it does not
 async function lied(id = 'lc6917116'): Promise<Song> {

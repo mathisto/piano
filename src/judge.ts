@@ -1,19 +1,17 @@
 import type { Hand, Note } from './song'
 
-export type Grade = 'perfect' | 'great' | 'good' | 'miss'
+export type Grade = 'perfect' | 'great' | 'good' | 'late' | 'miss' // late: the right key after the window closed, up to a beat (a hit, the worst one)
 export type HoldGrade = 'held' | 'short' | 'long'
 export type VelGrade = 'ok' | 'low' | 'high' // struck inside, under or over the note's velocity range
 export type Hold = 'off' | 'lenient' | 'strict'
 
 // How far from the written end a release may land: the larger of a floor in seconds and a share of the note.
 const SLACK = { lenient: { floor: 0.35, share: 0.3 }, strict: { floor: 0.12, share: 0.15 } }
-const HOLD_FLOOR = 0.5 // a cut-short note still keeps half its points
-const LONG_KEEP = 0.75
 
 // Real-time windows in ms, either side of the note. Tune by feel.
 const WIN = { perfect: 45, great: 80, good: 125 }
-export const WEIGHT: Record<Grade, number> = { perfect: 1, great: 0.8, good: 0.5, miss: 0 }
-const POINTS = { perfect: 100, great: 80, good: 50 }
+export const WEIGHT: Record<Grade, number> = { perfect: 1, great: 0.8, good: 0.5, late: 0.25, miss: 0 }
+const LATE_CAP = 0.5 // seconds: a late hit is at most a beat after the window, and never more than this
 const WAIT_EARLY = 0.6 // wait mode accepts a note this many song-seconds early
 const CLUSTER = 0.03 // notes this close together count as one chord when waiting
 
@@ -22,14 +20,15 @@ export type Ev =
   | { k: 'ok'; i: number; vel?: VelGrade } // wait-mode hit, no timing grade
   | { k: 'miss'; i: number }
   | { k: 'wrong'; p: number }
-  | { k: 'hold'; i: number; grade: HoldGrade; f: number } // key released; f = share of the points kept
+  | { k: 'hold'; i: number; grade: HoldGrade } // key released
 
 export interface Cfg {
   rate: number // 1 = 100% tempo
   wait: boolean
   strict: boolean // wrong notes break the combo
   hold?: Hold // grade how long keys are held; absent = off
-  ease?: number // scales the timing windows: above 1 is more forgiving; absent = 1
+  ease?: number | [number, number] // scales the timing windows, or the early and the late side apart: above 1 is more forgiving; absent = 1
+  beat?: number // song seconds a beat lasts: how late a late hit may be (capped at LATE_CAP); absent = no late hits
 }
 
 const PENDING = 0
@@ -38,26 +37,24 @@ const MISSED = 2
 const OFF = -1
 
 export class Judge {
-  st = new Int8Array(0)
-  grade: (Grade | undefined)[] = []
-  off = new Float32Array(0)
-  holdGrade: (HoldGrade | undefined)[] = [] // per note, once its key has come up
-  holdAt = new Float32Array(0) // song time of that release
-  private vel = new Uint8Array(0) // key velocity 1..127 of each struck note, 0 when unknown
-  private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
-  private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
-  holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
-  touch: Record<VelGrade, number> = { ok: 0, low: 0, high: 0 } // notes with a velocity target, by result
-  score = 0
-  combo = 0
-  maxCombo = 0
-  wrong = 0
-  total = 0
-  hits = 0 // notes cleared, with or without a timing grade
-  judged = 0
-  weightSum = 0
-  counts: Record<Grade, number> = { perfect: 0, great: 0, good: 0, miss: 0 }
-  private first = 0
+  // all set by init()
+  declare st: Int8Array
+  declare grade: (Grade | undefined)[]
+  declare off: Float32Array
+  declare holdGrade: (HoldGrade | undefined)[] // per note, once its key has come up
+  declare holdAt: Float32Array // song time of that release
+  private declare vel: Uint8Array // key velocity 1..127 of each struck note, 0 when unknown
+  private declare down: Map<number, number> // pitch -> note index, for keys struck and not yet released
+  declare holds: Record<HoldGrade, number>
+  declare touch: Record<VelGrade, number> // notes with a velocity target, by result
+  declare combo: number
+  declare maxCombo: number
+  declare wrong: number
+  declare total: number
+  declare judged: number
+  declare weightSum: number
+  declare counts: Record<Grade, number>
+  private declare first: number
 
   constructor(
     private notes: Note[],
@@ -71,11 +68,10 @@ export class Judge {
     this.st = new Int8Array(this.notes.length)
     this.grade = new Array(this.notes.length).fill(undefined)
     this.off = new Float32Array(this.notes.length)
-    this.pts = new Float32Array(this.notes.length)
     this.vel = new Uint8Array(this.notes.length)
     this.holdAt = new Float32Array(this.notes.length)
     this.holdGrade = new Array(this.notes.length).fill(undefined)
-    this.down.clear()
+    this.down = new Map()
     this.holds = { held: 0, short: 0, long: 0 }
     this.touch = { ok: 0, low: 0, high: 0 }
     this.total = 0
@@ -84,8 +80,8 @@ export class Judge {
       this.st[i] = ok ? PENDING : OFF
       if (ok) this.total++
     })
-    this.score = this.combo = this.maxCombo = this.wrong = this.judged = this.hits = this.weightSum = 0
-    this.counts = { perfect: 0, great: 0, good: 0, miss: 0 }
+    this.combo = this.maxCombo = this.wrong = this.judged = this.weightSum = 0
+    this.counts = { perfect: 0, great: 0, good: 0, late: 0, miss: 0 }
     this.first = 0
     this.advance()
   }
@@ -127,43 +123,49 @@ export class Judge {
     return n ? this.holds.held / n : 1
   }
 
+  /** The early and late edges of the Good window, the late-hit grace after it (song seconds), and the two eases. */
+  private win() {
+    const e = this.cfg.ease ?? 1
+    const [ea, la] = typeof e === 'number' ? [e, e] : e
+    const s = (WIN.good * this.cfg.rate) / 1000
+    return { early: s * ea, late: s * la, grace: Math.min(this.cfg.beat ?? 0, LATE_CAP * this.cfg.rate), ea, la }
+  }
+
   private advance() {
     while (this.first < this.notes.length && this.st[this.first] !== PENDING) this.first++
   }
 
   /** `t` is song time, already corrected for the calibration offset. */
   press(p: number, t: number, vel = 0): Ev[] {
-    const w = (WIN.good * (this.cfg.ease ?? 1) * this.cfg.rate) / 1000
+    const w = this.win()
     let best = -1
     let bestD = Infinity
     for (let i = this.first; i < this.notes.length; i++) {
       const n = this.notes[i]
-      if (n.t > t + (this.cfg.wait ? WAIT_EARLY : w)) break
+      if (n.t > t + (this.cfg.wait ? WAIT_EARLY : w.early)) break
       if (this.st[i] !== PENDING || n.p !== p) continue
-      const d = Math.abs(n.t - t)
       if (this.cfg.wait) {
         best = i // earliest pending of this pitch
         break
       }
-      if (d <= w && d < bestD) {
+      const d = t - n.t
+      const rank = d > w.late ? 1 + d : Math.abs(d) // inside the window beats any late hit
+      if (d >= -w.early && d <= w.late + w.grace && rank < bestD) {
         best = i
-        bestD = d
+        bestD = rank
       }
     }
     if (best < 0) return this.stray(p)
 
     this.st[best] = HIT
     this.vel[best] = vel ? Math.max(1, Math.round(vel * 127)) : 0
-    this.hits++
     this.advance()
     const vg = this.velGrade(best)
     if (this.cfg.wait) return [{ k: 'ok', i: best, vel: vg }]
 
     const off = ((t - this.notes[best].t) / this.cfg.rate) * 1000
-    const a = Math.abs(off) / (this.cfg.ease ?? 1)
-    const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : 'good'
-    this.pts[best] = POINTS[grade]
-    this.score += this.pts[best]
+    const a = Math.abs(off) / (off < 0 ? w.ea : w.la)
+    const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : a <= WIN.good + 1e-6 ? 'good' : 'late'
     this.down.set(p, best)
     this.combo++
     this.maxCombo = Math.max(this.maxCombo, this.combo)
@@ -194,20 +196,11 @@ export class Judge {
     const dur = end - n.t
     const { floor, share } = SLACK[mode]
     const tol = Math.max(floor * this.cfg.rate, share * dur)
-    let grade: HoldGrade = 'held'
-    let f = 1
-    if (t < end - tol && !pedal) {
-      grade = 'short'
-      f = Math.max(HOLD_FLOOR, 1 - (end - t) / dur)
-    } else if (mode === 'strict' && t > end + tol) {
-      grade = 'long'
-      f = LONG_KEEP
-    }
-    this.score -= this.pts[i] * (1 - f)
+    const grade: HoldGrade = t < end - tol && !pedal ? 'short' : mode === 'strict' && t > end + tol ? 'long' : 'held'
     this.holds[grade]++
     this.holdGrade[i] = grade
     this.holdAt[i] = t
-    return [{ k: 'hold', i, grade, f }]
+    return [{ k: 'hold', i, grade }]
   }
 
   private stray(p: number): Ev[] {
@@ -219,10 +212,10 @@ export class Judge {
   /** Mark notes that slid past their window. No-op while waiting: the clock stalls instead. */
   tick(t: number): Ev[] {
     if (this.cfg.wait) return []
-    const w = (WIN.good * (this.cfg.ease ?? 1) * this.cfg.rate) / 1000
+    const { late, grace } = this.win()
     const out: Ev[] = []
     for (let i = this.first; i < this.notes.length; i++) {
-      if (this.notes[i].t + w >= t) break
+      if (this.notes[i].t + late + grace >= t) break
       if (this.st[i] !== PENDING) continue
       this.st[i] = MISSED
       this.combo = 0
@@ -233,6 +226,11 @@ export class Judge {
     }
     this.advance()
     return out
+  }
+
+  /** Forget the keys held down: they came up without the player (the keyboard went away), so they get no hold grade. */
+  letGo() {
+    this.down.clear()
   }
 
   /** Notes struck at this moment (within one chord's spread of `t`). */
@@ -250,7 +248,6 @@ export class Judge {
     for (const i of idx) {
       if (this.st[i] !== HIT) continue
       this.st[i] = PENDING
-      this.hits--
       this.vel[i] = 0
       this.down.delete(this.notes[i].p)
       this.first = Math.min(this.first, i)
@@ -271,9 +268,5 @@ export class Judge {
   /** Earliest pending note, for the ghost keys in wait mode. */
   nextPending(): number {
     return this.first < this.notes.length ? this.first : -1
-  }
-
-  get done() {
-    return this.first >= this.notes.length
   }
 }
