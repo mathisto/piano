@@ -12,7 +12,12 @@ interface El {
 }
 
 const ENT: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&apos;': "'" }
-const unent = (s: string) => s.replace(/&(lt|gt|amp|quot|apos);/g, (m) => ENT[m])
+const unent = (s: string) =>
+  s.replace(/&(?:lt|gt|amp|quot|apos|#(\d+)|#x([0-9a-fA-F]+));/g, (m, d, h) => {
+    if (!d && !h) return ENT[m]
+    const c = d ? Number(d) : parseInt(h, 16) // &#228; &#xE4;: ä
+    return c <= 0x10ffff ? String.fromCodePoint(c) : m
+  })
 
 export function parseXml(src: string): El {
   const re = /<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!DOCTYPE[^>[]*(?:\[[\s\S]*?\])?\s*>|<!\[CDATA\[([\s\S]*?)\]\]>|<\/([^\s>]+)\s*>|<([^\s/>]+)((?:\s+[^\s=/>]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|([^<]+)/g
@@ -75,7 +80,8 @@ export async function unzip(u: Uint8Array): Promise<Map<string, Uint8Array>> {
   return out
 }
 
-const dec = (b: Uint8Array) => new TextDecoder().decode(b)
+/** UTF-8, or UTF-16 when the file starts with its byte order mark (Finale, some Windows exports). */
+const dec = (b: Uint8Array) => new TextDecoder(b[0] === 0xff && b[1] === 0xfe ? 'utf-16le' : b[0] === 0xfe && b[1] === 0xff ? 'utf-16be' : 'utf-8').decode(b)
 
 /** The score text from either a plain MusicXML file or a compressed .mxl. */
 export async function xmlText(buf: ArrayBuffer): Promise<string> {
@@ -112,6 +118,11 @@ interface Ev {
   wg?: number // the hairpin it sits under (index into W)
   wp?: number // which pass through that hairpin: the played index of its first measure
 }
+
+// A tie joins the held note of its pitch when it starts after that note began and at most this far after it ended. Most ties are end to start;
+// a held arpeggio ties each note to the chord it builds (LilyPond's tieWaitForNote: about one corpus score in eight), so the gap is up to a bar.
+// A stop further away (a stray tie-start never closed, then the same pitch bars later) is a note of its own.
+const TIE_REACH = 4 // quarters
 
 const ART: Record<string, Ev['art']> = { staccato: 'stac', staccatissimo: 'stac', accent: 'acc', 'strong-accent': 'acc', tenuto: 'ten' }
 const ART_RANK = ['stac', 'acc', 'ten'] // a note marked twice keeps the first: length is the surer thing to judge
@@ -239,14 +250,6 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
     const slurs = new Map<string, number>() // open slurs per voice
     const [evFrom, wFrom] = [evs.length, W.length]
     kids(part, 'measure').forEach((meas, m) => {
-      for (const a of kids(meas, 'attributes')) {
-        div = num(a, 'divisions') ?? div
-        staves = num(a, 'staves') ?? staves
-        const k = num(kid(a, 'key'), 'fifths')
-        if (k !== undefined) keyM[m] ??= k
-        const t = kid(a, 'time')
-        if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
-      }
       if (pi === 0) implicit[m] = meas.a.implicit === 'yes'
       starts[m] = base
       let cur = 0 // divisions into the measure
@@ -260,7 +263,19 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
       }
       const put = (q: number) => (maxQ[m] = Math.max(maxQ[m] ?? 0, q))
       for (const e of meas.c) {
-        if (e.n === 'note') {
+        if (e.n === 'attributes') {
+          // in document order: a change of divisions mid-measure counts from where it is written. What is counted so far is rescaled.
+          const d = num(e, 'divisions')
+          if (d && d !== div) {
+            ;[cur, start, top] = [cur, start, top].map((x) => (x * d) / div)
+            div = d
+          }
+          staves = num(e, 'staves') ?? staves
+          const k = num(kid(e, 'key'), 'fifths')
+          if (k !== undefined) keyM[m] ??= k
+          const t = kid(e, 'time')
+          if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
+        } else if (e.n === 'note') {
           const grace = !!kid(e, 'grace')
           const dur = grace ? 0 : (num(e, 'duration') ?? 0)
           const chord = !!kid(e, 'chord')
@@ -278,18 +293,20 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
           const p = Math.round(12 * ((num(pitch, 'octave') ?? 4) + 1) + (STEP[kid(pitch, 'step')?.t.trim() ?? 'C'] ?? 0) + alter)
           const staff = num(e, 'staff') ?? 1
           const track = pi * 4 + staff - 1
-          const ties = grace ? [] : kids(e, 'tie').map((t) => t.a.type)
+          const nots = kids(e, 'notations')
+          const tie = kids(e, 'tie') // the sound; <tied> is the drawing, and some files write only one of them
+          const ties = grace ? [] : (tie.length ? tie : nots.flatMap((x) => kids(x, 'tied'))).map((t) => t.a.type)
           const key = `${track}:${p}`
           const held = open.get(key)
-          const nots = kids(e, 'notations')
           const sl = nots.flatMap((x) => kids(x, 'slur')).map((x) => x.a.type)
           const vk = kid(e, 'voice')?.t.trim() ?? String(staff)
           slurs.set(vk, Math.max(0, (slurs.get(vk) ?? 0) + sl.filter((x) => x === 'start').length - sl.filter((x) => x === 'stop').length))
           const slur = !grace && slurs.get(vk)! > 0
           const arts = nots.flatMap((x) => kids(x, 'articulations')).flatMap((a) => a.c.map((x) => ART[x.n]))
           const art = ART_RANK.find((x) => arts.includes(x as Ev['art'])) as Ev['art']
-          if (ties.includes('stop') && held) {
-            held.dq += dur / div
+          const at = base + s / div
+          if (ties.includes('stop') && held && at >= held.at && at <= held.at + held.dq + TIE_REACH) {
+            held.dq = Math.max(held.dq, at + dur / div - held.at) // sounds to the end of the note it is tied to
             held.slur = slur || undefined
             if (!ties.includes('start')) open.delete(key)
             continue
