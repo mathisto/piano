@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { offsetOf } from './native-midi'
+import { offsetOf } from './native-app'
 
 it('the clock offset comes from the quickest round trip', () => {
   expect(offsetOf([])).toBeUndefined()

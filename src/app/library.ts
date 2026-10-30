@@ -138,7 +138,7 @@ export async function shareFile(file: File) {
   URL.revokeObjectURL(a.href)
 }
 
-async function importFiles(files: FileList | File[]) {
+export async function importFiles(files: FileList | File[]) {
   const errs: string[] = []
   for (const f of files) {
     if (!/\.(mid|midi|xml|musicxml|mxl)$/i.test(f.name)) {

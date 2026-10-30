@@ -1,23 +1,12 @@
 // In the iPad app (a Capacitor web view) WebKit has no Web MIDI, so fake it on top of the native CoreMidi
 // plugin (ios/App/App/PianoNative.swift). Imported first in main.ts: midi.ts reads `requestMIDIAccess` when it loads.
-// Also the app's other native edges: pairing, keeping the screen awake, a daily backup to Files.
-// Elsewhere (desktop browsers) this does nothing, and @capacitor/core never loads: it is fetched only inside the app.
-import { onWrite } from './kv'
+// Elsewhere (desktop browsers) this does nothing: the app's side (src/native-app.ts, with @capacitor/core) is fetched only inside the app.
 
-interface Source {
+export interface Source {
   id: string
   name: string
 }
-interface Native {
-  start(): Promise<{ sources: Source[] }>
-  pairBluetooth(): Promise<void>
-  setAwake(o: { on: boolean }): Promise<void>
-  now(): Promise<{ t: number }>
-  saveBackup(o: { text: string }): Promise<void>
-  addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
-  addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
-}
-interface Port extends Source {
+export interface Port extends Source {
   state: 'connected' | 'disconnected'
   onmidimessage: ((e: { data: Uint8Array; timeStamp: number }) => void) | null
 }
@@ -38,72 +27,7 @@ const sync = (list: Source[]) => {
   access.onstatechange?.({})
 }
 
-/** performance.now() minus the native clock, from [page before, native, page after] samples: the one with the shortest round trip, off by half of it at most. */
-export function offsetOf(samples: [number, number, number][]): number | undefined {
-  const best = samples.reduce<[number, number, number] | undefined>((b, s) => (!b || s[2] - s[0] < b[2] - b[0] ? s : b), undefined)
-  return best && (best[0] + best[2]) / 2 - best[1]
-}
-
-let offset: number | undefined
-let syncing = false
-async function syncClock(n: Native) {
-  if (syncing) return
-  syncing = true
-  try {
-    const s: [number, number, number][] = []
-    for (let i = 0; i < 5; i++) {
-      const t0 = performance.now()
-      const { t } = await n.now()
-      s.push([t0, t, performance.now()])
-    }
-    if (offset === undefined) console.info(`MIDI clock: offset ${offsetOf(s)?.toFixed(2)} ms, round trip ${Math.min(...s.map((x) => x[2] - x[0])).toFixed(2)} ms`) // the first sync, for a console-attached launch
-    offset = offsetOf(s)
-  } finally {
-    syncing = false
-  }
-}
-
-const plugin = native
-  ? import('@capacitor/core').then(({ registerPlugin }) => {
-      const n = registerPlugin<Native>('CoreMidi')
-      void n.addListener('sources', (d) => sync(d.sources))
-      void n.addListener('m', (d) => {
-        const port = inputs.get(d.id)
-        if (!port?.onmidimessage) return
-        const at = performance.now()
-        for (const [t, ...m] of d.d) {
-          // the key went down at its packet's host time, on the page's clock: a busy main thread no longer makes it late
-          let timeStamp = offset === undefined ? at : t + offset
-          if (timeStamp > at + 1 || at - timeStamp > 500) {
-            timeStamp = at // the clocks have moved apart (the host clock stops in sleep): arrival time until they are synced again
-            void syncClock(n).catch(() => {})
-          }
-          port.onmidimessage({ data: Uint8Array.from(m), timeStamp })
-        }
-      })
-      void syncClock(n).catch(() => {}) // no offset yet: arrival times
-      setInterval(() => void syncClock(n).catch(() => {}), 30_000)
-      return n
-    })
-  : undefined
-
-if (plugin) {
-  // the record to Files (On My iPad > Piano Forte) half a minute after the last save, or on leaving the app with one pending
-  let timer = 0
-  const backup = () => {
-    clearTimeout(timer)
-    timer = 0
-    void import('./store')
-      .then((s) => s.exportAll())
-      .then((text) => plugin.then((n) => n.saveBackup({ text })))
-      .catch((e) => console.warn('Backup to Files', e))
-  }
-  onWrite(() => {
-    clearTimeout(timer)
-    timer = window.setTimeout(backup, 30_000)
-  })
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && timer && backup())
-}
+const plugin = native ? import('./native-app').then((m) => m.connect(inputs, sync)) : undefined
 
 /** Apple's Bluetooth MIDI sheet: lists the keyboards in range and pairs one on a tap. The app only. */
 export const pairBluetooth = () => void plugin?.then((n) => n.pairBluetooth()).catch((e) => console.warn('Bluetooth pairing', e))

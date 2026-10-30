@@ -28,6 +28,75 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>MIDI file</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.midi-audio</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>MusicXML score</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.recordare.musicxml</string>
+				<string>com.recordare.musicxml.uncompressed</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.recordare.musicxml</string>
+			<key>UTTypeDescription</key>
+			<string>MusicXML score (compressed)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mxl</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.recordare.musicxml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.recordare.musicxml.uncompressed</string>
+			<key>UTTypeDescription</key>
+			<string>MusicXML score</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>musicxml</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.recordare.musicxml+xml</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Piano Forte connects to Bluetooth MIDI keyboards.</string>
 	<key>LSRequiresIPhoneOS</key>

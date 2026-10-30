@@ -12,7 +12,7 @@ class PianoViewController: CAPBridgeViewController {
 
 /// WebKit has no Web MIDI. This forwards every connected MIDI source to the page, which fakes
 /// navigator.requestMIDIAccess on top of it (src/native-midi.ts). Also: Apple's Bluetooth MIDI pairing sheet,
-/// the screen kept awake while a run plays, and a daily backup to Files.
+/// the screen kept awake while a run plays, a daily backup to Files, and files opened from other apps.
 @objc(CoreMidiPlugin)
 public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CoreMidiPlugin"
@@ -31,6 +31,18 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var started = false
     private var connected = Set<Int32>() // unique ids of the sources we are connected to
     private var sources: [[String: Any]] = []
+
+    /// A MIDI or MusicXML file opened from Files, Mail or AirDrop ("Open in Piano Forte"). Capacitor posts it, on a cold start
+    /// once the plugins are loaded; the page may not be listening yet, so the event waits for it.
+    override public func load() {
+        NotificationCenter.default.addObserver(forName: .capacitorOpenURL, object: nil, queue: .main) { [weak self] note in
+            guard let url = (note.object as? [String: Any])?["url"] as? URL, url.isFileURL else { return }
+            let scoped = url.startAccessingSecurityScopedResource() // a file opened in place, still in its own app's folder
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url) else { return }
+            self?.notifyListeners("file", data: ["name": url.lastPathComponent, "data": data.base64EncodedString()], retainUntilConsumed: true)
+        }
+    }
 
     /// Host time in ms: CLOCK_UPTIME_RAW is mach time in nanoseconds, and not one of Apple's required-reason APIs.
     private static func uptime() -> Double { Double(clock_gettime_nsec_np(CLOCK_UPTIME_RAW)) / 1_000_000 }
