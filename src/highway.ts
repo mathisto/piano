@@ -151,7 +151,6 @@ export class Highway {
     this.bgGlow.width = this.W * 1.4
     this.bgGlow.height = fullH * 1.2
     this.bgGlow.position.set(-this.W * 0.2, -fullH * 0.1)
-    this.labelTex.clear()
   }
 
   get recY() {
