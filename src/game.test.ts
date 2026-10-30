@@ -224,3 +224,32 @@ describe('a keyboard that goes away', () => {
     settings.sound = false
   })
 })
+
+describe('judging on the clock', () => {
+  it('a note is missed on the offset-corrected clock the presses are on, so a late setup gets its late hit', async () => {
+    const { settings } = await import('./settings')
+    settings.offset = 100
+    const g = new Game()
+    g.load(fromSpec({ id: 'o', title: 'o', bpm: 60, fifths: 0, rh: 'C4:1 D4:1 E4:1 F4:1', lh: 'R:4' }), 'perform')
+    g.toggle()
+    run(g, 4700) // 0.7 s into the song: 0.6 s on the corrected clock, inside the late grace
+    g.press(60, 0.7, performance.now())
+    expect(g.judge.grade[0]).toBe('late')
+    expect(g.judge.wrong).toBe(0)
+    settings.offset = 0
+  })
+
+  it('a loop pass is over at its end: a note still open to a late hit counts as missed', () => {
+    const g = new Game()
+    g.load(fromSpec({ id: 'l', title: 'l', bpm: 80, fifths: 0, rh: 'C4:1 D4:1 E4:1 F4:1', lh: 'R:4' }), 'learn')
+    g.setWait(false)
+    g.setLoop({ a: 0, b: 1 }) // C4 at 0 played, D4 at 0.75 left unplayed: its late grace runs past the loop end
+    let clean: boolean | undefined
+    g.on((e) => e.type === 'loop' && (clean = e.clean))
+    g.toggle()
+    run(g, 1490) // the count-in
+    g.press(60, 0.7, performance.now())
+    run(g, 1600)
+    expect(clean).toBe(false)
+  })
+})

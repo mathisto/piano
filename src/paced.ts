@@ -57,11 +57,11 @@ export interface Score {
   timing: Timing | null
 }
 
-/** A card is on the beat when each of its notes was struck inside the window. Cards the run never reached are not counted. */
+/** A card is on the beat when each of its notes was struck inside the window (a late hit is not). Cards the run never reached are not counted. */
 export function score(cards: Card[], notes: Struck[]): Score {
   const cells = cards.map((_, i) => {
     const ns = notes.filter((x) => x.card === i)
-    return ns.length && ns.every((x) => x.grade) ? ns.every((x) => x.grade !== 'miss') : undefined
+    return ns.length && ns.every((x) => x.grade) ? ns.every((x) => x.grade !== 'miss' && x.grade !== 'late') : undefined
   })
   const hits = notes.flatMap((x) => (x.grade && x.grade !== 'miss' ? [{ t: x.t, p: x.p, h: x.h, off: x.off }] : []))
   return {

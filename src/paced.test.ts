@@ -46,6 +46,10 @@ describe('scoring', () => {
     expect([r.n, r.hit, r.missed]).toEqual([4, 3, [1]])
     expect(r.cells).toEqual([true, false, true, true])
   })
+  it('a late hit is struck, but not on the beat', () => {
+    const r = score(cards, [s(0, 60, 'late', 400), s(1, 62, 'good'), s(2, 64, 'good'), s(2, 67, 'good'), s(3, 65, 'good')])
+    expect(r.missed).toEqual([0])
+  })
   it('a chord with one note missing is a missed card', () => {
     const r = score(cards, [s(0, 60, 'good'), s(1, 62, 'good'), s(2, 64, 'good'), s(2, 67, 'miss'), s(3, 65, 'good')])
     expect(r.missed).toEqual([2])

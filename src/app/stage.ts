@@ -317,7 +317,7 @@ export function feel(n: Note, v: number) {
   f.v.push(v)
 }
 
-const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', miss: 'Miss' }
+const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', late: 'Late', miss: 'Miss' }
 
 const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
 
@@ -331,7 +331,7 @@ export function popup(grade: Grade | null, off: number, p: number, noteId: numbe
   }
   const el = $('#judge')
   el.dataset.g = grade ?? (vel === 'ok' ? 'perfect' : 'good')
-  const timing = grade === null || grade === 'perfect' || grade === 'miss' ? '' : off < 0 ? '‹ early' : 'late ›'
+  const timing = grade === null || grade === 'perfect' || grade === 'miss' || grade === 'late' ? '' : off < 0 ? '‹ early' : 'late ›'
   const touch = vel ? TOUCH[vel] : ''
   el.innerHTML = `${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
   const x = Math.min(highway.W - 90, Math.max(90, highway.center(p)))

@@ -60,7 +60,7 @@ const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by stric
 const LOOK = 0.25 // seconds: clicks and the app's notes go to the audio clock this far ahead, so a slow frame cannot make them late
 export const CALIBRATION = 'calibration' // the song id of the latency calibration (src/app/calibration.ts)
 const CALIBRATION_EASE = 3 // its window is +/-375 ms: a setup 150 ms late must still leave a sample to measure
-const PACED_EASE = 1.6 // a reader a beat behind the eyes is late, not wrong: a paced run takes a note within 200 ms of the beat
+const PACED_EASE: [number, number] = [1.2, 2] // a reader a beat behind the eyes is late far more often than early: a paced run takes a note from 150 ms before the beat to 250 ms after
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
 
 export class Game {
@@ -108,7 +108,7 @@ export class Game {
 
   /** The latency calibration: a wide window, the click on whatever the settings say, and presses taken as they come (offset 0) without touching the saved offset. */
   get calib() {
-    return this.song?.id === CALIBRATION
+    return this.song.id === CALIBRATION
   }
 
   /** The calibration offset in ms: what presses are corrected by. */
@@ -176,7 +176,7 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[settings.strict], beat: this.song.spb }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -208,7 +208,7 @@ export class Game {
     const { from, to, dt } = this.lead()
     if (!this.running() || this.t >= to) return 0
     const n = Math.ceil((to - from) / dt - 1e-6)
-    return Math.max(1, Math.min(n, n - Math.floor((this.t - from) / dt + 1e-6)))
+    return Math.max(1, n - Math.floor((this.t - from) / dt + 1e-6))
   }
 
   /** Re-score after a setting change without leaving the song. */
@@ -254,10 +254,9 @@ export class Game {
     const { from, dt } = this.lead()
     this.nextClick = Math.max(0, Math.ceil((t - from) / dt - 1e-6))
     this.nextMetro = t
-    this.autoI = this.song.notes.findIndex((n) => n.t >= t)
-    if (this.autoI < 0) this.autoI = this.song.notes.length
-    this.compI = this.song.chords?.findIndex((c) => c.t >= t) ?? -1
-    if (this.compI < 0) this.compI = this.song.chords?.length ?? 0
+    const after = (xs: { t: number }[] = []) => ((i) => (i < 0 ? xs.length : i))(xs.findIndex((x) => x.t >= t))
+    this.autoI = after(this.song.notes)
+    this.compI = after(this.song.chords)
   }
 
   /** Jump while playing or paused (the scrubber): everything before `t` stops counting. */
@@ -351,8 +350,7 @@ export class Game {
       const a = at(n.t, n.d)
       audio.noteOn(n.p, n.v, true, voiceOf(this.song, n), a) // Listen always sounds: the app is the one playing this hand
       const from = perf + a.after * 1000
-      const was = this.autoUntil.get(n.p) // the same key again: lit from the first one on
-      this.autoUntil.set(n.p, [was && was[1] >= from - 50 ? was[0] : from, from + a.dur * 1000])
+      this.autoUntil.set(n.p, [this.autoUntil.get(n.p)?.[0] ?? from, from + a.dur * 1000]) // the same key again while lit or due: lit from the first one on
     }
     for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t < end; ) {
       const c = ch[this.compI++]
@@ -360,7 +358,7 @@ export class Game {
     }
 
     if (this.phase === 'playing') {
-      this.dispatch(this.judge.tick(this.t))
+      this.dispatch(this.judge.tick(this.t - (this.offset / 1000) * this.rate)) // on the clock the presses are judged on
       if (this.wait) {
         const req = this.judge.required(this.t)
         if (req.length) {
@@ -373,6 +371,7 @@ export class Game {
         }
       }
       if (this.loop && this.t >= this.loop.b) {
+        this.dispatch(this.judge.tick(Infinity)) // a note still open to a late hit is missed: the pass is over
         const j = this.judge
         const clean = j.total > 0 && j.counts.miss === 0 && j.wrong <= 1
         this.endPass()
@@ -410,6 +409,7 @@ export class Game {
   }
 
   private finish() {
+    this.dispatch(this.judge.tick(Infinity))
     const j = this.judge
     const result: Result = {
       acc: j.accuracy,

@@ -137,8 +137,7 @@ const keep = (s: AudioScheduledSourceNode) => {
 
 /** Stop what the app handed to the audio clock: clicks and claps not yet sounded, and the notes it is playing for you. For a pause, a seek, a restart, a loop going round. */
 export function hush() {
-  for (const s of ahead) s.stop()
-  ahead.clear()
+  for (const s of ahead) s.stop() // each leaves the set as it ends
   for (const [p, v] of voices) if (v.app) noteOff(p, true)
 }
 
@@ -288,7 +287,7 @@ export function noteOn(p: number, vel: number, force = false, as?: string, at?: 
   const c = ready()
   if (!c) return
   const t = at ? audioTime(c, at.after) : c.currentTime
-  noteOff(p, true, at && t) // a struck key damps its own string first
+  if (!at) noteOff(p, true) // a struck key damps its own string first; a note the app plays ahead has its own end
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   let inst = instrument(as ?? settings.instrument)
   if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note
@@ -317,17 +316,14 @@ export function keyUp(p: number) {
   else noteOff(p)
 }
 
-/** `at`, a time on the audio clock, damps it then instead of now: a note the app strikes again ahead of time. */
-export function noteOff(p: number, hard = false, at?: number) {
+export function noteOff(p: number, hard = false) {
   lifted.delete(p)
   const v = voices.get(p)
   if (!v || !ctx) return
-  const t = at ?? ctx.currentTime
-  if (at === undefined) {
-    v.g.gain.cancelScheduledValues(t)
-    v.g.gain.setValueAtTime(v.g.gain.value, t)
-    v.g.gain.exponentialRampToValueAtTime(0.0005, t + (hard ? 0.02 : v.release)) // the damper
-  } else v.g.gain.setTargetAtTime(0, t, 0.005)
+  const t = ctx.currentTime
+  v.g.gain.cancelScheduledValues(t)
+  v.g.gain.setValueAtTime(v.g.gain.value, t)
+  v.g.gain.exponentialRampToValueAtTime(0.0005, t + (hard ? 0.02 : v.release)) // the damper
   try {
     v.end(t + (hard ? 0.03 : v.release + 0.05))
   } catch {

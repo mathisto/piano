@@ -58,7 +58,7 @@ export function results(r: Result, next: Next | null, note = '', from: 'Songs' |
   // the sentences stay in view; the charts behind them, and the touch figures, fold under More
   const more =
     (perform
-      ? `<div><div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span><span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
+      ? `<div><div class="counts"><span><i style="background:var(--perfect)"></i>Perfect ${r.counts.perfect}</span><span><i style="background:var(--great);border-radius:50%"></i>Great ${r.counts.great}</span><span><i style="background:var(--good);transform:rotate(45deg) scale(.85)"></i>Good ${r.counts.good}</span>${r.counts.late ? `<span><i style="background:var(--good);opacity:.5;transform:rotate(45deg) scale(.85)"></i>Late ${r.counts.late}</span>` : ''}<span><i style="background:var(--bad);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Miss ${r.counts.miss}</span></div>
       <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +

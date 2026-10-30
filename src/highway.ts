@@ -26,7 +26,7 @@ interface Spark {
   from?: number
 }
 
-const gradeColor: Record<Grade, number> = { perfect: C.perfect, great: C.great, good: C.good, miss: C.bad }
+const gradeColor: Record<Grade, number> = { perfect: C.perfect, great: C.great, good: C.good, late: C.good, miss: C.bad }
 
 function radial(size: number, stops: [number, string][]): Texture {
   const c = document.createElement('canvas')

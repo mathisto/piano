@@ -40,7 +40,7 @@ describe('judge', () => {
     expect(j.tick(1.2)).toEqual([{ k: 'miss', i: 0 }])
     expect(j.tick(2)).toEqual([])
     expect(j.counts.miss).toBe(1)
-    expect(j.done).toBe(true)
+    expect(j.nextPending()).toBe(-1)
   })
 
   it('matches each chord note independently', () => {
@@ -213,7 +213,43 @@ describe('reopening notes', () => {
     expect(j.required(1)).toEqual([])
     j.reopen([0, 1])
     expect(j.required(1)).toEqual([0, 1])
-    expect(j.hits).toBe(0)
     expect(j.press(60, 1)[0]).toMatchObject({ k: 'ok', i: 0 })
+  })
+})
+
+describe('late hits', () => {
+  const late = (notes: Note[], cfg = {}) => mk(notes, { beat: 0.5, ...cfg })
+
+  it('the right key up to a beat after the window is a late hit, not a miss and a wrong note', () => {
+    const j = late([n(0, 1, 60)])
+    expect(j.tick(1.3)).toEqual([]) // still open to a late press
+    expect(j.press(60, 1.3)[0]).toMatchObject({ k: 'hit', grade: 'late', off: expect.closeTo(300, 5) })
+    expect([j.wrong, j.counts.miss, j.counts.late]).toEqual([0, 0, 1])
+    expect(j.accuracy).toBe(0.25)
+  })
+
+  it('a beat, never more than half a second; past that it is a miss and a wrong note', () => {
+    expect(late([n(0, 1, 60)]).press(60, 1.7)[0]).toEqual({ k: 'wrong', p: 60 }) // 125 + 500 ms is the edge
+    expect(late([n(0, 1, 60)], { beat: 2 }).press(60, 1.6)[0]).toMatchObject({ grade: 'late' })
+    expect(late([n(0, 1, 60)], { beat: 2 }).press(60, 1.7)[0]).toMatchObject({ k: 'wrong' })
+    const j = late([n(0, 1, 60)])
+    expect(j.tick(1.63)).toEqual([{ k: 'miss', i: 0 }])
+  })
+
+  it('a press in the next note’s window goes to that note, not late to the one before', () => {
+    const j = late([n(0, 1, 60), n(1, 1.4, 60)])
+    expect(j.press(60, 1.38)[0]).toMatchObject({ i: 1, grade: 'perfect' })
+  })
+})
+
+describe('an asymmetric window (the paced Sight Run)', () => {
+  const at = (ms: number) => mk([n(0, 1, 60)], { ease: [1.2, 2] }).press(60, 1 + ms / 1000)[0]
+  it('runs from 150 ms early to 250 ms late, each side graded on its own width', () => {
+    expect(at(-145)).toMatchObject({ grade: 'good' })
+    expect(at(-155)).toMatchObject({ k: 'wrong' })
+    expect(at(245)).toMatchObject({ grade: 'good' })
+    expect(at(255)).toMatchObject({ k: 'wrong' })
+    expect(at(-60)).toMatchObject({ grade: 'great' }) // 60 of 150 is 50 of 125
+    expect(at(85)).toMatchObject({ grade: 'perfect' }) // 85 of 250
   })
 })
