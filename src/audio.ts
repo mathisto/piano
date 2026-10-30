@@ -117,6 +117,9 @@ export function preload(id = settings.instrument): Promise<void> {
 }
 
 /** Call from a user gesture so the browser lets us make sound. */
+/** Seconds the output device adds after a sound is handed to it (a Bluetooth speaker or headphones: 0.15 to 0.3); 0 before the first sound or when the browser does not say. */
+export const outputLatency = () => ctx?.outputLatency ?? 0
+
 export function unlock() {
   ready()
   void preload()

@@ -1,6 +1,6 @@
 import { keyName, type Card } from './scales'
 import { memTag } from './memory'
-import { loadState } from './audio'
+import { loadState, outputLatency } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
 import { inBundle } from './catalog'
 import { icon } from './icons'
@@ -219,6 +219,7 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
   }</div>${pair && `<div class="srow"><span></span>${pair}</div>`}
   <p id="sMon" class="fine" role="status" hidden></p>
   <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
+  ${outputLatency() > 0.08 ? `<p class="fine">This device's sound output adds about ${Math.round(outputLatency() * 1000)} ms (Bluetooth?): the count-in and the app's notes reach you that late. Wired headphones or the built-in speakers keep them on time.</p>` : ''}
   <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sSummary" title="A plain text summary of your practice, to send to a teacher">Practice summary</button><button class="btn sm" id="sImport">Import</button><button class="btn sm" id="sClear">Clear</button><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>
   <details><summary>Advanced</summary>
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
