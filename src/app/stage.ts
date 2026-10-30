@@ -330,7 +330,7 @@ let chordTimer = 0
 export function chordUpdate() {
   if (!game.song) return // a key pressed before any song is open
   const el = $('#chord')
-  const c = nameChord([...game.held.keys()], game.song.fifths)
+  const c = game.mode === 'read' ? null : nameChord([...game.held.keys()], game.song.fifths) // reading: the staff marks each hit, and the readout would sit on the second line
   clearTimeout(chordTimer)
   if (c) {
     $('b', el).textContent = c.name

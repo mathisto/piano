@@ -373,10 +373,17 @@ describe('fit the whole piece', () => {
 
 describe('zoom in a drill', () => {
   it('shows more cards ahead when zoomed out', () => {
-    const s = song([4, 4], 12, Array.from({ length: 12 * 4 }, (_, i) => [64 + (i % 3), i, 1] as N))
+    const s = song([4, 4], 48, Array.from({ length: 48 * 4 }, (_, i) => [64 + (i % 3), i, 1] as N))
     const an = analyze(s, { read: true })
-    const cards = (zoom: number) => windowFor(an, 0, { view: 'both', px: { w: 1180, h: 400 }, zoom }).systems.reduce((n, x) => n + x.to - x.from, 0)
-    expect(cards(0.5)).toBeGreaterThan(cards(1))
+    const win = (zoom: number) => windowFor(an, 0, { view: 'both', px: { w: 1180, h: 400 }, zoom })
+    const cards = (zoom: number) => win(zoom).systems.reduce((n, x) => n + x.to - x.from, 0)
+    expect(cards(0.2)).toBeGreaterThan(cards(1)) // a third line: each holds eight cards at most
+  })
+  it('shows two lines at least, so the next line is there to read ahead into', () => {
+    const s = song([4, 4], 12, Array.from({ length: 12 * 4 }, (_, i) => [64 + (i % 3), i, 1] as N))
+    const w = windowFor(analyze(s, { read: true }), 0, { view: 'both', px: { w: 1180, h: 400 }, zoom: 1 })
+    expect(w.systems.length).toBeGreaterThanOrEqual(2)
+    expect(w.follow).toBe(true) // the window turns a line at a time
   })
 })
 

@@ -24,7 +24,7 @@ export const DEFAULT_RUN: RunSpec = { clef: 'treble', lo: 60, hi: 72, acc: 'nat'
 /** The notes each clef lets you pick: a few ledger lines past the staff. */
 export const LIMITS = { treble: [55, 88], bass: [36, 62], grand: [36, 88] } as const
 
-export const SET = 16 // cards dealt at a time in an endless run
+export const SET = 72 // cards dealt at a time: three lines of single notes, so the next line is always there to read into and the lines roll up (docs/changes/sightroll.md)
 const GOAL = { 1: 3000, 2: 4000, 3: 5000 } as const // "fluent" ms per card, as in the stages
 export const goalMs = (s: RunSpec) => GOAL[s.size]
 

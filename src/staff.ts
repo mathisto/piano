@@ -46,6 +46,8 @@ interface Placed {
 
 const MAX_H = 330 // px: the staff beside the keys never needs more; a tall portrait pane would blow a two-bar window up to fill it (a staff space is about 17 px here)
 
+const ROLL_MS = 350 // a line turning up into place: long enough to follow, settled before the next note at a reading tempo (docs/changes/sightroll.md)
+
 /** Paints a Layout as SVG and keeps the per-frame state (cursor, dimming, marks). The layout is rebuilt only when the window changes. */
 export class Staff {
   private svg: SVGSVGElement
@@ -88,6 +90,9 @@ export class Staff {
     return d && { ...d, shown: this.L?.bars.filter((b) => b.dense).map((b) => b.i) ?? [] }
   }
 
+  private turnAt = Infinity // song time of the top line's last onset: past it, the lines turn
+  private turned = false // turned before the bar left the old top line
+
   frame() {
     const { song, t } = this.game
     const bar = Math.max(0, barAt(song.bars, Math.max(0, t)))
@@ -95,10 +100,20 @@ export class Staff {
     this.lastT = t
     const L = this.L
     const key = `${this.game.view}|${this.game.mode}|${song.id}`
-    const out = !!L && (L.follow ? bar !== L.from : bar < L.from || bar >= L.to)
+    // several lines (zoomed out, a reading drill, Sight Run): turn a line, not a bar. Once the top line's last note is played the
+    // second line moves up into its place unchanged and a new one comes in under it: a beat before the second line is due, so it
+    // has settled when it is read (Soundslice's timing); the page no longer reflows at every bar
+    if (L && bar >= L.from) this.turned = false
+    const turn = !!L && L.follow && L.systems.length > 1 && t > this.turnAt && !back
+    const out = !!L && ((bar < L.from && !this.turned) || bar >= (L.follow ? L.systems[0].to : L.to) || turn)
     if (this.dirty || back || out || key !== this.cfgKey) {
+      const roll = out && !this.dirty && !back && key === this.cfgKey && L!.follow && !!L!.systems[1] && (turn || L!.systems[1].from === bar)
+      const lift = roll ? ((L!.systems[1].dy - L!.systems[0].dy) * this.svg.getBoundingClientRect().height) / L!.h : 0 // px the second line rises
       this.cfgKey = key
-      this.build(bar)
+      this.turned = roll && bar < L!.systems[1].from // turned early: the last bar of the old top line is still sounding
+      this.build(roll ? L!.systems[1].from : bar)
+      if (lift > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+        this.svg.animate([{ transform: `translateY(${lift}px)` }, { transform: 'none' }], { duration: ROLL_MS, easing: 'cubic-bezier(0.45, 0, 0.2, 1)' }) // eased in and out: pulled up into place, the eyes can follow it
     }
     if (!this.L) return
     this.moveCursor()
@@ -177,7 +192,7 @@ export class Staff {
   private moveCursor() {
     const L = this.L!
     const { x, dy, sys } = this.posAt(this.game.t)
-    const cx = Math.min(x, L.systems[sys].x1) - (this.game.mode === 'read' ? 16 : 0) // drills: park it just before the card
+    const cx = Math.min(x, L.systems[sys].x1) // on the note in every mode: it is under the music, so it hides nothing
     const notes = this.svg.querySelector('.notes')
     if (this.game.hidePlayed && this.curtain && notes) {
       this.curtain.setAttribute('x', String(cx))
@@ -217,6 +232,9 @@ export class Staff {
     const cfg = this.cfg(r)
     if (this.an.pages.size > 6) this.an.pages.clear() // one entry per window size seen
     this.L = layout(this.an, windowFor(this.an, bar, cfg), cfg)
+    const top = this.L.systems[0]
+    this.turnAt = Infinity
+    if (this.L.follow && this.L.systems.length > 1) for (const n of song.notes) if (n.bar >= top.from && n.bar < top.to) this.turnAt = this.turnAt === Infinity ? n.t : Math.max(this.turnAt, n.t) // the top line's last onset
     this.paint(this.L)
   }
 

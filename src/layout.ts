@@ -678,7 +678,8 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
   }
   // zoomed out: the bar being played and what follows it, in as many lines as fit
   const vb = an.solo ? SOLO.h : GRAND.h
-  const zoom = zoomFor(cfg, vb)
+  // reading drills and Sight Run show two lines at least, so the next one is always there to read ahead into (docs/changes/sightroll.md)
+  const zoom = an.read ? Math.min(zoomFor(cfg, vb), vb / (2 * vb + GAP)) : zoomFor(cfg, vb)
   if (zoom < 1) {
     const H = vb / zoom
     const u = Math.min(40, 22 + Math.max(0, zoom - 0.7) * 60) // bars space as tightly as a sheet page by 0.7, and as the default window at 1
@@ -690,7 +691,7 @@ export function windowFor(an: Analysis, bar: number, cfg: Cfg): Win {
       if (an.read) {
         // drill cards share a line by how many notes they hold: the default window fits 22 in two cards
         const cost = (i: number) => new Set(an.bars[i].cols.filter((x) => !x.virtual).map((x) => qk(x.q))).size * 9.2 + an.pad
-        for (let used = cost(c); e < nb && e - c < 8 && used + cost(e) <= avail; e++) used += cost(e)
+        for (let used = cost(c); e < nb && e - c < 6 && used + cost(e) <= avail; e++) used += cost(e) // six bars a line at most: read at a glance
       } else while (e < nb && e - c < 8 && widthOf(an, c, e + 1, u, COMFORT) <= avail) e++
       systems.push({ from: c, to: e })
       c = e
