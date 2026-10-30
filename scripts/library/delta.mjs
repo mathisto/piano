@@ -1,6 +1,6 @@
 // Publish what a code change moves, and nothing else: re-analyse the live catalogue at the commit before the change and at the change
 // (reanalyse.mjs, no mode), then take the live entries plus each analysis field where the two runs differ. A piece whose pickup moves is
-// left as published: its re-unfolded file no longer matches the published bytes, so the run read it without its first bar (datafix.md).
+// left as published: that is a re-unfold no longer giving the published bytes (the run reads it without its first bar), a fault to fix first (datafix.md).
 //   node scripts/library/delta.mjs <live> <old-run> <new-run> <out>      then LIBRARY_OUT=<out> scripts/deploy-library.sh
 import { readFileSync, writeFileSync, cpSync } from 'node:fs'
 import { createHash } from 'node:crypto'

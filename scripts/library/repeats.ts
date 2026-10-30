@@ -7,6 +7,7 @@
 import { Midi } from '@tonejs/midi'
 import { fromMidi } from '../../src/midi-tracks'
 import { expand, type Unit } from '../../src/playorder'
+import { TIE } from '../../src/quantize'
 
 type Ev =
   | { k: 'on'; at: number; d: number } // d: how long it sounds
@@ -729,6 +730,8 @@ function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until:
   // `delay`: the notes sit this far after the bar they belong to (a grace note opened the score), as the app snaps them; the
   // bars below are in the snapped frame: a stretch starting after 0 begins `delay` earlier there
   const nom = (x: number) => (x > 0 ? x - delay : 0)
+  const lastOn = Math.max(...midi.tracks.flatMap((t) => t.notes.map((n) => n.ticks)))
+  const laid = (t: number) => t <= lastOn + 1 || until - t > TIE * ppq // src/quantize.ts lays a bar where a note starts, or one rings on past the barline
   segs.forEach(([s, e, o], k) => {
     let skip = false
     const [ns, ne, J] = [nom(s), nom(e), o - (s > 0 ? delay : 0)] // J: where the stretch starts in the result
@@ -743,7 +746,7 @@ function write(bytes: Uint8Array, segs: Seg[], src0: Bars, delay: number, until:
         if (!pe) expected.push(J)
       }
     }
-    for (const t of lines) if (t >= ns && t < ne && !(skip && t === ns) && (k < segs.length - 1 || t + delay <= until)) expected.push(J + t - ns) // the app lays no barline after the last note
+    for (const t of lines) if (t >= ns && t < ne && !(skip && t === ns) && (k < segs.length - 1 || laid(t + delay))) expected.push(J + t - ns) // the app lays no barline after the last note
   })
   if (fixes.some((f) => !sigOf(f.b - f.a, ppq) || f.b - f.a > Math.max(...src.map((x) => x.len)))) return { why: 'a repeat that is not whole bars' }
   // ponytail: a grace note just before a repeat's first beat belongs to the stretch before it, so the second pass plays

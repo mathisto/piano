@@ -4,7 +4,8 @@
 // and gets the new file, sha, bytes, bars, sec and analysis; the rest stay as they were, with the reason printed. Same pieces.
 //   npx vite build --config scripts/library/vite.config.mjs && node scripts/library/repeats-patch.mjs [--from DIR] [--out DIR]
 // --from: the published output (catalog.json, LICENSES.md, p/), read only. --out: the changed pieces' new files, catalog.json,
-// LICENSES.md. The .ly sources are fetched like build.mjs does (cached in .cache/library/http, one request a second on a miss).
+// LICENSES.md. --ids a,b: only these pieces, unfolded again from their original MIDI (pieces already unfolded by older code).
+// The .ly sources are fetched like build.mjs does (cached in .cache/library/http, one request a second on a miss).
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { sha, sourceOf } from './lib.mjs'
@@ -20,10 +21,12 @@ const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
 const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8')).pieces.map((e) => e.id))
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
 const before = cat.pieces.map((p) => p.sha256)
-const flagged = cat.pieces.filter((p) => p.source === 'mutopia' && p.flags.includes('repeats') && !pins.has(p.id))
+const ids = arg('ids')?.split(',')
+const flagged = cat.pieces.filter((p) => (ids ? ids.includes(p.id) : p.source === 'mutopia' && p.flags.includes('repeats') && !pins.has(p.id)))
 const inputs = []
 for (const p of flagged) {
   const c = cat.composers[p.composer]
+  const src = await sourceOf(p.id, pickLy, HTTP)
   inputs.push({
     id: p.id,
     title: p.title,
@@ -36,9 +39,9 @@ for (const p of flagged) {
     licenceUrl: cat.licences[p.licence].url,
     edition: p.edition,
     format: p.format,
-    bytes: new Uint8Array(readFileSync(`${FROM}/${p.file}`)),
+    bytes: new Uint8Array(ids ? src.midi : readFileSync(`${FROM}/${p.file}`)),
     upstreamSha: p.sha256,
-    ly: (await sourceOf(p.id, pickLy, HTTP)).ly,
+    ly: src.ly,
   })
 }
 

@@ -46,7 +46,7 @@ export interface NOut {
   grace?: boolean
 }
 
-const TIE = 0.2 // quarters: a note ringing less than this past a barline is written as ending there, not tied over
+export const TIE = 0.2 // quarters: a note ringing less than this past a barline is written as ending there, not tied over
 
 function barIndex(bars: BarQ[], q: number) {
   let lo = 0
