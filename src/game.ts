@@ -287,11 +287,14 @@ export class Game {
     }
   }
 
-  /** A reading drill's first key is its Play button: it starts the run, and is to be judged (true) only when it is the first card's note, never in a paced run's count-in. */
+  /** A key on the start screen is the Play button. The first note to play starts a piece there and then, as if struck on time (no count-in);
+   * another key starts the count-in. True when the key is to be judged: the first note, never a key that started a count-in. */
   start(p: number): boolean {
-    this.toggle()
     const i = this.judge.nextPending()
-    return this.phase !== 'countin' && i >= 0 && this.song.notes.some((n) => n.t === this.song.notes[i].t && n.p === p)
+    const first = i >= 0 && this.song.notes.some((n) => n.t === this.song.notes[i].t && n.p === p)
+    if (first && this.mode !== 'read' && this.phase === 'ready') this.seek(this.song.notes[i].t) // a reading drill has no count-in to skip
+    this.toggle()
+    return this.phase !== 'countin' && first
   }
 
   setRate(r: number) {

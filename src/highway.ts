@@ -403,9 +403,10 @@ export class Highway {
     }
     for (const k of this.whites) draw(k)
     for (const k of this.keys.values()) if (k.black) draw(k)
-    if (names) {
-      for (const k of this.whites) {
-        const c = k.p % 12 === 0
+    // the Cs carry their octave always (landmarks: where on the keyboard you are); the other letters come with Note names
+    for (const k of this.whites) {
+      const c = k.p % 12 === 0
+      if (c || names) {
         const s = this.label(c ? `C${Math.floor(k.p / 12) - 1}` : noteName(k.p, 0).replace(/\d/, ''), c ? C.ground : C.muted, Math.min(16, k.w * 0.5))
         s.position.set(k.x + k.w / 2, H + this.kbH - 16)
         s.alpha = 1

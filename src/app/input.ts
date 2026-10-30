@@ -3,7 +3,7 @@ import { type MidiMsg, onMidi, onPedal, typingKeyboard } from '../midi'
 import { degreeOfPitch } from '../scales'
 import { save, settings } from '../settings'
 import { $ } from '../ui'
-import { current, dock, drill, game, played, setPlayed } from './state'
+import { calibrating, current, dock, drill, game, played, setPlayed } from './state'
 import { chipFlash, updateBanner } from './banner'
 import { setView, setZoom, zen, ZOOM } from './stage'
 import { leave } from './play'
@@ -34,7 +34,7 @@ export const fromKeyboard = (m: MidiMsg) => {
       if (d) answerQuiz(d)
       return // the quiz owns the keyboard while it is open
     }
-    if (drill && game.phase === 'ready' && $('#res').hidden && !game.start(m.p)) return void sound() // on a reading drill the first key is the Play button
+    if ((drill || current) && !calibrating && game.phase === 'ready' && $('#res').hidden && !game.start(m.p)) return void sound() // on the start screen a key is the Play button (calibration keeps its count-in)
     game.press(m.p, m.v, m.ts, m.virtual)
   } else game.release(m.p, m.ts, m.virtual)
 }

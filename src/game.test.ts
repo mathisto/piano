@@ -178,6 +178,18 @@ describe('the key that starts a reading drill', () => {
   })
 })
 
+describe('the key that starts a piece', () => {
+  it('the first note starts it there and then and is judged; another key starts the count-in', () => {
+    for (const [p, judged] of [[72, true], [64, false]] as const) {
+      const g = new Game()
+      g.load(fromSpec({ id: 'k', title: 'k', bpm: 60, fifths: 0, rh: 'C5:1 D5:1 E5:1 F5:1', lh: 'C3:4' }), 'perform')
+      expect(g.start(p)).toBe(judged)
+      expect(g.phase).toBe(judged ? 'playing' : 'countin')
+      if (judged) expect(g.t).toBe(0) // the clock stands on the first note: struck now, it is on time
+    }
+  })
+})
+
 describe('what a take records', () => {
   it('key downs, key ups and the pedal are all on the offset-corrected clock', async () => {
     const { settings } = await import('./settings')
