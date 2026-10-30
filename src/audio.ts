@@ -288,6 +288,8 @@ export function noteOn(p: number, vel: number, force = false, as?: string, at?: 
   if (!c) return
   const t = at ? audioTime(c, at.after) : c.currentTime
   if (!at) noteOff(p, true) // a struck key damps its own string first; a note the app plays ahead has its own end
+  const old = at && voices.get(p)
+  if (old && old.app) (old.g.gain.setTargetAtTime(0, t, 0.01), old.end(t + 0.05)) // unless the app strikes it again first: one string, and hush() only finds the newest
   while (voices.size >= 40) noteOff(voices.keys().next().value as number, true) // cap polyphony
   let inst = instrument(as ?? settings.instrument)
   if (loadState(inst.id) === 'idle') void preload(inst.id) // a failed load is retried by unlock() or the picker, not by every note

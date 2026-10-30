@@ -92,7 +92,8 @@ async function sync() {
 new MutationObserver(() => void sync()).observe($('#ready'), { childList: true })
 
 /** The listen-back's way to the piano; dev builds hand it to the e2e checks, which count the notes through it. */
-export const sink = { on: audio.noteOn, off: audio.keyUp, pedal: audio.sustain }
+export const sink = { on: audio.noteOn }
+const LOOK = 250 // ms: notes go to the audio clock this far ahead, so a busy frame (the staff follows every one) cannot smear the take's timing
 if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__take = { sink, takes: () => takes }
 
 /** Play a take through the app's piano at its own timing and touch, the staff cursor following. Any key, tap or Escape stops it. */
@@ -101,18 +102,28 @@ function listen(k: Take, back: HTMLElement, label: string) {
   if (!k.p.length) return
   audio.unlock()
   const from = Math.min(...k.t) - 600 // a breath before the first note
-  const end = Math.max(...k.t.map((t, j) => t + k.d[j]))
+  const ped = k.ped ?? []
+  const last = Math.max(...k.t.map((t, j) => t + k.d[j]))
+  // the pedal as you used it: a key let go while it is down rings until it comes up
+  const up = (t: number) => {
+    const i = ped.findIndex((x) => x > t)
+    return (i < 0 ? ped.length : i) % 2 ? (ped[i] ?? last) : t
+  }
+  const ends = k.t.map((t, j) => up(t + k.d[j]))
+  const end = Math.max(...ends)
+  const order = k.t.map((_, j) => j).sort((a, b) => k.t[a] - k.t[b])
   const t0 = game.t
   const start = performance.now()
-  const timers = k.p.flatMap((p, j) => {
-    const at = (k.t[j] - from) / k.rate
-    return [setTimeout(() => sink.on(p, k.v[j] / 127, true), at), setTimeout(() => sink.off(p), at + k.d[j] / k.rate)]
-  })
-  k.ped?.forEach((t, j) => timers.push(setTimeout(() => sink.pedal(j % 2 === 0), (t - from) / k.rate))) // the pedal as you used it: a key let go under it rings on
-  timers.push(setTimeout(() => stopListen?.(), (end - from) / k.rate + 500))
+  let next = 0
   let raf = 0
   const follow = () => {
-    game.seek((from + (performance.now() - start) * k.rate) / 1000)
+    const now = performance.now() - start
+    for (; next < order.length && (k.t[order[next]] - from) / k.rate <= now + LOOK; next++) {
+      const j = order[next]
+      sink.on(k.p[j], k.v[j] / 127, true, undefined, { after: Math.max(0, (k.t[j] - from) / k.rate - now) / 1000, dur: (ends[j] - k.t[j]) / k.rate / 1000 })
+    }
+    if (now > (end - from) / k.rate + 500) return stopListen?.()
+    game.seek((from + now * k.rate) / 1000)
     raf = requestAnimationFrame(follow)
   }
   const bar = document.createElement('div')
@@ -126,10 +137,8 @@ function listen(k: Take, back: HTMLElement, label: string) {
   const tap = () => stopListen?.()
   stopListen = () => {
     stopListen = null
-    timers.forEach(clearTimeout)
     cancelAnimationFrame(raf)
-    sink.pedal(false)
-    for (const p of new Set(k.p)) sink.off(p)
+    audio.hush()
     game.seek(t0)
     bar.remove()
     removeEventListener('keydown', key, true)

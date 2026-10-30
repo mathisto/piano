@@ -250,8 +250,9 @@ export function onPhase() {
       if (!current) return
       const { base, credit } = current
       const { you, parts } = game
+      const t = navigated() // before the save: leaving while it is queued makes the reopen stale
       await store.setSimplify(base.id, Number(x.value))
-      if (!(await openSong(base, game.mode))) return // left while it reopened
+      if (!(await openSong(base, game.mode, false, t))) return // left while it reopened
       game.accomp(you, [...parts]) // the part you chose survives a change of notes shown
       if (current) current.credit = credit
       syncMode()
@@ -281,8 +282,9 @@ export function onPhase() {
 async function stepSimplify() {
   if (!current || current.level >= 3) return
   const { base, credit } = current
+  const t = navigated()
   await store.setSimplify(base.id, current.level + 1)
-  if (!(await openSong(base, game.mode))) return
+  if (!(await openSong(base, game.mode, false, t))) return
   if (current) current.credit = credit
   onPhase()
 }

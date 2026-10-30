@@ -330,7 +330,7 @@ export class Staff {
       if (this.game.judge.st[id] === 2) this.flag(id, p, 'miss')
       else if (note && note.t < this.game.t - 0.02) {
         p.grp.classList.add('past')
-        if (gr === 'great' || gr === 'good') this.shape(id, p, gr)
+        if (gr && gr !== 'perfect') this.shape(id, p, gr)
       }
     }
   }
@@ -506,12 +506,12 @@ export class Staff {
     }
   }
 
-  /** A small shape under a note that was Great or Good, so the grade outlives its colour. */
+  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour. */
   private shape(id: number, p: Placed, grade: string) {
     if (p.head.parentElement?.querySelector(`.gshape[data-id="${id}"]`)) return
     const { x } = p
     const y = p.y + 13
-    const d = grade === 'good' ? `M${x},${y - 3} L${x + 3},${y} L${x},${y + 3} L${x - 3},${y} Z` : `M${x - 2.6},${y} a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0`
+    const d = grade !== 'great' ? `M${x},${y - 3} L${x + 3},${y} L${x},${y + 3} L${x - 3},${y} Z` : `M${x - 2.6},${y} a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0`
     const m = el('path', { class: `gshape ${grade}`, 'data-id': id, d }, p.head.parentElement!)
     m.setAttribute('aria-hidden', 'true')
   }
@@ -545,6 +545,6 @@ export class Staff {
     h.classList.remove('hit-perfect', 'hit-great', 'hit-good', 'hit-ok')
     void h.getBoundingClientRect()
     h.classList.add(cls)
-    if (cls === 'hit-great' || cls === 'hit-good') this.shape(noteId, p, cls.slice(4))
+    if (cls !== 'hit-perfect' && cls !== 'hit-ok') this.shape(noteId, p, cls.slice(4))
   }
 }

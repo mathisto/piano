@@ -36,6 +36,7 @@
   --perfect: #d7ff3d;
   --great: #34e89a;
   --good: #ff8a3d;
+  --late: color-mix(in srgb, var(--good) 60%, transparent); /* the worst hit: Good Orange, faded */
   --bad: #ff4a3d;
   /* the one lamp: "play this" */
   --lamp: #ffc83d;
@@ -1104,6 +1105,10 @@ body.reading .hud small {
   --c: var(--great);
   animation: ignite 0.8s ease-out;
 }
+#staff .hit-late {
+  --c: var(--late);
+  animation: ignite 0.8s ease-out;
+}
 #staff .hit-good {
   --c: var(--good);
   animation: ignite 0.8s ease-out;
@@ -1233,6 +1238,10 @@ body.reading .hud small {
 #staff .gr[data-g='great'] {
   fill: var(--great);
 }
+#staff .gr[data-g='late'],
+#staff .gshape.late {
+  fill: var(--late);
+}
 #staff .gr[data-g='good'] {
   fill: var(--good);
 }
@@ -1300,6 +1309,9 @@ body.reading .hud small {
 }
 #judge[data-g='great'] {
   color: var(--great);
+}
+#judge[data-g='late'] {
+  color: var(--late);
 }
 #judge[data-g='good'] {
   color: var(--good);
