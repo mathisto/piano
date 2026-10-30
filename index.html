@@ -2,6 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- 'unsafe-inline' styles: the pages set style="" in their HTML. The beacon is Cloudflare's, injected on the web only; the iPad app (capacitor://localhost) is 'self' and reads the corpus from the site. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://pianoforte.mattkelly.io https://cloudflareinsights.com; media-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Piano Forte</title>
     <meta name="description" content="Falling-notes piano trainer for any MIDI file. Plug in a keyboard: wait mode, slow tempo, loops, scoring." />
