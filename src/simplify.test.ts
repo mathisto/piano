@@ -3,8 +3,8 @@ import { autoLevel, simplify, notesPerBar } from './simplify'
 import { build, type Bar, type Hand, type Raw } from './song'
 
 const bars = (n: number): Bar[] => Array.from({ length: n }, (_, i) => ({ i, t0: i * 4, t1: (i + 1) * 4, n: 4, den: 4 }))
-const song = (raw: { t: number; p: number; h: Hand; d?: number }[], nb = 2) =>
-  build('s', 't', raw.map((r): Raw => ({ t: r.t, d: r.d ?? 0.5, p: r.p, v: 0.7, track: 0, h: r.h })), bars(nb), 0)
+const song = (raw: { t: number; p: number; h: Hand; d?: number; grace?: boolean }[], nb = 2) =>
+  build('s', 't', raw.map((r): Raw => ({ t: r.t, d: r.d ?? 0.5, p: r.p, v: 0.7, track: 0, h: r.h, grace: r.grace })), bars(nb), 0)
 
 // two beats: a right-hand chord (E G C) over a left-hand chord (C2 G2 C3), then a lone melody note
 const dense = song([
@@ -45,9 +45,11 @@ describe('simplify', () => {
     expect(s.hi).toBe(74)
   })
 
-  it('drops tiny ornaments from level 1 up', () => {
-    const s = simplify(song([{ t: 0, p: 60, h: 'R', d: 0.05 }, { t: 0.1, p: 62, h: 'R' }]), 1)
+  it('drops grace notes from level 1 up, and keeps short notes that are not ornaments', () => {
+    const s = simplify(song([{ t: 0, p: 60, h: 'R', d: 0.05, grace: true }, { t: 0.1, p: 62, h: 'R' }]), 1)
     expect(s.notes.map((n) => n.p)).toEqual([62])
+    const fast = song([{ t: 0, p: 60, h: 'R', d: 0.06 }, { t: 0.125, p: 62, h: 'R', d: 0.06 }, { t: 0.25, p: 64, h: 'R', d: 0.06 }]) // staccato sixteenths at a quick tempo
+    for (const l of [1, 2, 3] as const) expect(simplify(fast, l).notes.map((n) => n.p)).toEqual([60, 62, 64])
   })
 })
 

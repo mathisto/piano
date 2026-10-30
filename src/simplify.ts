@@ -10,7 +10,6 @@ export const canLead = (s: Song) => s.notes.some((n) => n.h === 'L')
 const sung = (s: Song, n: Note) => !!voiceOf(s, n) || (n.also !== undefined && !!voiceOf(s, { ...n, part: n.also }))
 
 const CLUSTER = 0.03 // seconds: onsets this close are one chord
-const GRACE = 0.08 // seconds: shorter than this is an ornament
 const COMFORT = 16
 
 /** Notes starting in the busiest bar, 95th percentile over the song. */
@@ -40,7 +39,7 @@ const hand = (notes: Note[], h: Hand) => notes.filter((n) => n.h === h)
  */
 export function simplify(s: Song, level: Level, chordsOf?: (s: Song) => Sym[]): Song {
   if (level === 0) return s
-  const live = s.notes.filter((n) => n.d >= GRACE && !n.grace)
+  const live = s.notes.filter((n) => !n.grace) // the ornaments, as the importers flag them; a short note that is not one (a fast staccato) stays
   let keep: Note[]
   if (level === 1) {
     keep = []
