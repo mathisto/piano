@@ -27,7 +27,7 @@ Branch `feature/enginefix`. The defects an engine audit found in the clock, the 
 
 ## Deleted
 
-- The arcade score: `Judge.score`, `POINTS`, the per-note points, `HOLD_FLOOR`, `LONG_KEEP`, the hold event's `f`, `letter()`, `Result.score` and `Result.grade`, and the best's `score` and `grade` writes (`store.ts` types the best as `{ acc }`; records saved before keep their extra fields, unread). The HUD accuracy updates on the judged count. Also `Judge.hits` and `Judge.done` (no reader) and the `auto` game event (no listener).
+- The arcade score: `Judge.score`, `POINTS`, the per-note points, `HOLD_FLOOR`, `LONG_KEEP`, the hold event's `f`, `letter()`, `Result.score` and `Result.grade`, and the best's `score` and `grade` writes (`store.ts` types the best as `{ acc }`; records saved before keep their extra fields, unread). The HUD accuracy updates on the judged count. Also `Judge.hits` and `Judge.done` (no reader). (The `auto` game event looked listener-less in `src/` but the e2e harness counts it; deleting it failed feature 15, so it stays, now emitted when the note is handed to the audio clock.)
 - One median: `util.median` (the mean of the two middles), now 0 for no input; `app/state.ts` had an upper median. Its callers (Sight Run and drill medians, the Theory median, calibration's offset) now get the true median: on an even count it is half a gap lower at most, and nothing compares it with a stored upper median.
 
 ## Files of other branches touched (small, local)
@@ -38,9 +38,9 @@ Branch `feature/enginefix`. The defects an engine audit found in the clock, the 
 
 ## Tested
 
-- `npx tsc --noEmit`, `npx vitest run` (63 files, 790 tests), `npm run build`, and the boot budget (`bundle.test.ts`, 241 110 bytes of 241 200; the judge's fields set once by `init()` and `finish()` reading its settings once paid for the new code; the budget was not raised).
+- `npx tsc --noEmit`, `npx vitest run` (63 files, 790 tests), `npm run build`, and the boot budget (`bundle.test.ts`, 241 142 bytes of 241 200; the judge's fields set once by `init()` and `finish()` reading its settings once paid for the new code; the budget was not raised).
 - New: `midi.test.ts` (3), `game.test.ts` (15: the app's notes, count-in after pickups and tempo changes, calibration, the start key, takes' clock, disconnect, late hits on the corrected clock, loop close), `highway.test.ts`, `audio.test.ts` (the audio clock), `ear-play.test.ts`, `util.test.ts`; added to `judge.test.ts` (late hits, the asymmetric window), `paced.test.ts`, `pedal.test.ts` (passing bass, the 150 ms floor, the player's onsets), `metronome.test.ts` (half-beat pickup).
-- e2e `E2E_ONLY='^(1|2|2b|4|15|16|17b|20|21) '`: see the result at the end of this note. There is no calibration feature in the e2e suite.
+- e2e `E2E_ONLY='^(1|2|2b|4|15|16|17b|20|21) '`: 15 of 16 passed (369 s); 15 failed because the `auto` event had been deleted, which was put back, and `'^(15|16) '` then passed 2 of 2. The full suite was not run. There is no calibration feature in the e2e suite. The e2e's accompaniment check sums Perfect, Great, Good and Miss, so a run with a late hit would undercount there.
 - Commits between "The key that starts a reading drill" and "Ear and pulse taps" were over the boot budget; it is under again from "Judge: ... late hit".
 
 ## Not verified

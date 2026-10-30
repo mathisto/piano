@@ -48,6 +48,7 @@ export type GameEvent =
   | { type: 'release'; p: number; t: number } // t is song time, like a press's
   | { type: 'pedal'; down: boolean; t: number }
   | { type: 'hold'; note: Note; grade: HoldGrade } // a key came up; how it compared with the written length
+  | { type: 'auto'; note: Note } // a note the app plays for you was handed to the audio clock (the e2e counts them)
   | { type: 'phase'; phase: Phase }
   | { type: 'loop'; clean: boolean }
   | { type: 'short' } // a key came up before its note had been held long enough to move on
@@ -351,6 +352,7 @@ export class Game {
       audio.noteOn(n.p, n.v, true, voiceOf(this.song, n), a) // Listen always sounds: the app is the one playing this hand
       const from = perf + a.after * 1000
       this.autoUntil.set(n.p, [this.autoUntil.get(n.p)?.[0] ?? from, from + a.dur * 1000]) // the same key again while lit or due: lit from the first one on
+      this.emit({ type: 'auto', note: n })
     }
     for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t < end; ) {
       const c = ch[this.compI++]
