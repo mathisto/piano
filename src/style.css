@@ -56,6 +56,8 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
 }
 html,
 body {
@@ -89,10 +91,6 @@ textarea {
   outline: 2px solid var(--lamp);
   outline-offset: 2px;
   border-radius: var(--r-1);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-2) transparent;
 }
 [hidden] {
   display: none !important;
@@ -638,6 +636,7 @@ table.songs td.thumb {
 .tag.next {
   border-color: transparent;
   padding-inline: 0;
+  color: var(--ink);
 }
 @media (max-width: 640px) {
   table.stages .tag {
@@ -711,7 +710,7 @@ table.songs tr.band th {
 }
 .tprev svg {
   width: 100%;
-  max-width: 420px;
+  max-width: 260px;
   height: auto;
 }
 .bands span {
@@ -918,8 +917,6 @@ body.reading .hud small {
   border-bottom: 1px solid var(--line);
   min-height: 0;
   overflow: hidden;
-}
-#staff {
   touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
 }
 .zoomc {
@@ -1060,6 +1057,9 @@ body.reading .hud small {
 #staff .barno.dense {
   font-weight: 400;
   font-style: italic;
+  pointer-events: auto;
+  cursor: pointer;
+  fill: var(--ink-2);
 }
 #staff .ch.past {
   opacity: 0.42;
@@ -1281,8 +1281,6 @@ body.reading .hud small {
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0;
-}
-#judge {
   transform: translateX(-50%);
   text-shadow:
     0 0 6px var(--ground),
@@ -1379,7 +1377,7 @@ kbd {
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
-  background: var(--scrim);
+  background: var(--scrim-hi);
   padding: 18px 32px 20px;
   border-radius: var(--r-3);
   border: 1px solid var(--line);
@@ -1701,17 +1699,15 @@ kbd {
   overflow: auto;
   padding: 20px 22px 40px;
   animation: slide 0.22s var(--ease);
+  display: grid;
+  align-content: start;
+  gap: 6px;
 }
 @keyframes slide {
   from {
     transform: translateX(24px);
     opacity: 0;
   }
-}
-.drawer {
-  display: grid;
-  align-content: start;
-  gap: 6px;
 }
 .drawer .switch {
   display: flex;
@@ -2010,7 +2006,7 @@ body.hush .bar > * {
   pointer-events: none;
 }
 .bar > * {
-  transition: opacity 0.35s var(--ease);
+  transition: opacity 0.35s var(--ease); /* not merged into the .bar > * rule above: it must come after .btn, whose transition it replaces */
 }
 body.zen #app {
   grid-template-rows: minmax(0, 1fr);
@@ -2035,6 +2031,7 @@ body.zen #dock .aids {
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 32px;
+  margin-bottom: 24px;
 }
 .tcard.span .label {
   grid-column: 1 / -1;
@@ -2135,9 +2132,6 @@ body.zen #dock .aids {
   min-width: 112px; /* Start, Practice and Loop share a right edge and a left edge, so the meters line up */
   display: flex;
   justify-content: flex-end;
-}
-.tcard.span {
-  margin-bottom: 24px;
 }
 
 /* ---------- progress: reading as a strip of stage cells, grouped by clef ---------- */
@@ -2414,9 +2408,6 @@ dialog.sheet footer .grow {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.ready {
-  background: var(--scrim-hi);
-}
 
 .drawer .switch.sub {
   margin-left: 52px;
@@ -2450,22 +2441,11 @@ dialog.sheet footer .grow {
   display: grid;
   gap: 6px;
 }
-.tprev svg {
-  max-width: 260px;
-}
 
 dialog.sheet footer .btn {
   white-space: nowrap;
 }
 
-#staff .barno.dense {
-  pointer-events: auto;
-  cursor: pointer;
-  fill: var(--ink-2);
-}
-.tag.next {
-  color: var(--ink);
-}
 
 .plan-cap {
   align-self: center;
