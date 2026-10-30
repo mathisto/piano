@@ -256,6 +256,7 @@ export function onPhase() {
       if (current) current.credit = credit
       syncMode()
       onPhase()
+      $('#ready').querySelector<HTMLElement>(`input[name=level][value="${x.value}"]`)?.focus({ preventScroll: true }) // the reopen redraws the card more than once: land on the choice made
     }))
     r.querySelector<HTMLInputElement>('#compOn')?.addEventListener('change', (e) => ((settings.comp = (e.target as HTMLInputElement).checked), save()))
     r.querySelectorAll<HTMLInputElement>('input[name=you]').forEach((x) => (x.onchange = () => {
