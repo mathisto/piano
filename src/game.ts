@@ -410,29 +410,35 @@ export class Game {
 
   private finish() {
     this.dispatch(this.judge.tick(Infinity))
-    const j = this.judge
+    const { judge: j, song, mode, rate } = this
+    const read = mode === 'read'
+    const coach = settings.coach
+    const quiet = coach === 'off' || read
+    const v = j.samples()
+    const edges = settings.edges ?? DEFAULT_EDGES
+    const hit = (i: number) => j.grade[i] && j.grade[i] !== 'miss'
     const result: Result = {
       acc: j.accuracy,
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
-      touch: velStats(j.samples(), settings.edges),
-      even: settings.coach === 'off' || this.mode === 'read' || !judged(this.song.id, this.song.dyn) ? null : evenness(j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach),
-      timing: this.mode === 'read' ? null : timing(this.song.notes.flatMap((n, i) => (j.grade[i] && j.grade[i] !== 'miss' ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
-      artic: this.mode === 'read' || !(this.song.artic ?? (this.song.id.startsWith('scale:') && 'legato')) ? null : articulation(this.song.artic ?? 'legato', this.song.notes, this.presses, this.rate),
-      voice: this.mode === 'read' || (judged(this.song.id) && this.song.dyn !== 'balance') ? null : voicing(j.samples(), settings.edges ?? DEFAULT_EDGES, this.song.dyn === 'balance' ? 'R' : melodyHand(this.song.notes)),
-      fixed: fixedAt(j.samples().map((x) => x.v)),
-      pedal: settings.coach === 'off' || this.mode === 'read' || this.wait || this.loop ? null : ((r) => r && pedalLine(r))(pedalReport(this.song, this.pedals)),
-      follow: settings.coach === 'off' || this.mode === 'read' || this.wait || judged(this.song.id) ? [] : songLines(this.song, this.presses, j.samples(), settings.edges ?? DEFAULT_EDGES, settings.coach, this.rate),
+      touch: velStats(v, settings.edges),
+      even: quiet || !judged(song.id, song.dyn) ? null : evenness(v, edges, coach),
+      timing: read ? null : timing(song.notes.flatMap((n, i) => (hit(i) ? [{ t: n.t, p: n.p, h: n.h, off: j.off[i] }] : []))),
+      artic: read || !(song.artic ?? (song.id.startsWith('scale:') && 'legato')) ? null : articulation(song.artic ?? 'legato', song.notes, this.presses, rate),
+      voice: read || (judged(song.id) && song.dyn !== 'balance') ? null : voicing(v, edges, song.dyn === 'balance' ? 'R' : melodyHand(song.notes)),
+      fixed: fixedAt(v.map((x) => x.v)),
+      pedal: quiet || this.wait || this.loop ? null : ((r) => r && pedalLine(r))(pedalReport(song, this.pedals, song.notes.map((n, i) => (hit(i) ? n.t + (j.off[i] / 1000) * rate : undefined)))), // against the chords as you struck them
+      follow: quiet || this.wait || judged(song.id) ? [] : songLines(song, this.presses, v, edges, coach, rate),
       touchPct: j.touchPct,
       clean: j.counts.miss === 0 && j.wrong <= 1,
-      dyn: this.song.dyn,
+      dyn: song.dyn,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
       offs: this.offs.slice(),
       heat: this.heat.slice(),
       total: j.total,
-      mode: this.mode,
-      rate: this.rate,
+      mode,
+      rate,
     }
     this.heat = []
     this.setPhase('done')

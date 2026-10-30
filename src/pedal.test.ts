@@ -4,8 +4,9 @@ import { exercise } from './technique'
 import { build, type Bar, type Raw } from './song'
 
 // 120 bpm, 4/4: a quarter is 0.5 s, a bar 2 s. One chord a bar unless a bar is given as two.
+// The changes are read from the bass, so F stands on its root: as F/C over the C before it (60, 65, 69) it would be no change.
 const Q = 0.5
-const CHORDS: Record<string, number[]> = { C: [60, 64, 67], F: [60, 65, 69], G: [59, 62, 67], Am: [57, 60, 64], Em: [59, 64, 67] }
+const CHORDS: Record<string, number[]> = { C: [60, 64, 67], F: [53, 57, 60], G: [59, 62, 67], Am: [57, 60, 64], Em: [59, 64, 67] }
 const piece = (names: string[]) => {
   const raw: Raw[] = names.flatMap((c, b) => CHORDS[c].map((p) => ({ t: b * 4 * Q, d: 3.9 * Q, p, v: 0.7, track: 0, h: 'R' as const })))
   const bars: Bar[] = names.map((_, i) => ({ i, t0: i * 4 * Q, t1: (i + 1) * 4 * Q, n: 4, den: 4 }))
@@ -20,13 +21,18 @@ describe('changes', () => {
   })
   it('sees a change half way through a bar', () => {
     const raw: Raw[] = [60, 64, 67].map((p) => ({ t: 0, d: 0.9, p, v: 0.7, track: 0, h: 'R' as const }))
-    raw.push(...[60, 65, 69].map((p) => ({ t: 1, d: 0.9, p, v: 0.7, track: 0, h: 'R' as const })))
+    raw.push(...CHORDS.F.map((p) => ({ t: 1, d: 0.9, p, v: 0.7, track: 0, h: 'R' as const })))
     const s = build('h', 'h', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0)
     expect(changes(s)).toEqual([{ t: 1, bar: 0 }])
   })
   it('a passing note does not make a new chord', () => {
     const raw: Raw[] = [...CHORDS.C, 62].map((p, i) => ({ t: i === 3 ? 1 : 0, d: i === 3 ? 0.2 : 1.9, p, v: 0.7, track: 0, h: 'R' as const }))
     expect(changes(build('p', 'p', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0))).toEqual([])
+  })
+  it('a bass shorter than a beat is passing, not a change', () => {
+    const raw: Raw[] = [48, 60, 64, 67].map((p) => ({ t: 0, d: p === 48 ? 0.9 : 1.9, p, v: 0.7, track: 0, h: 'R' as const }))
+    raw.push({ t: 1, d: 0.2, p: 47, v: 0.7, track: 0, h: 'L' }) // B under the second half of a C bar
+    expect(changes(build('b', 'b', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0))).toEqual([])
   })
 })
 
@@ -49,6 +55,15 @@ describe('pedalReport', () => {
   it('a late lift (past the grace) is blurred; a lift just inside it is not', () => {
     expect(pedalReport(song, press(0, 2.4, 2.5, 4.1, 4.2, 6.1, 6.2, 7.9))!.blurred).toEqual([1])
     expect(pedalReport(song, press(0, 2.12, 2.2, 4.1, 4.2, 6.1, 6.2, 7.9))!.blurred).toEqual([])
+  })
+  it('the grace is a quarter of a beat but never under 150 ms', () => {
+    expect(pedalReport(song, press(0, 2.14, 2.2, 4.1, 4.2, 6.1, 6.2, 7.9))!.blurred).toEqual([]) // 140 ms: past 0.25 beat at 120 bpm, inside 150 ms
+  })
+  it('lifts are measured from when the player struck the chord, when the judge has it', () => {
+    const lifts = press(0, 2.35, 2.45, 4.35, 4.45, 6.35, 6.45, 7.9) // 350 ms after each written change
+    expect(pedalReport(song, lifts)!.blurred).toEqual([1, 2, 3])
+    const struck = song.notes.map((n) => n.t + 0.3) // every chord struck 300 ms late: the lifts come 50 ms after it
+    expect(pedalReport(song, lifts, struck)!.blurred).toEqual([])
   })
   it('names the bars (1-based) and counts the clean ones', () => {
     const r = pedalReport(song, press(0, 2.1, 2.2, 7.9))!
