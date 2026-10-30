@@ -1,5 +1,5 @@
 // The iPad app's side of src/native-midi.ts, loaded only inside the app: the CoreMidi plugin's events stamped on the page's
-// clock, files opened from other apps, and a daily backup to Files.
+// clock, the menu bar's commands, files opened from other apps, and a daily backup to Files.
 import { registerPlugin } from '@capacitor/core'
 import { onWrite } from './kv'
 import type { Port, Source } from './native-midi'
@@ -11,6 +11,7 @@ interface Native {
   now(): Promise<{ t: number }>
   saveBackup(o: { text: string }): Promise<void>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
+  addListener(event: 'menu', cb: (d: { key: string }) => void): Promise<unknown>
   addListener(event: 'file', cb: (d: { name: string; data: string }) => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
@@ -45,6 +46,13 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   void n.addListener('sources', (d) => sync(d.sources))
   // opened from Files, Mail or AirDrop: into the library as a dropped file goes
   void n.addListener('file', (d) => void import('./app/library').then((l) => l.importFiles([new File([Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0))], d.name)])))
+  // the menu bar: a tab (only while the tab bar shows), Settings, or one of the page's own keys (src/app/input.ts)
+  void n.addListener('menu', ({ key }) => {
+    if (key.startsWith('tab:')) {
+      if (!document.querySelector('#nav')?.hasAttribute('hidden')) document.querySelector<HTMLInputElement>(`#nav input[value=${key.slice(4)}]`)?.click()
+    } else if (key === 'settings') document.querySelector<HTMLElement>('#settingsBtn')?.click()
+    else document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+  })
   void n.addListener('m', (d) => {
     const port = inputs.get(d.id)
     if (!port?.onmidimessage) return

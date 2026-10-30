@@ -5,8 +5,15 @@ import UIKit
 
 /// The web view the app runs in, with the CoreMIDI plugin registered.
 class PianoViewController: CAPBridgeViewController {
+    private let midi = CoreMidiPlugin()
+
     override func capacitorDidLoad() {
-        bridge?.registerPluginInstance(CoreMidiPlugin())
+        bridge?.registerPluginInstance(midi)
+    }
+
+    /// A menu bar command (AppDelegate.buildMenu): the page acts on it as on its own key (src/native-app.ts).
+    @objc func pageKey(_ sender: UIKeyCommand) {
+        midi.notifyListeners("menu", data: ["key": sender.propertyList as? String ?? ""])
     }
 }
 

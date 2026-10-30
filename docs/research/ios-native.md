@@ -192,7 +192,7 @@ Days are for one developer plus an agent at this repo's pace, **including device
 ### Next (about 5-8 days)
 | # | Item | Days |
 |---|---|---|
-| N1 | **Menu bar** via `UIMainMenuSystem` and forwarded `UIKeyCommand`s | 1 |
+| N1 | **Built 30 Oct, not yet seen on the iPad:** `buildMenu` (Go ⌘1-7, Practice, View additions, Settings ⌘,, Keyboard Shortcuts ⌘?), each command handed to the page as its own key; plain keys stay the page's. **Menu bar** via `UIMainMenuSystem` and forwarded `UIKeyCommand`s | 1 |
 | N2 | **Built 30 Oct, not yet seen on the iPad:** MIDI and MusicXML (`com.recordare.musicxml`, `.uncompressed`, the spec's UTIs; not `.xml`) open into the library, the event held until the page listens. **Open-in from Files, Mail and Safari** (document types, UTIs, `openURLContexts` → import) | 1 |
 | N3 | **Native audio engine** (AVAudioEngine plus AVAudioUnitSampler with SF2, MIDI-thread monitoring, scheduled playback, native click), if F5 says over about 20 ms or jitter is audible; Web Audio stays for web | 4-6 |
 | N4 | **iCloud Drive backup** (paid) plus `NSUbiquitousKeyValueStore` for settings and streak | 1-1.5 |
