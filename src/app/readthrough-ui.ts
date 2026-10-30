@@ -11,7 +11,7 @@ import { $ } from '../ui'
 import { dayKey } from '../week'
 import { current, dock, game, hooks, resOpen, rt, say, setRt, staff } from './state'
 import { setZoom } from './stage'
-import { fixBars, leave, openById } from './play'
+import { backName, fixBars, leave, openById } from './play'
 
 const RT_LEVEL = ['Beginner', 'Beginner', 'Elementary', 'Intermediate', 'Intermediate', 'Intermediate'] // catalogue grade 1..5 to the three levels the picker knows
 export const rtPieces = (): RtPiece[] => [...STARTERS.map((s) => ({ id: s.spec.id, title: s.spec.title, level: s.level })), ...lib.catalog.pieces.filter((p) => lib.local(p.id)).map((p) => ({ id: `lib:${p.id}`, title: p.title, level: RT_LEVEL[Math.min(5, lib.gradeOf(p))] }))]
@@ -92,7 +92,7 @@ export async function rtDone(r: Result) {
   const worst = worstBars(r.heat, c.song.bars.length)
   const next = pickPiece(rtPieces(), await store.allProgress(), c.song.id)
   const res = $('#res')
-  res.innerHTML = summaryCard({ title: c.song.title, acc: r.acc, rate: r.rate, caught: r.total - r.counts.miss, total: r.total, wrong: r.wrong, heat: r.heat, bars: c.song.bars.length, worst, next })
+  res.innerHTML = summaryCard({ title: c.song.title, acc: r.acc, rate: r.rate, caught: r.total - r.counts.miss, total: r.total, wrong: r.wrong, heat: r.heat, bars: c.song.bars.length, worst, next }, backName())
   resOpen(true)
   res.querySelector<HTMLButtonElement>('#rtNext, #rtFix, #toLib')?.focus()
   say(`Read-through finished. ${pct(r.acc)} accuracy.`)

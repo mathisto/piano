@@ -56,6 +56,8 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
 }
 html,
 body {
@@ -89,10 +91,6 @@ textarea {
   outline: 2px solid var(--lamp);
   outline-offset: 2px;
   border-radius: var(--r-1);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-2) transparent;
 }
 [hidden] {
   display: none !important;
@@ -638,6 +636,7 @@ table.songs td.thumb {
 .tag.next {
   border-color: transparent;
   padding-inline: 0;
+  color: var(--ink);
 }
 @media (max-width: 640px) {
   table.stages .tag {
@@ -711,7 +710,7 @@ table.songs tr.band th {
 }
 .tprev svg {
   width: 100%;
-  max-width: 420px;
+  max-width: 260px;
   height: auto;
 }
 .bands span {
@@ -808,9 +807,6 @@ table.stages col.mcol {
 /* a short stage (the staff-only view, a portrait window with the dock under it) is only a strip of keys: the card shrinks to title and mode, over the keys, off the music */
 @container stage (max-height: 420px) {
   #ready {
-    top: auto;
-    bottom: calc(24cqh + 8px); /* above the keyboard (24% of the stage at most), so the keys stay readable */
-    transform: translateX(-50%);
     padding: 10px 24px 12px;
   }
   #ready b {
@@ -833,20 +829,20 @@ table.stages col.mcol {
     margin: 0;
   }
 }
-/* the banner (no keyboard yet, or a note) takes the top of a short stage: the card drops onto the keys, which are no use before Play anyway */
+/* the banner (no keyboard yet, or a note) takes the top of a short stage: the card drops onto the keys (see .stagecol) */
 @container stage (max-height: 420px) {
-  #stage:has(.banner) #ready {
-    bottom: 10px;
-  }
   #stage:has(.banner) #ready > b {
     -webkit-line-clamp: 1; /* a long title and credit line with the banner above would otherwise run up under it; the top bar has the title */
   }
 }
+/* a split-view stage: the banner wraps to three lines and the card's choices would scroll out of sight; the title goes first, the top bar has it */
+@container stage (max-height: 340px) and (max-width: 700px) {
+  #stage:has(.banner) #ready:has(:is(.accomp, .shows)) > b {
+    display: none;
+  }
+}
 /* a strip too short to hold the card above the keys: it sits on them, title and mode only */
 @container stage (max-height: 260px) {
-  #ready {
-    bottom: 10px;
-  }
   #ready .hint,
   #ready div.shows {
     display: none; /* the Notes shown row goes first: the strip is the keys, with the mode and the title above */
@@ -918,8 +914,6 @@ body.reading .hud small {
   border-bottom: 1px solid var(--line);
   min-height: 0;
   overflow: hidden;
-}
-#staff {
   touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
 }
 .zoomc {
@@ -1060,6 +1054,9 @@ body.reading .hud small {
 #staff .barno.dense {
   font-weight: 400;
   font-style: italic;
+  pointer-events: auto;
+  cursor: pointer;
+  fill: var(--ink-2);
 }
 #staff .ch.past {
   opacity: 0.42;
@@ -1281,8 +1278,6 @@ body.reading .hud small {
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0;
-}
-#judge {
   transform: translateX(-50%);
   text-shadow:
     0 0 6px var(--ground),
@@ -1313,17 +1308,33 @@ body.reading .hud small {
   color: var(--bad);
 }
 
-.banner {
+/* The banner and the start card share one column over the stage, so neither covers the other. The card centres in the room
+   between the banner and the keys (the ::after, 24% of the stage); short of room, the keys' share goes first (the card drops
+   onto them: no use before Play), then the card itself, which scrolls. */
+.stagecol {
   position: absolute;
-  z-index: 3; /* #banner itself is not positioned, so its z-index did nothing: the canvas covered this, and Connect took focus unseen */
-  left: 50%;
-  top: 14px;
-  transform: translateX(-50%);
-  width: max-content; /* not capped at half the stage by left: 50% */
+  inset: 14px 4% 10px;
+  z-index: 3; /* over the canvas, the judge words and the count-in, as the banner always was */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.stagecol::after {
+  content: '';
+  flex: 0 1000 calc(24cqh - 2px);
+}
+#banner {
+  display: contents;
+}
+.banner {
+  pointer-events: auto;
+  flex: none;
   display: flex;
   align-items: center;
   gap: 14px;
-  max-width: min(760px, 92%);
+  max-width: min(760px, 100%);
   padding: 12px 16px;
   background: var(--panel-2);
   border: 1px solid var(--edge);
@@ -1351,10 +1362,6 @@ kbd {
   color: var(--ink);
 }
 
-.ready .seg,
-.ready .btn {
-  pointer-events: auto;
-}
 .ready .seg {
   display: inline-flex;
   margin: 6px 0 4px;
@@ -1373,18 +1380,18 @@ kbd {
   margin-bottom: 2px;
 }
 .ready {
-  position: absolute;
-  left: 50%;
-  top: 38%;
-  transform: translate(-50%, -50%);
+  margin-block: auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
   text-align: center;
-  pointer-events: none;
-  background: var(--scrim);
+  pointer-events: auto;
+  background: var(--scrim-hi);
   padding: 18px 32px 20px;
   border-radius: var(--r-3);
   border: 1px solid var(--line);
-  width: max-content; /* left: 50% would otherwise cap it at half the stage, and a title wrapped to three lines */
-  max-width: min(720px, 92%);
+  width: max-content; /* as wide as its title, so a title does not wrap to three lines */
+  max-width: min(720px, 100%);
 }
 .ready .cover {
   display: block;
@@ -1701,17 +1708,16 @@ kbd {
   overflow: auto;
   padding: 20px 22px 40px;
   animation: slide 0.22s var(--ease);
+  display: grid;
+  grid-auto-rows: max-content; /* a drawer taller than the window scrolls; auto rows would shrink to fit and a wrapped row (Data) would overlap the next */
+  align-content: start;
+  gap: 6px;
 }
 @keyframes slide {
   from {
     transform: translateX(24px);
     opacity: 0;
   }
-}
-.drawer {
-  display: grid;
-  align-content: start;
-  gap: 6px;
 }
 .drawer .switch {
   display: flex;
@@ -2010,7 +2016,7 @@ body.hush .bar > * {
   pointer-events: none;
 }
 .bar > * {
-  transition: opacity 0.35s var(--ease);
+  transition: opacity 0.35s var(--ease); /* not merged into the .bar > * rule above: it must come after .btn, whose transition it replaces */
 }
 body.zen #app {
   grid-template-rows: minmax(0, 1fr);
@@ -2035,6 +2041,7 @@ body.zen #dock .aids {
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 32px;
+  margin-bottom: 24px;
 }
 .tcard.span .label {
   grid-column: 1 / -1;
@@ -2135,9 +2142,6 @@ body.zen #dock .aids {
   min-width: 112px; /* Start, Practice and Loop share a right edge and a left edge, so the meters line up */
   display: flex;
   justify-content: flex-end;
-}
-.tcard.span {
-  margin-bottom: 24px;
 }
 
 /* ---------- progress: reading as a strip of stage cells, grouped by clef ---------- */
@@ -2414,9 +2418,6 @@ dialog.sheet footer .grow {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.ready {
-  background: var(--scrim-hi);
-}
 
 .drawer .switch.sub {
   margin-left: 52px;
@@ -2450,22 +2451,11 @@ dialog.sheet footer .grow {
   display: grid;
   gap: 6px;
 }
-.tprev svg {
-  max-width: 260px;
-}
 
 dialog.sheet footer .btn {
   white-space: nowrap;
 }
 
-#staff .barno.dense {
-  pointer-events: auto;
-  cursor: pointer;
-  fill: var(--ink-2);
-}
-.tag.next {
-  color: var(--ink);
-}
 
 .plan-cap {
   align-self: center;

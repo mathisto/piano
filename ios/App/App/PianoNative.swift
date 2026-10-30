@@ -1,5 +1,5 @@
-import AVFoundation
 import Capacitor
+import CoreAudioKit
 import CoreMIDI
 import UIKit
 
@@ -11,12 +11,17 @@ class PianoViewController: CAPBridgeViewController {
 }
 
 /// WebKit has no Web MIDI. This forwards every connected MIDI source to the page, which fakes
-/// navigator.requestMIDIAccess on top of it (src/native-midi.ts).
+/// navigator.requestMIDIAccess on top of it (src/native-midi.ts). Also: Apple's Bluetooth MIDI pairing sheet,
+/// and the screen kept awake while a run plays.
 @objc(CoreMidiPlugin)
 public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CoreMidiPlugin"
     public let jsName = "CoreMidi"
-    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise)]
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "pairBluetooth", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setAwake", returnType: CAPPluginReturnPromise),
+    ]
 
     private var client = MIDIClientRef()
     private var port = MIDIPortRef()
@@ -38,6 +43,35 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             refresh()
         }
         call.resolve(["sources": sources])
+    }
+
+    /// Apple's sheet that finds Bluetooth MIDI keyboards and pairs one on a tap. A paired keyboard shows up as a
+    /// CoreMIDI source, so refresh() reports it; since iOS 16 it reconnects by itself next time.
+    @objc func pairBluetooth(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let host = self.bridge?.viewController else { return call.reject("No view to present from") }
+            let central = CABTMIDICentralViewController()
+            if #available(iOS 27, *) {
+                // iOS 27.0 and 27.0.1 crash in its loadView (CALayerInvalidGeometry, a NaN table height). Apple DTS's workaround;
+                // without the viewDidLoad() call it stops crashing but never scans. https://developer.apple.com/forums/thread/850584
+                central.tableView = UITableView(frame: .zero, style: .grouped)
+                central.viewDidLoad()
+            }
+            central.navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .done, primaryAction: UIAction { [weak host] _ in host?.dismiss(animated: true) })
+            let sheet = UINavigationController(rootViewController: central)
+            sheet.modalPresentationStyle = .formSheet // centred on the iPad, over the dimmed app
+            host.present(sheet, animated: true)
+            call.resolve()
+        }
+    }
+
+    /// Auto-lock off while a run plays or counts in (the page calls this on each phase change), on again otherwise.
+    @objc func setAwake(_ call: CAPPluginCall) {
+        let on = call.getBool("on") ?? false
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = on
+            call.resolve()
+        }
     }
 
     /// Connect to every source CoreMIDI lists (it delivers nothing from an unconnected one) and tell the page.

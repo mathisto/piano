@@ -85,7 +85,7 @@ export interface Summary {
 }
 
 /** The end-of-run card: accuracy, the bars that slipped, a way to fix them, and the next piece to read. */
-export function summaryCard(s: Summary) {
+export function summaryCard(s: Summary, back = 'Songs') {
   const bad = slipped(s.heat)
   const max = Math.max(1, ...Array.from(s.heat, (h) => h ?? 0)) // the heat array has holes where nothing slipped
   const cells = Array.from({ length: s.bars }, (_, i) => {
@@ -103,7 +103,7 @@ export function summaryCard(s: Summary) {
     <div class="row">
       ${s.next ? `<button class="btn primary big" id="rtNext">${icon('play')}Next piece</button>` : ''}
       ${s.worst ? `<button class="btn${s.next ? '' : ' primary big'}" id="rtFix">${icon('loop')}Fix these</button>` : ''}
-      <button class="btn" id="toLib">Songs</button>
+      <button class="btn" id="toLib">${back}</button>
     </div>
   </div></div>`
 }

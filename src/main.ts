@@ -25,11 +25,11 @@ import { STARTERS } from './starters'
 import { lost, probe } from './kv'
 import * as store from './store'
 import { $, notice } from './ui'
-import { current, drillStats, game, highway, hooks, mem, run, type Section, stageById, starters } from './app/state'
+import { current, drillStats, game, highway, hooks, mem, navigated, run, type Section, stageById, starters } from './app/state'
 import { connectMidi, updateChip } from './app/banner'
 import { flushPractice, setView, view } from './app/stage'
 import { openTracks, showLibrary } from './app/library'
-import { leave, openById, openLibrary, openSong, stageCode } from './app/play'
+import { endFeatures, leave, openById, openLibrary, openSong, stageCode } from './app/play'
 import { readThrough } from './app/readthrough-ui'
 import { memorise } from './app/memorise-ui'
 import { runFinish, startDrill } from './app/drill'
@@ -46,6 +46,8 @@ import './take.css'
 import './pulse.css'
 
 async function showSection(name: Section, err = '') {
+  navigated() // a piece still loading stays off the screen
+  if (!current) endFeatures() // and what it set up (a drill, a read-through) goes with it
   await flushPractice()
   const tab = $(`input[name=nav][value=${name}]`) as HTMLInputElement
   tab.checked = true

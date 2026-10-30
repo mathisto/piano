@@ -7,7 +7,7 @@ import { $ } from '../ui'
 import { dayKey } from '../week'
 import { current, dock, game, highway, hooks, mem, resOpen, say, setMem, staff } from './state'
 import { flash } from './banner'
-import { leave, onPhase, openById } from './play'
+import { backName, leave, onPhase, openById } from './play'
 
 /** Learn with the score fading by bars. `floor`: start at this stage at least (1 after a clean Learn run). */
 export async function memorise(id: string, floor = 0) {
@@ -92,7 +92,7 @@ export async function memDone(r: Result) {
   dock.setSong(c.song, prog.heat)
   void store.markPlan(dayKey(), 'piece')
   const res = $('#res')
-  res.innerHTML = passCard(p)
+  res.innerHTML = passCard(p, backName())
   resOpen(true)
   say(verdict(p))
   $('#memAgain', res).onclick = () => game.restart()

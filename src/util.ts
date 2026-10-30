@@ -29,3 +29,9 @@ export function worstBars(heat: number[], bars: number): { a: number; b: number 
     }
   return at < 0 ? null : { a: at, b: Math.min(bars - 1, at + 1) }
 }
+
+/** A selector that finds a control again after its container is redrawn: by id, else (a radio) by name and value. '' when neither. */
+export const focusKey = (el: { id?: string; name?: string; value?: string }) => {
+  const q = (s: string) => `"${s.replace(/["\\]/g, '\\$&')}"`
+  return el.id ? `[id=${q(el.id)}]` : el.name ? `[name=${q(el.name)}][value=${q(el.value ?? '')}]` : ''
+}

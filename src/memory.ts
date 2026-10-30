@@ -130,7 +130,7 @@ export function verdict(r: PassReport): string {
 }
 
 /** The end-of-pass card: the verdict, slips and peeks, and the bars to look at again. */
-export function passCard(r: PassReport) {
+export function passCard(r: PassReport, back = 'Songs') {
   const weak = weakSpots(r.heat)
   const bad = slipped(r.heat)
   const max = Math.max(1, ...Array.from(r.heat, (h) => h ?? 0))
@@ -144,7 +144,7 @@ export function passCard(r: PassReport) {
       <p class="line rt-sub">${weak.length ? `Weak spots: ${weak.length === 1 ? 'bar' : 'bars'} ${barList(weak)}. Look at ${weak.length === 1 ? 'it' : 'them'} with the score, then hide ${weak.length === 1 ? 'it' : 'them'} again.` : 'No weak spots this pass.'}</p></div>
     <div class="row">
       <button class="btn primary big" id="memAgain">${icon('restart')}Stage ${r.to.stage}</button>
-      <button class="btn" id="toLib">Songs</button>
+      <button class="btn" id="toLib">${back}</button>
     </div>
   </div></div>`
 }

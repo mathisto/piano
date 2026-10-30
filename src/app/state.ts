@@ -67,7 +67,11 @@ export let rt: { left: number; timer: number; rate: number; why: string; zoom?: 
 // a memorise session: the stage, clean passes in a row, this pass's notes right, slips and peeks, and the bar a peek shows
 export let mem: { stage: number; clean: number; right: number; slips: number; peeks: number; peek: number; timer: number } | undefined
 
-export const setHighway = (v: Highway) => (highway = v)
+// bumped by every page shown and every piece opened: a piece still loading when it moves on is stale and must not take the screen
+export let navAt = 0
+export const navigated = () => ++navAt
+
+export const setHighway =(v: Highway) => (highway = v)
 export const setStaff = (v: Staff) => (staff = v)
 export const setDock = (v: Dock) => (dock = v)
 export const setCurrent = (v: typeof current) => (current = v)
@@ -100,6 +104,7 @@ export function chunkFailed(d: HTMLDialogElement) {
   d.innerHTML = '<div class="body"><p>Check the connection, then reload the page.</p></div><footer><button class="btn" data-close autofocus>Close</button></footer>'
   d.showModal()
 }
+/** The sheets' code (Credits, Set up, Options). If it did not arrive (offline), the sheet says so in plain words; undefined then. */
 export async function sheets(d: HTMLDialogElement) {
   try {
     return await import('../ui-sheets')

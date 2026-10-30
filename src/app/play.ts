@@ -6,6 +6,7 @@ import * as coach from '../coach'
 import { creditLine } from '../credits'
 import type { GameEvent, Mode } from '../game'
 import { facts, startCard } from '../memory'
+import { setAwake } from '../native-midi'
 import { knownPitches } from '../quiet'
 import { paceHint } from '../paced'
 import { lookCard } from '../readthrough'
@@ -15,9 +16,9 @@ import { barAt, type Song } from '../song'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { writtenTargets } from '../touch'
-import { $, art } from '../ui'
+import { $, art, keepFocus } from '../ui'
 import { esc } from '../util'
-import { calibrating, current, dock, drill, drillStats, game, highway, hooks, mem, resOpen, rt, say, setCalibrating, setCurrent, setDock, setDrill, setHighway, setRun, setStaff, staff, starters } from './state'
+import { calibrating, current, dock, drill, drillStats, game, highway, hooks, mem, navAt, navigated, resOpen, rt, say, type Section, setCalibrating, setCurrent, setDock, setDrill, setHighway, setRun, setStaff, staff, starters } from './state'
 import { flash, updateBanner } from './banner'
 import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, screenKeys, shown, syncMode, view, wake, zen } from './stage'
 import { libSong, showLibrary } from './library'
@@ -58,7 +59,25 @@ async function buildStage() {
   dock.onHands = () => staff.render()
 }
 
-export async function openSong(base: Song, mode: Mode, paced = false) {
+let from: Section = 'songs' // the page the piece was opened from: leaving goes back there
+/** Where leaving the piece goes: a reading drill to Read (its button says All stages), anything else to the page it came from. */
+export const backTo = (): Section => (drill ? 'read' : from)
+export const backName = () => backTo()[0].toUpperCase() + backTo().slice(1)
+
+/** Clear what a feature set up around a piece: the drill or run, a read-through, memorise, calibration. */
+export function endFeatures() {
+  if (drill) void store.saveDrill(drillStats)
+  setDrill(undefined)
+  setRun(undefined)
+  hooks.rtEnd()
+  hooks.memEnd()
+  setCalibrating(false) // the offset override ends with it; settings.offset was never touched
+}
+
+/** Open a piece on the stage. False when the player moved on (another page, another piece) before it loaded: nothing was shown.
+ *  `ticket`: taken when the player asked, for a caller that fetches the piece first. */
+export async function openSong(base: Song, mode: Mode, paced = false, ticket = navigated()): Promise<boolean> {
+  const stale = () => ticket !== navAt
   game.endPass()
   // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
   const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
@@ -68,7 +87,9 @@ export async function openSong(base: Song, mode: Mode, paced = false) {
     if (w) song.notes.forEach((n, i) => (n.want = w[i]))
   }
   game.known = knownPitches(await store.getDrill())
+  if (stale()) return false
   const back = shown()
+  if (back && back !== 'play') from = back === 'library' ? 'songs' : back // a reopen (Notes shown) keeps the first page
   view('play')
   void audio.preload() // the piano is about to be wanted: Listen, the screen keys, browser sound
   try {
@@ -77,15 +98,15 @@ export async function openSong(base: Song, mode: Mode, paced = false) {
     // the stage's code did not arrive (offline, a dropped connection): back to the page it was started from, with the reason, not an empty play screen
     // the browser remembers a failed import until the page reloads (checked in Chrome: a retry after the network is back fails the same way)
     const msg = 'The play screen could not load. Check the connection, then reload the page.'
-    setDrill(undefined)
-    setRun(undefined)
-    hooks.rtEnd()
-    hooks.memEnd()
-    await hooks.showSection(!back || back === 'play' ? 'today' : back === 'library' ? 'songs' : back, msg)
+    if (stale()) return false
+    endFeatures()
+    await hooks.showSection(from, msg)
     throw new Error(msg)
   }
+  if (stale()) return false
   game.load(song, mode, paced)
   const prog = await store.getProgress(song.id, song.bars.length)
+  if (stale()) return false
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
   $('#stagesBtn').hidden = mode !== 'read'
@@ -104,30 +125,25 @@ export async function openSong(base: Song, mode: Mode, paced = false) {
   onPhase()
   if (!$('#ready').contains(document.activeElement)) $('#go').focus({ preventScroll: true }) // Play is the first stop of a new piece, not the ninth
   history.replaceState(null, '', mode === 'read' ? location.pathname : '#' + song.id)
+  return true
 }
 
 export function leave() {
   if (document.body.classList.contains('zen')) zen()
   void flushPractice()
   document.body.classList.remove('hush')
-  const wasDrill = !!drill
-  const techSong = current?.song.id.startsWith('tech:')
-  const scaleSong_ = current?.song.id.startsWith('scale:')
-  if (drill) void store.saveDrill(drillStats)
-  setDrill(undefined)
-  setRun(undefined)
-  hooks.rtEnd()
-  hooks.memEnd()
+  const to = backTo()
+  endFeatures()
   staff.lookahead = 0
   game.endPass()
   if (game.phase === 'countin' || game.phase === 'playing' || game.phase === 'waiting') game.toggle()
-  setCalibrating(false)
   setCurrent(undefined)
   $('#stagesBtn').hidden = true
   document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
+  $('#brand').setAttribute('aria-label', 'Piano Forte: Today')
   history.replaceState(null, '', location.pathname)
-  void hooks.showSection(wasDrill ? 'read' : scaleSong_ ? 'scales' : techSong ? 'technique' : 'songs')
+  void hooks.showSection(to)
 }
 
 game.on((e: GameEvent) => {
@@ -180,6 +196,7 @@ game.on((e: GameEvent) => {
       flash(`Tempo ${Math.round(e.rate * 100)}%`)
       break
     case 'phase':
+      setAwake(e.phase === 'countin' || e.phase === 'playing' || e.phase === 'waiting') // the iPad stays lit through a run, Learn's waits included
       onPhase()
       break
     case 'pass':
@@ -219,7 +236,7 @@ export function onPhase() {
     const report = lp ? reportLink(lib.catalog, lp, game.t > 0 ? barAt(game.song.bars, game.t) + 1 : undefined) : ''
     const shows = current.base.notes.length > 0 && simplify(current.base, 3).notes.length < current.base.notes.length * 0.9
     const levels = shows ? `<div class="shows"><span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3, 4] as const).filter((l) => l < 4 || canLead(current!.base)).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div></div>${current.level === 4 ? `<div class="chords"><label class="switch ghostsw" title="A block chord with its bass on each half bar, at the tempo"><input type="checkbox" id="compOn"${settings.comp ? ' checked' : ''}><i></i>App plays the chords</label><span class="hint">Chords from the harmony of the piece, not the composer's marks.</span></div>` : ''}` : ''
-    r.innerHTML = mem
+    const html = mem
       ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
       : rt
       ? lookCard({ title: current.song.title, left: rt.left, rate: rt.rate, ahead: !!settings.readAhead, why: rt.why, credit: current.credit })
@@ -228,12 +245,13 @@ export function onPhase() {
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
         : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
+    keepFocus(r, () => (r.innerHTML = html)) // a choice on the card redraws it: focus stays on that choice
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return
       const { base, credit } = current
       const { you, parts } = game
       await store.setSimplify(base.id, Number(x.value))
-      await openSong(base, game.mode)
+      if (!(await openSong(base, game.mode))) return // left while it reopened
       game.accomp(you, [...parts]) // the part you chose survives a change of notes shown
       if (current) current.credit = credit
       syncMode()
@@ -247,7 +265,6 @@ export function onPhase() {
       syncMode()
       staff.render()
       onPhase()
-      $<HTMLInputElement>(`#ready input[name=you][value="${c.id}"]`).focus()
     }))
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
     r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => hooks.memStage(Number(x.value))))
@@ -264,7 +281,7 @@ async function stepSimplify() {
   if (!current || current.level >= 3) return
   const { base, credit } = current
   await store.setSimplify(base.id, current.level + 1)
-  await openSong(base, game.mode)
+  if (!(await openSong(base, game.mode))) return
   if (current) current.credit = credit
   onPhase()
 }
@@ -289,12 +306,13 @@ addEventListener('pagehide', () => game.endPass())
 export async function openLibrary(id: string, mode: Mode) {
   const p = lib.piece(id)
   if (!p) return
+  const t = navigated() // the fetch can be slow: a page chosen meanwhile wins
   try {
-    await openSong(await libSong(p), mode)
+    if (!(await openSong(await libSong(p), mode, false, t))) return
     if (current) current.credit = creditLine(lib.catalog, p)
     onPhase()
   } catch (err) {
-    void hooks.showSection('songs', (err as Error).message)
+    if (t === navAt) void hooks.showSection('songs', (err as Error).message)
   }
 }
 
@@ -304,10 +322,11 @@ export async function openById(id: string, mode: Mode) {
   if (i >= 0) return openSong(starters[i], mode) // awaited: fixBars and readThrough look at the piece once it is open
   const row = (await store.listSongs()).find((s) => s.id === id)
   if (row) {
+    const t = navigated()
     try {
-      await openSong(await store.toSong(row, settings.split), mode)
+      await openSong(await store.toSong(row, settings.split), mode, false, t)
     } catch (err) {
-      void showLibrary((err as Error).message)
+      if (t === navAt) void showLibrary((err as Error).message)
     }
   }
 }

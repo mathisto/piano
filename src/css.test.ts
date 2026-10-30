@@ -26,3 +26,20 @@ it('every play-screen row template is a --rows value', () => {
 it('the Memorise strip does not float over the staff', () => {
   for (const r of rules('memory.css').filter((r) => /(^|,)\s*\.mem-bar\s*$/.test(r.sel))) expect(r.body).not.toMatch(/position:\s*(absolute|fixed)/)
 })
+
+// A second top-level rule for the same selector hides where a property is set (ten had piled up). Merge into the first;
+// an override that must stay later in the cascade is named here, with a comment at the rule saying why.
+it('style.css has one top-level rule per selector', () => {
+  const css = readFileSync('src/style.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  const seen = new Map<string, number>()
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < css.length; i++) {
+    if (css[i] === '{') {
+      const sel = css.slice(start, i).trim().replace(/\s+/g, ' ')
+      if (depth++ === 0 && !sel.startsWith('@')) seen.set(sel, (seen.get(sel) ?? 0) + 1)
+    } else if (css[i] === '}' && --depth === 0) start = i + 1
+    else if (css[i] === ';' && depth === 0) start = i + 1 // a top-level @import
+  }
+  expect([...seen].filter(([s, n]) => n > 1 && s !== '.bar > *').map(([s]) => s)).toEqual([])
+})

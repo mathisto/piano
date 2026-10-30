@@ -46,7 +46,7 @@ typingKeyboard()
 addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement
   const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
-  if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+  if (typing || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return // defaultPrevented: a popover already took it
   if ((e.target as HTMLElement).closest('dialog')) return
   if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
   else if (e.key === 'm' && current) zen()
@@ -54,8 +54,10 @@ addEventListener('keydown', (e) => {
     settings.names = !settings.names
     save()
   } else if (e.key === 'Escape') {
-    if (!closeDrawer() && current) leave()
-  } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && $('#res').hidden) {
+    if (closeDrawer() || !current) return
+    if (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting') game.toggle() // the first Escape pauses a run, the next one leaves
+    else leave()
+  } else if (e.key === ' ' && current && !/BUTTON/.test(t.tagName) && (t as HTMLInputElement).type !== 'checkbox' && !t.closest('#drawer') && $('#res').hidden) { // Space on a switch flips the switch, not the run
     e.preventDefault()
     game.toggle()
   } else if ((e.key === '-' || e.key === '=' || e.key === '+') && current) {

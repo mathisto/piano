@@ -1,6 +1,5 @@
 /* The recorder: the Ghost switch on the start card, the ghost's dots on the staff, the Listen back bar, and Compare with last time */
 .ready .ghostsw {
-  pointer-events: auto;
   display: flex;
   width: fit-content;
   margin: 6px auto 0;

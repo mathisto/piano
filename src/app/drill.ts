@@ -42,7 +42,7 @@ export async function startDrill(which: Stage | 'review', fast = false) {
   })
   setRun(undefined)
   $('#stagesBtn').textContent = 'All stages'
-  await openSong(song, 'read')
+  if (!(await openSong(song, 'read'))) return // the player went elsewhere while it loaded
   staff.lookahead = -(stage?.cover ?? 0)
   drillHud()
 }
@@ -69,7 +69,7 @@ async function runSet() {
   const song = deckSong('drill:run', title, d, r.spec.fifths, pulse)
   setDrill({ stage: 'review', title, goal: goalMs(r.spec), cards: d, left: d.map((c) => c.pitches.length), agg: d.map(() => ({ clean: true, rt: 0 })), noteCard: noteCards(d, song, pulse), done: 0, streak: 0, cleanN: 0, rts: [], before: 0, run: r })
   $('#stagesBtn').textContent = 'Finish'
-  await openSong(song, 'read', !!pulse)
+  if (!(await openSong(song, 'read', !!pulse))) return
   staff.lookahead = r.spec.ahead * (pulse?.every ?? 1) // in beats
   drillHud()
 }
