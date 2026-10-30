@@ -9,6 +9,10 @@ export { chordAt, SHAPES, TUNE }
 export function chordsOf(song: Song): Sym[] {
   const out: Sym[] = []
   for (const w of windows(song)) {
+    const bar = song.bars[w.bar]
+    if (bar && bar.ql !== undefined && bar.ql < (bar.n * 4) / bar.den) continue // a pickup is a melody note or two leading in, not a harmony
+    const pcs = new Set(song.notes.filter((n) => n.t < w.b && n.t + n.d > w.a).map((n) => n.p % 12))
+    if (pcs.size < 3) continue // two pitch classes are a figure (Für Elise's E and D sharp), not a chord
     const c = chordAt(song, w.a, w.b)
     if (!c) continue
     const { root, k, set, bass: b } = c

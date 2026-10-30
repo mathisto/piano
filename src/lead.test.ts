@@ -39,6 +39,13 @@ describe('chordsOf', () => {
     raw.push(...[60, 64].map((p) => ({ t: 0.5, d: 0.5, p, v: 0.7, track: 0, h: 'R' as const })))
     expect(chordsOf(build('b', 'b', raw, [{ i: 0, t0: 0, t1: 2, n: 4, den: 4 }], 0)).map((c) => c.name)).toEqual(['G']) // G B D on the beat, then C E: the later notes alone would tie C with G
   })
+  it('names nothing over a two-note figure or a pickup bar', () => {
+    expect(names([[76, 75], [48, 52, 55]])).toEqual(['C']) // Für Elise's E and D sharp is a figure, not Emaj7
+    const s = piece([[72], [48, 52, 55], [43, 47, 50]])
+    s.bars[0].ql = 1 // the first bar is a one-beat pickup
+    expect(chordsOf(s).map((c) => c.bar)).not.toContain(0)
+  })
+
   it('gives the app a block chord with its bass below', () => {
     expect(chordsOf(piece([[43, 47, 50], [48, 52, 55]]))[0]).toMatchObject({ t: 0, d: 1, bar: 0, keys: [43, 55, 59, 50] }) // G: bass G2, then G3 B3 D3
   })
