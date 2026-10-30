@@ -23,13 +23,16 @@ try {
 let stopListen: (() => void) | null = null
 
 const plain = () => !!current && !drill && !calibrating && !rt && !mem && game.mode !== 'read' // a piece, not a drill or a special run
-const now = () => Math.round(game.t * 1000)
+const now = () => Math.round(game.t * 1000 - game.offset * game.rate) // the run's end, on the clock the presses are on
+
+/** A new take; a pedal already down is its first change. */
+const fresh = (mode: Take['mode'], n: number): Take => Object.assign(newTake(mode, game.rate, game.wait, n), game.pedal && { ped: [Math.round(game.t * 1000)] })
 
 game.on((e) => {
   if (e.type === 'press' && stopListen) stopListen() // a key on the piano stops a listen-back
   if (e.type === 'phase') {
     if (e.phase === 'ready') (rec = null), held.clear()
-    else if (!rec && (e.phase === 'countin' || e.phase === 'playing') && plain()) rec = newTake(game.mode === 'perform' ? 'perform' : 'learn', game.rate, game.wait, game.song.notes.length)
+    else if (!rec && (e.phase === 'countin' || e.phase === 'playing') && plain()) rec = fresh(game.mode === 'perform' ? 'perform' : 'learn', game.song.notes.length)
     return
   }
   if (!rec) return
@@ -39,8 +42,9 @@ game.on((e) => {
     if (plain() && rec.p.length) saving = store.addTake(current!.song.id, rec)
     rec = null
     held.clear()
-  } else if (game.phase === 'paused') return
-  else if (e.type === 'loop') rec = newTake(rec.mode, game.rate, game.wait, rec.n) // a looped stretch is practice, not a run: keep only the pass that runs on
+  } else if (e.type === 'pedal') (rec.ped ??= []).push(Math.round(e.t * 1000)) // even paused: the changes must alternate
+  else if (game.phase === 'paused') return
+  else if (e.type === 'loop') rec = fresh(rec.mode, rec.n) // a looped stretch is practice, not a run: keep only the pass that runs on
   else if (e.type === 'press' && rec.p.length < MAX_KEYS) {
     held.set(e.p, rec.p.push(e.p) - 1)
     rec.v.push(Math.max(1, Math.round(e.vel * 127)))
@@ -50,7 +54,7 @@ game.on((e) => {
   } else if ((e.type === 'hit' || e.type === 'ok') && held.has(e.note.p)) rec.i[held.get(e.note.p)!] = e.note.id
   else if (e.type === 'release' && held.has(e.p)) {
     const j = held.get(e.p)!
-    rec.d[j] = Math.max(0, now() - rec.t[j])
+    rec.d[j] = Math.max(0, Math.round(e.t * 1000) - rec.t[j])
     held.delete(e.p)
   } else if (e.type === 'miss') rec.miss.push(e.note.id)
 })
@@ -88,7 +92,7 @@ async function sync() {
 new MutationObserver(() => void sync()).observe($('#ready'), { childList: true })
 
 /** The listen-back's way to the piano; dev builds hand it to the e2e checks, which count the notes through it. */
-export const sink = { on: audio.noteOn, off: audio.noteOff }
+export const sink = { on: audio.noteOn, off: audio.keyUp, pedal: audio.sustain }
 if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__take = { sink, takes: () => takes }
 
 /** Play a take through the app's piano at its own timing and touch, the staff cursor following. Any key, tap or Escape stops it. */
@@ -104,6 +108,7 @@ function listen(k: Take, back: HTMLElement, label: string) {
     const at = (k.t[j] - from) / k.rate
     return [setTimeout(() => sink.on(p, k.v[j] / 127, true), at), setTimeout(() => sink.off(p), at + k.d[j] / k.rate)]
   })
+  k.ped?.forEach((t, j) => timers.push(setTimeout(() => sink.pedal(j % 2 === 0), (t - from) / k.rate))) // the pedal as you used it: a key let go under it rings on
   timers.push(setTimeout(() => stopListen?.(), (end - from) / k.rate + 500))
   let raf = 0
   const follow = () => {
@@ -123,6 +128,7 @@ function listen(k: Take, back: HTMLElement, label: string) {
     stopListen = null
     timers.forEach(clearTimeout)
     cancelAnimationFrame(raf)
+    sink.pedal(false)
     for (const p of new Set(k.p)) sink.off(p)
     game.seek(t0)
     bar.remove()

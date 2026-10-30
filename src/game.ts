@@ -45,7 +45,8 @@ export type GameEvent =
   | { type: 'miss'; note: Note }
   | { type: 'wrong'; p: number }
   | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
-  | { type: 'release'; p: number }
+  | { type: 'release'; p: number; t: number } // t is song time, like a press's
+  | { type: 'pedal'; down: boolean; t: number }
   | { type: 'hold'; note: Note; grade: HoldGrade } // a key came up; how it compared with the written length
   | { type: 'phase'; phase: Phase }
   | { type: 'loop'; clean: boolean }
@@ -470,15 +471,19 @@ export class Game {
     }
   }
 
+  /** Song time of a key or pedal at performance.now() time `ts`, corrected for the calibration offset; the held clock while waiting or stopped. */
+  at(ts: number) {
+    return this.running() ? this.tAt(ts) - (this.offset / 1000) * this.rate : this.t
+  }
+
   /** A note-on from the keyboard. `ts` is the MIDI event's performance.now() timestamp. */
   press(p: number, vel: number, ts: number, virtual = false) {
     this.held.set(p, vel)
     if (settings.sound || virtual) audio.noteOn(p, vel, true) // the screen and computer keys have no speaker of their own
-    const live = this.running() || this.phase === 'waiting'
-    const t = live ? this.tAt(ts) - (this.offset / 1000) * this.rate : this.t
-    this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
-    if (!live) return
-    const evs = this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel)
+    const t = this.at(ts)
+    this.emit({ type: 'press', p, vel, t })
+    if (!this.running() && this.phase !== 'waiting') return
+    const evs = this.judge.press(p, t, virtual ? 0 : vel)
     for (const e of evs) if (e.k === 'hit' || e.k === 'ok') this.downAt.set(p, { i: e.i, at: ts })
     this.dispatch(evs)
     if (this.phase === 'waiting') {
@@ -499,7 +504,7 @@ export class Game {
   release(p: number, ts: number, virtual = false) {
     this.held.delete(p)
     if (settings.sound || virtual) audio.keyUp(p)
-    this.emit({ type: 'release', p })
+    this.emit({ type: 'release', p, t: this.at(ts) })
     const k = this.downAt.get(p)
     if (k) this.presses.push({ i: k.i, down: k.at, up: ts })
     this.downAt.delete(p)
@@ -508,7 +513,7 @@ export class Game {
       this.hold = undefined
       this.emit({ type: 'short' })
     }
-    if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (this.offset / 1000) * this.rate, this.pedal))
+    if (this.running()) this.dispatch(this.judge.release(p, this.at(ts), this.pedal))
   }
 
   /** CC64 crossed the half-way mark. Kept as song time (the held clock when paused) so the coach can set it against the chords. */
@@ -516,6 +521,8 @@ export class Game {
     if (down === this.pedal) return
     this.pedal = down
     audio.sustain(down)
-    this.pedals.push({ t: this.tAt(ts) - (this.offset / 1000) * this.rate, down })
+    const t = this.at(ts)
+    this.pedals.push({ t, down })
+    this.emit({ type: 'pedal', down, t })
   }
 }

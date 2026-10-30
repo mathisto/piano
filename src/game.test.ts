@@ -177,3 +177,27 @@ describe('the key that starts a reading drill', () => {
     }
   })
 })
+
+describe('what a take records', () => {
+  it('key downs, key ups and the pedal are all on the offset-corrected clock', async () => {
+    const { settings } = await import('./settings')
+    settings.offset = 100
+    const g = new Game()
+    g.load(fromSpec({ id: 'k', title: 'k', bpm: 60, fifths: 0, rh: 'C4:4 C4:4', lh: 'R:8' }), 'perform')
+    const ev: { type: string; t?: number }[] = []
+    g.on((e) => ev.push(e))
+    g.toggle()
+    run(g, 4000) // the count-in, then the first beat
+    const ts = performance.now()
+    g.sustain(true, ts)
+    g.press(60, 0.7, ts)
+    g.release(60, ts + 2000)
+    g.sustain(false, ts + 2000)
+    const at = (type: string) => ev.filter((e) => e.type === type).map((e) => +e.t!.toFixed(2))
+    expect(at('press')).toEqual([+(g.at(ts)).toFixed(2)])
+    expect(at('release')[0] - at('press')[0]).toBeCloseTo(2, 2)
+    expect(at('pedal')).toEqual([at('press')[0], at('release')[0]])
+    expect(at('press')[0]).toBeCloseTo((ts - g['anchorPerf']) / 1000 + g['anchorT'] - 0.1, 2) // 100 ms taken off
+    settings.offset = 0
+  })
+})

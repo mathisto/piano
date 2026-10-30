@@ -16,6 +16,7 @@ export interface Take {
   d: number[] // held, song ms
   i: number[] // the written note it played, -1 for a wrong note
   miss: number[] // written notes not played
+  ped?: number[] // song ms of each sustain pedal change, down first, then up, alternating (takes from before 2026-10-30 have none)
 }
 
 export const KEEP = 3 // takes kept per piece
