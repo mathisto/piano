@@ -78,6 +78,7 @@ export function endFeatures() {
  *  `ticket`: taken when the player asked, for a caller that fetches the piece first. */
 export async function openSong(base: Song, mode: Mode, paced = false, ticket = navigated()): Promise<boolean> {
   const stale = () => ticket !== navAt
+  const reopen = shown() === 'play' && game.phase === 'ready' // Notes shown from the start card
   game.endPass()
   // a busy arrangement opens at the mildest level that fits the staff; the start card can change it
   const level = mode === 'read' || base.id.startsWith('tech:') || base.id.startsWith('scale:') ? 0 : ((await store.getSimplify(base.id)) as Level | undefined) ?? autoLevel(base)
@@ -103,7 +104,7 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
     await hooks.showSection(from, msg)
     throw new Error(msg)
   }
-  if (stale()) return false
+  if (stale() || (reopen && game.phase !== 'ready')) return false // Play was pressed while it reloaded: the run keeps the notes it started with
   game.load(song, mode, paced)
   const prog = await store.getProgress(song.id, song.bars.length)
   if (stale()) return false
@@ -252,7 +253,7 @@ export function onPhase() {
       const { you, parts } = game
       const t = navigated() // before the save: leaving while it is queued makes the reopen stale
       await store.setSimplify(base.id, Number(x.value))
-      if (!(await openSong(base, game.mode, false, t))) return // left while it reopened
+      if (game.phase !== 'ready' || !(await openSong(base, game.mode, false, t))) return // left while it reopened
       game.accomp(you, [...parts]) // the part you chose survives a change of notes shown
       if (current) current.credit = credit
       syncMode()
@@ -282,9 +283,9 @@ export function onPhase() {
 async function stepSimplify() {
   if (!current || current.level >= 3) return
   const { base, credit } = current
-  const t = navigated()
+  const [t, ph] = [navigated(), game.phase]
   await store.setSimplify(base.id, current.level + 1)
-  if (!(await openSong(base, game.mode, false, t))) return
+  if (game.phase !== ph || !(await openSong(base, game.mode, false, t))) return
   if (current) current.credit = credit
   onPhase()
 }

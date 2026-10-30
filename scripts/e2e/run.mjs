@@ -649,8 +649,11 @@ const shellFlow = () => fresh({
     ok(await focusIn('#drawer'), 'focus left the drawer after Sound')
     await page.keyboard.press('Escape')
     // Escape mid-run pauses, the next one leaves, to Songs (opened there), and the PF button is Today again
-    await page.evaluate(() => (document.activeElement.blur(), window.__piano.game.toggle()))
+    // Play pressed while a Notes shown choice reloads the piece: the run keeps going on the notes it started with
+    await page.evaluate(() => (document.activeElement.blur(), document.querySelector('#ready input[name=level][value="4"]').click(), window.__piano.game.toggle()))
     await wait(page, () => ['countin', 'playing'].includes(window.__piano.game.phase))
+    await page.waitForTimeout(1500)
+    ok(await ev(page, () => ['countin', 'playing'].includes(window.__piano.game.phase)), `the reopen reset the run: ${await ev(page, () => window.__piano.game.phase + ' ' + window.__piano.game.song.notes.length + ' ' + document.querySelector('#play.on')?.id)}`)
     await page.keyboard.press('Escape')
     ok(await ev(page, () => window.__piano.game.phase === 'paused' && document.querySelector('#play.on')), 'the first Escape did not pause')
     await page.keyboard.press('Escape')
