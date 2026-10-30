@@ -60,6 +60,7 @@ async function fill() {
 /** Append the open library to the Songs page. Filters survive leaving and coming back. */
 export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, read: (p: Piece) => Promise<Song>) {
   const ps = catalog.pieces
+  host.querySelector('.biglib')?.remove() // two Songs renders in flight both mount: the last one is the one kept
   // the corpus could not be fetched and nothing is stored: say so, with another go. With no pieces at all (the bundled list failed too) this is the whole section.
   const lost = net.ok === false && !net.have
   const again = '<button class="btn ghost" data-libretry>Try again</button>'
