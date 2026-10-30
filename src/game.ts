@@ -1,6 +1,6 @@
 import { byApp, voiceOf } from './accomp'
 import * as audio from './audio'
-import { ticks } from './metronome'
+import { grid, ticks } from './metronome'
 import { Pace } from './pace'
 import { Quiet } from './quiet'
 import { evenness, judged, type Evenness } from './even'
@@ -56,7 +56,6 @@ export type GameEvent =
   | { type: 'pass'; heat: number[] } // a stretch of practice ended; commit its trouble spots
   | { type: 'done'; result: Result }
 
-const COUNT_IN = 4
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
 const LOOK = 0.25 // seconds: clicks and the app's notes go to the audio clock this far ahead, so a slow frame cannot make them late
@@ -185,17 +184,24 @@ export class Game {
     this.setPhase('ready', true)
   }
 
-  /** The count-in: four beats before the song, two before a loop, none in Read (the card waits for you). */
-  private lead(): { from: number; to: number } {
-    const spb = this.song.spb
-    if (this.loop) return { from: this.loop.a - 2 * spb, to: this.loop.a }
-    return this.mode === 'read' && !this.paced ? { from: -READ_LEAD, to: -Infinity } : { from: -COUNT_IN * spb, to: 0 }
+  /** The count-in, from `from` to `to` a click every `dt`, on the beat grid of the bar it leads into (metronome.ts), so a tempo change is counted at the new tempo. Two beats into a loop. Into the song, a bar (two of a two-beat metre) counted back from the first full bar, so a pickup comes in on its own beat, and a bar more when the pickup would leave under half of it. None in Read: the card waits for you. */
+  private lead(): { from: number; to: number; dt: number } {
+    if (this.mode === 'read' && !this.paced) return { from: -READ_LEAD, to: -Infinity, dt: 1 }
+    const bars = this.song.bars
+    const to = this.loop ? this.loop.a : 0
+    const b = this.loop ? bars[barAt(bars, to)] : (bars.find((x) => !x.ql) ?? bars[0])
+    const { count, dt } = grid(b)
+    const n = (this.loop ? 2 : count < 3 ? 2 * count : count) * dt
+    const from = (b.ql ? b.t1 : b.t0) - n
+    return { from: to - from < n / 2 ? from - n : from, to, dt }
   }
 
-  /** Beats of count-in left, 4 down to 1, or 0 when not counting. */
+  /** Clicks of count-in left, counting down to 1, or 0 when not counting. */
   get count() {
-    const { to } = this.lead()
-    return this.running() && this.t < to ? Math.min(COUNT_IN, Math.max(1, Math.ceil((to - this.t) / this.song.spb - 1e-6))) : 0
+    const { from, to, dt } = this.lead()
+    if (!this.running() || this.t >= to) return 0
+    const n = Math.ceil((to - from) / dt - 1e-6)
+    return Math.max(1, Math.min(n, n - Math.floor((this.t - from) / dt + 1e-6)))
   }
 
   /** Re-score after a setting change without leaving the song. */
@@ -238,7 +244,8 @@ export class Game {
     this.t = t
     this.anchor(performance.now())
     audio.hush()
-    this.nextClick = Math.ceil((t - 1e-6) / this.song.spb)
+    const { from, dt } = this.lead()
+    this.nextClick = Math.max(0, Math.ceil((t - from) / dt - 1e-6))
     this.nextMetro = t
     this.autoI = this.song.notes.findIndex((n) => n.t >= t)
     if (this.autoI < 0) this.autoI = this.song.notes.length
@@ -315,13 +322,9 @@ export class Game {
     }
 
     const lead = this.lead()
-    const spb = this.song.spb
     const look = LOOK * this.rate
-    while (this.nextClick * spb <= this.t + look && this.nextClick * spb < lead.to - 1e-6) {
-      const at = this.nextClick * spb
-      audio.click(at <= lead.from + 1e-6, Math.max(0, (at - this.t) / this.rate))
-      this.nextClick++
-    }
+    for (let at = lead.from + this.nextClick * lead.dt; at <= this.t + look && at < lead.to - 1e-6; at = lead.from + ++this.nextClick * lead.dt)
+      audio.click(this.nextClick === 0, Math.max(0, (at - this.t) / this.rate)) // the first click of the count is the accented one
     if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
     const end = this.horizon(look)
     this.metronome(lead.to, end)
