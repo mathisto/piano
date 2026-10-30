@@ -1,16 +1,16 @@
-// Latency calibration: play middle C on the beat, and the timing windows shift to match.
-import type { Result } from '../game'
+// Latency calibration: play middle C on the beat, and the timing windows shift to match. The game takes the presses as they come
+// while it runs (Game.calib), so the saved offset is only changed by Apply.
+import { CALIBRATION, type Result } from '../game'
 import { save, settings } from '../settings'
 import { fromSpec } from '../song'
 import { $ } from '../ui'
-import { calibrating, game, hooks, resOpen, setCalibrating } from './state'
+import { game, hooks, resOpen, setCalibrating } from './state'
 import { leave, openSong } from './play'
 
 export async function startCalibration() {
   hooks.closeDrawer()
-  setCalibrating({ prevOffset: settings.offset })
-  settings.offset = 0
-  const song = fromSpec({ id: 'calibration', title: 'Calibration', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
+  setCalibrating(true)
+  const song = fromSpec({ id: CALIBRATION, title: 'Calibration', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
   await openSong(song, 'perform')
   $('#modeSeg').hidden = true
 }
@@ -30,9 +30,8 @@ export function calibrated(r: Result) {
     }</p>
     <div class="row">${ok ? '<button class="btn primary" id="apply">Apply</button>' : ''}<button class="btn" id="retry">Try again</button><button class="btn ghost" id="cancel">Cancel</button></div>
   </div></div>`
-  const prev = calibrating!.prevOffset
   const end = () => {
-    setCalibrating(undefined)
+    setCalibrating(false)
     resOpen(false)
     leave()
   }
@@ -47,8 +46,5 @@ export function calibrated(r: Result) {
     resOpen(false)
     game.restart()
   }
-  $('#cancel', res).onclick = () => {
-    settings.offset = prev
-    end()
-  }
+  $('#cancel', res).onclick = end
 }

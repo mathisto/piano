@@ -56,7 +56,7 @@ export let highway!: Highway
 export let staff!: Staff
 export let dock!: Dock
 export let current: { song: Song; base: Song; level: Level; heat: number[]; credit?: string } | undefined
-export let calibrating: { prevOffset: number } | undefined
+export let calibrating = false
 export let played = false
 export let run: RunCtx | undefined
 export let runSpec: RunSpec = { ...DEFAULT_RUN }

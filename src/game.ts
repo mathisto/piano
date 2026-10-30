@@ -59,6 +59,8 @@ export type GameEvent =
 const HOLD = { easy: 'off', standard: 'lenient', strict: 'strict' } as const
 const EASE = { easy: 1.3, standard: 1, strict: 0.75 } // timing windows by strictness
 const LOOK = 0.25 // seconds: clicks and the app's notes go to the audio clock this far ahead, so a slow frame cannot make them late
+export const CALIBRATION = 'calibration' // the song id of the latency calibration (src/app/calibration.ts)
+const CALIBRATION_EASE = 3 // its window is +/-375 ms: a setup 150 ms late must still leave a sample to measure
 const PACED_EASE = 1.6 // a reader a beat behind the eyes is late, not wrong: a paced run takes a note within 200 ms of the beat
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
 
@@ -108,6 +110,16 @@ export class Game {
   known = new Set<number>() // pitches already read well in the Read drills: their names fade from the bars
   autoTempo = true // Learn: loops speed up after clean passes and slow after messy ones
   ghost: { p: number[]; t: number[]; d: number[]; h: ('R' | 'L')[] } | null = null // Ghost: the last take's keys, drawn faintly on the staff and lanes (src/app/take-ui.ts)
+
+  /** The latency calibration: a wide window, the click on whatever the settings say, and presses taken as they come (offset 0) without touching the saved offset. */
+  get calib() {
+    return this.song?.id === CALIBRATION
+  }
+
+  /** The calibration offset in ms: what presses are corrected by. */
+  get offset() {
+    return this.calib ? 0 : settings.offset
+  }
 
   /** Which panes to show. Reading drills always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {
@@ -169,7 +181,7 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.paced ? PACED_EASE : EASE[settings.strict] }
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[settings.strict] }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -324,7 +336,7 @@ export class Game {
     const lead = this.lead()
     const look = LOOK * this.rate
     for (let at = lead.from + this.nextClick * lead.dt; at <= this.t + look && at < lead.to - 1e-6; at = lead.from + ++this.nextClick * lead.dt)
-      audio.click(this.nextClick === 0, Math.max(0, (at - this.t) / this.rate)) // the first click of the count is the accented one
+      audio.click(this.nextClick === 0, Math.max(0, (at - this.t) / this.rate), this.calib) // the first click of the count is the accented one
     if (this.phase === 'countin' && this.t >= lead.to) this.setPhase('playing')
     const end = this.horizon(look)
     this.metronome(lead.to, end)
@@ -388,7 +400,7 @@ export class Game {
   /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. */
   private metronome(from: number, end: number) {
     if ((this.mode === 'read' && !this.paced) || !this.running()) return
-    if (settings.metro !== 'off' || this.paced) {
+    if (settings.metro !== 'off' || this.paced || this.calib) {
       for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, !this.paced && settings.metro === 'eighths'))
         audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
     }
@@ -464,7 +476,7 @@ export class Game {
     this.held.set(p, vel)
     if (settings.sound || virtual) audio.noteOn(p, vel, true) // the screen and computer keys have no speaker of their own
     const live = this.running() || this.phase === 'waiting'
-    const t = live ? this.tAt(ts) - (settings.offset / 1000) * this.rate : this.t
+    const t = live ? this.tAt(ts) - (this.offset / 1000) * this.rate : this.t
     this.emit({ type: 'press', p, vel, t: this.phase === 'waiting' ? this.t : t })
     if (!live) return
     const evs = this.judge.press(p, this.phase === 'waiting' ? this.t : t, virtual ? 0 : vel)
@@ -497,7 +509,7 @@ export class Game {
       this.hold = undefined
       this.emit({ type: 'short' })
     }
-    if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (settings.offset / 1000) * this.rate, this.pedal))
+    if (this.running()) this.dispatch(this.judge.release(p, this.tAt(ts) - (this.offset / 1000) * this.rate, this.pedal))
   }
 
   /** CC64 crossed the half-way mark. Kept as song time (the held clock when paused) so the coach can set it against the chords. */
@@ -505,6 +517,6 @@ export class Game {
     if (down === this.pedal) return
     this.pedal = down
     audio.sustain(down)
-    this.pedals.push({ t: this.tAt(ts) - (settings.offset / 1000) * this.rate, down })
+    this.pedals.push({ t: this.tAt(ts) - (this.offset / 1000) * this.rate, down })
   }
 }

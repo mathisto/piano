@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as audio from './audio'
-import { Game } from './game'
+import { CALIBRATION, Game } from './game'
 import { build, fromSpec, type Bar, type Raw } from './song'
 
 vi.mock('./audio', () => ({ preload: vi.fn(), noteOn: vi.fn(), noteOff: vi.fn(), click: vi.fn(), unlock: vi.fn(), sustain: vi.fn(), keyUp: vi.fn(), hush: vi.fn() }))
@@ -126,5 +126,32 @@ describe('the count-in', () => {
     const seen = new Set<number>()
     run(g, 1600, () => seen.add(g.count))
     expect([...seen]).toEqual([3, 2, 1, 0])
+  })
+})
+
+describe('the latency calibration', () => {
+  it('measures a setup 150 ms late, with the click on whatever the settings say, and leaves the saved offset alone', async () => {
+    const { settings } = await import('./settings')
+    Object.assign(settings, { offset: 80, metro: 'off', click: 0 })
+    const s = fromSpec({ id: CALIBRATION, title: 'c', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
+    const g = new Game()
+    g.load(s, 'perform')
+    g.toggle()
+    const t0 = performance.now()
+    let done: number[] = []
+    g.on((e) => e.type === 'done' && (done = e.result.offs))
+    run(g, 26000, () => {
+      const k = Math.round((performance.now() - t0 - 3000 - 150) / 750) // beat k of the song, at 0.75 s a beat after a 4-beat count-in
+      if (k >= 0 && k < 16 && Math.abs(performance.now() - (t0 + 3000 + k * 750 + 150)) < 5) {
+        g.press(60, 0.7, performance.now())
+        g.release(60, performance.now() + 100)
+      }
+    })
+    expect(done.length).toBe(16)
+    for (const o of done) expect(o).toBeCloseTo(150, -1)
+    expect(settings.offset).toBe(80)
+    const calls = vi.mocked(audio.click).mock.calls
+    expect(calls.length).toBe(4 + 16)
+    expect(calls.every((c) => c[2])).toBe(true) // forced: Count-in silent and Metronome off do not silence it
   })
 })
