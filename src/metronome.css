@@ -1,13 +1,5 @@
-/* the dock's metronome: a toggle, an eighths switch when it is on, and one dot per beat of the bar */
-.metro {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.metro .btn {
-  min-width: 172px;
-}
-.metro .btn[aria-pressed='true'] {
+/* the metronome: a button in the dock's Practice menu cycling off, beats, eighths; one dot per beat of the bar in the dock row */
+#metro[aria-pressed='true'] {
   background: var(--line-2);
   border-color: var(--ink-2);
 }

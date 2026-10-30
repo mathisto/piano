@@ -33,53 +33,58 @@ export class Dock {
   }
   onNote = (_msg: string) => {}
   onHands = () => {}
+  closeMenus = () => {}
 
   constructor(
     private host: HTMLElement,
     private game: Game,
   ) {
+    // one row (docs/research: Apple's toolbars keep to a few groups, one prominent action); the rest is in two pop-ups. It fades with the top bar during a run
     host.innerHTML = `
       <div class="dock-row">
         <button class="btn primary big" id="go"></button>
         <button class="btn icon" id="restart" aria-label="Restart from the top" title="Restart">${icon('restart')}</button>
-        <button class="btn icon ghost" id="zen" aria-label="Hide controls" aria-pressed="false" title="Hide controls (M)">${icon('focus')}</button>
         <div class="scrub" id="scrub" data-modes="perform learn">
           <svg viewBox="0 0 1000 44" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="loop" hidden></div>
           <div class="head"></div>
           <div class="lbl tip" hidden></div>
         </div>
-        <div class="metro" data-modes="perform learn">
-          <button class="btn" id="metro" aria-pressed="false" title="Metronome: off, beats, beats and eighths (B)"></button>
-          <span class="beats" id="beats" aria-hidden="true"></span>
-        </div>
+        <span class="beats" id="beats" aria-hidden="true"></span>
         <div class="dock-end" data-modes="learn">
           <button class="btn" id="loopWorst" hidden>${icon('loop')}Loop worst bars</button>
           <button class="btn" id="loopClear" hidden>Clear loop</button>
         </div>
-      </div>
-      <div class="dock-row aids" data-modes="learn read">
-        <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
-        <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
-        <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
-        <div class="grp">
-          <span class="cap">Tempo</span>
-          <button class="btn icon sm touch-only" id="tempoDown" aria-label="Slower" title="Slower">−</button>
-          <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
-          <span class="tempo-val" id="tempoVal">100%</span>
-          <button class="btn icon sm touch-only" id="tempoUp" aria-label="Faster" title="Faster">+</button>
-          ${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}</button>`).join('')}
-          <button class="btn sm" id="ladder" aria-pressed="true" title="Three clean passes of the loop raise the tempo 5%; two messy ones lower it" hidden></button>
-        </div>
-        <div class="pop" data-modes="learn">
-          <button class="btn" id="aidsBtn" aria-expanded="false" aria-haspopup="true" aria-controls="aidsMenu">Aids</button>
-          <div class="popmenu" id="aidsMenu" hidden>
-            <label class="switch"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
-            <label class="switch"><input type="checkbox" id="holdAdvance"><i></i>Hold to advance</label>
+        <div class="pop" id="tempoPop" data-modes="learn read">
+          <button class="btn" id="tempoBtn" aria-expanded="false" aria-haspopup="true" aria-controls="tempoMenu"><small>Tempo</small><span class="tempo-val" id="tempoVal">100%</span></button>
+          <div class="popmenu end" id="tempoMenu" hidden>
+            <span class="cap">Tempo</span>
+            <div class="slider">
+              <button class="btn icon sm" id="tempoDown" aria-label="Slower">${icon('minus')}</button>
+              <input class="tempo" id="tempo" type="range" min="25" max="125" step="5" value="100" aria-label="Tempo percent">
+              <button class="btn icon sm" id="tempoUp" aria-label="Faster">${icon('plus')}</button>
+            </div>
+            <div class="presets">${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}%</button>`).join('')}</div>
+            <button class="btn sm" id="ladder" aria-pressed="true" title="Three clean passes of the loop raise the tempo 5%; two messy ones lower it" hidden></button>
           </div>
         </div>
-        <span class="dock-fill"></span>
-        <div class="grp" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
+        <div class="pop">
+          <button class="btn" id="aidsBtn" aria-expanded="false" aria-haspopup="true" aria-controls="aidsMenu">Practice</button>
+          <div class="popmenu end" id="aidsMenu" hidden>
+            <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
+            <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
+            <label class="switch" data-modes="learn"><input type="checkbox" id="holdAdvance"><i></i>Hold to advance</label>
+            <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
+            <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
+            <button class="btn" id="metro" data-modes="perform learn" aria-pressed="false" title="Metronome: off, beats, beats and eighths (B)"></button>
+            <div class="hands" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
+            <div class="zoomrow" role="group" aria-label="Staff size"><span class="cap">Staff</span>
+              <button class="btn icon sm" data-zoom="out" aria-label="Smaller staff, more bars">${icon('minus')}</button>
+              <button class="btn icon sm" data-zoom="fit" aria-label="Fit the whole piece" title="Fit the whole piece">${icon('page')}</button>
+              <button class="btn icon sm" data-zoom="in" aria-label="Larger staff, fewer bars">${icon('plus')}</button>
+            </div>
+          </div>
+        </div>
       </div>`
     const q = <T extends HTMLElement>(s: string) => host.querySelector(s) as T
     this.scrub = q('#scrub')
@@ -123,22 +128,27 @@ export class Dock {
       game.setLoop(null)
       this.sync()
     }
-    // the assist switches live in one popover: closes on an outside click or Escape
-    const btn = q<HTMLButtonElement>('#aidsBtn')
-    const menu = q('#aidsMenu')
-    const set = (open: boolean) => {
-      menu.hidden = !open
-      btn.setAttribute('aria-expanded', String(open))
+    // the two pop-ups: one open at a time, closed by an outside click or Escape (focus back on its button)
+    const pops = [...host.querySelectorAll<HTMLElement>('.pop')].map((p) => ({ btn: p.querySelector('button')!, menu: p.querySelector<HTMLElement>('.popmenu')! }))
+    const set = (o: (typeof pops)[number], open: boolean) => {
+      o.menu.hidden = !open
+      o.btn.setAttribute('aria-expanded', String(open))
     }
-    btn.onclick = () => set(menu.hidden === true)
-    document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.pop') && set(false))
-    menu.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault() // handled: the page's Escape (leave the piece) skips it
-        set(false)
-        btn.focus()
+    this.closeMenus = () => pops.forEach((o) => set(o, false))
+    for (const o of pops) {
+      o.btn.onclick = () => {
+        const open = o.menu.hidden === true
+        this.closeMenus()
+        set(o, open)
       }
-    })
+      o.menu.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return
+        e.preventDefault() // handled: the page's Escape (leave the piece) skips it
+        set(o, false)
+        o.btn.focus()
+      })
+    }
+    document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.pop') && this.closeMenus())
     this.pointer()
   }
 
@@ -148,17 +158,13 @@ export class Dock {
     const learn = g.mode === 'learn'
     this.host.querySelectorAll<HTMLElement>('[data-modes]').forEach((e) => (e.hidden = !e.dataset.modes!.split(' ').includes(g.mode)))
     this.bar.hidden = !g.paced
-    this.tempo.parentElement!.hidden = g.paced // a paced run's tempo is the one it was built with
+    if (g.paced) this.host.querySelector<HTMLElement>('#tempoPop')!.hidden = true // a paced run's tempo is the one it was built with
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
     this.wait.checked = g.wait
     const lad = this.host.querySelector<HTMLElement>('#ladder')!
     lad.hidden = !learn || !g.loop
     lad.setAttribute('aria-pressed', String(g.autoTempo))
-    // in Learn the first row is full of loop buttons: the metronome joins the aids row
-    const m = this.host.querySelector<HTMLElement>('.metro')!
-    const row = this.host.querySelector(learn ? '.aids' : '.dock-row')!
-    if (m.parentElement !== row) row.insertBefore(m, row.querySelector(learn ? '.dock-fill' : '.dock-end'))
     lad.textContent = g.autoTempo ? 'Ladder on' : 'Ladder off'
     this.syncMetro()
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
@@ -212,6 +218,7 @@ export class Dock {
 
   setPhase() {
     const p = this.game.phase
+    if (p !== 'ready' && p !== 'paused' && p !== 'done') this.closeMenus() // a run fades the dock: nothing left open under it
     const label = p === 'ready' ? 'Play' : p === 'paused' ? 'Resume' : p === 'done' ? 'Again' : 'Pause'
     this.go.innerHTML = `${icon(label === 'Pause' ? 'pause' : 'play')}${label}`
   }

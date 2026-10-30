@@ -917,41 +917,6 @@ body.reading .hud small {
   overflow: hidden;
   touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
 }
-.zoomc {
-  /* --zx and --zy (0 to 1) place the buttons anywhere in the staff, 8px in from every edge */
-  position: absolute;
-  left: calc(8px + (100% - 16px) * var(--zx, 1));
-  top: calc(8px + (100% - 16px) * var(--zy, 1));
-  transform: translate(calc(var(--zx, 1) * -100%), calc(var(--zy, 1) * -100%));
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  opacity: 0.55;
-  transition: opacity 0.15s;
-}
-.zoomc:hover,
-.zoomc:focus-within,
-.zoomc.drag {
-  opacity: 1;
-}
-.zgrip {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 36px;
-  color: var(--ink-3);
-  cursor: grab;
-  touch-action: none;
-}
-.zgrip svg {
-  width: 18px;
-  height: 18px;
-}
-.zoomc.drag .zgrip {
-  cursor: grabbing;
-  color: var(--ink);
-}
 #staff > svg {
   position: absolute;
   inset: 0;
@@ -1487,10 +1452,6 @@ kbd {
   gap: 8px 16px;
   min-width: 0;
 }
-.dock-row.aids {
-  gap: 20px;
-  flex-wrap: wrap;
-}
 .scrub {
   position: relative;
   flex: 1;
@@ -1577,6 +1538,10 @@ kbd {
 .dock-end {
   display: flex;
   gap: 8px;
+}
+.dock-end:not(:has(> :not([hidden]))),
+.beats:empty {
+  display: none; /* nothing in them: no gap in the row */
 }
 .dock-fill {
   flex: 1;
@@ -1921,13 +1886,6 @@ button.link {
   #devName {
     display: none; /* the dot says whether a keyboard is in; the name is in Settings */
   }
-  .dock-row.aids {
-    gap: 12px;
-  }
-  .grp > .btn.sm[data-t='50'],
-  .grp > .btn.sm[data-t='75'] {
-    display: none;
-  }
   /* the song tables lose their preview and fixed columns: the name comes first */
   table.songs col {
     width: auto !important;
@@ -1955,13 +1913,6 @@ button.link {
   }
   .row-actions .btn {
     padding: 0 10px;
-  }
-}
-
-@media (max-width: 1180px) and (pointer: fine) {
-  .btn.sm[data-t],
-  .hand .hlbl {
-    display: none;
   }
 }
 
@@ -2023,18 +1974,19 @@ button.link {
 }
 
 /* ---------- play focus: the top bar fades once the song runs, H hides the extras ---------- */
-body.hush .bar > * {
+body.hush .bar > *,
+body.hush #dock > * {
   opacity: 0;
   pointer-events: none;
 }
-.bar > * {
+.bar > *,
+#dock > * {
   transition: opacity 0.35s var(--ease); /* not merged into the .bar > * rule above: it must come after .btn, whose transition it replaces */
 }
 body.zen #app {
   grid-template-rows: minmax(0, 1fr);
 }
-body.zen .bar,
-body.zen #dock .aids {
+body.zen .bar {
   display: none;
 }
 
@@ -2414,13 +2366,53 @@ dialog.sheet footer .grow {
   left: 0;
   z-index: 5;
   display: grid;
-  gap: 4px;
+  gap: 8px;
   min-width: 200px;
   padding: 10px 14px;
   background: var(--panel-2);
   border: 1px solid var(--edge);
   border-radius: var(--r-2);
   box-shadow: 0 -8px 24px var(--drop);
+}
+.popmenu.end {
+  left: auto;
+  right: 0; /* the Practice menu sits at the row's right end: it opens leftwards, over the stage */
+}
+.popmenu .cap {
+  color: var(--ink-3);
+  font: 700 13px/1 var(--ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.popmenu .presets,
+.zoomrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zoomrow .cap {
+  flex: 1;
+}
+.popmenu .hand {
+  display: grid;
+  grid-template-columns: 12px 1fr auto; /* the two hands' choices line up */
+}
+.popmenu .hands {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0;
+  border-block: 1px solid var(--line);
+}
+#tempoMenu {
+  min-width: 260px;
+}
+#tempoBtn small {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+#tempoBtn .tempo-val {
+  font-size: 22px;
+  margin: 0;
 }
 
 .ready .cap {
@@ -2477,23 +2469,6 @@ dialog.sheet footer .btn {
   text-transform: uppercase;
 }
 
-.touch-only {
-  display: none;
-}
-@media (pointer: coarse) {
-  .touch-only {
-    display: inline-flex;
-  }
-  .tempo {
-    display: none;
-  }
-}
-
-@media (pointer: coarse) {
-  .dock-row.aids .grp > .cap {
-    display: none; /* the buttons say it; the label would push the hands onto a third row at 1180px */
-  }
-}
 
 /* ---------- Sight Run: the builder on Read, the reading-ahead curtain, the results strip ---------- */
 .tcard.run {

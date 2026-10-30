@@ -145,7 +145,7 @@ export function setZoom(z: number) {
     else if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) moved = true
   })
   host.addEventListener('pointerup', (e) => {
-    const alone = pts.size === 1 && !moved && !(e.target as HTMLElement).closest('.zoomc, .barno')
+    const alone = pts.size === 1 && !moved && !(e.target as HTMLElement).closest('.barno')
     pts.delete(e.pointerId)
     if (!alone) return (tap.t = 0)
     if (e.timeStamp - tap.t < 320 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 30) {
@@ -159,38 +159,13 @@ export function setZoom(z: number) {
     e.preventDefault()
     setZoom(settings.zoom * Math.exp(-e.deltaY / 200))
   }, { passive: false })
-  $('#zoomOut').onclick = () => setZoom(settings.zoom / ZOOM.step)
-  $('#zoomIn').onclick = () => setZoom(settings.zoom * ZOOM.step)
-  // the whole piece in view; pressed again, back to the normal size
-  $('#zoomFit').onclick = () => {
-    const f = staff.fit(ZOOM.min, 1)
-    setZoom(settings.zoom === f ? 1 : f)
-  }
-  // the buttons can be dragged by their grip to wherever they are out of the way
-  const box = $('#staff .zoomc')
-  const place = ([x, y]: [number, number]) => {
-    box.style.setProperty('--zx', String(x))
-    box.style.setProperty('--zy', String(y))
-  }
-  place(settings.zpos)
-  const grip = $('#zoomGrip')
-  grip.onpointerdown = (e) => {
-    grip.setPointerCapture(e.pointerId)
-    box.classList.add('drag')
-    const b = box.getBoundingClientRect()
-    const off = { x: e.clientX - b.left, y: e.clientY - b.top }
-    grip.onpointermove = (m) => {
-      const h = host.getBoundingClientRect()
-      const f = (v: number, size: number, span: number) => Math.min(1, Math.max(0, span > 0 ? (v - 8) / (span - 16 - size) : 1))
-      settings.zpos = [f(m.clientX - off.x - h.left, b.width, h.width), f(m.clientY - off.y - h.top, b.height, h.height)]
-      place(settings.zpos)
-    }
-    grip.onpointerup = grip.onpointercancel = () => {
-      grip.onpointermove = grip.onpointerup = grip.onpointercancel = null
-      box.classList.remove('drag')
-      save()
-    }
-  }
+  // the staff size buttons in the dock's Practice menu (the dock is built after this): smaller, the whole piece (again: back to normal), larger
+  addEventListener('click', (e) => {
+    const z = (e.target as HTMLElement).closest<HTMLElement>('[data-zoom]')?.dataset.zoom
+    if (!z) return
+    const f = z === 'fit' ? staff.fit(ZOOM.min, 1) : 0
+    setZoom(z === 'out' ? settings.zoom / ZOOM.step : z === 'in' ? settings.zoom * ZOOM.step : settings.zoom === f ? 1 : f)
+  })
 }
 
 /** One step by keyboard: down and up walk through falling only, both with the pane resized, and sheet only. */
@@ -365,24 +340,25 @@ export function chordUpdate() {
   } else chordTimer = window.setTimeout(() => (el.hidden = true), 700)
 }
 
-// the top bar fades two and a half seconds into a run and comes back on any pointer or key
+// the top bar and the dock fade two and a half seconds into a run and come back on any pointer or key (a MIDI key is not one)
 let idle = 0
-export function wake() {
+/** `phase`: called on a change of phase. Playing and waiting take turns in Learn on every note: between them the fade's clock runs on. */
+export function wake(phase = false) {
+  const run = !!current && game.phase !== 'ready' && game.phase !== 'paused' && game.phase !== 'done'
+  if (phase && run && idle) return
   document.body.classList.remove('hush')
   clearTimeout(idle)
-  if (current && game.phase !== 'ready' && game.phase !== 'paused' && game.phase !== 'done') idle = window.setTimeout(() => document.body.classList.add('hush'), 2500)
+  idle = run ? window.setTimeout(() => document.body.classList.add('hush'), 2500) : 0
 }
-for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, wake, { passive: true }) // only opacity changes, so waking costs no layout
+for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, () => wake(), { passive: true }) // only opacity changes, so waking costs no layout
 
-/** Hide the top bar and the dock's extras so the staff and keyboard have the screen; the dock button brings them back. */
+/** Hide the top bar so the staff and keyboard have the screen (M); again, back. */
 export function zen() {
-  const on = document.body.classList.toggle('zen')
-  document.querySelector('#zen')?.setAttribute('aria-pressed', String(on))
+  document.body.classList.toggle('zen')
   highway?.layout()
 }
 addEventListener('click', (e) => {
   const t = e.target as HTMLElement
-  if (t.closest('#zen')) zen()
   const x = t.closest<HTMLElement>('[data-close]')
   if (x) x.closest('dialog')?.close()
 })

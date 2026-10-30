@@ -29,7 +29,6 @@ export interface Settings {
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
   pane: number // the staff's share of the room when both show, 0..1
   zoom: number // staff size: 1 is the default, below it the staff is smaller and shows more bars
-  zpos: [number, number] // where the staff size buttons sit in the staff, 0 to 1 across and down; 1, 1 is the bottom right corner
   offset: number // ms, from calibration
   split: number // MIDI pitch splitting hands in single-track files
   device: string // MIDI input id, '' = all
@@ -62,7 +61,6 @@ const DEFAULTS: Settings = {
   view: 'both',
   pane: 0.4,
   zoom: 1,
-  zpos: [1, 1],
   offset: 0,
   split: 60,
   device: '',
@@ -81,7 +79,8 @@ function load(): Settings {
     delete saved.hold
     saved.instrument = instrumentId(saved.instrument)
     delete saved.chord
-    // a value of the wrong kind (a hand-edited file, an older version) falls back to the default: a zoom of "big" or a zpos of 5 must not stop the app starting
+    delete saved.zpos // the staff size buttons moved into the dock's Practice menu (30 Oct 2026)
+    // a value of the wrong kind (a hand-edited file, an older version) falls back to the default: a zoom of "big" must not stop the app starting
     for (const k of Object.keys(DEFAULTS) as (keyof Settings)[]) if (k in saved && (typeof saved[k] !== typeof DEFAULTS[k] || Array.isArray(saved[k]) !== Array.isArray(DEFAULTS[k]) || saved[k] === null)) delete saved[k]
     if (![5, 10, 20, 30, 45].includes(saved.planMin)) delete saved.planMin
     return { ...DEFAULTS, ...saved }

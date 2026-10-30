@@ -273,7 +273,7 @@ export function onPhase() {
     r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => hooks.memStage(Number(x.value))))
   }
   if (rt) hooks.rtPhase()
-  wake()
+  wake(true)
   if (game.phase === 'paused') say('Paused')
   if (game.phase === 'waiting') say('Waiting for you')
   updateBanner()
