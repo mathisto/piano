@@ -3,7 +3,7 @@ import { cardKey, cards, dueCards, fluentMs, focus, mastery, reviewPool, STAGES 
 import { PACE, suggest } from '../paced'
 import { bestKey, DEFAULT_RUN, LIMITS, runCards, type RunSpec } from '../run'
 import * as store from '../store'
-import { $, RUN_START, runTitle } from '../ui'
+import { $, keepFocus, RUN_START, runTitle } from '../ui'
 import type { StageRow } from '../ui-views'
 import { drillStats, runSpec, setDrillStats, setRunSpec, stageById } from './state'
 import { saveRun, startDrill, startRun } from './drill'
@@ -65,7 +65,7 @@ $('#read').addEventListener('change', async (e) => {
   const t = e.target as HTMLInputElement
   if (t.name === 'readTab') {
     readTab = t.value as typeof readTab
-    return void showRead()
+    return void keepFocus($('#read'), showRead)
   }
   if (!($(`#rClef`, $('#read')))) return
   const id = (e.target as HTMLElement).id
@@ -81,7 +81,7 @@ $('#read').addEventListener('change', async (e) => {
     s = { ...s, pace: o.bpm, every: o.every }
   }
   await saveRun(s) // before the redraw reads it back
-  if (id === 'rClef' || id === 'rSize' || id === 'rPaced' || (s.pace && moved)) void showRead() // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats; pace adds a slider
+  if (id === 'rClef' || id === 'rSize' || id === 'rPaced' || (s.pace && moved)) void keepFocus($('#read'), showRead) // the pickers list a different span of notes; intervals and triads offer no loose sharps or flats; pace adds a slider
 })
 $('#read').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')

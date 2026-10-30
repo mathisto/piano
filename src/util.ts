@@ -15,3 +15,9 @@ export const median = (xs: number[]) => {
 export const pct = (x: number) => `${Math.round(x * 100)}%`
 
 export const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+
+/** A selector that finds a control again after its container is redrawn: by id, else (a radio) by name and value. '' when neither. */
+export const focusKey = (el: { id?: string; name?: string; value?: string }) => {
+  const q = (s: string) => `"${s.replace(/["\\]/g, '\\$&')}"`
+  return el.id ? `[id=${q(el.id)}]` : el.name ? `[name=${q(el.name)}][value=${q(el.value ?? '')}]` : ''
+}

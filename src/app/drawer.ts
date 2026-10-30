@@ -6,7 +6,7 @@ import { chooseInput, inputs, monitor } from '../midi'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
-import { $, drawer } from '../ui'
+import { $, drawer, keepFocus } from '../ui'
 import { current, game, highway, hooks, say, sheets } from './state'
 import { connectMidi, midiLine, midiState, updateChip } from './banner'
 import { lens, shareFile } from './library'
@@ -19,8 +19,10 @@ let monTimer = 0
 function openDrawer() {
   const d = $('#drawer')
   const open = d.querySelector('details')?.open
-  drawer(d, inputs())
-  if (open) d.querySelector('details')!.open = true
+  keepFocus(d, () => {
+    drawer(d, inputs())
+    if (open) d.querySelector('details')!.open = true
+  })
   const wasOpen = !d.hidden
   d.hidden = false
   document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays

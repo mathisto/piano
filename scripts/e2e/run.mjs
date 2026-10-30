@@ -206,8 +206,13 @@ async function axe(page, where, sel) {
 const skipSetup = async (page) => {
   if (await page.waitForSelector('dialog#setup[open]', { timeout: 1500 }).catch(() => null)) await page.keyboard.press('Escape')
 }
+const running_ = (page) => ev(page, () => ['countin', 'playing', 'waiting'].includes(window.__piano.game.phase))
 const leave = async (page, back) => {
-  await page.keyboard.press('Escape')
+  if (await running_(page)) { // the first Escape pauses a run (feature 23)
+    await page.keyboard.press('Escape')
+    await wait(page, (id) => window.__piano.game.phase === 'paused' || document.querySelector(`#${id}.on`), back)
+  }
+  if (!(await page.$(`#${back}.on`))) await page.keyboard.press('Escape')
   await wait(page, (id) => document.querySelector(`#${id}.on`), back)
 }
 
@@ -613,7 +618,75 @@ const ladderFlow = () => fresh({
     await ready(page)
     const s = await ev(page, () => ({ id: window.__piano.game.song.id, mode: window.__piano.game.mode }))
     ok(s.id === 'lib:mutopia-75' && s.mode === 'learn', JSON.stringify(s))
-    await leave(page, 'library')
+    await leave(page, 'progress') // back where it was opened from (feature 23)
+  },
+})
+
+// docs/changes/shellfix.md: Escape, stale opens, the way back, focus kept across redraws, a second Songs render
+const shellFlow = () => fresh({
+  async '23 Shell: Escape in Aids stays, first Escape pauses, back to where it was opened, focus kept, stale open, one library'(page) {
+    const focusIn = (sel) => ev(page, (s) => !!document.activeElement?.closest(s) && document.activeElement !== document.body, sel)
+    await openStarter(page, 'starter-greensleeves', 'learn')
+    await page.click('#aidsBtn')
+    await page.focus('#aidsMenu input')
+    await page.keyboard.press('Escape')
+    ok(await ev(page, () => document.querySelector('#aidsMenu').hidden && document.querySelector('#play.on')), 'Escape in Aids left the piece')
+    // the start card redraws on a choice: focus stays on it, so arrow keys walk the group
+    await page.focus('#ready input[name=modeSheet]:checked')
+    await page.keyboard.press('ArrowLeft')
+    await wait(page, () => window.__piano.game.mode === 'perform')
+    ok(await ev(page, () => document.activeElement?.matches('#ready input[name=modeSheet][value=perform]')), 'focus lost after Perform/Learn')
+    await page.focus('#ready input[name=level]:checked')
+    await page.keyboard.press('ArrowRight')
+    await wait(page, () => document.querySelector('#ready input[name=level][value="1"]')?.checked)
+    await wait(page, () => document.activeElement?.matches('#ready input[name=level][value="1"]'), undefined, 5000)
+    await page.keyboard.press('ArrowLeft')
+    await wait(page, () => document.querySelector('#ready input[name=level][value="0"]')?.checked && document.activeElement?.matches('#ready input[name=level][value="0"]'), undefined, 5000)
+    // the drawer redraws on Sound: focus stays inside it
+    await page.click('#settingsBtn')
+    await page.focus('#drawer input[name=sound]:checked')
+    await page.keyboard.press('ArrowRight')
+    ok(await focusIn('#drawer'), 'focus left the drawer after Sound')
+    await page.keyboard.press('Escape')
+    // Escape mid-run pauses, the next one leaves, to Songs (opened there), and the PF button is Today again
+    await page.evaluate(() => (document.activeElement.blur(), window.__piano.game.toggle()))
+    await wait(page, () => ['countin', 'playing'].includes(window.__piano.game.phase))
+    await page.keyboard.press('Escape')
+    ok(await ev(page, () => window.__piano.game.phase === 'paused' && document.querySelector('#play.on')), 'the first Escape did not pause')
+    await page.keyboard.press('Escape')
+    await wait(page, () => document.querySelector('#library.on'))
+    ok((await page.getAttribute('#brand', 'aria-label')) === 'Piano Forte: Today', 'PF still says leave this piece')
+    // opened from Today, back to Today
+    await nav(page, 'today')
+    await ev(page, () => window.__piano.open(0, 'learn'))
+    await ready(page)
+    await page.keyboard.press('Escape')
+    await wait(page, () => document.querySelector('#today.on'))
+    // a piece still opening when another page is chosen stays off the screen
+    await ev(page, () => (window.__piano.open(2, 'learn'), document.querySelector('#nav input[value=read]').click()))
+    await page.waitForTimeout(2000)
+    ok(await ev(page, () => document.querySelector('#read.on') && !document.querySelector('#play.on') && !document.querySelector('#nav').hidden), 'a stale open took over the Read page')
+    // two Songs renders in flight: one open library
+    await ev(page, () => (document.querySelector('#nav input[value=songs]').click(), window.__piano.catalog(300)))
+    await wait(page, () => document.querySelector('#libCount')?.textContent === '300')
+    await page.waitForTimeout(500)
+    ok((await page.$$('#libQ')).length === 1, `${(await page.$$('#libQ')).length} search boxes`)
+    // the Read tabs and the Sight Run form keep focus
+    await nav(page, 'read')
+    await page.focus('#read input[name=readTab]:checked')
+    await page.keyboard.press('ArrowRight')
+    await wait(page, () => document.querySelector('#rClef') && document.activeElement?.matches('#read input[name=readTab][value=run]'), undefined, 5000)
+    await page.focus('#rClef')
+    await page.selectOption('#rClef', 'bass')
+    await wait(page, () => document.activeElement?.id === 'rClef', undefined, 5000)
+    // leaving right after the last note: the results code must not throw (any page error fails this feature)
+    await ev(page, () => window.__piano.open(0, 'perform'))
+    await ready(page)
+    await ev(page, () => window.__piano.game.on((e) => e.type === 'done' && document.querySelector('#play.on') && document.querySelector('#brand').click()))
+    await page.click('#go')
+    await ev(page, () => window.__e2e.perform())
+    await wait(page, () => document.querySelector('#read.on'))
+    await page.waitForTimeout(500)
   },
 })
 
@@ -951,7 +1024,7 @@ const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow),
-  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow),
+  lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])
 await feature('11 accessibility: every page and the drawer', page, async () => {

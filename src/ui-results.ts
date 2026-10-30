@@ -44,7 +44,7 @@ function touchBlock(t: TouchStats, hands = true) {
 }
 
 /** `from`: the page the Back button returns to, named on it; a scale or exercise is a run, not a song. */
-export function results(r: Result, next: Next | null, note = '', from: 'Songs' | 'Scales' | 'Technique' = 'Songs') {
+export function results(r: Result, next: Next | null, note = '', from = 'Songs') {
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)

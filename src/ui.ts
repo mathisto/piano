@@ -16,9 +16,20 @@ import type { Start } from './grades'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
 import { guideCard, HELP, tabNote, type Guide } from './guide'
 import type { Streak } from './streak'
-import { esc } from './util'
+import { esc, focusKey } from './util'
 
 export const $ = <T extends HTMLElement>(s: string, root: ParentNode = document) => root.querySelector(s) as T
+
+/** Redraw part of the page without dropping keyboard or VoiceOver focus: the control that had it gets it back in the new markup. */
+export function keepFocus<T>(root: Element, render: () => T): T {
+  const a = document.activeElement as HTMLInputElement | null
+  const key = a && a !== root && root.contains(a) ? focusKey(a) : ''
+  const back = () => key && !root.contains(document.activeElement) && root.querySelector<HTMLElement>(key)?.focus({ preventScroll: true })
+  const out = render()
+  if (out instanceof Promise) out.then(back, () => {}) // the caller handles a failure
+  else back()
+  return out
+}
 
 export function skeleton(app: HTMLElement) {
   app.innerHTML = `
