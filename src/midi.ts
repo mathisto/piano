@@ -37,12 +37,14 @@ export function inputs(): Input[] {
   return access ? [...access.inputs.values()].filter((i) => i.state === 'connected').map((i) => ({ id: i.id, name: i.name ?? i.id })) : []
 }
 
+/** Listen to the chosen keyboard, or to every one when the saved choice is not plugged in (the chip then names the first). */
 function bind() {
   if (!access) return
-  for (const i of access.inputs.values()) {
-    i.onmidimessage = !want || want === i.id ? msg : null
-  }
+  const all = ![...access.inputs.values()].some((i) => i.id === want && i.state === 'connected')
+  for (const i of access.inputs.values()) i.onmidimessage = all || want === i.id ? msg : null
 }
+
+let pedal = false
 
 function msg(e: MIDIMessageEvent) {
   const d = e.data
@@ -61,7 +63,7 @@ function msg(e: MIDIMessageEvent) {
     handler({ on: false, p: d[1], v: 0, ts })
   } else if (s === 0xb0 || s === 0xe0 || s === 0xc0) {
     monitor.n++
-    if (s === 0xb0 && d[1] === 64) pedalHandler(d[2] >= 64, ts) // half pedal: the damper is off the strings from the middle of the travel
+    if (s === 0xb0 && d[1] === 64 && pedal !== d[2] >= (pedal ? 40 : 64)) pedalHandler((pedal = !pedal), ts) // down from the middle of the travel, up only below 40: a foot resting near half way does not chatter
     monitor.text = s === 0xb0 ? `controller ${d[1]} = ${d[2]}` : s === 0xc0 ? 'program change' : 'pitch bend'
   }
 }
@@ -78,11 +80,12 @@ export function chooseInput(id: string) {
 export async function connect(onChange: () => void): Promise<Input[]> {
   if (!midiSupported) throw new Error('This browser has no Web MIDI. Use Chrome, Edge or Firefox on a computer.')
   try {
-    access = await navigator.requestMIDIAccess()
+    access ??= await navigator.requestMIDIAccess() // one access for the session: a second Connect reuses it
   } catch {
     throw new Error('MIDI access was blocked. Allow it in the address bar, then reload.')
   }
   access.onstatechange = () => {
+    pedal = false // a keyboard plugged in again sends its pedal afresh
     bind()
     onChange()
   }
