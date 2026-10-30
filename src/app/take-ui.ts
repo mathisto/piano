@@ -205,9 +205,9 @@ export async function takeCard(res: HTMLElement) {
   takes = ks
   takesFor = current.song.id
   const [k, last] = ks
-  card.querySelector('#toLib')?.insertAdjacentHTML('beforebegin', `<button class="btn" id="listenBack" type="button">${icon('play')}Listen back</button>${last ? '<button class="btn" id="cmpBtn" type="button" aria-expanded="false">Compare with last time</button>' : ''}`)
+  card.querySelector('#resMenu')?.insertAdjacentHTML('afterbegin', `<button class="btn ghost" role="menuitem" id="listenBack" type="button">Listen back</button>${last ? '<button class="btn ghost" role="menuitem" id="cmpBtn" type="button" aria-expanded="false">Compare with last time</button>' : ''}`)
   const lb = $('#listenBack', card) as HTMLButtonElement
-  lb.onclick = () => listen(k, lb, 'Listening back')
+  lb.onclick = () => listen(k, card.querySelector<HTMLElement>('[data-more]') ?? lb, 'Listening back') // focus comes back to the menu's button: its items are hidden by then
   const cb = card.querySelector<HTMLButtonElement>('#cmpBtn')
   if (cb)
     cb.onclick = () => {

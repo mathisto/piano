@@ -87,20 +87,35 @@ for (const r of document.querySelectorAll<HTMLInputElement>('input[name=nav]')) 
 
 // library actions: the rows and buttons start pieces in any mode
 
-// a row's More menu: one open at a time; a choice, a tap elsewhere or Escape closes it
-const closeRowMenus = (but?: Element) => {
-  for (const m of document.querySelectorAll<HTMLElement>('#library .rowmenu:not([hidden])')) {
+// a More button (song rows, results cards) opens the menu after it: one open at a time; a choice, a tap elsewhere or Escape
+// closes it, and focus goes back to the button (a dialog the choice opens returns focus there, not to a hidden item)
+const closeMenus = (but?: Element) => {
+  for (const m of document.querySelectorAll<HTMLElement>('[data-more] + .popmenu:not([hidden])')) {
     if (m === but) continue
     m.hidden = true
-    m.previousElementSibling?.setAttribute('aria-expanded', 'false')
+    m.previousElementSibling!.setAttribute('aria-expanded', 'false')
   }
 }
-document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.rowmenu, [data-more]') && closeRowMenus())
+document.addEventListener('click', (e) => {
+  const t = e.target as HTMLElement
+  const more = t.closest<HTMLElement>('[data-more]')
+  const menu = t.closest<HTMLElement>('[data-more] + .popmenu')
+  if (more) {
+    const m = more.nextElementSibling as HTMLElement
+    closeMenus(m)
+    m.hidden = !m.hidden
+    more.setAttribute('aria-expanded', String(!m.hidden))
+    if (!m.hidden) m.querySelector<HTMLElement>('button')?.focus()
+  } else if (!menu || t.closest('button')) {
+    closeMenus()
+    if (menu) (menu.previousElementSibling as HTMLElement).focus()
+  }
+})
 document.addEventListener('keydown', (e) => {
-  const m = (e.target as HTMLElement).closest?.('.rowmenu')
+  const m = (e.target as HTMLElement).closest?.('[data-more] + .popmenu')
   if (e.key !== 'Escape' || !m) return
-  e.preventDefault()
-  closeRowMenus()
+  e.preventDefault() // the page's Escape (leave the piece) skips it
+  closeMenus()
   ;(m.previousElementSibling as HTMLElement).focus()
 })
 
@@ -109,20 +124,7 @@ $('#library').addEventListener('click', async (e) => {
   const b = t.closest('button')
   const row = t.closest<HTMLElement>('tr[data-open]')
   const lib = t.closest<HTMLElement>('tr[data-lib]')
-  const menu = t.closest<HTMLElement>('.rowmenu')
-  if (b?.hasAttribute('data-more')) {
-    const m = b.nextElementSibling as HTMLElement
-    closeRowMenus(m)
-    m.hidden = !m.hidden
-    b.setAttribute('aria-expanded', String(!m.hidden))
-    if (!m.hidden) m.querySelector<HTMLElement>('button')?.focus()
-    return
-  }
-  if (menu) {
-    if (!b) return // the menu's padding is not the row
-    closeRowMenus()
-    ;(menu.previousElementSibling as HTMLElement).focus() // a dialog the choice opens gives focus back here, not to a hidden item
-  }
+  if (b?.hasAttribute('data-more') || (!b && t.closest('.rowmenu'))) return // the menu is handled above; its padding is not the row
   if (b?.dataset.listen) return void listenTo(b.dataset.listen)
   if (!b && lib) return void openLibrary(lib.dataset.lib!, 'learn')
   if (b?.dataset.rt) return void readThrough(b.dataset.rt)

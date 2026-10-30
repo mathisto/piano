@@ -1700,6 +1700,21 @@ kbd {
   align-items: center;
   flex-wrap: wrap;
 }
+.card .row #toLib {
+  margin-left: auto; /* the way back sits apart from the run's next steps */
+}
+.card .row .pop:has(> .popmenu:empty) {
+  display: none; /* nothing more to offer: no More button */
+}
+.card .row .popmenu {
+  left: auto;
+  right: 0;
+  gap: 2px;
+  padding: 6px;
+}
+.card .row .popmenu .btn {
+  justify-content: flex-start;
+}
 
 /* ---------- drawer ---------- */
 .drawer {

@@ -73,12 +73,13 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
     ${perform ? `<p class="line sub">${lean}</p>` : ''}
     ${even?.line ?? ''}
     ${coachLines(r, liveMarks === 'none' && !!r.even)}
-    ${more ? `<details class="all more"><summary>More</summary>${more}</details>` : ''}
+    ${more ? `<details class="all more"><summary>Details</summary>${more}</details>` : ''}
     </div>
     <div class="row">
-      ${next ? `<button class="btn primary big" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
-      <button class="btn ${next ? '' : 'primary big'}" id="again">${icon('restart')}Again</button>
-      <button class="btn" id="toLib">${from}</button>
+      ${next ? `<button class="btn primary" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
+      <button class="btn${next ? '' : ' primary'}" id="again">${icon('restart')}Again</button>
+      <div class="pop"><button class="btn icon" data-more aria-label="More" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu" id="resMenu" role="menu" hidden></div></div>
+      <button class="btn ghost" id="toLib">${from}</button>
     </div>
   </div></div>`
 }
@@ -120,7 +121,7 @@ export function drillResults(d: DrillSummary) {
         : ''
     }
     <div class="row">
-      <button class="btn primary big" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
+      <button class="btn primary" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
       <button class="btn" id="toStages">All stages</button>
     </div>
   </div></div>`
@@ -150,7 +151,7 @@ export function runResults(d: RunSummary) {
     <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
-    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
   </div></div>`
 }
 
@@ -179,6 +180,6 @@ export function pacedResults(d: PacedSummary) {
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
     <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
     <p class="line">${esc(d.note)}</p>
-    <div class="row"><button class="btn primary big" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
   </div></div>`
 }

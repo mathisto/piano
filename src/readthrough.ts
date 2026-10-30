@@ -106,8 +106,8 @@ export function summaryCard(s: Summary, back = 'Songs') {
     ${s.next ? `<p class="line rt-sub">Next: <b>${esc(s.next.piece.title)}</b> · ${esc(s.next.piece.level)}. ${esc(s.next.why)}</p>` : ''}
     </div>
     <div class="row">
-      ${s.next ? `<button class="btn primary big" id="rtNext">${icon('play')}Next piece</button>` : ''}
-      ${s.worst && !silent ? `<button class="btn${s.next ? '' : ' primary big'}" id="rtFix">${icon('loop')}Fix these</button>` : ''}
+      ${s.next ? `<button class="btn primary" id="rtNext">${icon('play')}Next piece</button>` : ''}
+      ${s.worst && !silent ? `<button class="btn${s.next ? '' : ' primary'}" id="rtFix">${icon('loop')}Fix these</button>` : ''}
       <button class="btn" id="toLib">${back}</button>
     </div>
   </div></div>`

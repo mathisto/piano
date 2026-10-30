@@ -80,7 +80,7 @@ async function onDone(r: Result) {
   const ui = await import('../ui-results')
   if (current !== c) return // left during the saves above: the run is recorded, the card is not wanted
   res.innerHTML = ui.results(r, next, note, backName())
-  if (r.mode === 'learn' && r.clean && !game.loop) $('#toLib', res).insertAdjacentHTML('beforebegin', '<button class="btn" id="memTry">Try it from memory</button>')
+  if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" role="menuitem" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(c.song.id, 1))
   void import('./take-ui').then((t) => t.takeCard(res)) // Listen back and Compare with last time (loaded with the stage)
   resOpen(true)

@@ -184,10 +184,10 @@ async function feature(name, page, fn) {
 }
 const ev = (page, fn, arg) => page.evaluate(fn, arg)
 const wait = (page, fn, arg, timeout = 30000) => page.waitForFunction(fn, arg, { timeout, polling: 50 })
-// a song row keeps one action on show; the others are in its More menu, opened first when the target is in there
+// song rows and results cards keep one or two actions on show; the others are in a More menu, opened first when the target is in there
 const rowClick = async (page, sel) => {
   const b = page.locator(sel).first()
-  if (await b.evaluate((e) => !!e.closest('.rowmenu'))) await b.locator('xpath=ancestor::td[1]//button[@data-more]').click()
+  if (await b.evaluate((e) => !!e.closest('.popmenu[hidden]'))) await b.locator('xpath=ancestor::*[contains(concat(" ", @class, " "), " popmenu ")][1]/preceding-sibling::button[@data-more][1]').click()
   await b.click()
 }
 async function nav(page, tab) {
@@ -770,7 +770,7 @@ const recorderFlow = () => fresh({
     await page.click('#go')
     await ev(page, () => window.__e2e.perform())
     await res(page, 'Results')
-    await page.waitForSelector('#res #listenBack')
+    await page.waitForSelector('#res #listenBack', { state: 'attached' })
     ok(!(await page.$('#res #cmpBtn')), 'Compare offered on the first run')
     await leave(page, 'library')
     await openStarter(page, 'starter-five-finger')
@@ -779,10 +779,10 @@ const recorderFlow = () => fresh({
     await page.click('#go')
     await ev(page, () => window.__e2e.perform())
     await res(page, 'Results')
-    await page.click('#res #cmpBtn')
+    await rowClick(page, '#res #cmpBtn')
     await page.waitForSelector('#res .cmp-grid svg')
     const n = await ev(page, () => { window.__heard = 0; const s = window.__take.sink, on = s.on; s.on = (...a) => (window.__heard++, on(...a)); return window.__piano.game.song.notes.length })
-    await page.click('#res #listenBack')
+    await rowClick(page, '#res #listenBack')
     await page.waitForSelector('.takebar')
     await page.waitForSelector('.takebar', { state: 'detached', timeout: 60000 })
     const heard = await ev(page, () => window.__heard)
