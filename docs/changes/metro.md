@@ -16,7 +16,7 @@ Teachers' consensus: practise with a metronome, and raise the tempo after clean 
 ## How it keeps time
 - `src/metronome.ts`: pure `ticks(bars, a, z, eighths)` (half-open window, so windows chain with no repeat or gap) and `beatAt`.
   Beat times come from each bar's own t0..t1, so tempo changes, pickups and meter come free. Tests in `metronome.test.ts`.
-- `Game.metronome()` runs from `frame()` with the count-in's 100 ms look-ahead: clicks go to the audio clock as
+- `Game.metronome()` runs from `frame()` with the count-in's look-ahead (100 ms; 250 ms since 2026-10-30, `enginefix.md`, which also stops clicks already handed ahead on a pause, seek or loop wrap): clicks go to the audio clock as
   `(beat - game.t) / rate`. The window ends at the loop end, and in wait mode at the next pending note, so nothing sounds
   while the song stalls (the beat sounds when you play the note). Any `seek` (loop wrap, jump, restart) resets the cursor.
 - `audio.click` now reads the audio clock from `getOutputTimestamp()` (paired with `performance.now()`) instead of the
