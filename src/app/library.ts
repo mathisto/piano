@@ -108,7 +108,8 @@ export async function openTracks(id: string) {
       dlg.close()
       void showLibrary()
     }
-    $('#tkShare', dlg).onclick = () => void shareFile(new File([s.bytes], `${s.title}${midi ? '.mid' : '.musicxml'}`, { type: midi ? 'audio/midi' : 'application/xml' }))
+    const mxl = new Uint8Array(s.bytes, 0, 2).join() === '80,75' // PK: a compressed MusicXML zip
+    $('#tkShare', dlg).onclick = () => void shareFile(new File([s.bytes], s.title + (midi ? '.mid' : mxl ? '.mxl' : '.musicxml'), { type: midi ? 'audio/midi' : mxl ? 'application/vnd.recordare.musicxml' : 'application/vnd.recordare.musicxml+xml' }))
     const apply = dlg.querySelector<HTMLButtonElement>('#tkApply')
     if (apply)
       apply.onclick = async () => {
