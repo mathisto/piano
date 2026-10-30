@@ -1,6 +1,8 @@
 // In the iPad app (a Capacitor web view) WebKit has no Web MIDI, so fake it on top of the native CoreMidi
 // plugin (ios/App/App/PianoNative.swift). Imported first in main.ts: midi.ts reads `requestMIDIAccess` when it loads.
+// Also the app's other native edges: pairing, keeping the screen awake, a daily backup to Files.
 // Elsewhere (desktop browsers) this does nothing, and @capacitor/core never loads: it is fetched only inside the app.
+import { onWrite } from './kv'
 
 interface Source {
   id: string
@@ -11,6 +13,7 @@ interface Native {
   pairBluetooth(): Promise<void>
   setAwake(o: { on: boolean }): Promise<void>
   now(): Promise<{ t: number }>
+  saveBackup(o: { text: string }): Promise<void>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
@@ -83,6 +86,24 @@ const plugin = native
       return n
     })
   : undefined
+
+if (plugin) {
+  // the record to Files (On My iPad > Piano Forte) half a minute after the last save, or on leaving the app with one pending
+  let timer = 0
+  const backup = () => {
+    clearTimeout(timer)
+    timer = 0
+    void import('./store')
+      .then((s) => s.exportAll())
+      .then((text) => plugin.then((n) => n.saveBackup({ text })))
+      .catch((e) => console.warn('Backup to Files', e))
+  }
+  onWrite(() => {
+    clearTimeout(timer)
+    timer = window.setTimeout(backup, 30_000)
+  })
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && timer && backup())
+}
 
 /** Apple's Bluetooth MIDI sheet: lists the keyboards in range and pairs one on a tap. The app only. */
 export const pairBluetooth = () => void plugin?.then((n) => n.pairBluetooth()).catch((e) => console.warn('Bluetooth pairing', e))

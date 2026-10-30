@@ -12,7 +12,7 @@ class PianoViewController: CAPBridgeViewController {
 
 /// WebKit has no Web MIDI. This forwards every connected MIDI source to the page, which fakes
 /// navigator.requestMIDIAccess on top of it (src/native-midi.ts). Also: Apple's Bluetooth MIDI pairing sheet,
-/// and the screen kept awake while a run plays.
+/// the screen kept awake while a run plays, and a daily backup to Files.
 @objc(CoreMidiPlugin)
 public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CoreMidiPlugin"
@@ -22,6 +22,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "pairBluetooth", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAwake", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "saveBackup", returnType: CAPPluginReturnPromise),
     ]
 
     private var client = MIDIClientRef()
@@ -37,6 +38,23 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     /// The clock the events are stamped on, for the page to find its offset from performance.now() (src/native-midi.ts).
     @objc func now(_ call: CAPPluginCall) {
         call.resolve(["t": Self.uptime()])
+    }
+
+    /// The page's whole record (Settings' export) into Documents, which Files shows as On My iPad > Piano Forte: one file a day,
+    /// the last seven kept, so a record lost inside the web view cannot overwrite every good copy. Import reads one back.
+    @objc func saveBackup(_ call: CAPPluginCall) {
+        guard let text = call.getString("text") else { return call.reject("No text") }
+        do {
+            let fm = FileManager.default
+            let dir = try fm.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let day = ISO8601DateFormatter.string(from: Date(), timeZone: .current, formatOptions: [.withFullDate])
+            try text.write(to: dir.appendingPathComponent("Piano Forte \(day).json"), atomically: true, encoding: .utf8)
+            let old = try fm.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("Piano Forte ") && $0.hasSuffix(".json") }.sorted().dropLast(7)
+            for name in old { try? fm.removeItem(at: dir.appendingPathComponent(name)) }
+            call.resolve()
+        } catch {
+            call.reject(error.localizedDescription)
+        }
     }
 
     @objc func start(_ call: CAPPluginCall) {

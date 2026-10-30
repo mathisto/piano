@@ -6,6 +6,10 @@ import * as idb from 'idb-keyval'
 const mem = new Map<string, unknown>() // writes IndexedDB refused, read back before it
 let failed = false
 
+let wrote: (() => void) | undefined
+/** Called after each write of the player's record (not a cached copy): the iPad app's backup to Files (src/native-midi.ts). */
+export const onWrite = (f: () => void) => (wrote = f)
+
 /** True once a write has been refused: what was done since will not survive closing the tab. */
 export const lost = () => failed
 
@@ -33,6 +37,7 @@ export async function set(k: IDBValidKey, v: unknown, cache = false): Promise<vo
   try {
     await idb.set(k, v)
     mem.delete(String(k))
+    if (!cache) wrote?.()
   } catch {
     if (cache) return
     failed = true
@@ -44,6 +49,7 @@ export async function del(k: IDBValidKey): Promise<void> {
   mem.delete(String(k))
   try {
     await idb.del(k)
+    wrote?.()
   } catch {
     /* nothing stored to delete */
   }
