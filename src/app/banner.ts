@@ -67,9 +67,12 @@ export async function connectMidi() {
     await connect(() => {
       updateChip()
       updateBanner()
-      if (!inputs().length && (game.phase === 'playing' || game.phase === 'waiting' || game.phase === 'countin')) {
-        game.toggle()
-        flash('Keyboard disconnected. Plug it back in and press Space to resume.')
+      if (!inputs().length) {
+        if (game.phase === 'playing' || game.phase === 'waiting' || game.phase === 'countin') {
+          game.toggle()
+          flash('Keyboard disconnected. Plug it back in and press Space to resume.')
+        }
+        game.letGo() // its keys and pedal never send their up
       }
       if (document.querySelector('#drawer:not([hidden])')) hooks.openDrawer()
     })

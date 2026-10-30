@@ -201,3 +201,26 @@ describe('what a take records', () => {
     settings.offset = 0
   })
 })
+
+describe('a keyboard that goes away', () => {
+  it('lets go of every key it held and the pedal, with no hold grade', async () => {
+    const { settings } = await import('./settings')
+    settings.sound = true
+    const g = new Game()
+    g.load(fromSpec({ id: 'h', title: 'h', bpm: 60, fifths: 0, rh: 'C4:4', lh: 'C3:4' }), 'perform')
+    const holds: unknown[] = []
+    g.on((e) => e.type === 'hold' && holds.push(e))
+    g.toggle()
+    run(g, 4000)
+    g.sustain(true)
+    g.press(60, 0.7, performance.now())
+    g.press(48, 0.7, performance.now())
+    g.letGo()
+    expect(g.held.size).toBe(0)
+    expect(g.pedal).toBe(false)
+    expect(vi.mocked(audio.keyUp).mock.calls.map((c) => c[0])).toEqual([60, 48])
+    expect(vi.mocked(audio.sustain)).toHaveBeenLastCalledWith(false)
+    expect(holds).toEqual([])
+    settings.sound = false
+  })
+})

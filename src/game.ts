@@ -516,6 +516,13 @@ export class Game {
     if (this.running()) this.dispatch(this.judge.release(p, this.at(ts), this.pedal))
   }
 
+  /** The keyboard went away: every key it held comes up, and the pedal, with no hold grade (it was not the player's doing). */
+  letGo(ts = performance.now()) {
+    this.judge.letGo()
+    for (const p of [...this.held.keys()]) this.release(p, ts)
+    this.sustain(false, ts)
+  }
+
   /** CC64 crossed the half-way mark. Kept as song time (the held clock when paused) so the coach can set it against the chords. */
   sustain(down: boolean, ts = performance.now()) {
     if (down === this.pedal) return

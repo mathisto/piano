@@ -218,6 +218,11 @@ export class Judge {
     return out
   }
 
+  /** Forget the keys held down: they came up without the player (the keyboard went away), so they get no hold grade. */
+  letGo() {
+    this.down.clear()
+  }
+
   /** Notes struck at this moment (within one chord's spread of `t`). */
   cluster(t: number): number[] {
     const out: number[] = []
