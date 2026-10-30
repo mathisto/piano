@@ -134,6 +134,7 @@ export class Dock {
     document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.pop') && set(false))
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        e.preventDefault() // handled: the page's Escape (leave the piece) skips it
         set(false)
         btn.focus()
       }
