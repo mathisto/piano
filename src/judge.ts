@@ -7,13 +7,10 @@ export type Hold = 'off' | 'lenient' | 'strict'
 
 // How far from the written end a release may land: the larger of a floor in seconds and a share of the note.
 const SLACK = { lenient: { floor: 0.35, share: 0.3 }, strict: { floor: 0.12, share: 0.15 } }
-const HOLD_FLOOR = 0.5 // a cut-short note still keeps half its points
-const LONG_KEEP = 0.75
 
 // Real-time windows in ms, either side of the note. Tune by feel.
 const WIN = { perfect: 45, great: 80, good: 125 }
 export const WEIGHT: Record<Grade, number> = { perfect: 1, great: 0.8, good: 0.5, miss: 0 }
-const POINTS = { perfect: 100, great: 80, good: 50 }
 const WAIT_EARLY = 0.6 // wait mode accepts a note this many song-seconds early
 const CLUSTER = 0.03 // notes this close together count as one chord when waiting
 
@@ -22,7 +19,7 @@ export type Ev =
   | { k: 'ok'; i: number; vel?: VelGrade } // wait-mode hit, no timing grade
   | { k: 'miss'; i: number }
   | { k: 'wrong'; p: number }
-  | { k: 'hold'; i: number; grade: HoldGrade; f: number } // key released; f = share of the points kept
+  | { k: 'hold'; i: number; grade: HoldGrade } // key released
 
 export interface Cfg {
   rate: number // 1 = 100% tempo
@@ -44,11 +41,9 @@ export class Judge {
   holdGrade: (HoldGrade | undefined)[] = [] // per note, once its key has come up
   holdAt = new Float32Array(0) // song time of that release
   private vel = new Uint8Array(0) // key velocity 1..127 of each struck note, 0 when unknown
-  private pts = new Float32Array(0) // points each hit note earned, so a short hold can take some back
   private down = new Map<number, number>() // pitch -> note index, for keys struck and not yet released
   holds: Record<HoldGrade, number> = { held: 0, short: 0, long: 0 }
   touch: Record<VelGrade, number> = { ok: 0, low: 0, high: 0 } // notes with a velocity target, by result
-  score = 0
   combo = 0
   maxCombo = 0
   wrong = 0
@@ -71,7 +66,6 @@ export class Judge {
     this.st = new Int8Array(this.notes.length)
     this.grade = new Array(this.notes.length).fill(undefined)
     this.off = new Float32Array(this.notes.length)
-    this.pts = new Float32Array(this.notes.length)
     this.vel = new Uint8Array(this.notes.length)
     this.holdAt = new Float32Array(this.notes.length)
     this.holdGrade = new Array(this.notes.length).fill(undefined)
@@ -84,7 +78,7 @@ export class Judge {
       this.st[i] = ok ? PENDING : OFF
       if (ok) this.total++
     })
-    this.score = this.combo = this.maxCombo = this.wrong = this.judged = this.hits = this.weightSum = 0
+    this.combo = this.maxCombo = this.wrong = this.judged = this.hits = this.weightSum = 0
     this.counts = { perfect: 0, great: 0, good: 0, miss: 0 }
     this.first = 0
     this.advance()
@@ -162,8 +156,6 @@ export class Judge {
     const off = ((t - this.notes[best].t) / this.cfg.rate) * 1000
     const a = Math.abs(off) / (this.cfg.ease ?? 1)
     const grade: Grade = a <= WIN.perfect ? 'perfect' : a <= WIN.great ? 'great' : 'good'
-    this.pts[best] = POINTS[grade]
-    this.score += this.pts[best]
     this.down.set(p, best)
     this.combo++
     this.maxCombo = Math.max(this.maxCombo, this.combo)
@@ -194,20 +186,11 @@ export class Judge {
     const dur = end - n.t
     const { floor, share } = SLACK[mode]
     const tol = Math.max(floor * this.cfg.rate, share * dur)
-    let grade: HoldGrade = 'held'
-    let f = 1
-    if (t < end - tol && !pedal) {
-      grade = 'short'
-      f = Math.max(HOLD_FLOOR, 1 - (end - t) / dur)
-    } else if (mode === 'strict' && t > end + tol) {
-      grade = 'long'
-      f = LONG_KEEP
-    }
-    this.score -= this.pts[i] * (1 - f)
+    const grade: HoldGrade = t < end - tol && !pedal ? 'short' : mode === 'strict' && t > end + tol ? 'long' : 'held'
     this.holds[grade]++
     this.holdGrade[i] = grade
     this.holdAt[i] = t
-    return [{ k: 'hold', i, grade, f }]
+    return [{ k: 'hold', i, grade }]
   }
 
   private stray(p: number): Ev[] {

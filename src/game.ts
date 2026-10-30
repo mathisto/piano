@@ -16,9 +16,7 @@ export type Phase = 'ready' | 'countin' | 'playing' | 'waiting' | 'paused' | 'do
 export type HandMode = 'play' | 'listen' | 'hide'
 
 export interface Result {
-  score: number
   acc: number
-  grade: string
   counts: Record<Grade, number>
   maxCombo: number
   touch: TouchStats // key velocities of the notes you struck
@@ -48,7 +46,7 @@ export type GameEvent =
   | { type: 'wrong'; p: number }
   | { type: 'press'; p: number; vel: number; t: number } // a key went down; t is song time
   | { type: 'release'; p: number }
-  | { type: 'hold'; note: Note; grade: HoldGrade; f: number } // a key came up; how it compared with the written length
+  | { type: 'hold'; note: Note; grade: HoldGrade } // a key came up; how it compared with the written length
   | { type: 'phase'; phase: Phase }
   | { type: 'loop'; clean: boolean }
   | { type: 'short' } // a key came up before its note had been held long enough to move on
@@ -63,10 +61,6 @@ export const CALIBRATION = 'calibration' // the song id of the latency calibrati
 const CALIBRATION_EASE = 3 // its window is +/-375 ms: a setup 150 ms late must still leave a sample to measure
 const PACED_EASE = 1.6 // a reader a beat behind the eyes is late, not wrong: a paced run takes a note within 200 ms of the beat
 const READ_LEAD = 0.4 // a reading drill is a staff, not a highway: the first card is wanted almost at once
-
-export function letter(acc: number): string {
-  return acc >= 0.97 ? 'S' : acc >= 0.9 ? 'A' : acc >= 0.8 ? 'B' : acc >= 0.7 ? 'C' : 'D'
-}
 
 export class Game {
   song!: Song
@@ -410,9 +404,7 @@ export class Game {
   private finish() {
     const j = this.judge
     const result: Result = {
-      score: j.score,
       acc: j.accuracy,
-      grade: letter(j.accuracy),
       counts: { ...j.counts },
       maxCombo: j.maxCombo,
       touch: velStats(j.samples(), settings.edges),
@@ -457,7 +449,7 @@ export class Game {
         this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel, v: this.judge.velAt(e.i) })
       } else if (e.k === 'hold') {
-        this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade, f: e.f })
+        this.emit({ type: 'hold', note: this.song.notes[e.i], grade: e.grade })
       } else if (e.k === 'miss') {
         const note = this.song.notes[e.i]
         this.quiet.note(false)

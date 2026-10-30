@@ -95,12 +95,6 @@ export const hooks = {} as {
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id)
 
-export function median(xs: number[]) {
-  if (!xs.length) return 0
-  const s = [...xs].sort((a, b) => a - b)
-  return s[s.length >> 1]
-}
-
 export function worstBars(heat: number[], bars = game.song.bars.length): { a: number; b: number } | null {
   let best = 0
   let at = -1

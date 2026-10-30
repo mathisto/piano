@@ -8,7 +8,7 @@ import { check as checkAnswer, deal as dealTheory, deckOf, type Trainer, TRAINER
 import { $ } from '../ui'
 import { type TheoryRunView, theoryView } from '../ui-views'
 import { dayKey } from '../week'
-import { median } from './state'
+import { median } from '../util'
 import { practised } from './stage'
 
 interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {

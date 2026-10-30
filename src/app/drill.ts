@@ -6,7 +6,8 @@ import { noteName } from '../spell'
 import * as store from '../store'
 import { $, runTitle } from '../ui'
 import { dayKey } from '../week'
-import { drill, drillStats, game, hooks, median, resOpen, run, say, setDrill, setDrillStats, setRun, setRunSpec, staff, type RunCtx } from './state'
+import { median } from '../util'
+import { drill, drillStats, game, hooks, resOpen, run, say, setDrill, setDrillStats, setRun, setRunSpec, staff, type RunCtx } from './state'
 import { leave, openSong } from './play'
 
 export async function saveRun(s: RunSpec) {

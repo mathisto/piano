@@ -32,7 +32,7 @@ async function onDone(r: Result) {
   const prog = await store.commit(
     current.song.id,
     r.heat,
-    r.mode === 'perform' && !partial ? { score: r.score, acc: r.acc, grade: r.grade } : undefined,
+    r.mode === 'perform' && !partial ? { acc: r.acc } : undefined,
     r.mode === 'read' || game.loop || partial ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
   )
   current.heat = prog.heat

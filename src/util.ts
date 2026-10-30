@@ -5,8 +5,9 @@ export const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 
 export const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 
-/** The middle value; the mean of the two middle ones when the count is even. */
+/** The middle value; the mean of the two middle ones when the count is even; 0 for none. */
 export const median = (xs: number[]) => {
+  if (!xs.length) return 0
   const s = [...xs].sort((a, b) => a - b)
   const m = s.length >> 1
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2

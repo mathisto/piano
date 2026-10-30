@@ -4,6 +4,7 @@ import { CALIBRATION, type Result } from '../game'
 import { save, settings } from '../settings'
 import { fromSpec } from '../song'
 import { $ } from '../ui'
+import { median } from '../util'
 import { game, hooks, resOpen, setCalibrating } from './state'
 import { leave, openSong } from './play'
 
@@ -17,9 +18,9 @@ export async function startCalibration() {
 
 export function calibrated(r: Result) {
   const res = $('#res')
-  const offs = r.offs.slice().sort((a, b) => a - b)
+  const offs = r.offs
   const ok = offs.length >= 8
-  const med = ok ? Math.round(offs[offs.length >> 1] / 5) * 5 : 0
+  const med = ok ? Math.round(median(offs) / 5) * 5 : 0
   resOpen(true)
   res.innerHTML = `<div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Calibration result">
     <h2>${ok ? 'Calibration done' : 'Not enough notes'}</h2>

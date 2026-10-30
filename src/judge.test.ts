@@ -58,12 +58,6 @@ describe('judge', () => {
     expect(j.press(60, 1.06)[0]).toMatchObject({ k: 'hit' })
   })
 
-  it('scores a hit by its grade alone, however long the run', () => {
-    const j = mk(Array.from({ length: 12 }, (_, i) => n(i, i, 60)))
-    for (let i = 0; i < 12; i++) j.press(60, i)
-    expect(j.score).toBe(12 * 100)
-  })
-
   it('scales windows with tempo: half speed doubles the song-time window', () => {
     const j = mk([n(0, 1, 60)], { rate: 0.5 })
     // 100 ms real = 50 ms song time at 50%: still perfect-ish range for good, not perfect
@@ -110,12 +104,10 @@ describe('holds', () => {
     expect(j.holdPct).toBe(1)
   })
 
-  it('takes points back for a short release, never below half, and leaves the combo alone', () => {
+  it('grades a short release and leaves the combo alone', () => {
     const j = hold([nd(0, 1, 60, 2)])
     j.press(60, 1)
-    expect(j.score).toBe(100)
     expect(j.release(60, 1.1, false)[0]).toMatchObject({ grade: 'short' })
-    expect(j.score).toBe(50)
     expect(j.combo).toBe(1)
     expect(j.holdPct).toBe(0)
   })
@@ -133,14 +125,12 @@ describe('holds', () => {
     const s = hold([nd(0, 1, 60, 0.5)], 'strict')
     s.press(60, 1)
     expect(s.release(60, 3, false)[0]).toMatchObject({ grade: 'long' })
-    expect(s.score).toBeLessThan(100)
   })
 
   it('excuses an early release while the sustain pedal is down', () => {
     const j = hold([nd(0, 1, 60, 2)])
     j.press(60, 1)
     expect(j.release(60, 1.1, true)[0]).toMatchObject({ grade: 'held' })
-    expect(j.score).toBe(100)
   })
 
   it('is stricter about the same shortfall than lenient', () => {

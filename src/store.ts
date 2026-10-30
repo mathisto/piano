@@ -24,7 +24,7 @@ export interface Stored {
 export interface Progress {
   plays: number
   last: number
-  best?: { score: number; acc: number; grade: string }
+  best?: { acc: number } // records from before 2026-10-30 also carry an arcade score and letter grade, unread
   heat: number[] // decaying per-bar trouble score
   box?: number // spaced review: 0..4, up a box for a clean run, down one for a messy one
   due?: number // the local day number a review is next due
@@ -134,7 +134,7 @@ const serial = <T>(f: () => Promise<T>): Promise<T> => {
 export const commit = (...a: Parameters<typeof commitNow>) => serial(() => commitNow(...a))
 
 /** Fold one session's trouble into the long-run heat: old trouble cools as you improve. */
-async function commitNow(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
+async function commitNow(id: string, heat: number[], result?: { acc: number }, clean?: boolean) {
   const p = await getProgress(id)
   p.heat = cool(p.heat, heat)
   p.last = Date.now()

@@ -241,7 +241,7 @@ export function syncMode() {
 
 // ---------------------------------------------------------------- per-frame
 
-let last = { score: -1, combo: -1, count: 0 }
+let last = { judged: -1, combo: -1, count: 0 }
 
 // Time spent playing, per local day. It only goes up, so it can measure effort without shaming anyone.
 let sessionSec = 0
@@ -273,9 +273,9 @@ export function frame() {
   dock.frame()
   const j = game.judge
   if (game.mode === 'perform') {
-    if (j.score !== last.score || !j.judged) $('#hScore').textContent = j.judged ? `${Math.round(j.accuracy * 100)}%` : '–' // a dash until a note has been judged
+    if (j.judged !== last.judged) $('#hScore').textContent = j.judged ? `${Math.round(j.accuracy * 100)}%` : '–' // a dash until a note has been judged
     if (j.combo !== last.combo) $('#hCombo').textContent = String(j.combo)
-    last = { ...last, score: j.score, combo: j.combo }
+    last = { ...last, judged: j.judged, combo: j.combo }
   }
   const n = game.count
   if (n !== last.count) {
