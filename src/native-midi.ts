@@ -30,20 +30,20 @@ const sync = (list: Source[]) => {
 const plugin = native ? import('./native-app').then((m) => m.connect(inputs, sync)) : undefined
 
 /** Apple's Bluetooth MIDI sheet: lists the keyboards in range and pairs one on a tap. The app only. */
-export const pairBluetooth = () => void plugin?.then((n) => n.pairBluetooth()).catch((e) => console.warn('Bluetooth pairing', e))
+export const pairBluetooth = () => void plugin?.then(({ n }) => n.pairBluetooth()).catch((e) => console.warn('Bluetooth pairing', e))
 
 let awake = false
 /** Keep the screen on while a run plays; normal auto-lock otherwise. The app only (a browser tab has no say). */
 export function setAwake(on: boolean) {
   if (on === awake || !plugin) return
   awake = on
-  plugin.then((n) => n.setAwake({ on })).catch(() => {}) // an older app build without it: the screen just follows auto-lock
+  plugin.then(({ n }) => n.setAwake({ on })).catch(() => {})
 }
 
 if (plugin && !Reflect.has(navigator, 'requestMIDIAccess')) {
   Object.defineProperty(navigator, 'requestMIDIAccess', {
     value: async () => {
-      sync((await (await plugin).start()).sources)
+      sync((await (await plugin).n.start()).sources)
       return access
     },
   })

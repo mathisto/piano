@@ -85,5 +85,5 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
     timer = window.setTimeout(backup, 30_000)
   })
   document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && timer && backup())
-  return n
+  return { n } // not n itself: Capacitor's proxy answers every property, `then` too, so a promise resolved with it waits forever
 }
