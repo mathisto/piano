@@ -15,3 +15,16 @@ export const median = (xs: number[]) => {
 export const pct = (x: number) => `${Math.round(x * 100)}%`
 
 export const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+
+/** The two neighbouring bars with the most trouble, inside the piece's `bars`: heat past the end is from a longer version of it. */
+export function worstBars(heat: number[], bars: number): { a: number; b: number } | null {
+  let best = 0
+  let at = -1
+  const h = (i: number) => (i < bars ? (heat[i] ?? 0) : 0)
+  for (let i = 0; i < Math.min(heat.length, bars); i++)
+    if (h(i) + h(i + 1) > best) {
+      best = h(i) + h(i + 1)
+      at = i
+    }
+  return at < 0 ? null : { a: at, b: Math.min(bars - 1, at + 1) }
+}

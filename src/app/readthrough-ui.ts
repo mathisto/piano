@@ -2,14 +2,14 @@
 import * as audio from '../audio'
 import * as lib from '../catalog'
 import type { Result } from '../game'
-import { pct } from '../util'
+import { pct, worstBars } from '../util'
 import { LOOK, pickPiece, type RtPiece, startRate, summaryCard } from '../readthrough'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { $ } from '../ui'
 import { dayKey } from '../week'
-import { current, dock, game, hooks, resOpen, rt, say, setRt, staff, worstBars } from './state'
+import { current, dock, game, hooks, resOpen, rt, say, setRt, staff } from './state'
 import { setZoom } from './stage'
 import { fixBars, leave, openById } from './play'
 
@@ -80,7 +80,7 @@ function rtPhase() {
 export async function rtDone(r: Result) {
   const c = current!
   const clean = r.acc >= 0.9 && r.clean && r.rate >= 0.9
-  const prog = await store.commit(c.song.id, r.heat, undefined, clean) // into spaced review, like a Perform run
+  const prog = await store.commit(c.song.id, r.heat, c.song.bars.length, undefined, clean) // into spaced review, like a Perform run
   c.heat = prog.heat
   dock.setSong(c.song, prog.heat)
   void store.markPlan(dayKey(), 'sight')
@@ -89,7 +89,7 @@ export async function rtDone(r: Result) {
     settings.readBest = Math.max(settings.readBest ?? 0, r.rate)
     save()
   }
-  const worst = worstBars(r.heat)
+  const worst = worstBars(r.heat, c.song.bars.length)
   const next = pickPiece(rtPieces(), await store.allProgress(), c.song.id)
   const res = $('#res')
   res.innerHTML = summaryCard({ title: c.song.title, acc: r.acc, rate: r.rate, caught: r.total - r.counts.miss, total: r.total, wrong: r.wrong, heat: r.heat, bars: c.song.bars.length, worst, next })

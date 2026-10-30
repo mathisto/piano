@@ -13,6 +13,6 @@ test('boot JS is under budget and holds none of the lazy features', async () => 
   const boot = new Set([[...chunks.values()].find((c) => c.isEntry)!])
   for (const c of boot) for (const f of c.imports) boot.add(chunks.get(f)!)
   expect([...boot].reduce((n, c) => n + c.code.length, 0)).toBeLessThan(BUDGET)
-  const lazy = /node_modules\/(pixi\.js|@tonejs\/midi|midi-file)\/|src\/(highway|staff|layout|dock|library-view|ear-play|pulse-play|musicxml|midi-tracks|report|ladder|ladder-data|app\/take-ui|app\/theory-ui|ui-sheets|ui-views|ui-results)\.ts$/
+  const lazy = /node_modules\/(pixi\.js|@tonejs\/midi|midi-file)\/|src\/(backup|highway|staff|layout|dock|library-view|ear-play|pulse-play|musicxml|midi-tracks|report|ladder|ladder-data|app\/take-ui|app\/theory-ui|ui-sheets|ui-views|ui-results)\.ts$/
   expect([...boot].flatMap((c) => c.moduleIds).filter((id) => lazy.test(id))).toEqual([])
 }, 60_000)

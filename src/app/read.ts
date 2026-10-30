@@ -90,9 +90,9 @@ $('#read').addEventListener('click', (e) => {
   else if (b.id === 'rSave') {
     const s = readRun()
     const name = prompt('Name this run', runTitle(s))
-    if (name) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: [...r.presets, { ...s, name }] }), showRead()))
+    if (name) void store.saveRuns((r) => ({ ...r, presets: [...r.presets, { ...s, name }] })).then(() => showRead())
   } else if (b.dataset.runp) void store.getRuns().then((r) => startRun(r.presets[Number(b.dataset.runp)]))
-  else if (b.dataset.rund) void store.getRuns().then(async (r) => (await store.saveRuns({ ...r, presets: r.presets.filter((_, i) => i !== Number(b.dataset.rund)) }), showRead()))
+  else if (b.dataset.rund) void store.saveRuns((r) => ({ ...r, presets: r.presets.filter((_, i) => i !== Number(b.dataset.rund)) })).then(() => showRead())
   else if (b.dataset.rr) {
     const [lo, hi] = b.dataset.rr.split(':').map(Number)
     void saveRun({ ...readRun(), lo, hi }).then(showRead)

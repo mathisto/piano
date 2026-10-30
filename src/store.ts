@@ -32,6 +32,7 @@ export interface Progress {
   days?: number[] // the last few days with a clean run: ready is two different days
   memStage?: number // Memorise: the highest stage cleared, 0..4
   memDay?: number // the local day number it was cleared
+  bars?: number // the bar count heat was kept for: a piece that changed length (a re-analysed catalogue file) starts its heat again
 }
 
 /** Memorise cleared a stage: keep the highest, and the day. */
@@ -68,18 +69,22 @@ export async function addFile(file: File): Promise<Stored> {
     kind: /\.(xml|musicxml|mxl)$/i.test(file.name) ? 'xml' : 'midi',
   }
   await toSong(s, 60) // throws on junk before we keep it
-  await set(`song:${s.id}`, s)
-  return s
+  return serial(async () => {
+    const kept = { ...(await get<Stored>(`song:${s.id}`)), ...s } // the same file again keeps its track choice
+    await set(`song:${s.id}`, kept)
+    return kept
+  })
 }
 
 /** Change which tracks of a stored MIDI file are used; undefined goes back to the automatic pick. */
-export async function setPick(id: string, pick: Selection | undefined) {
-  const s = await get<Stored>(`song:${id}`)
-  if (!s) return
-  if (pick) s.pick = pick
-  else delete s.pick
-  await set(`song:${id}`, s)
-}
+export const setPick = (id: string, pick: Selection | undefined) =>
+  serial(async () => {
+    const s = await get<Stored>(`song:${id}`)
+    if (!s) return
+    if (pick) s.pick = pick
+    else delete s.pick
+    await set(`song:${id}`, s)
+  })
 
 export async function listSongs(): Promise<Stored[]> {
   const ks = (await keys()).filter((k) => String(k).startsWith('song:'))
@@ -87,11 +92,7 @@ export async function listSongs(): Promise<Stored[]> {
   return rows.filter((r): r is Stored => !!r).sort((a, b) => b.added - a.added)
 }
 
-export async function removeSong(id: string) {
-  await del(`song:${id}`)
-  await del(`prog:${id}`)
-  await del(`take:${id}`)
-}
+export const removeSong = (id: string) => serial(async () => void (await Promise.all(['song', 'prog', 'take', 'simp'].map((k) => del(`${k}:${id}`)))))
 
 /** The parsers load with the first piece read, not at boot (docs/changes/perf.md). */
 export async function toSong(s: Stored, split: number): Promise<Song> {
@@ -103,8 +104,11 @@ export async function toSong(s: Stored, split: number): Promise<Song> {
   return fromMidi(s.bytes, s.title, s.id, split, s.pick ?? autoSelect(inspectMidi(s.bytes)), s.tempo, s.pickup)
 }
 
-export async function getProgress(id: string): Promise<Progress> {
-  return (await get<Progress>(`prog:${id}`)) ?? { plays: 0, last: 0, heat: [] }
+/** `bars`: the piece as it is now; heat kept for another bar count is stale and not returned. */
+export async function getProgress(id: string, bars?: number): Promise<Progress> {
+  const p = (await get<Progress>(`prog:${id}`)) ?? { plays: 0, last: 0, heat: [] }
+  if (bars !== undefined && p.bars !== undefined && p.bars !== bars) p.heat = []
+  return p
 }
 
 export async function allProgress(): Promise<Map<string, Progress>> {
@@ -124,19 +128,30 @@ export const cool = (old: number[], run: number[]) =>
     return h < 0.25 ? 0 : h
   })
 
-// progress is read, changed and written back: two writers at once (a pass and Memorise) would lose one, so they queue
+// every write that reads first (progress, the logs, the plan) queues: two writers at once (a pass and Memorise, two plan ticks) would lose one.
+// Another tab of the app writes the same database, so where the browser has Web Locks the queue's turn is also a lock across tabs.
 let queue: Promise<unknown> = Promise.resolve()
-const serial = <T>(f: () => Promise<T>): Promise<T> => {
-  const r = queue.then(f, f)
+const locked = <T>(f: () => Promise<T>): Promise<T> => (globalThis.navigator?.locks ? navigator.locks.request('piano-store', f) : f())
+export const serial = <T>(f: () => Promise<T>): Promise<T> => {
+  const turn = () => locked(f)
+  const r = queue.then(turn, turn)
   queue = r.catch(() => {})
   return r
 }
+/** Read a record, change it, write it back, in the queue. */
+const edit = <T>(key: string, empty: T, f: (v: T) => T) =>
+  serial(async () => {
+    const v = f((await get<T>(key)) ?? empty)
+    await set(key, v)
+    return v
+  })
 export const commit = (...a: Parameters<typeof commitNow>) => serial(() => commitNow(...a))
 
-/** Fold one session's trouble into the long-run heat: old trouble cools as you improve. */
-async function commitNow(id: string, heat: number[], result?: { score: number; acc: number; grade: string }, clean?: boolean) {
-  const p = await getProgress(id)
-  p.heat = cool(p.heat, heat)
+/** Fold one session's trouble into the long-run heat: old trouble cools as you improve. `bars`: the piece's bar count now. */
+async function commitNow(id: string, heat: number[], bars: number, result?: { score: number; acc: number; grade: string }, clean?: boolean) {
+  const p = await getProgress(id, bars)
+  p.heat = cool(p.heat, heat).slice(0, bars)
+  p.bars = bars
   p.last = Date.now()
   if (clean !== undefined) {
     const day = dayNum()
@@ -168,153 +183,94 @@ export interface TouchEntry {
   keyTouch?: KeyTouch // the keyboard's key touch setting at the time
 }
 
-const TOUCH_KEEP = 300
+export const TOUCH_KEEP = 300
 
 export async function getTouch(): Promise<TouchEntry[]> {
   return (await get<TouchEntry[]>('touch:log')) ?? []
 }
 
-export async function logTouch(e: TouchEntry) {
-  await set('touch:log', [...(await getTouch()), e].slice(-TOUCH_KEEP))
-}
+export const logTouch = (e: TouchEntry) => edit<TouchEntry[]>('touch:log', [], (l) => [...l, e].slice(-TOUCH_KEEP))
 
 /** Seconds practised per local day, the effort measure: it only goes up. */
 export async function getPractice(): Promise<Record<string, number>> {
   return (await get<Record<string, number>>('practice:days')) ?? {}
 }
 
-export async function addPractice(day: string, sec: number) {
-  const d = await getPractice()
-  d[day] = (d[day] ?? 0) + sec
-  await set('practice:days', d)
-}
+export const addPractice = (day: string, sec: number) => edit<Record<string, number>>('practice:days', {}, (d) => ({ ...d, [day]: (d[day] ?? 0) + sec }))
 
 /** Plan steps finished on a local day, so Today can tick them off. */
 export async function getPlan(day: string): Promise<string[]> {
   return (await get<string[]>(`plan:${day}`)) ?? []
 }
 
-export async function markPlan(day: string, step: string) {
-  const d = await getPlan(day)
-  if (!d.includes(step)) await set(`plan:${day}`, [...d, step])
-}
+export const markPlan = (day: string, step: string) => edit<string[]>(`plan:${day}`, [], (d) => (d.includes(step) ? d : [...d, step]))
 
 /** How much of a song to show: 0 full, 1 two hands, 2 melody and bass, 3 melody. Absent means the automatic level. */
 export async function getSimplify(id: string): Promise<number | undefined> {
   return get<number>(`simp:${id}`)
 }
 
-export async function setSimplify(id: string, level: number) {
-  await set(`simp:${id}`, level)
-}
+export const setSimplify = (id: string, level: number) => serial(() => set(`simp:${id}`, level))
 
 /** A weekly snapshot of skill, so the Monday recap can say what improved. */
 export async function getSnap(week: string): Promise<{ read: Record<string, number>; tech: number } | undefined> {
   return get(`snap:${week}`)
 }
 
-export async function putSnap(week: string, s: { read: Record<string, number>; tech: number }) {
-  await set(`snap:${week}`, s)
-}
+export const putSnap = (week: string, s: { read: Record<string, number>; tech: number }) => serial(() => set(`snap:${week}`, s))
 
 export async function getTech(): Promise<TechStats> {
   return (await get<TechStats>('tech:stats')) ?? {}
 }
 
-export async function saveTech(s: TechStats) {
-  await set('tech:stats', s)
-}
+export const saveTech = (f: (s: TechStats) => TechStats) => edit<TechStats>('tech:stats', {}, f)
 
-export async function exportAll() {
-  const prog = Object.fromEntries(await allProgress())
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), extra: await getExtra(), settings: localStorage.getItem('piano.settings') }, null, 1)
-}
+/** Export and import are a Settings button away, not boot JS (src/backup.ts). */
+export const exportAll = async () => (await import('./backup')).exportAll()
+export const importAll = async (text: string) => (await import('./backup')).importAll(text)
 
-/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes. */
-const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:)/
-async function getExtra() {
-  const out: Record<string, unknown> = {}
-  for (const k of await keys()) if (EXTRA.test(String(k))) out[String(k)] = await get(k)
-  return out
-}
-
-/** What each key of an export holds: a file whose field is the wrong kind of thing is skipped, never stored to break a page later. */
-const FIELDS: [field: string, key: string, kind: 'object' | 'array'][] = [
-  ['reading', 'drill:stats', 'object'],
-  ['touch', 'touch:log', 'array'],
-  ['practice', 'practice:days', 'object'],
-  ['technique', 'tech:stats', 'object'],
-  ['runs', 'run:state', 'object'],
-  ['scales', 'scale:stats', 'object'],
-  ['theory', 'theory:stats', 'object'],
-  ['history', 'history:log', 'array'],
-  ['coach', 'coach:stats', 'object'],
-]
-const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === 'object' ? 'object' : '')
-
-/** Reads back what exportAll wrote. Songs are not in the export, only progress, reading, touch and settings. */
-export async function importAll(text: string) {
-  const d = JSON.parse(text)
-  if (d?.version !== 1) throw new Error('Not a piano export.')
-  for (const [id, p] of Object.entries(d.progress ?? {})) if (Array.isArray((p as Progress | null)?.heat)) await set(`prog:${id}`, p)
-  for (const [field, key, kind] of FIELDS) if (kindOf(d[field]) === kind) await set(key, d[field])
-  for (const [k, v] of Object.entries(d.extra ?? {})) if (EXTRA.test(k)) await set(k, v) // only the small records exportAll writes, never a song or the catalogue
-  try {
-    if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
-  } catch {
-    /* no localStorage: the settings in the file are skipped */
-  }
-}
-
-export async function clearAll() {
-  for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take):/.test(String(k))) await del(k)
-  try {
-    for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
-  } catch {
-    /* no localStorage: nothing to clear */
-  }
-}
+export const clearAll = () =>
+  serial(async () => {
+    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take|backup):/.test(String(k))) await del(k)
+    try {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
+    } catch {
+      /* no localStorage: nothing to clear */
+    }
+  })
 
 export async function getDrill(): Promise<Stats> {
   return (await get<Stats>('drill:stats')) ?? {}
 }
 
-export async function saveDrill(s: Stats) {
-  await set('drill:stats', s)
-}
+// the drill, quiz, theory and coach stats are kept in memory by their page and saved whole
+export const saveDrill = (s: Stats) => serial(() => set('drill:stats', s))
 
 /** Sight Run: saved setups, the last one used, the best score for each range, and the tempo a paced run offers for each. */
-export async function getRuns(): Promise<{ presets: RunSpec[]; last?: RunSpec; best: Record<string, { streak: number; ms: number }>; paced?: Record<string, PaceMemo> }> {
+export type Runs = { presets: RunSpec[]; last?: RunSpec; best: Record<string, { streak: number; ms: number }>; paced?: Record<string, PaceMemo> }
+export async function getRuns(): Promise<Runs> {
   return (await get('run:state')) ?? { presets: [], best: {} }
 }
 
-export async function saveRuns(r: Awaited<ReturnType<typeof getRuns>>) {
-  await set('run:state', r)
-}
+export const saveRuns = (f: (r: Runs) => Runs) => edit<Runs>('run:state', { presets: [], best: {} }, f)
 
 export async function getScales(): Promise<ScaleStats> {
   return (await get<ScaleStats>('scale:stats')) ?? {}
 }
 
-export async function saveScales(s: ScaleStats) {
-  await set('scale:stats', s)
-}
+export const saveScales = (f: (s: ScaleStats) => ScaleStats) => edit<ScaleStats>('scale:stats', {}, f)
 
 export async function getQuiz(): Promise<QuizStats> {
   return (await get<QuizStats>('scale:quiz')) ?? {}
 }
 
-export async function saveQuiz(s: QuizStats) {
-  await set('scale:quiz', s)
-}
+export const saveQuiz = (s: QuizStats) => serial(() => set('scale:quiz', s))
 
 export async function getTheory(): Promise<Stats> {
   return (await get<Stats>('theory:stats')) ?? {}
 }
 
-export async function saveTheory(s: Stats) {
-  await set('theory:stats', s)
-}
+export const saveTheory = (s: Stats) => serial(() => set('theory:stats', s))
 
 /** One finished practice session of any kind, kept for the charts on Progress. */
 export interface HistoryEntry {
@@ -331,26 +287,19 @@ export async function getHistory(): Promise<HistoryEntry[]> {
   return (await get<HistoryEntry[]>('history:log')) ?? []
 }
 
-export async function logHistory(e: HistoryEntry) {
-  await set('history:log', [...(await getHistory()), e].slice(-600))
-}
+export const HISTORY_KEEP = 600
+export const logHistory = (e: HistoryEntry) => edit<HistoryEntry[]>('history:log', [], (l) => [...l, e].slice(-HISTORY_KEEP))
 
 /** Per exercise: runs finished and even runs in a row, for fading the live touch marks. */
 export async function getCoach(): Promise<Record<string, Seen>> {
   return (await get<Record<string, Seen>>('coach:stats')) ?? {}
 }
 
-export async function saveCoach(s: Record<string, Seen>) {
-  await set('coach:stats', s)
-}
+export const saveCoach = (s: Record<string, Seen>) => serial(() => set('coach:stats', s))
 
 /** The last few takes of a piece (src/take.ts), newest first. */
 export async function getTakes(id: string): Promise<Take[]> {
   return (await get<Take[]>(`take:${id}`)) ?? []
 }
 
-export async function addTake(id: string, k: Take): Promise<Take[]> {
-  const ks = [k, ...(await getTakes(id))].slice(0, KEEP)
-  await set(`take:${id}`, ks)
-  return ks
-}
+export const addTake = (id: string, k: Take) => edit<Take[]>(`take:${id}`, [], (ks) => [k, ...ks].slice(0, KEEP))
