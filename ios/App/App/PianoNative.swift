@@ -21,6 +21,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "pairBluetooth", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAwake", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
     ]
 
     private var client = MIDIClientRef()
@@ -29,6 +30,14 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var started = false
     private var connected = Set<Int32>() // unique ids of the sources we are connected to
     private var sources: [[String: Any]] = []
+
+    /// Host time in ms: CLOCK_UPTIME_RAW is mach time in nanoseconds, and not one of Apple's required-reason APIs.
+    private static func uptime() -> Double { Double(clock_gettime_nsec_np(CLOCK_UPTIME_RAW)) / 1_000_000 }
+
+    /// The clock the events are stamped on, for the page to find its offset from performance.now() (src/native-midi.ts).
+    @objc func now(_ call: CAPPluginCall) {
+        call.resolve(["t": Self.uptime()])
+    }
 
     @objc func start(_ call: CAPPluginCall) {
         if !started {
@@ -99,15 +108,16 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         notifyListeners("sources", data: ["sources": list])
     }
 
-    /// Runs on CoreMIDI's thread. Pulls the MIDI 1.0 channel messages out of the UMP words and sends
-    /// them with their age, so the page can stamp them at the moment the key went down.
+    /// Runs on CoreMIDI's thread. Pulls the MIDI 1.0 channel messages out of the UMP words and sends each with
+    /// its packet's host time in ms (0 is "now"), so the page stamps it when the key went down, not when it arrived.
     private func receive(_ list: UnsafePointer<MIDIEventList>, _ refCon: UnsafeMutableRawPointer?) {
         guard let refCon else { return }
         let uid = Int32(truncatingIfNeeded: Int(bitPattern: refCon) - 1)
-        var msgs: [[Int]] = []
-        var stamp: UInt64 = 0
+        let tb = timebase
+        var msgs: [[Double]] = []
         for packet in list.unsafeSequence() {
-            if stamp == 0 { stamp = packet.pointee.timeStamp }
+            let stamp = packet.pointee.timeStamp
+            let t = stamp == 0 ? Self.uptime() : Double(stamp) * Double(tb.numer) / Double(tb.denom) / 1_000_000
             var pkt = packet.pointee
             let count = Int(pkt.wordCount)
             withUnsafeBytes(of: &pkt.words) { raw in // the words arrive as a fixed-size tuple
@@ -117,17 +127,11 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
                     guard (word >> 28) & 0xF == 2 else { continue } // MIDI 1.0 channel voice
                     let status = Int((word >> 16) & 0xFF)
                     guard status >= 0x80 && status < 0xF0 else { continue }
-                    msgs.append([status, Int((word >> 8) & 0x7F), Int(word & 0x7F)])
+                    msgs.append([t, Double(status), Double((word >> 8) & 0x7F), Double(word & 0x7F)])
                 }
             }
         }
         guard !msgs.isEmpty else { return }
-        let tb = timebase
-        DispatchQueue.main.async {
-            let now = mach_absolute_time()
-            let ticks = (stamp == 0 || stamp > now) ? 0 : now - stamp
-            let ageMs = Double(ticks) * Double(tb.numer) / Double(tb.denom) / 1_000_000
-            self.notifyListeners("m", data: ["id": String(uid), "d": msgs, "age": ageMs])
-        }
+        DispatchQueue.main.async { self.notifyListeners("m", data: ["id": String(uid), "d": msgs]) }
     }
 }

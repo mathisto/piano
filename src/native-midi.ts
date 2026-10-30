@@ -10,8 +10,9 @@ interface Native {
   start(): Promise<{ sources: Source[] }>
   pairBluetooth(): Promise<void>
   setAwake(o: { on: boolean }): Promise<void>
+  now(): Promise<{ t: number }>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
-  addListener(event: 'm', cb: (d: { id: string; d: number[][]; age: number }) => void): Promise<unknown>
+  addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
 interface Port extends Source {
   state: 'connected' | 'disconnected'
@@ -34,6 +35,31 @@ const sync = (list: Source[]) => {
   access.onstatechange?.({})
 }
 
+/** performance.now() minus the native clock, from [page before, native, page after] samples: the one with the shortest round trip, off by half of it at most. */
+export function offsetOf(samples: [number, number, number][]): number | undefined {
+  const best = samples.reduce<[number, number, number] | undefined>((b, s) => (!b || s[2] - s[0] < b[2] - b[0] ? s : b), undefined)
+  return best && (best[0] + best[2]) / 2 - best[1]
+}
+
+let offset: number | undefined
+let syncing = false
+async function syncClock(n: Native) {
+  if (syncing) return
+  syncing = true
+  try {
+    const s: [number, number, number][] = []
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now()
+      const { t } = await n.now()
+      s.push([t0, t, performance.now()])
+    }
+    if (offset === undefined) console.info(`MIDI clock: offset ${offsetOf(s)?.toFixed(2)} ms, round trip ${Math.min(...s.map((x) => x[2] - x[0])).toFixed(2)} ms`) // the first sync, for a console-attached launch
+    offset = offsetOf(s)
+  } finally {
+    syncing = false
+  }
+}
+
 const plugin = native
   ? import('@capacitor/core').then(({ registerPlugin }) => {
       const n = registerPlugin<Native>('CoreMidi')
@@ -41,10 +67,19 @@ const plugin = native
       void n.addListener('m', (d) => {
         const port = inputs.get(d.id)
         if (!port?.onmidimessage) return
-        // native sends how long ago the key went down; stamp it on the page's clock
-        const timeStamp = performance.now() - d.age
-        for (const m of d.d) port.onmidimessage({ data: Uint8Array.from(m), timeStamp })
+        const at = performance.now()
+        for (const [t, ...m] of d.d) {
+          // the key went down at its packet's host time, on the page's clock: a busy main thread no longer makes it late
+          let timeStamp = offset === undefined ? at : t + offset
+          if (timeStamp > at + 1 || at - timeStamp > 500) {
+            timeStamp = at // the clocks have moved apart (the host clock stops in sleep): arrival time until they are synced again
+            void syncClock(n).catch(() => {})
+          }
+          port.onmidimessage({ data: Uint8Array.from(m), timeStamp })
+        }
       })
+      void syncClock(n).catch(() => {}) // no offset yet: arrival times
+      setInterval(() => void syncClock(n).catch(() => {}), 30_000)
       return n
     })
   : undefined
