@@ -286,6 +286,13 @@ export class Game {
     }
   }
 
+  /** A reading drill's first key is its Play button: it starts the run, and is to be judged (true) only when it is the first card's note, never in a paced run's count-in. */
+  start(p: number): boolean {
+    this.toggle()
+    const i = this.judge.nextPending()
+    return this.phase !== 'countin' && i >= 0 && this.song.notes.some((n) => n.t === this.song.notes[i].t && n.p === p)
+  }
+
   setRate(r: number) {
     this.sync()
     this.rate = Math.min(1.25, Math.max(0.25, r))

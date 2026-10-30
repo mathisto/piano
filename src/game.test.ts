@@ -155,3 +155,25 @@ describe('the latency calibration', () => {
     expect(calls.every((c) => c[2])).toBe(true) // forced: Count-in silent and Metronome off do not silence it
   })
 })
+
+describe('the key that starts a reading drill', () => {
+  const cards = [60, 62, 64, 65].map((p) => ({ pitches: [p], hand: 'R' as const }))
+  it('starts a paced run and is not judged as a wrong note', async () => {
+    const { deckSong } = await import('./drill')
+    for (const p of [67, 60]) {
+      const g = new Game()
+      g.load(deckSong('drill:run', 'r', cards as never, 0, { bpm: 60, every: 1 }), 'read', true)
+      expect(g.start(p)).toBe(false) // even the right note: the count-in is still going
+      expect(g.phase).toBe('countin')
+    }
+  })
+  it('on a waiting drill counts when it is the first card, and only then', async () => {
+    const { deckSong } = await import('./drill')
+    for (const [p, judged] of [[60, true], [67, false]] as const) {
+      const g = new Game()
+      g.load(deckSong('drill:r', 'r', cards as never, 0), 'read')
+      expect(g.start(p)).toBe(judged)
+      expect(g.phase).toBe('playing')
+    }
+  })
+})
