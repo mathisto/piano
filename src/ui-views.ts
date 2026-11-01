@@ -20,6 +20,7 @@ import type { Level, Row as GradeRow } from './grades'
 import type { LadderLevel } from './ladder'
 import type { Streak } from './streak'
 import { esc } from './util'
+import { cont, type Cont } from './next'
 
 // ---------- reading drills ----------
 
@@ -387,6 +388,7 @@ export interface TheoryRunView {
   missed: string[]
   medianMs: number
   ear?: EarView
+  cont?: Cont // Continue, once the session is over
 }
 
 /** The trainer list, or one card of a session, or its results. */
@@ -399,9 +401,10 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
     ).join('')}</div>`
   } else if (run.i >= run.cards.length) {
     const n = run.cards.length
+    const c = cont(run.cont, 'thCont')
     body = `<section class="tcard run" aria-label="Session results"><h2 tabindex="-1">${run.ok} of ${n} right first try</h2>
       <p class="line">Most in a row <b>${run.best}</b>${untimed(run.trainer) || isPulse(run.trainer) ? '' : ` · typical <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card`}.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}${run.ear?.summary ? ` ${esc(run.ear.summary)}` : ''}</p>
-      <div class="row-actions run-go end"><button class="btn primary" id="thAgain">${icon('restart')}Again</button><button class="btn ghost" id="thMenu">All trainers</button></div></section>`
+      <div class="row-actions run-go end">${c[0]}<button class="btn icon${run.cont ? '' : ' primary'}" id="thAgain" aria-label="Again" title="Again">${icon('restart')}</button><button class="btn ghost" id="thMenu">All trainers</button>${c[1]}</div></section>`
   } else {
     const c = run.cards[run.i]
     const t = TRAINERS.find((x) => x.id === run.trainer)!

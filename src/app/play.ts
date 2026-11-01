@@ -24,16 +24,17 @@ import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, p
 import { libSong, showLibrary } from './library'
 import { covers, cover } from './lazy'
 
-/** Open a piece in Learn with two worst bars looped at a lower tempo. */
-export async function fixBars(id: string, a: number, b: number) {
+/** Open a piece in Learn at a step: a tempo, without waiting, or two bars looped (Today's rows, Continue, a read-through's Loop these bars). */
+export async function openAt(id: string, o: { rate?: number; nowait?: boolean; loop?: [number, number] }) {
   await openById(id, 'learn')
   if (!current || current.song.id !== id) return
   const bars = current.song.bars
-  a = Math.min(a, bars.length - 1) // a suggestion made for a longer version of the piece
-  b = Math.min(Math.max(a, b), bars.length - 1)
-  if (a < 0) return
-  game.setRate(0.7)
-  game.setLoop({ a: bars[a].t0, b: bars[b].t1 })
+  if (o.rate) game.setRate(o.rate)
+  if (o.nowait) game.setWait(false)
+  if (o.loop && bars.length) {
+    const a = Math.min(o.loop[0], bars.length - 1) // a suggestion made for a longer version of the piece
+    game.setLoop({ a: bars[a].t0, b: bars[Math.min(Math.max(a, o.loop[1]), bars.length - 1)].t1 })
+  }
   syncMode()
   onPhase()
 }
@@ -149,7 +150,8 @@ export function leave() {
   $('#play').classList.remove('drill')
   $('#brand').setAttribute('aria-label', 'Piano Forte: Today')
   history.replaceState(null, '', location.pathname)
-  void hooks.showSection(to).then(() => {
+  store.offered() // a lamp or Continue left before its run ended: the next run is the player's own pick
+  return hooks.showSection(to).then(() => {
     if (document.activeElement !== document.body) return // the brand keeps its focus; the Play or results button it came from is gone
     const h = document.querySelector<HTMLElement>(`#${to === 'songs' ? 'library' : to} h1`)
     h?.setAttribute('tabindex', '-1')
@@ -353,7 +355,7 @@ export async function listenTo(id: string) {
 export async function openById(id: string, mode: Mode) {
   if (id.startsWith('lib:')) return openLibrary(id.slice(4), mode)
   const i = STARTERS.findIndex((s) => s.spec.id === id)
-  if (i >= 0) return openSong(starters[i], mode) // awaited: fixBars and readThrough look at the piece once it is open
+  if (i >= 0) return openSong(starters[i], mode) // awaited: openAt and readThrough look at the piece once it is open
   const row = (await store.listSongs()).find((s) => s.id === id)
   if (row) {
     const t = navigated()

@@ -2065,6 +2065,13 @@ kbd {
   background: var(--panel);
 }
 @media (max-width: 560px) {
+  /* where Continue goes stays under it when the way back wraps to a line of its own */
+  :is(.card .row, .run-go) .dest {
+    order: 1;
+  }
+  :is(.card .row, .run-go) :is(#toLib, #toStages, #thMenu) {
+    order: 2;
+  }
   /* a phone: one column; the count goes under the headline, and whether a line counts sits by its name */
   .song-res > h2 {
     grid-column: 1 / -1;
@@ -2215,6 +2222,18 @@ body:has(#play.resopen) #stagesBtn {
 }
 .card .row :is(#toLib, #toStages) {
   margin-left: auto; /* the way back is the last, quiet button, apart from the run's next steps */
+}
+/* where Continue goes, on its own line under the actions: the words that decide the next tap, so Ink Soft at body size, read from the stand */
+.row .dest,
+.run-go .dest {
+  flex-basis: 100%;
+  margin: -2px 0 0;
+  color: var(--ink-2);
+  font-size: 17px;
+}
+/* Continue is the loop and the tempo step is in More: the dock's own loop and tempo would say it twice under the card */
+#play.resopen :is(#loopWorst, #loopClear, #tempoPop) {
+  display: none;
 }
 .card .row .pop:has(> .popmenu:empty) {
   display: none; /* nothing more to offer: no More button */
@@ -3006,6 +3025,20 @@ dialog.sheet .tksum .fine {
   width: 20px;
   height: 20px;
   vertical-align: middle;
+}
+/* the plan done (UX-25): one line, then the lamp on what comes next, so Today always has one; that row is not a plan step, so no ring */
+.plan-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.upnext .plead::before {
+  visibility: hidden;
 }
 .recap {
   display: flex;

@@ -70,6 +70,9 @@
   gap: 16px;
   min-width: 160px;
 }
+.gstep.later .gact {
+  justify-content: flex-start; /* a later step's Start stands under the day's, not under its Skip */
+}
 .gact .link,
 .gsk {
   color: var(--ink-3);
@@ -137,6 +140,9 @@
   .gact {
     min-width: 0;
     margin-left: 36px;
+  }
+  .gstep.later .gact {
+    margin-left: auto; /* beside its title, which keeps the room to read */
   }
   .helpbody dl {
     grid-template-columns: 1fr;

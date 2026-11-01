@@ -87,12 +87,11 @@ export function guideCard(g: Guide): string {
   const rows = g.rows
     .map(({ step: s, state }) => {
       const lead = state === 'done' ? icon('check') : `<span class="gn">${s.n}</span>`
+      // the day's step is the lamp of Today while it is undone (next.ts); every other step can be started too, a later one included: nothing is locked
       const act =
-        state === 'now' || state === 'late'
-          ? `<button class="btn${state === 'now' ? '' : ' ghost'}" data-today="guide" data-go="${s.go}">${icon('play')}Start</button><button class="link" data-guide="skip" data-n="${s.n}">Skip</button>`
-          : state === 'skipped'
-            ? '<span class="gsk">Skipped</span>'
-            : ''
+        state === 'done' ? ''
+        : state === 'skipped' ? '<span class="gsk">Skipped</span>'
+        : `<button class="btn${state === 'now' ? ' primary' : ' ghost'}" data-today="guide" data-go="${s.go}" data-by="guide">${icon('play')}Start</button>${state === 'later' ? '' : `<button class="link" data-guide="skip" data-n="${s.n}">Skip</button>`}`
       return `<li class="gstep ${state}"><span class="plead">${lead}</span><div class="pwho"><b>${s.title}</b>${state === 'now' || state === 'late' ? `<span>${s.sub}</span>` : ''}</div><div class="gact">${act}</div></li>`
     })
     .join('')

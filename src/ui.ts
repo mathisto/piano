@@ -7,10 +7,11 @@ import type { Progress, Stored } from './store'
 import { type Song } from './song'
 import type { Starter } from './starters'
 import { type RunSpec } from './run'
-import { startAttr, streakHtml } from './habit-ui'
+import { streakHtml } from './habit-ui'
+import type { Next } from './pace'
 import type { Start } from './grades'
-import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
-import { guideCard, type Guide } from './guide'
+import type { PlanMin } from './plan'
+import type { Guide } from './guide'
 import type { Streak } from './streak'
 import { esc, focusKey } from './util'
 
@@ -168,21 +169,21 @@ interface Go {
 
 export interface TodayData {
   guide?: Guide | null // the first-week card
-  last: { id: string; title: string; sub: string; first: boolean; cover: string } // cover: the piece's lead cover, as HTML
+  last: { id: string; title: string; sub: string; first: boolean; cover: string; pace?: Next } // cover: the piece's lead cover, as HTML; pace: the step its last clean run left
   again?: { id: string; title: string; sub: string; cover?: string } // a piece whose spaced review is due
-  read: { id: string; name: string; pct: number; line: string }
+  read: { id: string; name: string; pct: number; line: string; due?: number }
   tech: string
   techDue: boolean
   techId: string
   fix?: { id: string; title: string; a: number; b: number } // the worst bars of the piece played last
-  review?: { name: string; id: string; line: string } // a second reading stage, for the longest plan
+  review?: { name: string; id: string; line: string; due: number } // a second reading stage, for the longest plan
   sight?: { id: string; title: string; sub: string; cover?: string } // a new, easy piece to read through without stopping
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
   goal: number
   planMin: PlanMin
   streak: Streak
   scale?: Go & { pct: number } // the next Scales stage, for the longer plans
-  theory?: Go // a Theory session with cards due
+  theory?: Go & { due: number } // a Theory session with cards due
   path?: Go // the next requirement on the Path, when Today has no row of its own for it
   done: string[] // steps finished today
   recap?: { minutes: number; played: number; suggest: number; better?: string } // last week, shown early in the week
@@ -193,48 +194,6 @@ export const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) =
     ${w.days.map((d) => `<span class="day${d.played ? ' on' : ''}${d.today ? ' today' : ''}"><i></i>${d.label}</span>`).join('')}
   </div>
   <div class="goal"><div class="meter${w.minutes >= goal ? ' solid' : ''}"><i style="width:${Math.min(100, Math.round((w.minutes / goal) * 100))}%"></i></div><span><b>${w.minutes}</b> of ${goal} min</span></div>${streak ? streakHtml(streak) : ''}`
-
-const go = (c: string, s: Start, word: string) => `<button class="btn${c}" data-today="start" data-start="${startAttr(s)}">${icon('play')}${word}</button>`
-
-/** A piece's name inside a sentence, set in the music face like the Songs rows. */
-export const pn = (t: string) => `<span class="pn">${esc(t)}</span>`
-
-/** The day as a short list in practice order; nothing is locked and each row stands alone. */
-export function todayView(el: HTMLElement, d: TodayData) {
-  type R = { key: string; min: number; title: string; h?: string; sub: string; mid?: string; cover?: string; act: (cls: string) => string }
-  const all: R[] = [
-    { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${icon('play')}Start</button>` },
-    { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practise</button>` },
-    { key: 'piece', min: 5, title: d.last.title, h: pn(d.last.title), sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
-    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, h: pn(d.sight.title), sub: d.sight.sub, cover: d.sight.cover, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
-    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, h: pn(d.again.title), sub: d.again.sub, cover: d.again.cover, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Review</button>` }] : []),
-    ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, h: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${pn(d.fix.title)}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
-    ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
-    ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
-    ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
-    { key: 'run', min: 3, title: 'Sight run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${icon('play')}Start</button>` },
-    ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${icon('play')}Practise</button>` }] : []),
-  ]
-  const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
-  // what is still to do comes first, in practice order; finished steps sink to the bottom as a record of the day
-  const ordered = [...plan.filter((r) => !d.done.includes(r.key)), ...plan.filter((r) => d.done.includes(r.key))]
-  const first = ordered.find((r) => !d.done.includes(r.key))
-  const rows = ordered
-    .map((r) => {
-      const done = d.done.includes(r.key)
-      const cls = r === first ? ' primary' : ' ghost' // one lamp; every other row's action is quiet, as on Read and Songs
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : r.cover ?? ''}<div class="pwho"><b>${r.h ?? esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
-    })
-    .join('')
-  el.innerHTML = `
-    ${head('Today', `<span class="plan-cap">Plan</span><div class="seg" role="radiogroup" aria-label="Plan length">${PLAN_LENGTHS.map((m) => `<label><input type="radio" name="planMin" value="${m}"${d.planMin === m ? ' checked' : ''}><span>${m} min</span></label>`).join('')}</div>`)}
-    ${d.guide ? guideCard(d.guide) : ''}
-    ${d.recap ? `<section class="tcard recap" aria-label="Last week"><span>Last week: <b>${d.recap.minutes} min</b> on ${d.recap.played} ${d.recap.played === 1 ? 'day' : 'days'}.${d.recap.better ? ` Most improved: ${esc(d.recap.better)}.` : ''}</span>${d.recap.suggest > d.goal ? `<button class="btn ghost" data-goal="${d.recap.suggest}">Aim for ${d.recap.suggest} min</button>` : ''}</section>` : ''}
-    <section class="tcard span" aria-label="This week">${weekBlock(d.week, d.goal, d.streak)}</section>
-    <div class="plan">${rows}</div>`
-}
-
-
 
 export const RUN_START: Record<RunSpec['clef'], [number, number]> = { treble: [60, 72], bass: [48, 60], grand: [43, 77] }
 export const runTitle = (s: RunSpec) => `${CLEFS[s.clef]} ${noteName(s.lo, s.fifths)} to ${noteName(s.hi, s.fifths)}${s.size === 2 ? ', intervals' : s.size === 3 ? ', triads' : ''}`
