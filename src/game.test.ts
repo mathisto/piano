@@ -265,3 +265,25 @@ describe('judging on the clock', () => {
     expect(clean).toBe(false)
   })
 })
+
+describe('a waiting run', () => {
+  it('reports the notes that came right first, since its accuracy is always 100%', () => {
+    const g = new Game()
+    let r: import('./game').Result | undefined
+    g.on((e) => e.type === 'done' && (r = e.result))
+    g.load(fromSpec({ id: 'w', title: 'w', bpm: 60, fifths: 0, rh: 'C5:1 D5:1 E5:1 F5:1', lh: 'R:4' }), 'learn')
+    g.toggle()
+    run(g, 6000) // the count-in, then the clock stops on the first note
+    expect(g.phase).toBe('waiting')
+    g.press(61, 0.6, performance.now()) // a wrong key, then the right one
+    g.press(72, 0.6, performance.now())
+    for (const p of [74, 76, 77]) {
+      run(g, 3000)
+      g.press(p, 0.6, performance.now())
+    }
+    run(g, 3000)
+    expect(r!.acc).toBe(1)
+    expect(r!.wrong).toBe(1)
+    expect(r!.first).toBe(0.75)
+  })
+})

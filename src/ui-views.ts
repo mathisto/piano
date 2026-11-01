@@ -399,7 +399,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
     const n = run.cards.length
     body = `<section class="tcard run" aria-label="Session results"><h2>${run.ok} of ${n} first time</h2>
       <p class="line">Best streak <b>${run.best}</b>${untimed(run.trainer) || isPulse(run.trainer) ? '' : ` · median <b>${(run.medianMs / 1000).toFixed(1)} s</b> a card`}.${run.missed.length ? ` Missed: ${run.missed.map(esc).join('; ')}.` : ' Every one.'}${run.ear?.summary ? ` ${esc(run.ear.summary)}` : ''}</p>
-      <div class="row-actions run-go"><button class="btn ghost" id="thMenu">All trainers</button><button class="btn primary" id="thAgain">${icon('restart')}Again</button></div></section>`
+      <div class="row-actions run-go end"><button class="btn primary" id="thAgain">${icon('restart')}Again</button><button class="btn ghost" id="thMenu">All trainers</button></div></section>`
   } else {
     const c = run.cards[run.i]
     const t = TRAINERS.find((x) => x.id === run.trainer)!
