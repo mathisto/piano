@@ -50,15 +50,16 @@ describe('pulse', () => {
 })
 
 describe('look', () => {
-  const g = (o: Partial<Game>) => ({ phase: 'playing', paced: false, mode: 'perform', calib: false, ...o }) as Game
+  const g = (o: Partial<Game>) => ({ phase: 'playing', paced: false, mode: 'perform', calib: false, view: 'both', ...o }) as Game
   it('shows the chosen look only while the metronome runs and the song moves', () => {
-    settings.pulse = 'edge'
+    settings.pulse = 'lines'
     settings.metro = 'silent'
-    expect(look(g({}))).toBe('edge')
+    expect(look(g({}))).toBe('lines')
+    expect(look(g({ view: 'sheet' }))).toBe('staff') // no falling notes, no beat lines: the ball stands in
     expect(look(g({ phase: 'waiting' }))).toBe('off') // Wait for me holds the song: no beat to show
     expect(look(g({ phase: 'countin' }))).toBe('off')
     expect(look(g({ mode: 'read' }))).toBe('off')
-    expect(look(g({ mode: 'read', paced: true }))).toBe('edge')
+    expect(look(g({ mode: 'read', paced: true }))).toBe('lines')
     settings.metro = 'off'
     expect(look(g({}))).toBe('off')
   })

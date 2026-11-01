@@ -1070,34 +1070,31 @@ const memFlow = () => fresh({
     ok(!(await page.$('#beats i')), 'beat dots left with the metronome off')
     await leave(page, 'library')
   },
-  async '17c Pulse: a Silent metronome shows the beat in each look, and Off shows none'(page) {
+  async '17c Pulse: a Silent metronome shows the beat as beat lines or a ball, the ball stands in for the lines on the staff alone, and Off shows none'(page) {
     await openStarter(page, 'starter-ode-to-joy')
     await page.click('#aidsBtn')
     await page.click('label:has(input[name=metro][value=silent])')
     await page.click('#aidsBtn')
-    for (const look of ['staff', 'edge', 'lines', 'off']) {
+    for (const [look, view] of [['staff', 'both'], ['lines', 'both'], ['lines', 'sheet'], ['off', 'both']]) {
       if (await running_(page)) await ev(page, () => window.__piano.game.toggle()) // pause the last look's run
       await page.click('#settingsBtn')
       await page.click(`#drawer label:has(input[name=pulse][value=${look}])`)
       await wait(page, (l) => JSON.parse(localStorage.getItem('piano.settings')).pulse === l, look)
       await page.keyboard.press('Escape')
       await page.waitForSelector('#drawer', { state: 'hidden' })
-      await ev(page, () => (window.__piano.game.restart(), window.__piano.game.toggle()))
+      await ev(page, (v) => (window.__piano.setView(v), window.__piano.game.restart(), window.__piano.game.toggle()), view)
       const t0 = 0
-      // two bars on, with what each look draws sampled every frame: the ball on the staff moves, the edge swells and dies away
+      // two bars on, with the ball sampled every frame: it moves for the Ball, and for Beat lines when only the staff shows
       const seen = await wait(page, (t0) => {
         const g = window.__piano.game
-        const s = (window.__pulse ??= { y: new Set(), o: new Set() })
+        const s = (window.__pulse ??= { y: new Set() })
         const ball = document.querySelector('#staff .beatball')
         if (ball && ball.style.display !== 'none') s.y.add(Math.round(+ball.getAttribute('cy')))
-        const edge = document.querySelector('.pulse-edge')
-        if (edge) s.o.add(Math.round(+edge.style.opacity * 10))
-        return g.t > t0 + 2 * (g.song.bars[1].t1 - g.song.bars[1].t0) && { y: s.y.size, o: [...s.o] }
+        return g.t > t0 + 2 * (g.song.bars[1].t1 - g.song.bars[1].t0) && { y: s.y.size }
       }, t0, 60000).then((h) => h.jsonValue())
       await ev(page, () => delete window.__pulse)
-      if (look === 'staff') ok(seen.y > 3, `the ball did not move: ${seen.y} heights`)
-      if (look === 'edge') ok(Math.max(...seen.o) >= 6 && seen.o.includes(0), `the edge did not swell and fade: ${seen.o}`)
-      if (look === 'off' || look === 'lines') ok(seen.y === 0 && !seen.o.some((x) => x > 0), `a pulse showed with ${look}: ${JSON.stringify(seen)}`)
+      if (look === 'staff' || view === 'sheet') ok(seen.y > 3, `the ball did not move (${look}, ${view}): ${seen.y} heights`)
+      else ok(seen.y === 0, `a ball showed with ${look}: ${JSON.stringify(seen)}`)
     }
     await ev(page, () => window.__piano.game.toggle()) // pause: a run fades the dock
     await page.click('#aidsBtn')

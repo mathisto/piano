@@ -38,16 +38,6 @@
 .beat-bar i.on {
   background: var(--ink);
 }
-/* the Edges pulse (beatpulse.ts): an inset Ink swell at the rim of the screen, its opacity the pulse; never the lamp, never over the music's middle */
-.pulse-edge {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0;
-  will-change: opacity;
-  box-shadow: inset 0 0 56px 4px var(--pulse);
-}
 /* the Staff pulse (beatpulse.ts): an ink ball, an aid not score, bouncing on the cursor's tip; ink, not the lamp, which is the cursor's */
 #staff .beatball {
   fill: var(--paper-ink-3);

@@ -89,6 +89,7 @@ function load(): Settings {
     if (saved.fx > 1) saved.fx = 1 // the Arcade tier is gone
     if (!saved.strict && saved.hold) saved.strict = saved.hold === 'off' ? 'easy' : saved.hold === 'strict' ? 'strict' : 'standard'
     delete saved.hold
+    if (saved.pulse === 'edge') saved.pulse = 'lines' // the Edges look is gone
     saved.instrument = instrumentId(saved.instrument)
     delete saved.chord
     delete saved.zpos // the staff size buttons moved into the dock's Practice menu (30 Oct 2026)

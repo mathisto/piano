@@ -5,8 +5,8 @@ import type { Bar } from './song'
 
 /** The silent pulse (Settings > Pulse; docs/changes/beatpulse.md): the metronome's beat seen, not heard. A beat is read from its
  * approach (a bouncing ball times nearly as well as a click, a flash far worse: Hove et al. 2013), so it swells into the beat, peaks on
- * it and fades after. Ink, never the lamp. Three looks on trial, one to keep. */
-export type Pulse = 'off' | 'staff' | 'edge' | 'lines'
+ * it and fades after. Ink, never the lamp. Two looks, the player's choice: the highway's beat lines, or a ball on the staff. */
+export type Pulse = 'off' | 'lines' | 'staff'
 
 const RISE = 0.45 // beats of swell into a beat, easing in as a fall speeds up
 const FALL = 0.25 // beats of fade after it
@@ -27,12 +27,13 @@ export function between(bars: Bar[], t: number) {
   return { d0: (t - at) / dt - k, d1: ((last ? b.t1 : at + (k + 1) * dt) - t) / dt, w0: k === 0 && !b.ql ? 1 : BEAT, w1: last && next && !next.ql ? 1 : BEAT }
 }
 
-/** The pulse's strength at song time `t`, 0..1: the beat behind fading, the beat ahead swelling. */
+/** The pulse's strength at song time `t`, 0..1: the beat behind fading, the beat ahead swelling (the still ball, under reduced motion). */
 export function pulse(bars: Bar[], t: number) {
   const p = between(bars, t)
   return p ? Math.max(swell(-p.d0) * p.w0, swell(p.d1) * p.w1) : 0
 }
 
-/** The look to draw now: what Settings > Pulse says while the metronome keeps time and the song moves (not while Wait for me holds it, nor in a count-in, which has its numerals). */
+/** The look to draw now: what Settings > Pulse says while the metronome keeps time and the song moves (not while Wait for me holds it, nor in a count-in, which has its numerals).
+ * Beat lines need the falling notes: with the staff alone, the ball stands in. */
 export const look = (g: Game): Pulse =>
-  g.phase === 'playing' && (settings.metro !== 'off' || g.paced) && (g.mode !== 'read' || g.paced) && !g.calib ? settings.pulse : 'off'
+  g.phase === 'playing' && (settings.metro !== 'off' || g.paced) && (g.mode !== 'read' || g.paced) && !g.calib ? (settings.pulse === 'lines' && g.view === 'sheet' ? 'staff' : settings.pulse) : 'off'

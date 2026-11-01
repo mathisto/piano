@@ -24,7 +24,6 @@
   --specular: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.07)); /* the top hairline of a raised surface: overhead light on the bevel */
   --specular-lamp: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28)); /* the same on the lamp fill */
   --loop: light-dark(rgba(24, 23, 21, 0.14), rgba(244, 242, 237, 0.14)); /* the A-B loop span on the scrub bar */
-  --pulse: light-dark(rgba(24, 23, 21, 0.08), rgba(244, 242, 237, 0.22)); /* the Edges pulse at its peak: under WCAG's general-flash threshold in both modes (on paper the darker state stays above 0.8 luminance; on the dark ground the change is under 5%) */
   --L-fill: light-dark(rgba(14, 124, 119, 0.3), rgba(42, 183, 176, 0.6)); /* left-hand swatch and note body */
   /* rules and edges: --line for hairlines, --edge for control borders (3:1 on panel), --line-2 for selected and track surfaces */
   --line: light-dark(#e2ddd2, #262a33);

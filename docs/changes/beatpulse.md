@@ -65,3 +65,7 @@ If it works, the app needs three things:
 - Beat lines show only where the highway shows. In the Staff-only view, choose Staff.
 - In a paced Sight Run the pulse also shows (if chosen) beside the beat bar, and the click still sounds. Silent applies only where the Metronome control is offered.
 - Once the owner picks one look, delete the other two (`beatpulse.ts` keeps `swell`, `between`, `pulse` and `look`; drop the `.pulse-edge` CSS and `--pulse`, or the staff ball, or the `lines` branch in `highway.ts`) and turn the Pulse row into a switch.
+
+## Decided, 1 Nov 2026
+
+The owner liked Beat lines and asked to keep the choice. Pulse is now Off | Beat lines | Ball (stored `lines` and `staff`). Edges is removed (`.pulse-edge`, `--pulse`, the dock's swell), and a saved `edge` loads as `lines`. Beat lines need the falling notes, so with the staff alone the Ball stands in (`look()`). e2e 17c checks the Ball moves, Beat lines draw no ball, the Ball stands in on the staff alone, and Off shows nothing.

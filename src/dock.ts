@@ -1,5 +1,4 @@
 import './metronome.css'
-import { look, pulse } from './beatpulse'
 import type { Game, HandMode } from './game'
 import { icon } from './icons'
 import { beatAt, METROS, type Metro } from './metronome'
@@ -31,8 +30,6 @@ export class Dock {
   private shownBar = 0
   private kb = 0 // the bar the keyboard is on, while the strip has focus
   private beatKey = ''
-  private edge = Object.assign(document.createElement('div'), { className: 'pulse-edge', ariaHidden: 'true' }) // the Edges pulse: a soft swell at the screen's rim
-  private edgeV = ''
   private get bar() {
     return document.querySelector<HTMLElement>('#beatBar')!
   }
@@ -293,12 +290,6 @@ export class Dock {
     const t = Math.min(Math.max(this.game.t, 0), this.song.end)
     this.head.style.left = `${this.barX(t)}%`
     this.dots()
-    const v = (look(this.game) === 'edge' ? pulse(this.song.bars, this.game.t) : 0).toFixed(2)
-    if (v !== this.edgeV) {
-      this.edgeV = v
-      if (!this.edge.isConnected) document.querySelector('#play')!.append(this.edge)
-      this.edge.style.opacity = v
-    }
     const bar = (this.scrub === document.activeElement && (this.game.phase === 'ready' || this.game.phase === 'paused') ? this.kb : this.barIndex(t)) + 1
     if (bar !== this.shownBar) {
       this.shownBar = bar
