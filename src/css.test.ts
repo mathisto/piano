@@ -43,3 +43,12 @@ it('style.css has one top-level rule per selector', () => {
   }
   expect([...seen].filter(([s, n]) => n > 1 && s !== '.bar > *').map(([s]) => s)).toEqual([])
 })
+
+// The `font` shorthand resets font-variant-numeric to normal, so a counter that sets its face with it must say tabular-nums itself
+// (the body's inherited value does not reach it). A ticking figure in proportional numerals jitters.
+it('counters keep tabular numerals', () => {
+  const rs = readdirSync('src').filter((n) => n.endsWith('.css')).flatMap(rules)
+  const counters = ['.hud b', '.countin', '.tempo-val', '.card > .big-grade', '.otv b', '.ready .rt-tempo #rtRate', '.ready .mem-seg span', '#staff .barno']
+  for (const c of counters)
+    expect(rs.some((r) => r.sel.split(',').some((s) => s.trim().replace(/\s+/g, ' ') === c) && /tabular-nums/.test(r.body)), c).toBe(true)
+})

@@ -29,7 +29,7 @@ const ladderRows = (l?: LadderLevel) =>
   l?.pieces.length
     ? `<p class="label cap">Pieces to work towards</p><ul class="rqs-list">${l.pieces
         .map(
-          (x) => `<li class="rq ${x.state === 'ready' ? 'solid' : x.state}"><div class="rqn"><b>${esc(x.title)}</b><span>${esc(x.composer)} · ${esc(x.why)}</span></div>
+          (x) => `<li class="rq ${x.state === 'ready' ? 'solid' : x.state}"><div class="rqn"><b><span class="pn">${esc(x.title)}</span></b><span>${esc(x.composer)} · ${esc(x.why)}</span></div>
     <div class="rqs"><span>${PIECE[x.state]}</span></div>
     <div class="rqa"><button class="btn ghost" data-ladder="${esc(x.id)}" aria-label="Start ${esc(x.title)}">${icon('play')}Start</button></div></li>`,
         )

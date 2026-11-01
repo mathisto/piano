@@ -244,16 +244,19 @@ export const weekBlock = (w: TodayData['week'], goal: number, streak?: Streak) =
 
 const go = (c: string, s: Start, word: string) => `<button class="btn${c}" data-today="start" data-start="${startAttr(s)}">${icon('play')}${word}</button>`
 
+/** A piece's name inside a sentence, set in the music face like the Songs rows. */
+export const pn = (t: string) => `<span class="pn">${esc(t)}</span>`
+
 /** The day as a short list in practice order; nothing is locked and each row stands alone. */
 export function todayView(el: HTMLElement, d: TodayData) {
-  type R = { key: string; min: number; title: string; sub: string; mid?: string; act: (cls: string) => string }
+  type R = { key: string; min: number; title: string; h?: string; sub: string; mid?: string; act: (cls: string) => string }
   const all: R[] = [
     { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${icon('play')}Start</button>` },
     { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practice</button>` },
-    { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
-    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
-    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Play</button>` }] : []),
-    ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
+    { key: 'piece', min: 5, title: d.last.title, h: pn(d.last.title), sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
+    ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, h: pn(d.sight.title), sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
+    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, h: pn(d.again.title), sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Play</button>` }] : []),
+    ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, h: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${pn(d.fix.title)}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
     ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
     ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
@@ -268,7 +271,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .map((r) => {
       const done = d.done.includes(r.key)
       const cls = r === first ? ' primary' : ' ghost' // one lamp; every other row's action is quiet, as on Read and Songs
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : ''}<div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
+      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : ''}<div class="pwho"><b>${r.h ?? esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
   el.innerHTML = `

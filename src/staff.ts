@@ -1,3 +1,4 @@
+import '@fontsource-variable/newsreader/opsz-italic.css' // the staff's dynamics and expression words; loads with the staff, not at boot
 import type { Game } from './game'
 import { analyze, densest, figure, fitZoom, layout, windowFor, yOf, S, type Analysis, type Cfg, type Layout, type LChord } from './layout'
 import { settings } from './settings'
@@ -308,7 +309,12 @@ export class Staff {
     for (const c of L.chords) this.chord(g, c, dyOf(c.sys))
     for (const b of L.beams) {
       const dy = dyOf(b.sys)
-      for (const r of b.rows) this.barEls.push([b.chords[0]?.bar ?? 0, el('path', { class: 'beam', d: `M${r.x1},${r.y1 + dy} L${r.x2},${r.y2 + dy} L${r.x2},${r.y4 + dy} L${r.x1},${r.y3 + dy} Z` }, g)])
+      const t = Math.max(...b.chords.map((c) => c.heads[0]?.t ?? 0)) // a beam is played once its last note is
+      for (const r of b.rows) {
+        const e = el('path', { class: 'beam', d: `M${r.x1},${r.y1 + dy} L${r.x2},${r.y2 + dy} L${r.x2},${r.y4 + dy} L${r.x1},${r.y3 + dy} Z` }, g)
+        this.barEls.push([b.chords[0]?.bar ?? 0, e])
+        this.timeline.push({ t, el: e })
+      }
     }
     for (const r of L.rests) {
       const fi = figure(r.v, r.tup)
@@ -517,6 +523,7 @@ export class Staff {
     const y = Math.max(16, Math.min(staffTop, ink - 10))
     const word = grade ? (grade === 'perfect' ? 'Perfect' : grade === 'great' ? 'Great' : grade === 'late' ? 'Late' : 'Good') : ''
     const arrow = !grade || grade === 'perfect' || grade === 'late' ? '' : off < 0 ? ' ‹' : ' ›' // early or late
+    this.svg.querySelectorAll('.gr').forEach((e) => e.remove()) // the newest word only: in a fast run they stacked into a smear
     const t = el('text', { class: 'gr', 'data-g': grade ?? (touch === 'touch ✓' ? 'perfect' : 'good'), x: p.x, y }, this.svg, [word + arrow, touch].filter(Boolean).join(' · '))
     t.setAttribute('aria-hidden', 'true')
     t.addEventListener('animationend', () => t.remove())
