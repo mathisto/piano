@@ -8,8 +8,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Web Audio is muted by the silent switch unless the app asks for playback. The screen stays on only while a run
-        // plays: the page calls CoreMidiPlugin.setAwake (PianoNative.swift).
+        // Web Audio is muted by silent mode unless the app asks for playback: a piano you play is sound you asked for. It mixes,
+        // so music from another app plays on under it. When the screen stays on: CoreMidiPlugin.stayAwake (PianoNative.swift).
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
         return true

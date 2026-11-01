@@ -21,6 +21,10 @@ try {
   /* private mode: off */
 }
 let stopListen: (() => void) | null = null
+// leaving the app, or (the iPad app) a call, Siri or the headphones coming out, stops a listen-back: frames stop while hidden,
+// and on return every note it missed would sound at once
+document.addEventListener('visibilitychange', () => document.hidden && stopListen?.())
+addEventListener('interrupt', () => stopListen?.())
 
 const plain = () => !!current && !drill && !calibrating && !rt && !mem && game.mode !== 'read' // a piece, not a drill or a special run
 const now = () => Math.round(game.t * 1000 - game.offset * game.rate) // the run's end, on the clock the presses are on

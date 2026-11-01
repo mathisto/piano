@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   appId: 'io.mattkelly.piano',
   appName: 'Piano Forte',
   webDir: 'dist',
-  ios: { contentInset: 'never', backgroundColor: '#090b17', scrollEnabled: false },
+  // allowsLinkPreview: a long press on a link (Credits, Report a problem) shows no web page preview
+  ios: { contentInset: 'never', backgroundColor: '#090b17', scrollEnabled: false, allowsLinkPreview: false },
 }
 
 export default config

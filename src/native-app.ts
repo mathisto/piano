@@ -1,18 +1,19 @@
 // The iPad app's side of src/native-midi.ts, loaded only inside the app: the CoreMidi plugin's events stamped on the page's
-// clock, the menu bar's commands, files opened from other apps, and a daily backup to Files.
-import { registerPlugin } from '@capacitor/core'
+// clock, the menu bar's commands, files opened from other apps, the sound taken away, and a daily backup to Files.
+import { registerPlugin, SystemBars, SystemBarType } from '@capacitor/core'
 import { onWrite } from './kv'
 import type { Port, Source } from './native-midi'
 
 interface Native {
   start(): Promise<{ sources: Source[] }>
   pairBluetooth(): Promise<void>
-  setAwake(o: { on: boolean }): Promise<void>
+  setPlaying(o: { on: boolean }): Promise<void>
   now(): Promise<{ t: number }>
   saveBackup(o: { text: string }): Promise<void>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
   addListener(event: 'menu', cb: (d: { key: string }) => void): Promise<unknown>
   addListener(event: 'file', cb: (d: { name: string; data: string }) => void): Promise<unknown>
+  addListener(event: 'interrupt', cb: () => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
 
@@ -53,6 +54,8 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
     } else if (key === 'settings') document.querySelector<HTMLElement>('#settingsBtn')?.click()
     else document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
   })
+  // a call, Siri or an alarm took the sound, or the headphones came out: src/app/play.ts pauses a run, take-ui.ts stops Listen back
+  void n.addListener('interrupt', () => dispatchEvent(new Event('interrupt')))
   void n.addListener('m', (d) => {
     const port = inputs.get(d.id)
     if (!port?.onmidimessage) return
@@ -85,5 +88,10 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
     timer = window.setTimeout(backup, 30_000)
   })
   document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && timer && backup())
-  return { n } // not n itself: Capacitor's proxy answers every property, `then` too, so a promise resolved with it waits forever
+  /** A run plays or not: auto-lock and the screen edges (PianoNative.swift), and the home indicator fades (Capacitor's SystemBars). */
+  const playing = (on: boolean) => {
+    void n.setPlaying({ on })
+    void SystemBars[on ? 'hide' : 'show']({ bar: SystemBarType.NavigationBar })
+  }
+  return { n, playing } // not n itself: Capacitor's proxy answers every property, `then` too, so a promise resolved with it waits forever
 }
