@@ -249,7 +249,7 @@ export async function drillDone() {
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
 }
 
-Object.assign(hooks, { drillOk })
+Object.assign(hooks, { drillOk, startDrill })
 game.on((e) => {
   const i = e.type === 'wrong' && drill ? drill.noteCard[game.judge.nextPending()] : undefined
   if (i !== undefined) got.set(i, [...(got.get(i) ?? []), (e as { p: number }).p])

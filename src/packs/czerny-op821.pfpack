@@ -1,0 +1,30 @@
+{
+ "pf": 1,
+ "id": "czerny-op821",
+ "title": "Czerny: eight-bar exercises, Op. 821",
+ "by": "Piano Forte",
+ "about": "Eight bars each, for reading and patterns. Note names are off, so you read the staff.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  {"piece": "mutopia-2060", "title": "No. 1", "view": {"names": false}},
+  {"piece": "mutopia-2061", "title": "No. 2", "view": {"names": false}},
+  {"piece": "mutopia-2062", "title": "No. 3", "view": {"names": false}},
+  {"piece": "mutopia-2063", "title": "No. 4", "view": {"names": false}},
+  {"piece": "mutopia-2066", "title": "No. 5", "view": {"names": false}},
+  {"piece": "mutopia-2067", "title": "No. 6", "view": {"names": false}},
+  {"piece": "mutopia-2068", "title": "No. 7", "view": {"names": false}},
+  {"piece": "mutopia-2069", "title": "No. 8", "view": {"names": false}},
+  {"piece": "mutopia-2072", "title": "No. 9", "view": {"names": false}},
+  {"piece": "mutopia-2073", "title": "No. 10", "view": {"names": false}},
+  {"piece": "mutopia-2076", "title": "No. 11", "view": {"names": false}},
+  {"piece": "mutopia-2077", "title": "No. 12", "view": {"names": false}},
+  {"piece": "mutopia-2078", "title": "No. 13", "view": {"names": false}},
+  {"piece": "mutopia-2079", "title": "No. 14", "view": {"names": false}},
+  {"piece": "mutopia-2081", "title": "No. 15", "view": {"names": false}},
+  {"piece": "mutopia-2082", "title": "No. 16", "view": {"names": false}},
+  {"piece": "mutopia-2083", "title": "No. 17", "view": {"names": false}},
+  {"piece": "mutopia-2084", "title": "No. 18", "view": {"names": false}},
+  {"piece": "mutopia-2085", "title": "No. 19", "view": {"names": false}}
+ ]
+}

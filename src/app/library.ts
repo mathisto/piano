@@ -48,6 +48,7 @@ export async function showLibrary(err = '') {
   last.cont = true
   const [{ library, mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()]) // the page's code: fetched at idle after boot, so usually here already
   library($('#library'), starts, mine, err)
+  await (await import('./pack-ui')).mount($('#library'), 'songs') // the Packs chip and its list
   ;(await cover()).drawCovers($('#library'))
   if (err) $('#drop').scrollIntoView({ block: 'nearest' }) // a failed piece far down the page, or a dropped file, must not leave its message above the fold
   mountLibrary($('#library'), prog, libSong)
@@ -140,9 +141,11 @@ export async function shareFile(file: File) {
 
 export async function importFiles(files: FileList | File[]) {
   const errs: string[] = []
+  let packs = 0
   for (const f of files) {
+    // anything else may be a pack (src/pack.ts): kept and shown on its own page, which a lone pack stays on; pack-ui says what a file that is neither is
     if (!/\.(mid|midi|xml|musicxml|mxl)$/i.test(f.name)) {
-      errs.push(`${f.name} is not a MIDI or MusicXML file. Add a .mid, .musicxml or .mxl file.`)
+      packs += await import('./pack-ui').then((m) => m.fromFile(f)).catch((e) => (errs.push(e.message), 0))
       continue
     }
     try {
@@ -151,8 +154,10 @@ export async function importFiles(files: FileList | File[]) {
       errs.push((err as Error).message ? `${f.name}: ${(err as Error).message}` : `${f.name} could not be read. It may be damaged; try saving it again from where it came.`)
     }
   }
-  if (!current) await hooks.showSection('songs', errs.join(' '))
+  if (!current && packs < files.length) await hooks.showSection('songs', errs.join(' '))
 }
+
+Object.assign(hooks, { shareFile })
 
 $('#library').addEventListener('change', (e) => {
   const t = e.target as HTMLInputElement

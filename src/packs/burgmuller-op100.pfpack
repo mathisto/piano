@@ -1,0 +1,29 @@
+{
+ "pf": 1,
+ "id": "burgmuller-op100",
+ "title": "Burgmüller: 25 studies, Op. 100",
+ "by": "Piano Forte",
+ "about": "One a week. Hands apart first, then together at 70%. Nos. 19 to 25 are not in the library yet.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  {"piece": "mutopia-202", "title": "No. 1, La Candeur", "rate": 0.7},
+  {"piece": "mutopia-203", "title": "No. 2, L'Arabesque", "rate": 0.7},
+  {"piece": "mutopia-218", "title": "No. 3, La Pastorale", "rate": 0.7},
+  {"piece": "mutopia-219", "title": "No. 4, La Petite Réunion", "rate": 0.7},
+  {"piece": "mutopia-214", "title": "No. 5, Innocence", "rate": 0.7},
+  {"piece": "mutopia-215", "title": "No. 6, Progrès", "rate": 0.7},
+  {"piece": "mutopia-216", "title": "No. 7, Le Courant Limpide", "rate": 0.7},
+  {"piece": "mutopia-217", "title": "No. 8, La Gracieuse", "rate": 0.7},
+  {"piece": "mutopia-220", "title": "No. 9, La Chasse", "rate": 0.7},
+  {"piece": "mutopia-221", "title": "No. 10, Tendre Fleur", "rate": 0.7},
+  {"piece": "mutopia-222", "title": "No. 11, La Bergeronnette", "rate": 0.7},
+  {"piece": "mutopia-223", "title": "No. 12, L'Adieu", "rate": 0.7},
+  {"piece": "mutopia-224", "title": "No. 13, Consolation", "rate": 0.7},
+  {"piece": "mutopia-225", "title": "No. 14, La Styrienne", "rate": 0.7},
+  {"piece": "mutopia-227", "title": "No. 15, Ballade", "rate": 0.7},
+  {"piece": "mutopia-228", "title": "No. 16, Douce Plainte", "rate": 0.7},
+  {"piece": "mutopia-229", "title": "No. 17, La Babillarde", "rate": 0.7},
+  {"piece": "mutopia-230", "title": "No. 18, Inquiétude", "rate": 0.7}
+ ]
+}

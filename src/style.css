@@ -3431,3 +3431,31 @@ dialog.sheet footer .btn {
   font-size: calc(11px * var(--ts));
   fill: var(--ink-3);
 }
+
+/* ---------- packs: Studies on Technique, the Packs chip on Songs, a pack's list in its sheet (src/app/pack-ui.ts) ---------- */
+.packs h2.sec {
+  margin-top: 8px;
+}
+ol.pklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.prow.missing .pwho :is(b, span) {
+  color: var(--ink-3);
+}
+#pkChip small {
+  margin-left: 8px;
+  color: var(--ink-3);
+  font-size: 15px;
+  font-weight: 500;
+}
+.pksay:empty {
+  display: none;
+}
+.pklink {
+  width: 100%;
+}
+.packs .pwho {
+  min-width: min(100%, 16rem); /* a phone puts All and Start under the book's name, not beside a name three words wide */
+}

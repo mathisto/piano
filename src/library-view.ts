@@ -168,6 +168,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     $('#libExtra').hidden = !open
     const note = $('#libNote')
     note.textContent = NOTES[sel.lane]
+    if (sel.lane === 'study') note.insertAdjacentHTML('beforeend', ' <button class="link" data-go="technique">In order, as packs: Technique</button>') // the lane is the pile; a pack is the order
     note.hidden = !NOTES[sel.lane]
     const on = active(sel)
     const chips = $('#libChips')
@@ -222,6 +223,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
     if (f) set(f, t.value)
   })
   el.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-go]')) return document.querySelector<HTMLInputElement>('#nav input[value=technique]')?.click()
     const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-rm]')
     if (!b) return
     const f = b.dataset.rm!
@@ -299,7 +301,7 @@ function table(caption: string, rows: Row[], empty: string) {
 
 export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
   el.innerHTML = `
-    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
+    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pfpack,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
     ${table('Your files', mine, noMusic('Add a MIDI or MusicXML file, or drop one anywhere on this page.'))}`

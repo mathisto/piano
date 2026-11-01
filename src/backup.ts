@@ -25,8 +25,8 @@ const b64 = (b: ArrayBuffer) => {
 }
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0)).buffer
 
-/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes, each month's card rows. */
-const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:|log:cards:)/
+/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes, each month's card rows, a pack you imported or opened. */
+const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:|log:cards:|pack:)/
 async function getExtra() {
   const out: Record<string, unknown> = {}
   for (const k of await keys()) if (EXTRA.test(String(k))) out[String(k)] = await get(k)
@@ -93,6 +93,7 @@ const mergeExtra = (k: string, a: any, b: any): unknown =>
   : k.startsWith('log:cards:') && Array.isArray(a) && Array.isArray(b) ? byTs(a, b)
   : k.startsWith('take:') && Array.isArray(a) && Array.isArray(b) ? byTs(a, b).reverse().slice(0, KEEP)
   : k === 'scale:quiz' && kindOf(a) === 'object' && kindOf(b) === 'object' ? moreSeen(a, b)
+  : k.startsWith('pack:') && kindOf(a) === 'object' && kindOf(b) === 'object' ? { ...a, ...b, opened: Math.max(a.opened ?? 0, b.opened ?? 0) || undefined } // the pack itself is the file's (it is checked again when read); opened, the later
   : b
 const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === 'object' ? 'object' : '')
 

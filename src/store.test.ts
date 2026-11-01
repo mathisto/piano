@@ -78,6 +78,20 @@ describe('export and import', () => {
     expect(JSON.parse(db.get('backup:last') as string).practice).toEqual({ d: 90 }) // what was here before the import
   })
 
+  it('carries packs: an imported pack and when each was opened, merged, and Clear all data takes them', async () => {
+    const mine = { pf: 1, id: 'mine', title: 'Mine', by: 'Me', items: [{ read: 't-land' }] }
+    db.set('pack:mine', { pack: mine, from: 'link', added: 1, opened: 5 })
+    db.set('pack:hanon-warmup', { opened: 9 })
+    const file = await store.exportAll()
+    db.clear() // this browser opened the Hanon pack later, and never had the other
+    db.set('pack:hanon-warmup', { opened: 12 })
+    await store.importAll(file)
+    expect(db.get('pack:mine')).toEqual({ pack: mine, from: 'link', added: 1, opened: 5 })
+    expect(db.get('pack:hanon-warmup')).toEqual({ opened: 12 })
+    await store.clearAll()
+    expect([...db.keys()].filter((k) => k.startsWith('pack:'))).toEqual([])
+  })
+
   it('refuses what is not an export', async () => {
     await expect(store.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
   })

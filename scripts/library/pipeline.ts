@@ -381,7 +381,7 @@ const lname = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/,
 
 /** The kind and form fields of a piece: the style is a tag too (a Hanon exercise is tagged technique), so it counts before the tags are written. */
 function kindForm(e: Input, a: Analysis, s: Song) {
-  const kind = kindOf({ source: e.source, tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])], bars: s.bars.length, sec: s.end })
+  const kind = kindOf({ source: e.source, tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])], bars: s.bars.length, sec: s.end, title: e.title })
   const form = formOf(e.title)
   return { ...(kind && { kind }), ...(form && { form }) }
 }
