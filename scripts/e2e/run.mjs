@@ -64,24 +64,26 @@ const INIT = `
         // a mark lives only until the staff window moves on: count the ones added, not the ones standing when polled
         const mo = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && (n.classList.contains('devmark') || n.querySelector?.('.devmark')) && window.__marks++)))
         mo.observe(document.querySelector('#staff'), { childList: true, subtree: true })
+        // each key goes when its song time comes on the game's clock as it stands then (the clock may re-anchor after the count-in starts),
+        // and carries that moment as its time, as a MIDI packet carries the time it was struck: a timer late under load is not a late note
+        const when = (t) => g.anchorPerf + ((t - g.anchorT) / g.rate) * 1000
+        let todo = []
         const id = setInterval(() => {
           if (!started && (g.phase === 'countin' || g.phase === 'playing')) {
             started = true
-            const now = performance.now()
-            for (const e of pedal) setTimeout(() => P().pedal(e.down), g.anchorPerf + ((e.t - g.anchorT) / g.rate) * 1000 - now)
-            // each key carries the time it was meant for, as a MIDI packet carries the time it was struck: a timer that fires late under load is not a late note
+            for (const e of pedal) todo.push({ t: e.t, go: () => P().pedal(e.down) })
             for (const x of stray) {
-              const at = g.anchorPerf + ((g.song.notes[x.i].t + 0.18 - g.anchorT) / g.rate) * 1000
-              setTimeout(() => P().key(x.p, 0.55, at), at - now)
-              setTimeout(() => P().up(x.p, at + 60), at + 60 - now)
+              const t = g.song.notes[x.i].t + 0.18
+              todo.push({ t, go: (ts) => P().key(x.p, 0.55, ts) }, { t: t + 0.06 * g.rate, go: (ts) => P().up(x.p, ts) })
             }
             g.song.notes.forEach((n, i) => {
               if (sk.has(i) || g.modeOf(n) !== 'play') return // the app plays the rest (Listen, or the part it accompanies)
-              const at = g.anchorPerf + ((n.t - g.anchorT) / g.rate) * 1000
-              const up = at + (n.d / g.rate) * 970
-              setTimeout(() => P().key(n.p, i === loud ? 0.9 : 0.55 + (i % 3) * 0.006, at), at - now)
-              setTimeout(() => P().up(n.p, up), up - now)
+              todo.push({ t: n.t, go: (ts) => P().key(n.p, i === loud ? 0.9 : 0.55 + (i % 3) * 0.006, ts) }, { t: n.t + n.d * 0.97, go: (ts) => P().up(n.p, ts) })
             })
+          }
+          if (started && (g.phase === 'countin' || g.phase === 'playing' || g.phase === 'waiting')) {
+            const now = performance.now()
+            todo = todo.filter((k) => (when(k.t) <= now ? (k.go(Math.min(now, when(k.t))), false) : true))
           }
           if (g.phase === 'done' && window.__last) clearInterval(id), mo.disconnect(), res(window.__last)
         }, 5)
