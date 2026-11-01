@@ -76,7 +76,7 @@ export async function openTracks(id: string) {
     ['Bars', String(song.bars.length)],
     ['Length', `${Math.floor(song.end / 60)}:${String(Math.round(song.end % 60)).padStart(2, '0')}`],
     ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
-    ...(r ? ([['Drums', r.tracks.some((t) => t.percussion) ? 'Present, left out' : 'None']] as [string, string][]) : []),
+    ...(r?.tracks.some((t) => t.percussion) ? ([['Drums', 'Left out']] as [string, string][]) : []),
   ]
   const order = [...pick.tracks] // the tracks in use first, fixed while the dialog is open
   const draw = () => {
@@ -101,7 +101,7 @@ export async function openTracks(id: string) {
       if (r) pick = autoSelect(r)
       draw()
     })
-    $('#tkCancel', dlg).onclick = () => dlg.close()
+    dlg.querySelector<HTMLButtonElement>('#tkCancel')?.addEventListener('click', () => dlg.close())
     $('#tkRemove', dlg).onclick = async () => {
       if (!confirm(`Remove ${s.title} from this browser?`)) return
       await store.removeSong(id)

@@ -448,6 +448,7 @@ async function mainFlow() {
 
   await feature('10 Clear all data', page, async () => {
     ok(file, 'no export to restore afterwards')
+    await page.click('#drawer [data-more]') // Delete all data is in the Data row's More menu
     await Promise.all([page.waitForEvent('load'), page.click('#sClear')]) // confirm accepted by the dialog handler
     await page.waitForFunction(() => window.__piano && document.querySelector('#today.on .plan'))
     await ev(page, () => window.__e2e.hook())
@@ -812,9 +813,15 @@ const memFlow = () => fresh({
     ok((await ev(page, () => window.__piano.mem().stage)) === 1 && /Stage 1/.test(await text(page, '#memBar')), `after two clean passes: ${await text(page, '#memBar')}`)
     await leave(page, 'library')
   },
-  async '17b Metronome: B cycles it, the beat dots follow'(page) {
+  async '17b Metronome: B cycles it, the Practice menu shows it, the beat dots follow'(page) {
     await openStarter(page, 'starter-five-finger')
-    const metro = (want) => wait(page, (w) => JSON.parse(localStorage.getItem('piano.settings')).metro === w && document.querySelector('#metro').getAttribute('aria-pressed') === String(w !== 'off'), want)
+    const metro = (want) => wait(page, (w) => JSON.parse(localStorage.getItem('piano.settings')).metro === w && document.querySelector('input[name=metro]:checked')?.value === w, want)
+    await page.click('#aidsBtn') // Off | Beats | Eighths in the Practice menu
+    await page.click('label:has(input[name=metro][value=eighths])')
+    await metro('eighths')
+    await page.click('label:has(input[name=metro][value=off])')
+    await metro('off')
+    await page.click('#aidsBtn')
     await page.keyboard.press('b')
     await metro('beat')
     await page.click('#go')
@@ -961,7 +968,7 @@ const sheetsFlow = async () => {
       await shut(page, 'credits', 'Escape', '#sCredits')
       await page.click('#sCredits')
       await sheet(page, 'credits')
-      await shut(page, 'credits', 'footer [data-close]', '#sCredits')
+      await shut(page, 'credits', 'header [data-close]', '#sCredits')
 
       await page.click('#sSetup') // closes the drawer, then the sheet
       await sheet(page, 'setup')

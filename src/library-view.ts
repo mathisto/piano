@@ -6,7 +6,7 @@ import { licenceName } from './credits'
 import type { Song } from './song'
 import type { Progress } from './store'
 import { thumb } from './thumb'
-import { head, mmss, notice, type Row } from './ui'
+import { head, mmss, notice, rowMenu, type Row } from './ui'
 import { icon } from './icons'
 import { esc } from './util'
 
@@ -176,9 +176,6 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
 }
 
 // the Songs page's tables: the starters and your files (the open library's rows are below in row())
-/** A song row's other ways in, behind one button: the row keeps one action and one line (main.ts opens and closes it). */
-export const rowMenu = (title: string, items: string) =>
-  `<button class="btn ghost icon" data-more aria-label="More for ${esc(title)}" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu rowmenu" role="menu" aria-label="${esc(title)}" hidden>${items}</div>`
 
 function table(caption: string, rows: Row[], empty: string) {
   const best = rows.some((r) => r.prog?.best) // no column of dashes before the first score

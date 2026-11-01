@@ -139,13 +139,17 @@ export const meter = (pct: number, solid: boolean, label: string, fluent?: numbe
   `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
 export const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
 export const FREE = 'Free, no subscription, no ads, no account.'
-export const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evenness.'
+export const KEY_TOUCH_HINT = 'Match the setting on your keyboard.' // it is only logged, and Fixed silences evenness (coach.ts)
 export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
 export const head = (title: string, actions = '', lede = '') =>
   `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
 
 
+
+/** The actions past the first few, behind one ⋯ button: a song row's other ways in, Settings' Data, a file's Options (main.ts opens and closes it). */
+export const rowMenu = (title: string, items: string) =>
+  `<button class="btn ghost icon" data-more aria-label="More for ${esc(title)}" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu rowmenu" role="menu" aria-label="${esc(title)}" hidden>${items}</div>`
 
 /** A line of plain words at the top of a page, with an optional button: what is wrong and what can be done about it. */
 export const notice = (text: string, action = '', cls = '') => `<p class="notice${cls}" role="status"><span>${esc(text)}</span>${action}</p>`
@@ -161,7 +165,14 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
   const device = settings.sound
   el.innerHTML = `
   <h2 id="drawerTitle" tabindex="-1" role="heading" aria-level="1">Settings</h2>
-  ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx))}
+  <div class="srow"><span>Keyboard</span>${
+    inputs.length > 1
+      ? `<select id="sDevice"><option value="">All</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
+      : `<b>${inputs.length ? esc(inputs[0].name) : 'None found'}</b>`
+  }</div>${pair && `<div class="srow"><span></span>${pair}</div>`}
+  <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
+  ${outputLatency() > 0.08 ? `<p class="fine">This device's sound output adds about ${Math.round(outputLatency() * 1000)} ms (Bluetooth?): the count-in and the app's notes reach you that late. Wired headphones or the built-in speakers keep them on time.</p>` : ''}
+  <hr>
   ${seg('sound', 'Sound', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard')}
   ${
     device
@@ -171,19 +182,14 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
       : ''
   }
   <label class="srow"><span>Click volume</span><input id="sClick" type="range" min="0" max="1" step="0.05" value="${settings.click}" aria-label="Click volume: count-in and metronome"></label>
+  <hr>
+  ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
   ${seg('coach', 'Touch coach', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach)}
   <div class="srow"><span>Key touch</span>${keyTouchSelect('sKeyTouch')}</div>
   <p class="fine">${KEY_TOUCH_HINT}</p>
-  ${seg('strict', 'Strictness', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict)}
-  <div class="srow"><span>Keyboard</span>${
-    inputs.length > 1
-      ? `<select id="sDevice"><option value="">All</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
-      : `<b>${inputs.length ? esc(inputs[0].name) : 'None found'}</b>`
-  }</div>${pair && `<div class="srow"><span></span>${pair}</div>`}
-  <p id="sMon" class="fine" role="status" hidden></p>
-  <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
-  ${outputLatency() > 0.08 ? `<p class="fine">This device's sound output adds about ${Math.round(outputLatency() * 1000)} ms (Bluetooth?): the count-in and the app's notes reach you that late. Wired headphones or the built-in speakers keep them on time.</p>` : ''}
-  <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sSummary" title="A plain text summary of your practice, to send to a teacher">Practice summary</button><button class="btn sm" id="sImport">Import</button><button class="btn sm" id="sClear">Clear</button><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>
+  ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx))}
+  <hr>
+  <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" role="menuitem" id="sSummary">Summary for a teacher</button><button class="btn ghost" role="menuitem" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>
   <details><summary>Advanced</summary>
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch sub"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}${settings.names ? '' : ' disabled'}><i></i>Fade names I know</label>
@@ -194,7 +200,7 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
     <label class="srow"><span>Fall speed</span><span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}"><small>Fast</small></span></label>
     <label class="srow"><span>Hand split</span><select id="sSplit">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select></label>
   </details>
-  <p class="fine foot"><button class="link" id="sSetup">Set up</button> <button class="link" id="sCredits">Credits</button> <button class="link" id="sHelp">Help</button></p>`
+  <p class="fine foot"><button class="link" id="sSetup">Set up</button><button class="link" id="sHelp">Help</button><button class="link" id="sCredits">Credits</button></p>`
 }
 
 
