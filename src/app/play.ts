@@ -16,7 +16,7 @@ import { barAt, type Song } from '../song'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { writtenTargets } from '../touch'
-import { $, art, keepFocus } from '../ui'
+import { $, keepFocus } from '../ui'
 import { esc } from '../util'
 import { calibrating, current, dock, drill, drillStats, game, highway, hooks, mem, navAt, navigated, resOpen, rt, say, type Section, setCalibrating, setCurrent, setDock, setDrill, setHighway, setRun, setStaff, staff, starters } from './state'
 import { flash, updateBanner } from './banner'
@@ -245,7 +245,7 @@ export function onPhase() {
       ? `<b>${esc(drill.title)}</b>${drill.run?.spec.pace ? `<span class="hint">${paceHint({ bpm: drill.run.spec.pace, every: drill.run.spec.every })}</span>` : ''}<span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `${art(current.song.id, 'art cover')}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
+        : `<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
     keepFocus(r, () => (r.innerHTML = html)) // a choice on the card redraws it: focus stays on that choice
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {
       if (!current) return

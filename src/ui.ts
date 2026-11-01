@@ -1,7 +1,6 @@
 import { keyName, type Card } from './scales'
 import { loadState, outputLatency } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
-import { inBundle } from './catalog'
 import { icon } from './icons'
 import type { Input } from './midi'
 import { noteName } from './spell'
@@ -90,10 +89,6 @@ export function skeleton(app: HTMLElement) {
 }
 
 // ---------- library ----------
-
-/** The cover for a starter or a bundled open-library piece; your own files and the corpus have none and keep the mini-staff. */
-export const art = (id: string, cls = 'art') =>
-  id.startsWith('starter-') || (id.startsWith('lib:') && inBundle(id.slice(4))) ? `<img class="${cls}" src="${import.meta.env.BASE_URL}art/${id.replace('lib:', '')}.webp" alt="" width="600" height="400" decoding="async">` : ''
 
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 
@@ -266,7 +261,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .map((r) => {
       const done = d.done.includes(r.key)
       const cls = r === first ? ' primary' : done ? ' ghost' : ''
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? art(d.last.id, 'art lead') : ''}<div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
+      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
   el.innerHTML = `

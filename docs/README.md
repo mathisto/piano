@@ -105,4 +105,3 @@ Dated reports behind the decisions; read the ratings before relying on a claim.
 
 ## Art
 
-- `art/covers.md`: the style header and prompts for the cover illustrations.
