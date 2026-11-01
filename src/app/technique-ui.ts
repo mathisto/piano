@@ -28,9 +28,11 @@ export async function showTechnique() {
   const ts = await store.getTech()
   const today = dayNum()
   const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) }))
-  const { techniqueView } = await import('../ui-views')
+  const [{ techniqueView }, l, packs] = await Promise.all([import('../ui-views'), touchCal ? undefined : hooks.lamp('tech'), import('./pack-ui')])
   techniqueView(el, settings.tech, touchCal, calMsg, path)
-  await (await import('./pack-ui')).mount(el, 'technique') // Studies, at the top: lazy, with its packs
+  const held = await packs.mount(el, 'technique') // Studies, at the top: lazy, with its packs
+  // the head's Start: the pack in hand while it has a next step (it held the page's lamp before there was a head Start), else what nextUp() gives Technique
+  l?.(el, () => held)
   void preview(el)
   el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
     const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)

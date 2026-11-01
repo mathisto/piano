@@ -44,11 +44,12 @@ export async function libraryData() {
 }
 
 export async function showLibrary(err = '') {
-  const { starts, mine, last } = await libraryData()
-  last.cont = true
+  const [{ starts, mine, last }, l] = await Promise.all([libraryData(), hooks.lamp('song')])
+  last.cont = true // the lamp if the head's Start did not load
   const [{ library, mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()]) // the page's code: fetched at idle after boot, so usually here already
   library($('#library'), starts, mine, err)
   await (await import('./pack-ui')).mount($('#library'), 'songs') // the Packs chip and its list
+  l?.($('#library')) // the head's Start: the piece in play and its next step, the read-through or the piece due; the row's Learn steps down
   ;(await cover()).drawCovers($('#library'))
   if (err) $('#drop').scrollIntoView({ block: 'nearest' }) // a failed piece far down the page, or a dropped file, must not leave its message above the fold
   mountLibrary($('#library'), prog, libSong)

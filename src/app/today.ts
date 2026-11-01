@@ -1,18 +1,18 @@
 // Today and Progress: the plan for the day, the Path, and starting whatever they name.
 import * as lib from '../catalog'
 import { dayNum } from '../drill'
-import { type Ctx, nextOf, path as gradePath, type Start } from '../grades'
+import { type Ctx, type Level, nextOf, path as gradePath, type Start } from '../grades'
 import { planOf, type PlanMin, theoryDue } from '../plan'
-import type { Snap } from '../next'
+import type { Snap, Unit } from '../next'
 import { pickPiece } from '../readthrough'
-import { DEFAULT_RUN } from '../run'
+import { bestKey, DEFAULT_RUN, type RunSpec } from '../run'
 import { keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, STAGES as SCALE_STAGES } from '../scales'
 import { save, settings } from '../settings'
 import * as store from '../store'
 import { streak as dayStreak } from '../streak'
 import { nextRecipe, stateOf, SYLLABUS, type TechStats } from '../syllabus'
 import { exercise, PATTERNS } from '../technique'
-import { $, type TodayData } from '../ui'
+import { $, runTitle, type TodayData } from '../ui'
 import { dayKey, improved, lastWeek, weekOf } from '../week'
 import { firstUse, type Go, guideDay, guideDid, guideSave, guideState } from '../guide'
 import { current, drillStats, hooks, stageById } from './state'
@@ -36,7 +36,8 @@ async function snapshot() {
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
   const ctx = await pathCtx(ts)
-  const nx = nextOf(gradePath(ctx))
+  const gp = levelOf(gradePath(ctx))
+  const nx = nextOf(gp)
   const sst = nextScaleStage(ctx.scales)
   const td = await theoryDue(ctx.theory).catch(() => undefined) // the Theory code did not load: Today without its Theory row
   const PATH_STEP = { scale: 'scale', read: 'read', tech: 'warm', theory: 'theory' } // the plan step that does a requirement
@@ -49,6 +50,7 @@ async function snapshot() {
   const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   const guide = await firstWeek(days)
+  const run = lastRun(await store.getRuns())
   const [{ coverHtml, pieceMeta }, { todayRows }] = await Promise.all([cover(), import('../today-view')]) // the rows' words and buttons load with the page
   // every piece row carries its cover: a library piece's from the sidecar (an empty staff stands in until it arrives), a starter's or a file's from its score
   const thumb = (id: string) => {
@@ -78,16 +80,18 @@ async function snapshot() {
     path: nx?.start && nx.start.kind !== 'scale' ? { title: `Path: ${nx.name}`, sub: `Level ${nx.level}. ${nx.detail}`, start: nx.start } : undefined,
     done: nx?.start && done.includes(PATH_STEP[nx.start.kind]) ? [...done, 'path'] : done,
     recap: recap ?? undefined,
+    run: `${runTitle(run)}${run.pace ? ` at ${run.pace} bpm` : ''}`,
     sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `One pass, no stopping · ${sight.fresh ? 'a new piece, ' : ''}${sight.piece.level}`, cover: thumb(sight.piece.id) },
   }
-  const units = todayRows(d)
+  const units = todayRows(d).map((u) => ({ ...u, strand: kindOf(u.go) }))
   const now = guide?.rows.find((r) => r.state === 'now')?.step
   const at: Snap = {
     rows: units,
     plan: planOf(d.planMin, units.map((r) => r.key)).map((r) => r.key),
     done: d.done,
-    guide: now && { key: 'guide', title: now.title, sub: now.sub, go: { today: 'guide', go: now.go } },
+    guide: now && { key: 'guide', title: now.title, sub: now.sub, go: { today: 'guide', go: now.go }, strand: kindOf({ today: 'guide', go: now.go }) },
     path: d.path ? 'path' : nx?.start?.kind === 'scale' ? 'scale' : undefined,
+    reqs: gp.flatMap((l) => l.rows),
   }
   return { d, at }
 }
@@ -114,10 +118,44 @@ hooks.next = async (after) => {
     async start() {
       endFeatures() // the drill, run or read-through that ended stays ended
       if (current && (kindOf(g) === 'theory' || g.go === 'progress')) await leave() // a page, not a piece: off the play screen first
-      store.offered({ kind: kindOf(g), by: u.by })
-      launch(g)
+      begin(u)
     },
   }
+}
+
+/** A page head's Start (practice path phase 3): the strand's next unit, unless the page's `own` pick comes first (the pack in hand on Technique, a trainer
+ *  on Theory), drawn into the head as the page's one lamp: every other lamp and Next tag on the page steps down. Undefined if its code did not load: the page keeps its own. */
+hooks.lamp = async (strand) => {
+  try {
+    const [{ at }, nx] = await Promise.all([snapshot(), import('../next')])
+    const u = nx.nextUp(at, strand)
+    return (el, own) => nx.lamp(el, own?.(u) ?? (u && { ...u, start: () => begin(u) }))
+  } catch {
+    return undefined
+  }
+}
+
+/** Start a unit, saying what offered it. */
+const begin = (u: Unit & { by: string }) => {
+  store.offered({ kind: kindOf(u.go ?? {}), by: u.by })
+  launch(u.go ?? {})
+}
+
+/** The level the standard follows (Auto, settings.ts): the level of the Path's next requirement, 5 past the last. Kept, so a run at boot is judged without every store. */
+function levelOf(p: Level[]) {
+  const lv = nextOf(p)?.level ?? 5
+  if (lv !== settings.lv) {
+    settings.lv = lv
+    save()
+  }
+  return p
+}
+
+/** The Sight run to offer: the last one set up, at the tempo its own history has reached (paced.ts), which a clean run on two days raises. */
+const lastRun = (r: Awaited<ReturnType<typeof store.getRuns>>): RunSpec => {
+  const s = { ...DEFAULT_RUN, ...r.last }
+  const m = s.pace ? r.paced?.[bestKey(s)] : undefined
+  return m ? { ...s, pace: m.bpm, every: m.every } : s
 }
 
 /** The first-week card: the plan records since first use say what is done. Null once hidden, finished or past day 8. */
@@ -148,7 +186,7 @@ export async function showProgress() {
   guideDid('progress')
   const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
   const today = dayNum()
-  const gp = gradePath(await pathCtx(ts))
+  const gp = levelOf(gradePath(await pathCtx(ts)))
   const [{ ladderState }, { LADDER }, { progressView }] = await Promise.all([import('../ladder'), import('../ladder-data'), import('../ui-views')])
   const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
     const x = lib.piece(id)
@@ -177,7 +215,7 @@ async function startReq(s: Start) {
   else if (s.kind === 'tech') void openSong(exercise((SYLLABUS.find((r) => r.id === s.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
   else {
     const t = await theory()
-    t.theoryLevels[s.trainer] = s.level
+    t.setLevel(s.trainer, s.level)
     await hooks.showSection('theory')
     await t.startTheory(s.trainer)
   }
@@ -246,7 +284,7 @@ const kindOf = (g: Record<string, string | undefined>) => KIND[(g.today === 'sta
 function launch(g: Record<string, string | undefined>) {
   if (g.today === 'guide') void GUIDE_GO[g.go as Go]()
   else if (g.today === 'start') void startReq(JSON.parse(g.start!))
-  else if (g.today === 'run') void store.getRuns().then((r) => startRun({ ...DEFAULT_RUN, ...r.last }))
+  else if (g.today === 'run') void store.getRuns().then((r) => startRun(lastRun(r)))
   else if (g.today === 'continue') void openAt(g.id!, { rate: Number(g.rate) || undefined, nowait: !!g.nowait })
   else if (g.today === 'fix') void openAt(g.id!, { rate: 0.7, loop: [Number(g.a), Number(g.b)] })
   else if (g.today === 'read') void startDrill(stageById(g.id!)!)

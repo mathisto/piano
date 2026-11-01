@@ -9,6 +9,7 @@ import { settings } from '../settings'
 import * as store from '../store'
 import { exercise } from '../technique'
 import { icon } from '../icons'
+import type { Lit } from '../next'
 import { $, rowMenu } from '../ui'
 import { esc } from '../util'
 import { current, game, hooks, staff, stageById } from './state'
@@ -61,8 +62,8 @@ const page = (p: Pack) => (p.kind === 'study' ? 'technique' : 'songs')
 let songsOpen = false // the Packs chip on Songs, open or not: kept while the app is open
 let said = '' // the sheet's status line after an import
 
-/** Draw the packs into a page: Studies after Technique's head, or the Packs chip and its list on Songs. */
-export async function mount(el: HTMLElement, where_: 'technique' | 'songs') {
+/** Draw the packs into a page: Studies after Technique's head, or the Packs chip and its list on Songs. On Technique it returns the pack in hand, for the head's Start. */
+export async function mount(el: HTMLElement, where_: 'technique' | 'songs'): Promise<Lit | undefined> {
   const [recs, c] = await Promise.all([all(), ctx()])
   if (!el.isConnected) return
   const mine = recs.filter((r) => page(r.pack) === where_)
@@ -81,7 +82,7 @@ export async function mount(el: HTMLElement, where_: 'technique' | 'songs') {
   const list = `<div class="plan">${mine.map(row).join('')}${bring}</div>`
   if (where_ === 'technique') {
     el.querySelector('.lib-head')!.insertAdjacentHTML('afterend', `<section class="packs" aria-labelledby="pkStudies"><h2 class="sec" id="pkStudies">Studies</h2>${list}</section><h2 class="sec">Exercises</h2>`)
-    if (lit) el.querySelector('#tStart')?.classList.remove('primary')
+    if (lit) el.querySelector('#tStart')?.classList.remove('primary') // the head's Start takes it over when it loads (app/today.ts)
   } else {
     el.querySelector('.head-actions')!.insertAdjacentHTML('afterbegin', `<button class="btn" id="pkChip" aria-expanded="${songsOpen}" aria-controls="pkSongs">Packs<small>${mine.length}</small></button>`)
     el.querySelector('.lib-head')!.insertAdjacentHTML('afterend', `<section class="packs" id="pkSongs" aria-label="Packs"${songsOpen ? '' : ' hidden'}>${list}</section>`)
@@ -105,6 +106,8 @@ export async function mount(el: HTMLElement, where_: 'technique' | 'songs') {
     input.value = ''
     if (f) void fromFile(f).catch((err) => hooks.showSection(where_, (err as Error).message))
   }
+  const w = lit && ws.get(lit)!
+  return w?.next && { title: lit!.pack.title, h: `<span class="pn">${esc(lit!.pack.title)}</span>`, sub: w.line, start: () => void start(lit!, w.next!) }
 }
 
 /** The sheet a pack's list opens in: made the first time, beside the app's other sheets. */

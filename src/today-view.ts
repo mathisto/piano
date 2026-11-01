@@ -28,7 +28,7 @@ export function todayRows(d: TodayData): TodayRow[] {
   const mrow = (pct: number) => `<div class="mrow">${meter(pct, false, 'Mastery')}<b>${Math.round(pct * 100)}%</b></div>`
   const pace = d.last.pace
   const rows: (TodayRow | false | undefined)[] = [
-    { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', due: d.techDue && !d.done.includes('warm') ? 1 : 0, go: { today: 'tech', id: d.techId }, verb: 'Start' },
+    { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise, next in the syllabus', due: d.techDue && !d.done.includes('warm') ? 1 : 0, go: { today: 'tech', id: d.techId }, verb: 'Start' },
     { key: 'read', min: 3, title: d.read.name, sub: d.read.line, due: d.read.due, mid: mrow(d.read.pct), go: { today: 'read', id: d.read.id }, verb: 'Practise' },
     { key: 'piece', min: 5, title: d.last.title, h: pn(d.last.title), sub: pace?.label ?? d.last.sub, go: { today: 'continue', id: d.last.id, ...(pace?.rate && { rate: String(pace.rate) }), ...(pace?.kind === 'nowait' && { nowait: '1' }) }, verb: d.last.first ? 'Start' : 'Continue' },
     d.sight && { key: 'sight', min: 4, title: d.sight.title, h: pn(d.sight.title), sub: d.sight.sub, go: { today: 'sight', id: d.sight.id }, verb: 'Read through', cover: d.sight.cover },
@@ -37,7 +37,7 @@ export function todayRows(d: TodayData): TodayRow[] {
     d.scale && { key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: mrow(d.scale.pct), go: start(d.scale.start), verb: 'Start' },
     d.theory && { key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, due: d.theory.due, go: start(d.theory.start), verb: 'Start' },
     d.path && { key: 'path', min: 3, title: d.path.title, sub: d.path.sub, go: start(d.path.start), verb: 'Start' },
-    { key: 'run', min: 3, title: 'Sight run', sub: 'Fresh notes in a row, at your range', go: { today: 'run' }, verb: 'Start' },
+    { key: 'run', min: 3, title: 'Sight run', sub: d.run, go: { today: 'run' }, verb: 'Start' },
     d.review && { key: 'review', min: 6, title: d.review.name, sub: d.review.line, due: d.review.due, go: { today: 'read', id: d.review.id }, verb: 'Practise' },
   ]
   return rows.filter((r): r is TodayRow => !!r)

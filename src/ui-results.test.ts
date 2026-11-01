@@ -2,6 +2,7 @@ import { expect, it } from 'vitest'
 import type { Result } from './game'
 import { marksOf } from './marks'
 import { Judge } from './judge'
+import { settings } from './settings'
 import { fromSpec } from './song'
 import { STARTERS } from './starters'
 import { drillResults, results, runResults } from './ui-results'
@@ -70,8 +71,13 @@ it('Touch counts on an exercise that asks for it and not on a song', () => {
   const even = { rating: 'even', inside: 0.9, n: 20, band: 8, hint: '', devs: [], } as never
   const base = { mode: 'perform', even, counts: { perfect: 40, great: 0, good: 0, late: 0, miss: 0 }, wrong: 0, clean: true } as const
   const song = (id: string) => ({ id, notes: [], bars: [], spb: 1, fifths: 0 }) as never
+  settings.lv = 2
   expect(flat(results(r(base), undefined, '', 'Scales', { song: song('scale:x'), marks: [] }))).toMatch(/Touch Evenness even.*counts/)
   expect(flat(results(r(base), undefined, '', 'Songs', { song: song('lib:x'), marks: [] }))).toMatch(/Touch Evenness even.*not counted yet/)
+  expect(flat(results(r({ ...base, mode: 'learn' }), undefined, '', 'Scales', { song: song('scale:x'), marks: [] }))).toMatch(/Touch Evenness even.*not counted yet/) // only a Perform run is recorded
+  // at level 1 the evenness of a scale is shown, not counted (decision 5)
+  settings.lv = 1
+  expect(flat(results(r(base), undefined, '', 'Scales', { song: song('scale:x'), marks: [] }))).toMatch(/Touch Evenness even.*not counted yet/)
 })
 
 it('Continue after a clean run names where it goes; the tempo step waits in More; Again is the restart icon, Back the ghost', () => {

@@ -27,10 +27,12 @@ export interface Settings {
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
-  coach: Coach // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands
+  coach: Coach | 'auto' // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands; Auto follows the Path level
   marks: boolean // always show the live evenness marks: no fading once the touch is even, no quiet test runs
   keyTouch: KeyTouch // the keyboard's own key touch setting, logged with each touch entry; Fixed makes evenness unmeasurable
-  strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
+  strict: Strict | 'auto' // timing windows and key-length grading together (Perform only); Auto follows the Path level
+  lv: number // the Path level, 1 to 5, as last worked out (app/today.ts): the standard Auto follows and a run is judged at
+  ver: number // 2: the saved Timing and Touch feedback were moved to Auto once (practice path phase 3)
   shortcuts: boolean // the single-key shortcuts (N, M, V, B, ?, [ ], - +) and the computer-key piano; off for voice control and switch users (WCAG 2.1.4)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
@@ -45,7 +47,9 @@ export interface Settings {
   comp: boolean // Lead sheet: the app plays the chords (a block chord on each half bar); only a lead sheet has chords, so it is no-op on other levels
   readAhead?: boolean // Read through: only the next two bars show once the music moves
   remind?: number // the iPad app's practice reminder: minutes after midnight it comes at, unset = off (src/reminder.ts)
+  tlv?: Record<string, number> // Theory: the level each trainer was last set to
 }
+export type Strict = 'easy' | 'standard' | 'strict'
 
 const DEFAULTS: Settings = {
   theme: 'auto',
@@ -61,8 +65,10 @@ const DEFAULTS: Settings = {
   fingers: true,
   fade: true,
   asWritten: false,
-  strict: 'standard',
-  coach: 'gentle',
+  strict: 'auto',
+  coach: 'auto',
+  lv: 1,
+  ver: 2,
   marks: false,
   keyTouch: 'Unknown',
   planMin: 10,
@@ -89,6 +95,11 @@ function load(): Settings {
     if (saved.fx > 1) saved.fx = 1 // the Arcade tier is gone
     if (!saved.strict && saved.hold) saved.strict = saved.hold === 'off' ? 'easy' : saved.hold === 'strict' ? 'strict' : 'standard'
     delete saved.hold
+    // every profile saved before Auto holds Standard and Gentle, chosen or not: those move to Auto once; a value only a hand could have picked stays
+    if (!saved.ver) {
+      if (saved.strict === 'standard') delete saved.strict
+      if (saved.coach === 'gentle') delete saved.coach
+    }
     saved.instrument = instrumentId(saved.instrument)
     delete saved.chord
     delete saved.zpos // the staff size buttons moved into the dock's Practice menu (30 Oct 2026)
@@ -111,6 +122,14 @@ export function save() {
     /* private mode: settings last for the session */
   }
 }
+
+/** What Auto means at Path levels 1 to 5 (docs/research/practice-path.md 3.2): Easy windows and no hold grading at level 1, Strict at 5;
+ *  touch is measured gently from the start (its evenness counts from level 2, scales.ts) and judged closer at 4 and 5. */
+export const AUTO = { strict: ['easy', 'standard', 'standard', 'standard', 'strict'], coach: ['gentle', 'gentle', 'gentle', 'steady', 'strict'] } as const
+const auto = <K extends keyof typeof AUTO>(k: K, lv = settings.lv): (typeof AUTO)[K][number] => AUTO[k][Math.min(5, Math.max(1, lv)) - 1]
+/** The standard a run is judged at now: the hand-picked value, or what Auto gives at the player's level. */
+export const strictness = (lv?: number): Strict => (settings.strict === 'auto' ? auto('strict', lv) : settings.strict)
+export const touchCoach = (lv?: number): Coach => (settings.coach === 'auto' ? auto('coach', lv) : settings.coach)
 
 /** The first-run Set up sheet: once, never over saved settings, never under automation (`?setup` forces it). */
 export const showSetup = (o: { seen: boolean; saved: boolean; automated: boolean; forced: boolean }) => o.forced || !(o.seen || o.saved || o.automated)

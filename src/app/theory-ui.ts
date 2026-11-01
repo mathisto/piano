@@ -3,6 +3,7 @@ import { record, type Stats } from '../drill'
 import { type EarRun, earNote, earTap, earView, newEar, playCard, stopEar } from '../ear-play'
 import { isPulse } from '../pulse'
 import { playPulse, pulseTap } from '../pulse-play'
+import { save, settings } from '../settings'
 import * as store from '../store'
 import { check as checkAnswer, deal as dealTheory, deckOf, TRAINERS, untimed } from '../theory'
 import type { Trainer } from '../theory-cards'
@@ -27,10 +28,26 @@ interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs' | 'cont'> 
 let theory: TheoryRun | undefined
 export const currentTheory = () => theory // e2e: the Theory session in progress, to answer its cards
 let theoryStats: Stats = {}
-export const theoryLevels = Object.fromEntries(TRAINERS.map((t) => [t.id, 1])) as Record<Trainer, number>
+export const theoryLevels = Object.fromEntries(TRAINERS.map((t) => [t.id, Math.min(Math.max(1, t.levels.length), settings.tlv?.[t.id] ?? 1)])) as Record<Trainer, number>
+/** A trainer's level, as the pop-up, the Path or Today set it: kept, so the page and its Start open where the player left it. */
+export function setLevel(t: Trainer, lv: number) {
+  theoryLevels[t] = lv
+  settings.tlv = { ...theoryLevels }
+  save()
+}
 
-export function showTheory() {
-  keepFocus($('#theory'), () => theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) }))
+export async function showTheory() {
+  const draw = () => keepFocus($('#theory'), () => theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) }))
+  if (theory) return draw()
+  const [l, stats] = await Promise.all([hooks.lamp('theory'), store.getTheory()])
+  if (theory) return draw() // a session started meanwhile
+  draw()
+  // Theory's own pick, when nothing is due and the Path asks no theory: the first trainer not started at its level, else the one due back soonest
+  const soon = (x: (typeof TRAINERS)[number]) => Math.min(...deckOf(x.id, theoryLevels[x.id]).map((c) => stats[c.id]?.due ?? Infinity))
+  const fresh = TRAINERS.find((x) => !deckOf(x.id, theoryLevels[x.id]).some((c) => stats[c.id]))
+  const t = fresh ?? [...TRAINERS].sort((a, b) => soon(a) - soon(b))[0]
+  const name = `${t.name}${t.levels.length ? `, level ${theoryLevels[t.id]}` : ''}`
+  l?.($('#theory'), (u) => (u ? undefined : { title: name, sub: fresh ? 'Not started yet' : 'Due back soonest', start: () => void startTheory(t.id) }))
 }
 
 /** A new card: the focus goes to its prompt, which a screen reader then reads. */
@@ -137,7 +154,7 @@ async function end(t: TheoryRun) {
 
 $('#theory').addEventListener('change', (e) => {
   const s = e.target as HTMLSelectElement
-  if (s.dataset.tlevel) theoryLevels[s.dataset.tlevel as Trainer] = Number(s.value)
+  if (s.dataset.tlevel) setLevel(s.dataset.tlevel as Trainer, Number(s.value))
 })
 $('#theory').addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')

@@ -8,7 +8,7 @@ import { marks as liveMarks, type Timing } from './coach'
 import { coachLines, timingLine } from './coach-lines'
 import { barList, markLine, rightOf, type Mark } from './marks'
 import type { Song } from './song'
-import type { Evenness } from './even'
+import { EVEN_LEVEL, type Evenness } from './even'
 import { type RunSpec, type Tally } from './run'
 import { band, type TouchStats } from './touch'
 import { esc, plural } from './util'
@@ -89,7 +89,7 @@ export function results(r: Result, go?: Cont, note = '', from = 'Songs', ctx?: {
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
     (even?.chart ?? '')
-  // One line for each thing measured, each saying whether it decides that the run counts. What counts follows the rules the app has today: notes, and timing in Perform; the exercises add touch.
+  // One line for each thing measured, each saying whether it decides that the run counts: notes, and timing in Perform (its windows and the holds follow the standard, settings.ts strictness); the exercises add touch.
   const hits = r.counts.perfect + r.counts.great + r.counts.good + r.counts.late
   const touch = [
     even?.line,
@@ -101,7 +101,8 @@ export function results(r: Result, go?: Cont, note = '', from = 'Songs', ctx?: {
     measure('Notes', [r.wrong > 0 && `<b>${r.wrong}</b> ${r.wrong === 1 ? 'wrong key' : 'wrong keys'}${at(ms, 'wrong')}`, !waited && r.counts.miss > 0 && `<b>${r.counts.miss}</b> missed${at(ms, 'miss')}`].filter(Boolean).join(' · ') || (waited ? 'No wrong key.' : 'No wrong key, none missed.'), 'counts'),
     waited ? measure('Time', 'The song waited, so time is not measured.') : hits ? measure('Time', `<b>${r.counts.perfect + r.counts.great}</b> of ${hits} on the beat · ${lean}`, perform ? 'counts' : 'not counted yet') : '',
     r.holds >= 0 ? measure('Holds', `<b>${Math.round(r.holds * 100)}%</b> released on time`, 'not counted yet') : '',
-    touch.length ? measure('Touch', touch.join(' '), (id.startsWith('tech:') && r.touchPct >= 0) || (id.startsWith('scale:') && r.even) ? 'counts' : 'not counted yet') : '',
+    // touch counts where a pass rule reads it, at the level the run was judged at: a technique run's targets, and from level 2 the evenness of a scale or exercise (scales.ts, syllabus.ts)
+    touch.length ? measure('Touch', touch.join(' '), perform && ((id.startsWith('tech:') && r.touchPct >= 0) || (/^(tech|scale):/.test(id) && r.even && settings.lv >= EVEN_LEVEL)) ? 'counts' : 'not counted yet') : '',
   ].join('')
   const slips = ms.filter((m) => m.kind === 'wrong' || m.kind === 'miss')
   const slipBars = [...new Set(slips.map((m) => m.bar + 1))]

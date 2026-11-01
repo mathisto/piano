@@ -102,4 +102,7 @@ export function live(prev: number[], v: number): number | null {
 }
 
 /** Exercises where the same touch is the point; a song's dynamics are meant to move, and an accent or a melody over chords is uneven on purpose. */
+/** Uneven touch stops a scale or a technique run counting from Path level 2; at level 1 it is shown, not counted, and on a piece it never counts (decision 5). */
+export const EVEN_LEVEL = 2
+export const unevenCounts = (even: { rating: string } | null | undefined, lv: number) => lv >= EVEN_LEVEL && even?.rating === 'uneven'
 export const judged = (id: string, dyn?: string) => /^(tech|scale):/.test(id) && dyn !== 'accent' && dyn !== 'balance'
