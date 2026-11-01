@@ -81,7 +81,7 @@ export async function openTracks(id: string) {
     ['Notes', String(song.notes.length)],
     ['Bars', String(song.bars.length)],
     ['Length', `${Math.floor(song.end / 60)}:${String(Math.round(song.end % 60)).padStart(2, '0')}`],
-    ['Key', f === 0 ? 'No sharps or flats' : `${Math.abs(f)} ${f > 0 ? 'sharp' : 'flat'}${Math.abs(f) > 1 ? 's' : ''}`],
+    ['Key', song.stated?.mode ? (await cover()).keyName(f, song.stated.mode) : '—'], // only what the file states: the importer's guess is not shown as data
     ...(r?.tracks.some((t) => t.percussion) ? ([['Drums', 'Left out']] as [string, string][]) : []),
   ]
   const order = [...pick.tracks] // the tracks in use first, fixed while the dialog is open

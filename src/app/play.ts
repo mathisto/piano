@@ -111,6 +111,7 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
   if (stale()) return false
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
+  document.title = `${song.title} · Piano Forte`
   $('#stagesBtn').hidden = mode !== 'read'
   document.body.classList.toggle('reading', mode === 'read')
   $('#brand').setAttribute('aria-label', 'Piano Forte: leave this piece')
