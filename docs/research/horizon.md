@@ -412,7 +412,7 @@ Steps 7 to 9 add a second UI language (SwiftUI) to a repo that is TypeScript apa
 
 Answer by number. Each has a recommended answer and the alternative. The numbering continues from library-and-profile's 11 to 22.
 
-23. **Where the studies live.** Recommended: a Studies section at the top of Technique (Hanon, Czerny, Burgmüller, Clementi), each book a pack that says what is next, and repertoire packs (Schumann Op. 68, Anna Magdalena) behind a Packs chip on Songs; no eighth tab. Alternative: an eighth tab, Studies.
+23. **Where the studies live.** Recommended: a Studies section at the top of Technique (Hanon, Czerny, Burgmüller, Clementi), each book a pack that says what is next, and repertoire packs (Schumann Op. 68, Anna Magdalena) behind a Packs chip on Songs; no eighth tab. Alternative: an eighth tab, Studies. **Decided 1 Nov 2026: A, the top of Technique** (the owner compared both renders; an eighth tab squeezed Progress to its icon at 1180 px).
 24. **The word.** Chosen (1 Nov 2026): "Pack". Recommended was "Course"; the alternatives were "Book" or "Pack".
 25. **What ships first.** Recommended: first-party packs in the bundle first; then import by file and by link, and a `packs/` folder in the public repo added to by pull request, checked by CI and read by a human; never accounts, ratings, comments or uploads. Alternative: import in the first release.
 26. **Hanon.** Recommended: Nos. 1 to 20 as a warm-up pack, two a day, slow, "stop if it tenses or hurts", no level shown. Alternative: list Hanon as plain studies with no guidance.
