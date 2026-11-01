@@ -25,8 +25,8 @@ const b64 = (b: ArrayBuffer) => {
 }
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0)).buffer
 
-/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes. */
-const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:)/
+/** The small per-key records that have no store of their own: the scale quiz, each day's plan, a piece's simplify level, a week's snapshot, a piece's last takes, each month's card rows. */
+const EXTRA = /^(scale:quiz|plan:|simp:|snap:|take:|log:cards:)/
 async function getExtra() {
   const out: Record<string, unknown> = {}
   for (const k of await keys()) if (EXTRA.test(String(k))) out[String(k)] = await get(k)
@@ -90,6 +90,7 @@ const FIELDS: [field: string, key: string, kind: 'object' | 'array', merge: Merg
 const mergeExtra = (k: string, a: any, b: any): unknown =>
   a === undefined ? b
   : k.startsWith('plan:') && Array.isArray(a) && Array.isArray(b) ? [...new Set([...a, ...b])]
+  : k.startsWith('log:cards:') && Array.isArray(a) && Array.isArray(b) ? byTs(a, b)
   : k.startsWith('take:') && Array.isArray(a) && Array.isArray(b) ? byTs(a, b).reverse().slice(0, KEEP)
   : k === 'scale:quiz' && kindOf(a) === 'object' && kindOf(b) === 'object' ? moreSeen(a, b)
   : b

@@ -21,19 +21,13 @@ export interface Timing {
   bias: number // ms: mean offset from the beat, + is late
 }
 
-const ON_BEAT = 8 // ms: a lean under this is centred, as the timing histogram says
+export const ON_BEAT = 8 // ms: a lean under this is centred, as the timing histogram says
 
 /** `off` is each struck note's offset from its written time in real ms (Judge.off). Gaps are taken per hand, so bias cancels out of the spread. */
 export function timing(hits: { t: number; p: number; h: Hand; off: number }[]): Timing | null {
   const gaps = lines(hits).flatMap((l) => l.slice(1).map((x, i) => x.off - l[i].off))
   if (gaps.length < MIN_RUN - 1) return null
   return { n: gaps.length, spread: mad(gaps), bias: mean(hits.map((x) => x.off)) }
-}
-
-export function timingLine(x: Timing) {
-  const b = Math.round(Math.abs(x.bias))
-  const lean = Math.abs(x.bias) < ON_BEAT ? 'on the beat on average' : `on average <b>${b} ms</b> ${x.bias > 0 ? 'late' : 'early'}`
-  return `Timing: ${lean}; spread <b>±${Math.round(x.spread)} ms</b>.`
 }
 
 // ---------- articulation ----------
@@ -52,8 +46,8 @@ export interface Artic {
 }
 
 // Tolerant on purpose: MIDI and a web view add jitter, and the research only says "slight overlap" and "short".
-const LEGATO_GAP = 30 // ms: a lift shorter than this still sounds joined
-const LEGATO_BLUR = 120 // ms: overlap past this (or a third of the gap, if longer) smears the two notes
+export const LEGATO_GAP = 30 // ms: a lift shorter than this still sounds joined
+export const LEGATO_BLUR = 120 // ms: overlap past this (or a third of the gap, if longer) smears the two notes
 const STACCATO_MAX = 0.5 // share of the written value: held longer than this is not detached
 
 /** Legato: the overlap of each key with the next one in its hand. Staccato: how much of each written value the key was held. `only` picks the notes judged (a song's staccato or slurred ones). */
@@ -85,13 +79,6 @@ export function articulation(kind: Artic['kind'], notes: Note[], presses: Press[
       }
     }
   return marks.length >= MIN_RUN - 1 ? { kind, n: marks.length, ok, typical: median(marks) } : null
-}
-
-function articLine(a: Artic) {
-  if (a.kind === 'staccato') return `Staccato: <b>${a.ok} of ${a.n}</b> notes short; you hold about <b>${Math.round(a.typical * 100)}%</b> of each note's value.`
-  const t = Math.round(Math.abs(a.typical))
-  const how = a.typical < -LEGATO_GAP ? `you lift about <b>${t} ms</b> before the next note` : a.typical > LEGATO_BLUR ? `keys overlap by about <b>${t} ms</b>, which blurs` : `keys overlap by about <b>${Math.max(0, Math.round(a.typical))} ms</b>`
-  return `Legato: <b>${a.ok} of ${a.n}</b> joins smooth; ${how}.`
 }
 
 // ---------- voicing ----------
@@ -126,13 +113,6 @@ export function voicing(samples: { v: number; h: Hand }[], e: Edges, melody: Han
   const O = samples.filter((s) => s.h !== melody).map((s) => s.v)
   if (M.length < 4 || O.length < 4) return null
   return { melody, gap: mean(M) - mean(O), aim: Math.max(3, Math.round((e.hard - e.soft) * BALANCE_SHARE)) }
-}
-
-export function voiceLine(x: Voicing) {
-  const g = Math.round(Math.abs(x.gap))
-  const [m, o] = x.melody === 'R' ? ['right', 'left'] : ['left', 'right']
-  const said = g < 1 ? 'the hands came out level' : x.gap > 0 ? `the melody (${m} hand) ran <b>${g}</b> louder than the ${o}` : `the ${o} hand ran <b>${g}</b> louder than the melody (${m} hand)`
-  return `Voicing: ${said}; aim for the melody at least <b>${x.aim}</b> louder.`
 }
 
 /** The one velocity every note came in at, when they all did: a keyboard set to Fixed key touch. */
@@ -334,16 +314,3 @@ export const songLines = (song: Song, presses: Press[], samples: { v: number; h:
     .sort((a, b) => b.n - a.n)
     .slice(0, MOST)
     .map((f) => f.line)
-
-/** The extra results lines; `perform` already shows timing as its histogram caption. */
-export function coachLines(r: { timing: Timing | null; artic: Artic | null; voice: Voicing | null; fixed?: number; mode: string; follow?: string[]; pedal?: string | null }, test: boolean) {
-  const out: string[] = [...(r.follow ?? [])]
-  if (r.pedal) out.push(r.pedal)
-  if (test) out.push('A test run: no touch marks while you played.')
-  if (r.timing && r.mode !== 'perform') out.push(timingLine(r.timing))
-  if (r.artic) out.push(articLine(r.artic))
-  if (r.voice) out.push(voiceLine(r.voice))
-  if (r.fixed !== undefined)
-    out.push(settings.keyTouch === 'Fixed' ? `Key touch is Fixed: every note came in at ${r.fixed}, so evenness cannot be measured.` : `Every note came in equally loud (${r.fixed}). If your keyboard's key touch is set to Fixed, evenness cannot be measured.`)
-  return out.length ? `<div class="coachlines">${out.map((l) => `<p>${l}</p>`).join('')}</div>` : ''
-}

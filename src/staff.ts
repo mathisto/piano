@@ -5,6 +5,7 @@ import { analyze, densest, figure, fitZoom, layout, windowFor, yOf, S, type Anal
 import { settings } from './settings'
 import { BOTTOM_STEP, keyAcc, spell } from './spell'
 import { barAt } from './song'
+import { marksOf, summary } from './marks'
 
 const NS = 'http://www.w3.org/2000/svg'
 type Clef = 'treble' | 'bass'
@@ -46,6 +47,8 @@ interface Placed {
   y: number
 }
 
+const X = 'M-3.6,-3.6 L3.6,3.6 M3.6,-3.6 L-3.6,3.6' // the cross through a wrong key
+
 const MAX_H = 330 // px: the staff beside the keys never needs more; a tall portrait pane would blow a two-bar window up to fill it (a staff space is about 17 px here)
 
 const ROLL_MS = 350 // a line turning up into place: long enough to follow, settled before the next note at a reading tempo (docs/changes/sightroll.md)
@@ -86,6 +89,14 @@ export class Staff {
   render() {
     this.dirty = true
     this.frame()
+  }
+
+  /** Bring a bar into the window: the review steps through the marks of a piece too long to show at once. */
+  reveal(bar: number) {
+    const L = this.L
+    if (L && bar >= L.from && bar < L.to) return
+    this.game.seek(this.game.song.bars[bar].t0)
+    this.render()
   }
 
   /** The bar that asks for the most room, and the bars on show that had to be squeezed past reading: for a Simplify control. */
@@ -255,7 +266,8 @@ export class Staff {
     const { mode, meter } = song.stated ?? {}
     const b = song.bars[L.from]
     const bars = L.to - L.from > 1 ? `bars ${L.from + 1} to ${L.to}` : `bar ${L.from + 1}`
-    this.svg.setAttribute('aria-label', [song.title, mode && keyName(song.fifths, mode), meter && b && `${b.n}/${b.den}`, `${bars} of ${song.bars.length}`, L.clefs.length > 1 ? 'grand staff' : `${L.clefs[0]} staff`].filter(Boolean).join(', '))
+    const what = [song.title, mode && keyName(song.fifths, mode), meter && b && `${b.n}/${b.den}`, `${bars} of ${song.bars.length}`, L.clefs.length > 1 ? 'grand staff' : `${L.clefs[0]} staff`].filter(Boolean).join(', ')
+    this.svg.setAttribute('aria-label', this.game.phase === 'done' ? `${what}. ${summary(marksOf(this.game.judge, song))}` : what)
   }
 
   private paint(L: Layout) {
@@ -368,15 +380,22 @@ export class Staff {
     const clip = el('clipPath', { id: 'ahead' }, svg)
     this.curtain = el('rect', { x: 0, y: 0, width: L.w, height: L.h }, clip) as SVGRectElement
 
-    // marks that survive a rebuild: notes already missed this pass
+    // marks that survive a rebuild: notes already missed this pass, and every graded note's shape (a grade is only set once the note is judged)
     for (const [id, p] of this.byId) {
       const note = this.game.song.notes[id]
       const gr = this.game.judge.grade[id]
       if (this.game.judge.st[id] === 2) this.flag(id, p, 'miss')
-      else if (note && note.t < this.game.t - 0.02) {
-        p.grp.classList.add('past')
+      else {
+        if (note && note.t < this.game.t - 0.02) p.grp.classList.add('past')
         if (gr && gr !== 'perfect') this.shape(id, p, gr)
       }
+    }
+    // the wrong keys of a finished run, at the pitch played and the moment it was played
+    if (this.game.phase === 'done') {
+      const { bars } = this.game.song
+      this.game.judge.strays.forEach(({ p, t }, s) => {
+        if (t >= bars[L.from].t0 - 0.05 && t < bars[L.to - 1].t1) this.notehead(p, t, true).g.dataset.s = String(s)
+      })
     }
   }
 
@@ -474,23 +493,27 @@ export class Staff {
     })
   }
 
-  /** A hollow dashed notehead where you pressed a key: not part of the score, but the note you played. */
-  ghost(pitch: number, t: number) {
-    const L = this.L
-    const { bars } = this.game.song
-    if (!L || !bars.length) return
-    this.ghosts.get(pitch)?.remove()
+  /** A hollow dashed notehead at the pitch and time of a key: not part of the score, but the note you played. */
+  private notehead(pitch: number, t: number, stray = false) {
+    const L = this.L!
     const { pos, sp, clef, step, y } = this.place(pitch, t)
-    const g = el('g', { class: 'ghost' }, this.svg) as SVGGElement
+    const g = el('g', { class: stray ? 'ghost stray' : 'ghost', 'aria-hidden': 'true' }, this.svg) as SVGGElement
     g.style.transform = `translate(${pos.x}px, ${y}px)`
-    g.setAttribute('aria-hidden', 'true')
     const bottom = BOTTOM_STEP[clef]
     const off = (st: number) => yOf(st, clef, L.base) + pos.dy - y
     for (let st = bottom - 2; st >= step; st -= 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
     for (let st = bottom + 10; st <= step; st += 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
     el('ellipse', { rx: 6.4, ry: 4.7, transform: 'rotate(-20)' }, g)
     if (sp.acc !== keyAcc(this.an?.bars[L.from]?.fifths ?? this.game.song.fifths)[sp.letter]) el('text', { class: 'smufl', x: -16, y: 0, 'text-anchor': 'middle' }, g, sp.acc > 0 ? G.sharp : sp.acc < 0 ? G.flat : G.natural)
-    this.ghosts.set(pitch, g)
+    if (stray) el('path', { d: X, class: 'x' }, g)
+    return { g }
+  }
+
+  /** The key being pressed now. */
+  ghost(pitch: number, t: number) {
+    if (!this.L || !this.game.song.bars.length) return
+    this.ghosts.get(pitch)?.remove()
+    this.ghosts.set(pitch, this.notehead(pitch, t).g)
     if (this.ghosts.size > 12) this.ghosts.get(this.ghosts.keys().next().value as number)?.remove()
   }
 
@@ -520,7 +543,7 @@ export class Staff {
     const g = this.ghosts.get(pitch)
     if (!g) return
     this.ghosts.delete(pitch)
-    el('path', { d: 'M-3.6,-3.6 L3.6,3.6 M3.6,-3.6 L-3.6,3.6', class: 'x' }, g)
+    el('path', { d: X, class: 'x' }, g)
     g.classList.add('bad')
     setTimeout(() => g.remove(), 760)
   }
@@ -552,10 +575,11 @@ export class Staff {
     }
   }
 
-  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour: great ●, good ▲, late ▹ (outlined). Perfect has none: a clean note just goes quiet. Miss is a × (flag). */
+  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour: great ●, good ▲, late ▹ (outlined). Perfect has none: a clean note just goes quiet. Miss is a × (flag). It sits left of the head when the key was early and right of it when late. */
   private shape(id: number, p: Placed, grade: string) {
     if (p.head.parentElement?.querySelector(`.gshape[data-id="${id}"]`)) return
-    const { x } = p
+    const off = this.game.judge.off[id]
+    const x = p.x + (off < 0 ? -5 : 5) // left of the head: early; right: late
     const y = p.y + 13
     const d =
       grade === 'great' ? `M${x - 2.8},${y} a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0`

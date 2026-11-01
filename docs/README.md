@@ -14,6 +14,7 @@ The top-level files are `PRODUCT.md` (what the app is and for whom), `DESIGN.md`
 One file per feature branch: what it built, how it was checked, what is open. They are dated records; the current state is in `ROADMAP.md`.
 
 **Play and practice**
+- `changes/practice-path-1.md`: the practice path, phase 1: a wrong key costs what a miss costs, marks that stay on the staff, the song results card over the falling notes only, and the attempt log.
 - `changes/habit.md`: 30 and 45 minute plans, break reminder, day streak, the Path.
 - `changes/guide.md`: the Start here card, tab notes, the Help sheet and the Connect line.
 - `changes/ladder.md`: the repertoire ladder on the Path.

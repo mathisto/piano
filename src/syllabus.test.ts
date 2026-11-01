@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { applyRun, nextRecipe, SYLLABUS, stateOf, type TechStats } from './syllabus'
+import { Judge } from './judge'
+import type { Note } from './song'
+import { applyRun, goodRun, nextRecipe, SYLLABUS, stateOf, type TechStats } from './syllabus'
 import { exercise } from './technique'
 
 describe('technique syllabus', () => {
@@ -57,5 +59,19 @@ describe('technique syllabus', () => {
     applyRun(s, SYLLABUS[0].id, good, 0)
     expect(nextRecipe(s, 0).recipe).toBe(SYLLABUS[1])
     expect(nextRecipe(s, 99)).toMatchObject({ reason: 'due', recipe: SYLLABUS[0] })
+  })
+})
+
+describe('a good technique run', () => {
+  it('does not count when the keys were mashed round the notes', () => {
+    const notes: Note[] = Array.from({ length: 8 }, (_, i) => ({ id: i, t: i, d: 0.5, p: 60 + i, v: 0.7, h: 'R', bar: 0, beats: 1 }))
+    const run = (mash: number) => {
+      const j = new Judge(notes, { rate: 1, wait: false, strict: true, beat: 1 }, () => true)
+      notes.forEach((n) => j.press(n.p, n.t))
+      for (let i = 0; i < mash; i++) j.press(40, 0.5 + i) // no note of that pitch anywhere
+      return { acc: j.accuracy, touchPct: -1 }
+    }
+    expect(goodRun(run(0))).toBe(true)
+    expect(goodRun(run(3))).toBe(false) // 8 right of 11 judged
   })
 })

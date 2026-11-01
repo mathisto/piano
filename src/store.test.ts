@@ -96,3 +96,29 @@ describe('export and import', () => {
     expect([...db.keys()]).toEqual([])
   })
 })
+
+describe('the attempt log', () => {
+  const jan = Date.UTC(2026, 0, 15)
+  const feb = Date.UTC(2026, 1, 3)
+
+  it('card rows go under their month, and with the new fields round-trip an export, merge by time, and Clear all data takes them', async () => {
+    await store.logCards([{ ts: jan, k: 'a', y: 1, rt: 800 }, { ts: jan + 1, k: 'b', y: 0, rt: 2100, got: [62] }, { ts: feb, k: 'c', y: 0, rt: 900, got: [60, 64] }])
+    expect([...db.keys()].sort()).toEqual(['log:cards:2026-01', 'log:cards:2026-02'])
+    await store.logHistory({ ts: 5, kind: 'song', label: 'Minuet', acc: 0.9, id: 'song:minuet', notes: 0.94, ok: true, as: 1, rate: 0.7, sp: 22 })
+    await store.edit<{ ts: number }[]>('history:log', [], (l) => l.map((e) => ({ ...e, then: 'a' })))
+    const file = await store.exportAll()
+
+    db.clear() // this browser moved on: another January card, one in common, and a March
+    await store.logCards([{ ts: jan + 1, k: 'b', y: 0, rt: 2100, got: [62] }, { ts: jan + 2, k: 'd', y: 1, rt: 900 }, { ts: Date.UTC(2026, 2, 1), k: 'e', y: 1, rt: 700 }])
+    await store.importAll(file)
+    const ts = (m: string) => (db.get(`log:cards:${m}`) as { ts: number }[]).map((c) => c.ts)
+    expect(ts('2026-01')).toEqual([jan, jan + 1, jan + 2])
+    expect(ts('2026-02')).toEqual([feb])
+    expect(ts('2026-03')).toHaveLength(1)
+    expect((db.get('log:cards:2026-02') as { got: number[] }[])[0].got).toEqual([60, 64])
+    expect(db.get('history:log')).toEqual([{ ts: 5, kind: 'song', label: 'Minuet', acc: 0.9, id: 'song:minuet', notes: 0.94, ok: true, as: 1, rate: 0.7, sp: 22, then: 'a' }])
+
+    await store.clearAll()
+    expect([...db.keys()].filter((k) => /^(log|history)/.test(k))).toEqual([])
+  })
+})

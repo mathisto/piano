@@ -139,7 +139,7 @@ export const serial = <T>(f: () => Promise<T>): Promise<T> => {
   return r
 }
 /** Read a record, change it, write it back, in the queue. */
-const edit = <T>(key: string, empty: T, f: (v: T) => T) =>
+export const edit = <T>(key: string, empty: T, f: (v: T) => T) =>
   serial(async () => {
     const v = f((await get<T>(key)) ?? empty)
     await set(key, v)
@@ -231,7 +231,7 @@ export const importAll = async (text: string) => (await import('./backup')).impo
 
 export const clearAll = () =>
   serial(async () => {
-    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|coach|take|backup):/.test(String(k))) await del(k)
+    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup):/.test(String(k))) await del(k)
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
     } catch {
@@ -272,23 +272,45 @@ export async function getTheory(): Promise<Stats> {
 
 export const saveTheory = (s: Stats) => serial(() => set('theory:stats', s))
 
-/** One finished practice session of any kind, kept for the charts on Progress. */
+/** One finished practice session of any kind, kept for the charts on Progress and, by id, for whatever is fitted to the record later. */
 export interface HistoryEntry {
   ts: number
   kind: 'read' | 'run' | 'scale' | 'theory' | 'song' | 'tech'
   label: string
-  acc: number // 0..1
+  acc: number // 0..1; the Over time charts and the Best read this
   ms?: number // median time a card took, where cards are timed
   even?: number // touch evenness: share of notes inside the band, 0..1
   bias?: number // timing: mean ms behind (+) or ahead of (-) the beat
+  id?: string // what was practised, stable where the label is for display: song:<id>, scale:<card>@<bpm>, tech:<recipe>
+  notes?: number // the Notes line, 0..1: notes right over the written notes and the wrong keys that cost; waiting, right first time
+  ok?: boolean // the run counted: what the card for its kind asks of a run
+  as?: 1 // assisted (the song waited, a part only, fewer notes shown): the charts skip it
+  rate?: number // tempo, 1 = as written
+  sp?: number // timing spread: the standard deviation of the hit offsets in ms around their own mean; absent when the song waited or fewer than 8 notes were timed
+  then?: 'a' | 'b' // what the player did next from the results card: Again, Back
 }
 
 export async function getHistory(): Promise<HistoryEntry[]> {
   return (await get<HistoryEntry[]>('history:log')) ?? []
 }
 
-export const HISTORY_KEEP = 600
+export const HISTORY_KEEP = 3000
 export const logHistory = (e: HistoryEntry) => edit<HistoryEntry[]>('history:log', [], (l) => [...l, e].slice(-HISTORY_KEEP))
+
+/** One card answered (reading drills, Sight run, Theory): which card, first try or not, how long it took. The record a model of the player is fitted to. */
+export interface CardRow {
+  ts: number
+  k: string // the card's key, as drill.ts and the Theory deck name it
+  y: 0 | 1 // right first try
+  rt: number // ms
+  got?: number[] // on a miss, the pitches actually played (a Theory chord answer is all of them); absent for a rhythm card
+}
+
+/** Never dropped: a key for each month (UTC), so a write reads and rewrites a few thousand rows, not the whole record. */
+export const logCards = (rs: CardRow[]) => {
+  const month = (r: CardRow) => new Date(r.ts).toISOString().slice(0, 7)
+  return Promise.all([...new Set(rs.map(month))].map((m) => edit<CardRow[]>(`log:cards:${m}`, [], (l) => [...l, ...rs.filter((r) => month(r) === m)])))
+}
 
 /** Per exercise: runs finished and even runs in a row, for fading the live touch marks. */
 export async function getCoach(): Promise<Record<string, Seen>> {

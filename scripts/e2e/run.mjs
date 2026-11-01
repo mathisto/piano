@@ -53,7 +53,8 @@ const INIT = `
     },
     // Perform: once the count-in starts, every note is pressed on its beat by the game's own clock; skip lists note indices left out
     // pedal: [{ t, down }] sent as CC64 through the MIDI parser at song second t
-    perform({ skip = [], loud = -1, pedal = [] } = {}) {
+    // stray: [{ i, p }] a wrong key p struck 180 ms after note i
+    perform({ skip = [], loud = -1, pedal = [], stray = [] } = {}) {
       return new Promise((res) => {
         const g = P().game, sk = new Set(skip)
         window.__last = undefined
@@ -67,6 +68,11 @@ const INIT = `
             started = true
             const now = performance.now()
             for (const e of pedal) setTimeout(() => P().pedal(e.down), g.anchorPerf + ((e.t - g.anchorT) / g.rate) * 1000 - now)
+            for (const x of stray) {
+              const at = g.anchorPerf + ((g.song.notes[x.i].t + 0.18 - g.anchorT) / g.rate) * 1000 - now
+              setTimeout(() => P().key(x.p, 0.55), at)
+              setTimeout(() => P().up(x.p), at + 60)
+            }
             g.song.notes.forEach((n, i) => {
               if (sk.has(i) || g.modeOf(n) !== 'play') return // the app plays the rest (Listen, or the part it accompanies)
               const at = g.anchorPerf + ((n.t - g.anchorT) / g.rate) * 1000 - now
@@ -811,6 +817,48 @@ const recorderFlow = () => fresh({
   },
 })
 
+const reviewFlow = () => fresh({
+  async '24 Review: a wrong key stays on the staff, the card leaves the paper alone, Review, the Mark list, the log'(page) {
+    await openStarter(page, 'starter-five-finger')
+    await page.click('#go')
+    // the last note struck, then B4 where the piece has no B4, and the fourth note left out: a wrong key and a miss
+    const r = await ev(page, () => window.__e2e.perform({ skip: [3], stray: [{ i: window.__piano.game.song.notes.length - 1, p: 71 }] }).then((r) => ({ wrong: r.wrong, miss: r.counts.miss, acc: r.acc, total: r.total })))
+    ok(r.wrong === 1 && r.miss === 1, JSON.stringify(r))
+    const card = await res(page, 'Results')
+    await axe(page, 'song results with marks', '#res')
+    // the marked score is the review: the stray stands on the paper, and the card is under it, not over it
+    ok((await page.$$('#staff .stray')).length === 1, 'no stray mark on the staff after the run')
+    ok(await ev(page, () => document.querySelector('#staff').getBoundingClientRect().bottom <= document.querySelector('#res .results').getBoundingClientRect().top + 1), '#res covers #staff')
+    const t = (await card.innerText()).replace(/\s+/g, ' ')
+    ok(/Not clean yet: 2 slips/.test(t) && /\d+ of \d+ notes right/.test(t) && /Notes \d+ of \d+ right · 1 wrong key .* · 1 missed/.test(t) && /Time .* counts/.test(t), t.slice(0, 400))
+    ok(!/%/.test(await page.innerText('.big-grade')), 'a percentage is the figure')
+    // the Mark list says the same marks in words, one button each
+    await page.click('#res .marklist summary')
+    const list = await page.$$eval('#res .marklist button', (b) => b.map((x) => x.textContent))
+    ok(list.length === 2 && list.some((x) => /^Bar \d+, beat \d, .* hand\. Played B4 where [A-G]\d is written/.test(x)) && list.some((x) => /was missed\.$/.test(x)), list.join(' | '))
+    await page.click('#res .marklist button >> nth=0')
+    ok(await page.isVisible('#staff .markpop') && await page.isVisible('#staff .selring'), 'a mark list row did not say its mark on the paper')
+    await page.click('#res .marklist summary')
+    // Review folds the card to a bar, with the paper fitted and the marks on it
+    await page.click('#review')
+    await wait(page, () => document.querySelector('#res .results.folded #markNext') && document.querySelector('#markNext').offsetParent)
+    await page.click('#markNext')
+    ok(/^Mark \d of 2$/.test(await text(page, '#markAt')) && /^Bar \d/.test(await text(page, '#staff .markpop')), 'stepping to a mark said nothing')
+    ok((await page.$$('#staff .stray')).length === 1, 'the stray went when the card folded')
+    await page.keyboard.press('Escape')
+    ok(!(await page.isVisible('#staff .markpop')) && !(await ev(page, () => document.querySelector('#res').hidden)), 'Escape closed more than the words')
+    await page.click('#unfold')
+    // the log: this run by id, and what the player did next
+    await wait(page, async () => (await window.__e2e.idb('history:log'))?.at(-1)?.id === 'song:starter-five-finger')
+    const h = (await ev(page, () => window.__e2e.idb('history:log'))).at(-1)
+    ok(h?.id === 'song:starter-five-finger' && h.ok === false && h.notes > 0 && h.notes < 1 && !h.as && h.rate === 1 && h.sp >= 0, JSON.stringify(h))
+    await page.click('#again')
+    await wait(page, () => document.querySelector('#res').hidden && !document.querySelector('#staff .stray'))
+    await wait(page, async () => (await window.__e2e.idb('history:log')).at(-1).then === 'a')
+    await leave(page, 'library')
+  },
+})
+
 const memFlow = () => fresh({
   async '17 Memorise: two clean passes move stage 0 to 1'(page) {
     await nav(page, 'songs')
@@ -1062,7 +1110,7 @@ const sheetsFlow = async () => {
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
-  lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow),
+  lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])

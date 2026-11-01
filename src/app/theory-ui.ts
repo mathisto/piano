@@ -77,19 +77,21 @@ function judgeTheory() {
   clearTimeout(t.timer)
   const c = t.cards[t.i]
   const ok = checkAnswer(c.steps[t.step], t.buf)
+  const played = t.buf
   t.buf = []
   if (ok && t.step + 1 < c.steps.length) {
     t.step++
     return showTheory()
   }
-  finishTheory(ok, performance.now() - t.at)
+  finishTheory(ok, performance.now() - t.at, played)
 }
 
-function finishTheory(ok: boolean, rt: number) {
+function finishTheory(ok: boolean, rt: number, played: number[] = []) {
   const t = theory
   if (!t || t.answered) return
   const c = t.cards[t.i]
   record(theoryStats, c.id, ok, rt)
+  void store.logCards([{ ts: Date.now(), k: c.id, y: ok ? 1 : 0, rt: Math.round(rt), got: !ok && played.length ? played : undefined }])
   practised(Math.min(30, rt / 1000)) // Theory has no song on the stage, so its time is counted here
   void store.saveTheory(theoryStats)
   t.rts.push(rt)

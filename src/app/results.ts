@@ -46,12 +46,13 @@ async function onDone(r: Result) {
   const who = yourPart(game.song, game.hands, game.parts) // one part of the piece: judged, but not a run of the piece
   const lv = c.level // Notes shown above Full leaves notes out, so it is not the piece as written either: Ready asks for the piece as written
   const partial = !!who || lv > 0
+  const counted = r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait
   const prog = await store.commit(
     c.song.id,
     r.heat,
     c.song.bars.length,
     r.mode === 'perform' && !partial ? { acc: r.acc } : undefined,
-    r.mode === 'read' || game.loop || partial ? undefined : r.rate >= 0.9 && (r.mode === 'perform' ? r.acc >= 0.9 && r.clean : r.clean && !game.wait), // Ready and the review boxes count runs near the written tempo, without waiting
+    r.mode === 'read' || game.loop || partial ? undefined : r.rate >= 0.9 && counted, // Ready and the review boxes count runs near the written tempo, without waiting
   )
   c.heat = prog.heat
   void store.markPlan(dayKey(), c.song.id.startsWith('scale:') ? 'scale' : c.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
@@ -62,7 +63,8 @@ async function onDone(r: Result) {
     void store.logTouch({ ts: Date.now(), id: c.song.id, title: c.song.title, mode: r.mode, n, mean, sd, R: hands.R, L: hands.L, bands, keyTouch: settings.keyTouch })
   }
   const kind = c.song.id.startsWith('scale:') ? 'scale' : c.song.id.startsWith('tech:') ? 'tech' : 'song'
-  if (r.mode === 'perform' && r.total >= 4) void store.logHistory({ ts: Date.now(), kind, label: who ? `${c.song.title}: your part` : lv ? `${c.song.title}: ${LEVELS[lv]}` : c.song.title, acc: r.acc, even: r.even?.inside, bias: r.timing?.bias })
+  const rv = await import('./review-ui') // the run's row in the log, and the review of its marks, load with the card
+  const then = r.mode !== 'read' && r.total >= 4 ? rv.logRun(r, c.song, kind, who ? `${c.song.title}: your part` : lv ? `${c.song.title}: ${LEVELS[lv]}` : c.song.title, counted, partial) : () => {}
   if (coach.coached(c.song.id, c.song.dyn, r.mode)) void coach.tally(c.song.id, r.even?.rating)
   let note = ''
   const sc = parseId(c.song.id)
@@ -84,17 +86,17 @@ async function onDone(r: Result) {
   const res = $('#res')
   if (who) note = `Judged on your part only: <b>${esc(who.you)}</b>.${who.app ? ` The app played ${esc(who.app)}.` : ''} ${note}`
   if (lv) note = `Notes shown: ${LEVELS[lv]}, not the whole piece, so this run does not count toward Ready. ${note}`
-  const ui = await import('../ui-results')
+  const [ui, { marksOf }] = await Promise.all([import('../ui-results'), import('../marks')])
   if (current !== c) return // left during the saves above: the run is recorded, the card is not wanted
-  res.innerHTML = ui.results(r, next, note, backName())
+  res.innerHTML = ui.results(r, next, note, backName(), { song: game.song, marks: marksOf(game.judge, game.song) })
   if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(c.song.id, 1))
   void import('./take-ui').then((t) => t.takeCard(res)).finally(() => soloMenu(res)) // Listen back and Compare with last time (loaded with the stage)
   resOpen(true)
-  res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
-  say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)
-  $('#again', res).onclick = () => game.restart()
-  $('#toLib', res).onclick = leave
+  rv.review(res, r) // the paper keeps the run's marks; this wires the Review button and the Mark list
+  res.querySelector<HTMLButtonElement>('#next, #again')?.focus({ preventScroll: true }) // the card opens at its headline, not scrolled to its buttons
+  $('#again', res).onclick = () => (then('a'), game.restart())
+  $('#toLib', res).onclick = () => (then('b'), leave())
   const nextBtn = res.querySelector<HTMLButtonElement>('#next')
   if (nextBtn && next)
     nextBtn.onclick = () => {
