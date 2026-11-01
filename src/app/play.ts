@@ -46,7 +46,7 @@ let staging: Promise<void> | undefined
 const ensureStage = () => (staging ??= buildStage().catch((e) => ((staging = undefined), Promise.reject(e))))
 
 async function buildStage() {
-  const [[{ Highway }, { Staff }, { Dock }, , report]] = await Promise.all([stageCode(), document.fonts.load('700 16px "Barlow Condensed"'), document.fonts.load('40px Bravura')])
+  const [[{ Highway }, { Staff }, { Dock }, , report]] = await Promise.all([stageCode(), document.fonts.load('500 40px "Newsreader Variable"'), document.fonts.load('40px Bravura')])
   reportLink = report.reportLink
   const h = setHighway(new Highway($('#stage'), game))
   await h.init()

@@ -40,7 +40,8 @@ body.readthru #modeSeg {
 .ready .rt-tempo #rtRate {
   display: inline;
   min-width: 4ch;
-  font: 800 italic 28px/1 var(--display);
+  font: 650 28px/1 var(--ui);
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 .ready .rt-row .switch {
