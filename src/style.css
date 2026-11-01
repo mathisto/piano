@@ -739,6 +739,9 @@ p.note {
   margin: 8px 0 24px;
   color: var(--ink-2);
 }
+h2.sec + p.note {
+  margin-top: 0; /* a heading's own line sits as close as its cells or rows would */
+}
 #progress > .hist {
   justify-self: start; /* the charts start at the page's left edge, not centred in the column */
 }
