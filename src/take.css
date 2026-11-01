@@ -13,7 +13,7 @@
 }
 /* behind the heads: an on-time key hides under its note, an early or late one shows beside it */
 #staff .traces circle {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
   opacity: 0.5;
 }
 

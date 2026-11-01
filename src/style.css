@@ -1052,36 +1052,45 @@ body.reading .hud small {
 
 /* ---------- staff ---------- */
 #staff {
+  /* the page: warm paper in both modes (docs/research/urtext.md). A margin of paper around the staves, no glow, a hairline at the foot. */
+  --pg: clamp(12px, 2.6vw, 36px);
+  --pgy: clamp(8px, 1.6vw, 18px); /* the margin above the bar numbers and under the lowest staff */
+  --paper-ink-2: color-mix(in srgb, var(--paper-ink) 72%, var(--paper)); /* aids and words: Ink Soft on paper */
+  --paper-ink-3: color-mix(in srgb, var(--paper-ink) 60%, var(--paper)); /* the faintest that still reads at 14px (4.6:1) */
   position: relative;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--paper-ink);
+  padding: var(--pgy) var(--pg);
+  border-bottom: 1px solid color-mix(in srgb, var(--paper-ink) 18%, var(--paper));
   min-height: 0;
   overflow: hidden;
   touch-action: none; /* two fingers on the staff zoom it; nothing here scrolls */
 }
 #staff > svg {
   position: absolute;
-  inset: 0;
-  margin: auto; /* centred when the page is capped smaller than the pane */
-  width: 100%;
-  height: 100%;
+  inset: var(--pgy) auto; /* inside the paper margin (--pg, --pgy); staff.ts measures the same box */
+  left: var(--pg);
+  margin: auto 0; /* centred when the page is capped smaller than the pane */
+  width: calc(100% - 2 * var(--pg));
+  height: calc(100% - 2 * var(--pgy));
   display: block;
+  overflow: visible; /* the bar numbers sit a hair above the viewBox: the paper margin takes them */
 }
 #staff .lines line {
-  stroke: var(--ink-3);
+  stroke: var(--paper-line);
   stroke-width: 1.1;
 }
 #staff .bars line {
-  stroke: var(--ink-2);
+  stroke: var(--paper-line);
   stroke-width: 1.4;
 }
 #staff .dyn text {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
   font: italic 700 20px Georgia, 'Times New Roman', serif;
 }
 #staff .dyn text.smufl {
   font: 40px 'Bravura';
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
 }
 #staff .dyn text.wd {
   font-size: 15px;
@@ -1089,27 +1098,27 @@ body.reading .hud small {
 }
 #staff .dyn path {
   fill: none;
-  stroke: var(--ink-2);
+  stroke: var(--paper-ink-2);
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 #staff .barno {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
   font: 700 14px var(--ui);
 }
 #staff .ledger {
-  stroke: var(--ink);
+  stroke: var(--paper-ink);
   stroke-width: 1.4;
 }
 #staff .stem {
-  stroke: var(--ink);
+  stroke: var(--paper-ink);
   stroke-width: 1.3;
 }
 #staff .smufl {
   font-family: 'Bravura';
   font-size: 40px;
-  fill: var(--ink);
+  fill: var(--paper-ink);
 }
 #staff .smufl.small {
   font-size: 26px;
@@ -1118,36 +1127,36 @@ body.reading .hud small {
   font-size: 28px;
 }
 #staff .tie {
-  fill: var(--ink);
+  fill: var(--paper-ink);
 }
 #staff .tup {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--paper-ink);
   stroke-width: 1.2;
 }
 #staff .ott {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
   font: italic 400 15px Georgia, 'Times New Roman', serif;
 }
 #staff .ottl {
   fill: none;
-  stroke: var(--ink-2);
+  stroke: var(--paper-ink-2);
   stroke-width: 1.2;
   stroke-dasharray: 4 3;
 }
 #staff .fin {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
 }
 /* a score's own marks: articulation, slurs, hairpins, dynamic letters */
 #staff .mk {
   opacity: 0.7;
 }
 #staff .mk.slur {
-  fill: var(--ink);
+  fill: var(--paper-ink);
 }
 #staff .mk.hp {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--paper-ink);
   stroke-width: 1.3;
   stroke-linecap: round;
 }
@@ -1155,7 +1164,7 @@ body.reading .hud small {
   opacity: 0;
 }
 #staff .cname {
-  fill: var(--ink-2); /* a derived aid, read from the harmony: Ink Soft, never the score's own Ink */
+  fill: var(--paper-ink-2); /* a derived aid, read from the harmony: Ink Soft, never the score's own Ink */
   font: 700 18px var(--ui);
   pointer-events: none;
 }
@@ -1164,89 +1173,94 @@ body.reading .hud small {
   font-style: italic;
   pointer-events: auto;
   cursor: pointer;
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
 }
-#staff .ch.past {
-  opacity: 0.42;
-  transition: opacity 0.3s 0.9s; /* after the hit flash has played */
+/* played: the chord's ink settles to --paper-played, not to a fade, so a grade mark under it stays at full strength */
+#staff .ch.past .smufl {
+  fill: var(--paper-played);
+  transition: fill 0.3s 0.9s; /* after the hit flash has played */
+}
+#staff .ch.past :is(.stem, .ledger) {
+  stroke: var(--paper-played);
+  transition: stroke 0.3s 0.9s;
 }
 #staff .beam {
-  fill: var(--ink);
+  fill: var(--paper-ink);
 }
 #staff .head.await {
-  fill: var(--lamp);
+  fill: var(--paper-awaited);
 }
 #staff .cursor {
-  stroke: var(--lamp);
+  stroke: var(--paper-cursor);
   stroke-width: 1.5;
   opacity: 0.7; /* under the staff lines and a little faded: it guides, the notes stay the thing read */
   stroke-linecap: round;
-  filter: drop-shadow(0 0 4px var(--lamp-glow));
 }
+/* a miss: crimson ×, and the head settles to played. Shapes below carry every grade without hue: perfect nothing, great ●, good ▲, late ▹, miss × */
 #staff .miss-mark {
-  fill: var(--bad);
+  fill: none;
+  stroke: var(--paper-miss);
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 #staff .head.miss {
-  fill: var(--bad);
-  animation: missfade 1.2s 0.8s forwards; /* red decays to the quiet ink; the triangle stays */
+  fill: var(--paper-miss);
+  animation: missfade 1.2s 0.8s forwards;
 }
 @keyframes missfade {
   to {
-    fill: var(--ink-3);
+    fill: var(--paper-played);
   }
 }
+/* holds: released early is a solid crimson outline, held too long a dashed grey one */
 #staff .head.over {
-  stroke: var(--good);
-  stroke-width: 1.4px;
+  stroke: var(--paper-good);
+  stroke-width: 1.5px;
+  stroke-dasharray: 2.2 1.6;
   paint-order: stroke;
 }
 #staff .head.short {
-  stroke: var(--bad);
+  stroke: var(--paper-miss);
   stroke-width: 1.4px;
   paint-order: stroke;
 }
-#staff .hit-perfect {
-  --c: var(--perfect);
-  animation: ignite 0.8s ease-out;
+#staff .hit-perfect,
+#staff .hit-ok {
+  --c: var(--paper-perfect);
 }
 #staff .hit-great {
-  --c: var(--great);
-  animation: ignite 0.8s ease-out;
+  --c: var(--paper-great);
 }
+#staff .hit-good,
 #staff .hit-late {
-  --c: var(--late);
-  animation: ignite 0.8s ease-out;
+  --c: var(--paper-good);
 }
-#staff .hit-good {
-  --c: var(--good);
-  animation: ignite 0.8s ease-out;
-}
-#staff .hit-ok {
-  --c: var(--R);
-  animation: ignite 0.8s ease-out;
+#staff [class*='hit-'] {
+  animation: ignite 0.8s ease-out forwards; /* a flash of the grade, then the quiet played ink; no glow on paper */
 }
 @keyframes ignite {
-  0% {
-    fill: var(--c);
-    filter: drop-shadow(0 0 5px var(--c));
-  }
+  0%,
   40% {
     fill: var(--c);
-    filter: drop-shadow(0 0 4px var(--c));
   }
   100% {
-    fill: var(--ink-3);
-    filter: none;
+    fill: var(--paper-played);
   }
 }
 #staff .gshape {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 #staff .gshape.great {
-  fill: var(--great);
+  fill: var(--paper-great);
 }
 #staff .gshape.good {
-  fill: var(--good);
+  fill: var(--paper-good);
+}
+#staff .gshape.late {
+  fill: none;
+  stroke: var(--paper-good);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
 }
 /* ghosts: what you pressed, as a hollow dashed notehead. Grey, so it is plainly not the score. */
 #staff .ghost {
@@ -1257,45 +1271,45 @@ body.reading .hud small {
 }
 #staff .ghost ellipse {
   fill: none;
-  stroke: var(--ink-2);
+  stroke: var(--paper-ink-2);
   stroke-width: 1.5;
   stroke-dasharray: 3.2 2.4;
   opacity: 0.9;
 }
 #staff .ghost line {
-  stroke: var(--ink-3);
+  stroke: var(--paper-ink-3);
   stroke-width: 1.2;
 }
 #staff .ghost text {
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
 }
 #staff .ghost.gone {
   opacity: 0;
 }
 #staff .ghost[data-g='perfect'] {
-  --c: var(--perfect);
+  --c: var(--paper-perfect);
 }
 #staff .ghost[data-g='great'] {
-  --c: var(--great);
+  --c: var(--paper-great);
 }
-#staff .ghost[data-g='good'] {
-  --c: var(--good);
+#staff .ghost[data-g='good'],
+#staff .ghost[data-g='late'] {
+  --c: var(--paper-good);
 }
 #staff .ghost.snap ellipse {
   stroke: var(--c);
   stroke-dasharray: none;
   fill: var(--c);
   fill-opacity: 0.4;
-  filter: drop-shadow(0 0 6px var(--c));
 }
 #staff .ghost.snap {
   animation: ghostsnap 0.52s ease-out forwards;
 }
 #staff .ghost.bad ellipse {
-  stroke: var(--bad);
+  stroke: var(--paper-miss);
 }
 #staff .ghost .x {
-  stroke: var(--bad);
+  stroke: var(--paper-miss);
   stroke-width: 1.8;
   stroke-linecap: round;
 }
@@ -1336,22 +1350,19 @@ body.reading .hud small {
   text-transform: uppercase;
   text-anchor: middle;
   paint-order: stroke;
-  stroke: var(--panel);
+  stroke: var(--paper);
   stroke-width: 3px;
   animation: gradeword 1s var(--ease) forwards;
 }
 #staff .gr[data-g='perfect'] {
-  fill: var(--perfect);
+  fill: var(--paper-perfect);
 }
 #staff .gr[data-g='great'] {
-  fill: var(--great);
+  fill: var(--paper-great);
 }
 #staff .gr[data-g='late'],
-#staff .gshape.late {
-  fill: var(--late);
-}
 #staff .gr[data-g='good'] {
-  fill: var(--good);
+  fill: var(--paper-good);
 }
 @keyframes gradeword {
   0% {
@@ -2803,14 +2814,14 @@ dialog.sheet footer .btn {
   font-size: 11px;
 }
 #staff .devmark {
-  fill: var(--ink);
+  fill: var(--paper-ink);
   opacity: 0.85;
 }
 
 /* fingering on scale notes */
 #staff .finger {
   font: 700 15px var(--ui);
-  fill: var(--ink-2);
+  fill: var(--paper-ink-2);
   pointer-events: none;
 }
 
