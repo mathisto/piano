@@ -1,6 +1,7 @@
 // Help for a new learner: the first-week card on Today, and the "connect your keyboard" line (the Help sheet's text is in ui-sheets.ts).
 import './guide.css'
 import { icon } from './icons'
+import { settings } from './settings'
 
 export type Go = 'read' | 'scale' | 'theory' | 'sight' | 'tech' | 'mem' | 'progress'
 export interface Step {
@@ -99,6 +100,6 @@ export function guideCard(g: Guide): string {
     <ol>${rows}</ol></section>`
 }
 
-/** Shown while no MIDI keyboard is connected; banner.ts hides it when one is and shows it again if it goes. */
+/** Shown while no MIDI keyboard is connected, with the switch for the on-screen keys (app/osk-ui.ts); banner.ts hides it when one is and shows it again if it goes. */
 export const keyboardLine = (connected: boolean) =>
-  `<p class="kbline" role="status"${connected ? ' hidden' : ''}><span><b>No keyboard connected.</b> Without one, play the on-screen keys, or use the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" data-connect>Connect keyboard</button></p>`
+  `<div class="kbline"${connected ? ' hidden' : ''}><span role="status"><b>No keyboard connected.</b> Play the on-screen keys, or the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? !connected) ? ' checked' : ''}><i></i>On-screen keys</label><button class="btn" data-connect>Connect keyboard</button></div>`

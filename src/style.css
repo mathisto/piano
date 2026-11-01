@@ -713,7 +713,8 @@ table.songs tr.band th {
   margin-bottom: 20px;
 }
 .tprev {
-  margin-bottom: 20px;
+  margin-right: auto; /* the preview at the left of the card's foot, Start at the right */
+  line-height: 0;
 }
 .tprev svg {
   width: 100%;
@@ -731,9 +732,18 @@ h2.sec {
   margin: 28px 0 12px;
   font: 600 20px/1.25 var(--ui);
 }
+h2.sec span {
+  margin-left: 12px;
+  color: var(--ink-3);
+  font-size: 15px;
+  font-weight: 500;
+}
 p.note {
   margin: 8px 0 24px;
   color: var(--ink-2);
+}
+#progress > .hist {
+  justify-self: start; /* the charts start at the page's left edge, not centred in the column */
 }
 .hist.spark {
   max-width: 640px;
@@ -759,31 +769,57 @@ table.stages td {
 table.stages td.name small {
   font-size: 15px;
 }
-/* Theory: the level selects line up in one column */
-#theory .prow .field {
-  display: block;
-  flex: none;
-  width: 340px;
+/* rows on every page take the cards' 20px inset (.plan .prow, the Path's .rq), so names line up page to page; a 590 px window keeps the table's 8px */
+@media (min-width: 761px) {
+  table.stages :is(td, th):first-child {
+    padding-left: 20px;
+  }
+  table.stages :is(td, th):last-child {
+    padding-right: 20px;
+  }
+}
+/* a pop-up button (Theory's level): the choice in words with a chevron and no box; a tap opens the system's own menu */
+.pick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: fit-content;
   max-width: 100%;
+  margin: -6px 0 -10px; /* a 44px target without a 44px line */
 }
-#theory .prow select {
-  width: 100%;
+.pick select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: auto;
+  field-sizing: content; /* as wide as the chosen level, so the chevron sits after it (else the widest option sets the width) */
+  max-width: 100%;
+  height: var(--control);
+  padding: 0 22px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
-@media (max-width: 1000px) {
-  /* the level select drops under the blurb at the full width its longest name needs, instead of clipping it */
-  #theory .prow {
-    display: grid;
-    grid-template-columns: 1fr auto;
+.pick select:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .pick select:hover {
+    color: var(--ink);
   }
-  #theory .prow .field {
-    grid-column: 1;
-    grid-row: 2;
-    width: min(100%, 380px);
-  }
-  #theory .prow .pact {
-    grid-column: 2;
-    grid-row: 1;
-  }
+}
+.pick svg.i {
+  position: absolute;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  rotate: -90deg; /* chevron-left, pointing down */
+  color: var(--ink-3);
+  pointer-events: none;
 }
 table.stages col.mcol {
   width: 250px;
@@ -2475,16 +2511,6 @@ dialog.sheet footer .btn {
 .tcard.run > h2 {
   font: 650 28px/1.2 var(--ui); /* the prompt: read from the music stand */
 }
-.run-head {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 16px;
-}
-.run-head h2 {
-  margin: 0 0 2px;
-  font: 800 italic 28px/1 var(--display);
-}
 .run .tech-form {
   margin-bottom: 0;
 }
@@ -2618,11 +2644,6 @@ dialog.sheet footer .btn {
 }
 #staff .ch.ahead {
   opacity: 0;
-}
-@media (max-width: 760px) {
-  .run-head {
-    flex-direction: column;
-  }
 }
 
 /* ---------- touch evenness: the results strip and the marks on the staff ---------- */

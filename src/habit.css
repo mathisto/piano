@@ -45,10 +45,10 @@
 }
 .rq {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px 88px;
+  grid-template-columns: minmax(0, 1fr) 170px 112px; /* the action column is .pact's width */
   align-items: center;
   gap: 20px;
-  padding: 12px;
+  padding: 12px 20px;
   border-top: 1px solid var(--line);
 }
 .rqn b {

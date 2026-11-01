@@ -175,8 +175,6 @@ $('#progress').addEventListener('click', (e) => {
   else if (b?.dataset.recipe) void openSong(exercise((SYLLABUS.find((r) => r.id === b.dataset.recipe) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 })
 
-// a tab's one-line note closes for good: guide.ts already counted it as seen
-
 $('#today').addEventListener('click', (e) => {
   const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')
   if (g) {

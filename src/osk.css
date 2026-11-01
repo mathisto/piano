@@ -16,9 +16,6 @@ body.zen #app {
   border-top: 1px solid var(--line-2);
   touch-action: none;
 }
-.osk-sw {
-  margin: 0 0 16px;
-}
 .osk-bar {
   display: flex;
   align-items: center;
