@@ -37,10 +37,10 @@ it('a score states its mode in the MIDI key event, the MusicXML <mode> or the st
 
 it('a local import says what it is and "Key —", "Metre —" for what the file does not state', () => {
   const m = fileMeta('midi', '', new Date(2026, 10, 1).getTime())
-  expect(leftOf(m)).toBe('LOCAL IMPORT · MIDI')
+  expect(leftOf(m)).toBe('Your file · MIDI')
   expect(m.title).toBe('Untitled MIDI')
   expect(fileMeta('xml', '  ', 0).title).toBe('Untitled score')
-  expect(leftOf(fileMeta('xml', 'Sonatina', 0))).toBe('LOCAL IMPORT · MUSICXML')
+  expect(leftOf(fileMeta('xml', 'Sonatina', 0))).toBe('Your file · MUSICXML')
   expect(fileMeta('midi', 'Sonatina', 0).title).toBe('Sonatina')
   expect(m.sub).toBe(new Date(2026, 10, 1).toLocaleDateString(undefined, { dateStyle: 'long' })) // the localized import date
   expect(m.level).toBeUndefined() // a file has no difficulty rule

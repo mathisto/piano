@@ -53,24 +53,24 @@ export async function showToday() {
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'thumb', last.cover) },
     again: (() => {
       const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
-      return r ? { id: r.id, title: r.title, sub: 'Due for another go' } : undefined
+      return r ? { id: r.id, title: r.title, sub: 'Due for review' } : undefined
     })(),
-    read: { id: next.stage.id, name: next.due ? `Review ${next.stage.name.toLowerCase()}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
+    read: { id: next.stage.id, name: next.due ? `Review: ${next.stage.name}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
     techDue: nr.reason === 'due',
     techId: nr.recipe.id,
     fix: worst && last.bars ? { id: last.id, title: last.title, ...worst } : undefined,
-    review: second ? { id: second.stage.id, name: `Review ${second.stage.name.toLowerCase()}`, line: `${second.due} ${second.due === 1 ? 'card' : 'cards'} due` } : undefined,
+    review: second ? { id: second.stage.id, name: `Review: ${second.stage.name}`, line: `${second.due} ${second.due === 1 ? 'card' : 'cards'} due` } : undefined,
     week: weekOf(days),
     goal: settings.goal,
     planMin: settings.planMin,
     streak: dayStreak(days),
-    scale: { title: `Scales: ${sst.name}`, sub: `Next: ${keyName(nextCard(sst, ctx.scales).tonic, nextCard(sst, ctx.scales).form)}, at ${sst.bpm} bpm`, pct: scaleMastery(sst, ctx.scales).pct, start: { kind: 'scale', id: sst.id } },
+    scale: { title: `Scales: ${sst.name.replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase())}`, sub: `Next: ${keyName(nextCard(sst, ctx.scales).tonic, nextCard(sst, ctx.scales).form)}, at ${sst.bpm} bpm`, pct: scaleMastery(sst, ctx.scales).pct, start: { kind: 'scale', id: sst.id } },
     theory: td && { title: `Theory: ${td.name}`, sub: `${td.due} ${td.due === 1 ? 'card' : 'cards'} due for review`, start: { kind: 'theory', trainer: td.trainer, level: td.level } },
     path: nx?.start && nx.start.kind !== 'scale' ? { title: `Path: ${nx.name}`, sub: `Level ${nx.level}. ${nx.detail}`, start: nx.start } : undefined,
     done: nx?.start && done.includes(PATH_STEP[nx.start.kind]) ? [...done, 'path'] : done,
     recap: recap ?? undefined,
-    sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `Read through, no stopping · ${sight.fresh ? 'new ' : ''}${sight.piece.level}` },
+    sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `One pass, no stopping · ${sight.fresh ? 'a new piece, ' : ''}${sight.piece.level}` },
   })
   drawCovers($('#today'), coverSong)
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {

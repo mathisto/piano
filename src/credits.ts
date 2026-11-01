@@ -45,8 +45,8 @@ export async function loadManifest(fetchFn: typeof fetch = fetch, base?: string)
   }
 }
 
-/** 'CC-BY-SA-2.5' -> 'CC BY-SA 2.5', 'CC0-1.0' -> 'CC0 1.0'; 'Public Domain' stays. */
-export const licenceName = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
+/** 'CC-BY-SA-2.5' -> 'CC BY-SA 2.5', 'CC0-1.0' -> 'CC0 1.0'; 'Public Domain' -> 'Public domain'. */
+export const licenceName = (l: string) => l.replace(/^Public Domain$/, 'Public domain').replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
 
 export const SOURCE: Record<Piece['source'], string> = { mutopia: 'Mutopia Project', 'openscore-lieder': 'OpenScore Lieder Corpus', pdmx: 'PDMX', chopin: 'Fryderyk Chopin Institute (chopinscores.org)' }
 const CHANGES: Record<string, string> = { 'voice-folded': 'vocal line folded into the right hand', 'voice-dropped': 'voice part left out', 'tempo-estimated': 'tempo guessed, the score gives no number', 'no-tempo': 'no tempo marked, so a default one' }

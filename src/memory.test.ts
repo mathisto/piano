@@ -100,6 +100,7 @@ describe('cards', () => {
   })
   it('tags a row only once a stage is cleared', () => {
     expect(memTag(undefined)).toBe('')
-    expect(memTag({ plays: 0, last: 0, heat: [], memStage: 3 })).toContain('Memorised 3/4')
+    expect(memTag({ plays: 0, last: 0, heat: [], memStage: 3 })).toContain('Memorising 3/4')
+    expect(memTag({ plays: 0, last: 0, heat: [], memStage: 4 })).toContain('>Memorised<')
   })
 })

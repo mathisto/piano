@@ -44,7 +44,7 @@ export function skeleton(app: HTMLElement) {
     <div class="hud" id="hud" hidden>
       <div data-m="perform" role="group" aria-label="Accuracy" title="Accuracy"><small>Accuracy</small><b id="hScore">—</b></div>
       <div data-m="perform" class="combo" role="group" aria-label="In a row" title="Notes in a row"><small>In a row</small><b id="hCombo">0</b></div>
-      <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b></div>
+      <div data-m="read" data-run="all" class="combo" role="group" aria-label="In a row" title="Cards in a row"><small>In a row</small><b id="rStreak">0</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
     </div>
     <span class="pop"><button class="chip" id="dev" data-more aria-expanded="false" aria-controls="kbMenu"><span class="dot"></span>${icon('keyboard')}<span id="devName">No keyboard</span></button><div class="popmenu end kbmenu" id="kbMenu" role="group" aria-label="Keyboard" hidden></div></span>
@@ -132,7 +132,7 @@ export const meter = (pct: number, solid: boolean, label: string, fluent?: numbe
   `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
 export const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
 export const FREE = 'Free, no subscription, no ads, no account.'
-export const KEY_TOUCH_HINT = "Your keyboard's own key touch setting (on the FP-10, in its Function menu; see its manual). Each run is labelled with it, and on Fixed the app does not judge evenness, because every note arrives equally loud." // it is only logged, and Fixed silences evenness (coach.ts)
+export const KEY_TOUCH_HINT = "Match your keyboard's own key touch setting. Each run is labelled with it. On Fixed every note arrives equally loud, so evenness is not judged." // it is only logged, and Fixed silences evenness (coach.ts)
 export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
 export const head = (title: string, actions = '', lede = '') =>
@@ -204,16 +204,16 @@ export function todayView(el: HTMLElement, d: TodayData) {
   type R = { key: string; min: number; title: string; h?: string; sub: string; mid?: string; act: (cls: string) => string }
   const all: R[] = [
     { key: 'warm', min: 2, title: d.tech, sub: d.techDue && !d.done.includes('warm') ? 'Exercise, due for review' : 'Exercise', act: (c) => `<button class="btn${c}" data-today="tech" data-id="${esc(d.techId)}">${icon('play')}Start</button>` },
-    { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practice</button>` },
+    { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practise</button>` },
     { key: 'piece', min: 5, title: d.last.title, h: pn(d.last.title), sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
     ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, h: pn(d.sight.title), sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
-    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, h: pn(d.again.title), sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Play</button>` }] : []),
+    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, h: pn(d.again.title), sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Review</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, h: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${pn(d.fix.title)}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
     ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
     ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
     { key: 'run', min: 3, title: 'Sight run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${icon('play')}Start</button>` },
-    ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${icon('play')}Practice</button>` }] : []),
+    ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${icon('play')}Practise</button>` }] : []),
   ]
   const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
   // what is still to do comes first, in practice order; finished steps sink to the bottom as a record of the day
