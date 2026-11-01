@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { COVER, cropOf, headerOf, incipit, keyText, pieceMeta } from './cover'
+import { COVER, cropOf, headerOf, incipit, pieceMeta } from './cover'
 import { fromSpec } from './song'
 
 const body = { w: 134, h: 38 }
@@ -7,11 +7,8 @@ const grand = [24, 34, 44, 54, 64, 94, 104, 114, 124, 134] // GRAND's staff line
 const solo = [32, 42, 52, 62, 72]
 
 it('the header names the composer and catalogue number, and the key as the major and minor its signature serves', () => {
-  expect(headerOf(pieceMeta('Johann Sebastian Bach', 'BWV 846', { fifths: 0, meter: '4/4' }))).toEqual({ l: 'Bach · BWV 846', r: 'C / Am · 4/4' })
-  expect(headerOf(pieceMeta('Ludwig van Beethoven', undefined))).toEqual({ l: 'Beethoven', r: '' }) // no facts: nothing is invented
-  expect(headerOf({ by: 'MIDI', fifths: -3, meter: '3/4' }).r).toBe('E♭ / Cm · 3/4')
-  expect(keyText(2)).toBe('D / Bm')
-  expect(keyText(9)).toBe('')
+  expect(headerOf(pieceMeta('Johann Sebastian Bach', 'BWV 846', { fifths: 0, meter: '4/4' }))).toBe('Bach · BWV 846')
+  expect(headerOf(pieceMeta('Ludwig van Beethoven', undefined))).toBe('Beethoven')
 })
 
 it('keeps only the opening bars of a score', () => {

@@ -4,7 +4,7 @@
   width: var(--cw);
   height: var(--ch);
   display: grid;
-  grid: var(--hh) 1fr / minmax(0, 1fr); /* the header's left clips with an ellipsis; its right never does */
+  grid: var(--hh) 1fr / minmax(0, 1fr); /* the header clips with an ellipsis */
   padding: 0 var(--pad) var(--pad);
   background: var(--paper);
   color: var(--paper-line);
@@ -18,20 +18,11 @@
   grid-row: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   font: 600 var(--fs) / 1 var(--ui);
   letter-spacing: 0.07em;
   text-transform: uppercase;
-}
-.cv-l {
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.cv-r {
-  flex: none;
-  text-transform: none; /* "Em" is E minor, not EM */
 }
 .cv-b {
   grid-row: 2;
@@ -108,8 +99,5 @@
 @media (max-width: 1000px) {
   table.songs .cover.cv-row {
     --cw: 78px !important; /* over the box's own inline size */
-  }
-  table.songs .cover.cv-row .cv-r {
-    display: none;
   }
 }

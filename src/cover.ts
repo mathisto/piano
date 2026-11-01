@@ -2,7 +2,7 @@ import './cover.css'
 import type { Song } from './song'
 import { esc } from './util'
 
-// The cover: a piece's own opening bars engraved on paper, with the composer and catalogue number above at the left and the key and metre at the right.
+// The cover: a piece's own opening bars engraved on paper, with the composer and catalogue number above.
 // The title stays outside, in the row or card (docs/research/urtext.md, decision 9). Everything that sets how it looks is COVER and cover.css;
 // this module is small and boots with the app, and the staff code that draws the notes loads on first use (cover-draw.ts).
 
@@ -33,15 +33,9 @@ export const pieceMeta = (composer: string | undefined, opus: string | undefined
   ...(facts?.meter && { fifths: facts.fifths, meter: facts.meter }),
 })
 
-const MAJOR = ['C♭', 'G♭', 'D♭', 'A♭', 'E♭', 'B♭', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F♯', 'C♯'] // by fifths, -7 to 7
-const MINOR = ['A♭', 'E♭', 'B♭', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F♯', 'C♯', 'G♯', 'D♯', 'A♯']
 
-/** The key as the major and minor its signature serves, since neither the catalogue nor a MIDI file says which: "D / Bm". */
-export const keyText = (fifths: number) => (Math.abs(fifths) <= 7 ? `${MAJOR[fifths + 7]} / ${MINOR[fifths + 7]}m` : '')
-
-const factsOf = (song: Song) => ({ fifths: song.fifths, meter: `${song.bars[0].n}/${song.bars[0].den}` })
-
-export const headerOf = (m: CoverMeta) => ({ l: m.by ?? '', r: m.fifths !== undefined && m.meter ? [keyText(m.fifths), m.meter].filter(Boolean).join(' · ') : '' })
+/** The header: who wrote it and its catalogue number. The key and metre are engraved just below, so they are not repeated in words. */
+export const headerOf = (m: CoverMeta) => m.by ?? ''
 
 /** The first bars of a score and nothing else: all a cover needs, and a few notes to hold instead of a piece. */
 export function incipit(song: Song): Song {
@@ -81,14 +75,12 @@ const doneKey = (id: string, size: string, f?: { fifths: number; meter: string }
  *  to draw from, draw an empty staff with the signatures the catalogue gives (a library piece not on the device), rather than leave bare paper. */
 export function coverHtml(id: string, size: CoverSize, m: CoverMeta, blank = false) {
   const c = COVER[size]
-  const song = kept.get(keyId(id))
-  const { l, r } = headerOf(m.fifths === undefined && song?.bars.length ? { ...m, ...factsOf(song) } : m) // a score on the device tells what the catalogue did not
   const bw = c.w - 2 * c.pad
   const bh = c.h - c.head - c.pad
   const style = `--cw:${c.w}px;--ch:${c.h}px;--hh:${c.head}px;--fs:${c.fs}px;--bw:${bw}px;--bh:${bh}px;--pad:${c.pad}px`
   const f = blank && m.fifths !== undefined && m.meter ? { fifths: m.fifths, meter: m.meter } : undefined
   const hit = done.get(doneKey(id, size)) ?? (f && done.get(doneKey(id, size, f))) // already drawn once: in the page at once, no empty paper to flash
-  return `<div class="cover cv-${size}" data-cv="${esc(id)}"${f ? ` data-f="${f.fifths}" data-m="${esc(f.meter)}"` : ''}${hit ? ' data-drawn' : ''} style="${style}" aria-hidden="true">${c.head ? `<div class="cv-h"><div class="cv-l">${esc(l)}</div><div class="cv-r">${esc(r)}</div></div>` : ''}<div class="cv-b">${hit ?? ''}</div></div>`
+  return `<div class="cover cv-${size}" data-cv="${esc(id)}"${f ? ` data-f="${f.fifths}" data-m="${esc(f.meter)}"` : ''}${hit ? ' data-drawn' : ''} style="${style}" aria-hidden="true">${c.head ? `<div class="cv-h">${esc(headerOf(m))}</div>` : ''}<div class="cv-b">${hit ?? ''}</div></div>`
 }
 
 // ---- drawing, lazily ----
@@ -138,7 +130,5 @@ export async function paint(el: HTMLElement, load?: (id: string) => Promise<Song
   }
   if (!el.isConnected) return
   el.querySelector('.cv-b')!.innerHTML = svg
-  const r = el.querySelector<HTMLElement>('.cv-r')
-  if (r && !r.textContent && song?.bars.length) r.textContent = headerOf(factsOf(song)).r
   el.setAttribute('data-drawn', '')
 }
