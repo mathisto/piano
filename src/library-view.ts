@@ -5,33 +5,28 @@ import type { Piece } from './catalog-types'
 import { licenceName } from './credits'
 import type { Song } from './song'
 import type { Progress } from './store'
-import { thumb } from './thumb'
+import { coverHtml, drawCovers, keep, paint, pieceMeta, surname } from './cover'
 import { head, mmss, notice, rowMenu, type Row } from './ui'
 import { icon } from './icons'
 import { esc } from './util'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
-// so thousands of pieces never become thousands of rows. Thumbnails only for files already on the device, as rows scroll in.
+// so thousands of pieces never become thousands of rows. Covers drawn as rows scroll in: from the score for a file on the device, an empty staff in the catalogue's key for the rest.
 
 const PAGE = 50
 const SEARCH = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>'
 const ui = { q: '', grade: undefined as number | undefined, composer: undefined as number | undefined, shown: PAGE, saving: false }
-const meta = new Map<string, { thumb: string; len: number }>() // kept across visits
+const meta = new Map<string, number>() // the length of each file read this session, in seconds
 const todo: Piece[] = []
 let busy = false
 let load: (p: Piece) => Promise<Song>
 
-const surname = (name: string) => name.split(' ').pop()!
-const sig = (f: number) => (f > 0 ? `${f}♯ · ` : f < 0 ? `${-f}♭ · ` : '')
-
-/** Key, metre and bars from the catalogue, where a piece not yet on the device has no thumbnail. */
-const facts = (p: Piece) => (p.bars ? `<span class="pfacts">${sig(p.fifths)}${esc(p.meter)}<br>${p.bars} bars</span>` : '')
 
 function row(p: Piece, prog: Map<string, Progress>) {
-  const m = meta.get(p.id)
   const best = prog.get(`lib:${p.id}`)?.best
-  const len = p.sec || m?.len
-  return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${m?.thumb ?? (local(p.id) ? '' : facts(p))}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
+  const len = p.sec || meta.get(p.id)
+  const cover = coverHtml(`lib:${p.id}`, 'row', pieceMeta(catalog.composers[p.composer]?.name, p.opus, p.bars ? p : undefined), !local(p.id))
+  return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${cover}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
     <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">Learn</button>
     ${rowMenu(p.title, `<button class="btn ghost" role="menuitem" data-libplay="${esc(p.id)}" data-mode="perform">Perform</button>
     <button class="btn ghost" role="menuitem" data-listen="lib:${esc(p.id)}">Listen</button>
@@ -39,7 +34,7 @@ function row(p: Piece, prog: Map<string, Progress>) {
     <button class="btn ghost" role="menuitem" data-mem="lib:${esc(p.id)}">Memorise</button>`)}</div></td></tr>`
 }
 
-/** Read a file already on the device for a thumbnail and a length, one at a time and only for rows scrolled into view:
+/** Read a file already on the device for its cover and a length, one at a time and only for rows scrolled into view:
  *  parsing all ~40 bundled files on arrival took ~1.2 s of CPU at 4x and held up the next tap. */
 async function fill() {
   if (busy) return
@@ -48,9 +43,11 @@ async function fill() {
     if (meta.has(p.id)) continue
     try {
       const song = await load(p)
-      meta.set(p.id, { thumb: thumb(song), len: song.end })
+      meta.set(p.id, song.end)
+      keep(`lib:${p.id}`, song)
       const tr = document.querySelector(`#library tr[data-lib="${CSS.escape(p.id)}"]`)
-      tr?.querySelector('.thumb')!.insertAdjacentHTML('beforeend', meta.get(p.id)!.thumb)
+      const cv = tr?.querySelector<HTMLElement>('.cover')
+      if (cv) await paint(cv)
       if (tr && !p.sec) tr.querySelector('.len')!.textContent = `· ${mmss(song.end)}`
     } catch {
       /* a piece that will not parse still opens and reports its own error */
@@ -128,6 +125,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
       save.disabled = false
       save.textContent = `Save level ${ui.grade} for offline`
     }
+    drawCovers($('#libRows')) // the blank staves of pieces not on the device; the rest are drawn as their files are read, below
     todo.length = 0
     seen.disconnect()
     for (const tr of $('#libRows').querySelectorAll<HTMLElement>('tr[data-lib]')) if (local(tr.dataset.lib!) && !meta.has(tr.dataset.lib!)) seen.observe(tr)
@@ -183,7 +181,7 @@ function table(caption: string, rows: Row[], empty: string) {
     ? rows
         .map(
           (r) => `<tr class="open" data-open="${esc(r.id)}">
-        <td class="thumb">${r.thumb}</td>
+        <td class="thumb">${coverHtml(r.id, 'row', r.cover)}</td>
         <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">

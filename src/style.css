@@ -606,11 +606,11 @@ table.songs:not(.stages) col:first-child {
 }
 table.songs td.thumb {
   width: 140px;
-  white-space: nowrap; /* held while a library thumbnail loads, so the rows do not jump */
+  white-space: nowrap; /* held while a library cover is drawn, so the rows do not jump */
   padding-right: 0;
   line-height: 0;
 }
-/* a mid-width window crops the mini-staff to its first bars, so the title has room */
+/* a mid-width window crops the cover to its first bars (cover.css), so the title has room */
 @media (max-width: 1000px) {
   table.songs:not(.stages) col:first-child {
     width: 94px;
@@ -618,11 +618,8 @@ table.songs td.thumb {
   table.songs td.thumb {
     width: 78px;
   }
-  table.songs .thumb svg:first-child {
-    width: 78px; /* the first bars, cropped to the column */
-  }
 }
-.thumb svg {
+.thumb > svg {
   width: 140px;
   height: 52px;
   display: inline-block;
@@ -630,11 +627,11 @@ table.songs td.thumb {
   border-radius: var(--r-1);
   background: var(--panel);
 }
-.thumb .ln {
+.thumb > svg .ln {
   stroke: var(--edge);
   stroke-width: 0.8;
 }
-.thumb .nt {
+.thumb > svg .nt {
   fill: var(--ink);
 }
 .empty {
