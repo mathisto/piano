@@ -69,16 +69,18 @@ const INIT = `
             started = true
             const now = performance.now()
             for (const e of pedal) setTimeout(() => P().pedal(e.down), g.anchorPerf + ((e.t - g.anchorT) / g.rate) * 1000 - now)
+            // each key carries the time it was meant for, as a MIDI packet carries the time it was struck: a timer that fires late under load is not a late note
             for (const x of stray) {
-              const at = g.anchorPerf + ((g.song.notes[x.i].t + 0.18 - g.anchorT) / g.rate) * 1000 - now
-              setTimeout(() => P().key(x.p, 0.55), at)
-              setTimeout(() => P().up(x.p), at + 60)
+              const at = g.anchorPerf + ((g.song.notes[x.i].t + 0.18 - g.anchorT) / g.rate) * 1000
+              setTimeout(() => P().key(x.p, 0.55, at), at - now)
+              setTimeout(() => P().up(x.p, at + 60), at + 60 - now)
             }
             g.song.notes.forEach((n, i) => {
               if (sk.has(i) || g.modeOf(n) !== 'play') return // the app plays the rest (Listen, or the part it accompanies)
-              const at = g.anchorPerf + ((n.t - g.anchorT) / g.rate) * 1000 - now
-              setTimeout(() => P().key(n.p, i === loud ? 0.9 : 0.55 + (i % 3) * 0.006), at)
-              setTimeout(() => P().up(n.p), at + (n.d / g.rate) * 970)
+              const at = g.anchorPerf + ((n.t - g.anchorT) / g.rate) * 1000
+              const up = at + (n.d / g.rate) * 970
+              setTimeout(() => P().key(n.p, i === loud ? 0.9 : 0.55 + (i % 3) * 0.006, at), at - now)
+              setTimeout(() => P().up(n.p, up), up - now)
             })
           }
           if (g.phase === 'done' && window.__last) clearInterval(id), mo.disconnect(), res(window.__last)
@@ -320,7 +322,7 @@ async function mainFlow() {
     await ev(page, () => window.__e2e.perform({ skip: [2, 9] })) // every other card on its beat, two never played: the pulse carries on
     const r = await res(page, 'Run results')
     const t = await r.textContent()
-    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.slice(0, 160) + (t ? '' : ` | #res now: ${(await ev(page, () => document.querySelector('#res').innerHTML)).slice(0, 300)}`)) // ponytail: diagnostic for a full-run-only flake (empty card text), drop once found
+    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.replace(/\s+/g, ' ').trim().slice(0, 160))
     ok(/Missed:/.test(t) && (await page.$$('.pstrip i.off')).length === 2, 'the two missed cards are not shown')
     await axe(page, 'paced results', '#res')
     const st = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'])))
