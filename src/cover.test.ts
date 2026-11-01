@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { Piece } from './catalog-types'
-import { COVER, cropOf, exerciseMeta, fileMeta, incipit, keyName, leftOf, pieceMeta, rightOf, starterMeta, titleFit } from './cover'
+import { COVER, cropOf, exerciseMeta, fileMeta, incipit, keyName, leftOf, pieceMeta, rightOf, starterMeta, surname, titleFit } from './cover'
 import { exercise } from './technique'
 import { scaleSong } from './scales'
 import { fromSpec } from './song'
@@ -110,4 +110,8 @@ it('the window shows the whole grand staff, slides to ledger-line notes and neve
   const one = cropOf(solo, [100], { w: 260, h: COVER.card.ih }, COVER.card.scale * COVER.solo) // a notes-far-below single line: the staff stays in view
   expect(one.staff).toBe('solo')
   expect(one.y + one.h).toBeGreaterThanOrEqual(72 + 2)
+})
+
+it('the surname skips Jr., an alias in brackets and a title after a comma', () => {
+  expect(['J. S. Bach', 'J. Strauss Jr.', 'L. Streabbog (J. L. Gobbaerts)', 'Sir Harold Boulton, 2nd Baronet'].map(surname)).toEqual(['Bach', 'Strauss', 'Streabbog', 'Boulton'])
 })

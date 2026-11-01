@@ -36,7 +36,7 @@ export interface CoverMeta {
   local?: 'MIDI' | 'MUSICXML' // an import: no composer, and "Key —" "Metre —" until the score states them
 }
 
-export const surname = (name: string) => name.split(' ').pop()!
+export const surname = (name: string) => name.replace(/\s*\(.*\)|,.*$|\s+[JS]r\.?$/g, '').split(' ').pop()! // "J. Strauss Jr.", "L. Streabbog (J. L. Gobbaerts)", "Sir Harold Boulton, 2nd Baronet"
 const SHARPS = ['C', 'G', 'D', 'A', 'E', 'B', 'F♯', 'C♯']
 const FLATS = ['C', 'F', 'B♭', 'E♭', 'A♭', 'D♭', 'G♭', 'C♭']
 const MINOR_SHARPS = ['A', 'E', 'B', 'F♯', 'C♯', 'G♯', 'D♯', 'A♯']
