@@ -12,7 +12,7 @@ import { type RunSpec } from './run'
 import { startAttr, streakHtml } from './habit-ui'
 import type { Start } from './grades'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
-import { guideCard, tabNote, type Guide } from './guide'
+import { guideCard, type Guide } from './guide'
 import type { Streak } from './streak'
 import { esc, focusKey } from './util'
 
@@ -143,7 +143,7 @@ export const KEY_TOUCH_HINT = 'Changes the loudness we read; Fixed hides evennes
 export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
 export const head = (title: string, actions = '', lede = '') =>
-  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
+  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
 
 
 

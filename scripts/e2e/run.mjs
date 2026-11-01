@@ -564,22 +564,14 @@ const openStarter = async (page, id, mode = 'perform') => {
 }
 
 const guideFlow = () => fresh({
-  async '12 Start here: card, Start, Skip, Hide; tab notes once; Help'(page) {
+  async '12 Start here: card, Start, Skip, Hide; Help'(page) {
     const card = '#today section.guide'
-    ok(/day 1 of 7/.test(await text(page, card)), 'no Start here card at day 1 on a fresh profile')
+    ok(/Day 1 of 7/.test(await text(page, card)), 'no Start here card at day 1 on a fresh profile')
     await axe(page, 'Start here card', card)
     await page.click(`${card} li.gstep.now button[data-today=guide]`)
     await ready(page)
     ok((await ev(page, () => window.__piano.game.song.id)) === 'drill:t-land', 'Start did not open Treble landmarks')
     await leave(page, 'read')
-    await page.waitForSelector('#read p.gnote', { timeout: 5000 }) // the Read note, the first time
-    await nav(page, 'scales')
-    await page.click('#scales p.gnote button[data-guide=note]') // Got it
-    ok(!(await page.$('#scales p.gnote')), 'Got it did not close the note')
-    for (const tab of ['read', 'scales']) {
-      await redraw(page, tab)
-      ok(!(await page.$(`#${tab} p.gnote`)), `the ${tab} note shown twice`)
-    }
     await nav(page, 'today')
     await page.click(`${card} button[data-guide=skip][data-n="1"]`)
     await wait(page, () => /Skipped/.test(document.querySelector('#today .guide li.gstep')?.textContent))

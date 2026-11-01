@@ -371,7 +371,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     ${ex.why.map((w) => `<p class="fine">${esc(w)}</p>`).join('')}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
-    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
+    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'Solid after three clean runs in a row, in time and even; a miss starts the count again.' : '')}
     ${tab === 'quiz' && !(quiz && quiz.i < quiz.cards.length) ? noKeyboard(true) : ''}${body}`
 }
 
@@ -415,7 +415,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       ${c.play?.kind === 'pulse' ? pulseBars(c.play) : ''}${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go">${c.play && run.ear && !run.answered ? replayBtn(run.ear) : ''}<button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
-  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${run ? '' : noKeyboard(true)}${body}`
+  el.innerHTML = `${head('Theory', '', run ? '' : 'Answer on your keyboard, in any octave.')}${run ? '' : noKeyboard(true)}${body}`
 }
 
 

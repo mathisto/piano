@@ -176,7 +176,6 @@ $('#progress').addEventListener('click', (e) => {
 })
 
 // a tab's one-line note closes for good: guide.ts already counted it as seen
-document.addEventListener('click', (e) => (e.target as HTMLElement).closest('button[data-guide=note]')?.parentElement?.remove())
 
 $('#today').addEventListener('click', (e) => {
   const g = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-goal]')

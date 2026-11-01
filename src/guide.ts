@@ -1,4 +1,4 @@
-// Help for a new learner: the first-week card on Today, the one-line note on each tab and the "connect your keyboard" line (the Help sheet's text is in ui-sheets.ts).
+// Help for a new learner: the first-week card on Today, and the "connect your keyboard" line (the Help sheet's text is in ui-sheets.ts).
 import './guide.css'
 import { icon } from './icons'
 
@@ -53,7 +53,6 @@ interface State {
   did: string[] // 'progress': Progress was opened
 }
 const KEY = 'piano.guide'
-const TIPS = 'piano.tips'
 
 export function guideState(): State {
   try {
@@ -88,7 +87,7 @@ export function guideCard(g: Guide): string {
       const lead = state === 'done' ? icon('check') : `<span class="gn">${s.n}</span>`
       const act =
         state === 'now' || state === 'late'
-          ? `<button class="btn${state === 'now' ? '' : ' ghost'}" data-today="guide" data-go="${s.go}">Start</button><button class="link" data-guide="skip" data-n="${s.n}">Skip</button>`
+          ? `<button class="btn${state === 'now' ? '' : ' ghost'}" data-today="guide" data-go="${s.go}">${icon('play')}Start</button><button class="link" data-guide="skip" data-n="${s.n}">Skip</button>`
           : state === 'skipped'
             ? '<span class="gsk">Skipped</span>'
             : ''
@@ -96,32 +95,8 @@ export function guideCard(g: Guide): string {
     })
     .join('')
   return `<section class="tcard guide" aria-label="Start here">
-    <header><div><h2>Start here</h2><p>A suggested first week, day ${g.day} of 7. Do them in any order, or none.</p></div><button class="btn ghost" data-guide="hide">Hide</button></header>
+    <header><div><h2>Start here</h2><p>Day ${g.day} of 7, in any order.</p></div><button class="btn ghost" data-guide="hide">Hide</button></header>
     <ol>${rows}</ol></section>`
-}
-
-// ---------- a line for each tab, once ----------
-
-export const TIP: Record<string, string> = {
-  Read: 'Read is for naming the notes on the page and finding them on your keys, a stage at a time. Sight Run is a longer run of fresh notes.',
-  Scales: 'Scales are for fingering and an even hand. Each stage adds keys; the Quiz asks which note takes a given finger.',
-  Theory: 'Theory is chords, keys, intervals and cadences, plus ear and rhythm training.',
-  Technique: 'Technique is short exercises for steady timing and an even touch: five-finger shapes, scales, arpeggios and rhythm.',
-  Progress: 'Progress shows what you have practised and how it is going: your week, accuracy over time and the notes you read well.',
-}
-
-/** The note for a tab the first time it is drawn, else ''. Drawing it counts as seeing it; Got it closes it early. */
-export function tabNote(tab: string): string {
-  const text = TIP[tab]
-  if (!text) return ''
-  try {
-    const seen: string[] = JSON.parse(localStorage.getItem(TIPS) ?? '[]')
-    if (seen.includes(tab)) return ''
-    localStorage.setItem(TIPS, JSON.stringify([...seen, tab]))
-  } catch {
-    /* no storage: it shows each time, and Got it still closes it */
-  }
-  return `<p class="gnote" role="note"><span>${text}</span><button class="link" data-guide="note">Got it</button></p>`
 }
 
 /** Shown while no MIDI keyboard is connected; banner.ts hides it when one is and shows it again if it goes. */

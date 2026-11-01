@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayOfKey, firstUse, guideDay, STEPS, TIP, tabNote } from './guide'
+import { dayOfKey, firstUse, guideDay, STEPS } from './guide'
 import { HELP } from './ui-sheets'
 
 const all = STEPS.map((s) => s.key)
@@ -42,12 +42,8 @@ describe('firstUse', () => {
   })
 })
 
-describe('tabNote', () => {
-  it('has no store to read in node: it still gives a note for a known tab and none for others', () => {
-    expect(tabNote('Read')).toContain('Got it')
-    expect(tabNote('Songs')).toBe('')
-  })
+describe('copy', () => {
   it('makes no claim the research does not support', () => {
-    for (const text of [...Object.values(TIP), HELP, ...STEPS.map((s) => s.title + s.sub)]) expect(text).not.toMatch(/proven(?! best)|faster|guarantee|quickly/i)
+    for (const text of [HELP, ...STEPS.map((s) => s.title + s.sub)]) expect(text).not.toMatch(/proven(?! best)|faster|guarantee|quickly/i)
   })
 })
