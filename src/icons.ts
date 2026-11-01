@@ -26,3 +26,6 @@ const P: Record<string, [string, boolean]> = {
 
 export const icon = (name: keyof typeof P) =>
   `<svg class="i${P[name][1] ? ' solid' : ''}" viewBox="0 0 24 24" aria-hidden="true">${P[name][0]}</svg>`
+
+/** A judgement's glyph (● perfect, ○ great, ▲ good, ▸ late, × miss), drawn in CSS and coloured by its grade: hue never carries a judgement alone. Put the word beside it. */
+export const jg = (g: 'perfect' | 'great' | 'good' | 'late' | 'miss') => `<i class="jg" data-g="${g}" aria-hidden="true"></i>`

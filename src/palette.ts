@@ -12,6 +12,7 @@ export const C = {
   great: 0xa7e8c4,
   good: 0xc9ccd6,
   bad: 0xff3d6e,
+  missOnKey: 0xc8164b, // the wrong-key cross on an ivory key (= --paper-miss: crimson holds 3:1 on ivory only this dark)
   lamp: 0xffc83d,
   receptor: 0xfff3d6,
   keyWhite: 0xeae6df,

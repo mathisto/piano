@@ -257,7 +257,8 @@ export class Dock {
         const hot = heat(b.i)
         return (
           `<rect x="${x}" y="${44 - h}" width="${w}" height="${h}" style="fill:var(--ink-3)" opacity=".5"/>` +
-          (hot > 0.05 ? `<rect x="${x}" y="0" width="${w}" height="44" style="fill:var(--bad)" opacity="${(hot * 0.55).toFixed(2)}"/>` : '')
+          (hot > 0.05 ? `<rect x="${x}" y="0" width="${w}" height="44" style="fill:var(--bad)" opacity="${(hot * 0.55).toFixed(2)}"/>` : '') +
+          (hot >= 0.3 && w >= 6 ? `<path d="M${x + w / 2 - 4} 3l8 8m0-8l-8 8" style="stroke:var(--bad)" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` : '') // a cross over the bars you missed in: the wash is not the only cue
         )
       })
       .join('')
