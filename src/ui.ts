@@ -168,7 +168,7 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
   <div class="srow"><span>Keyboard</span>${
     inputs.length > 1
       ? `<select id="sDevice"><option value="">All</option>${inputs.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
-      : `<b>${inputs.length ? esc(inputs[0].name) : 'None found'}</b>`
+      : inputs.length ? `<b>${esc(inputs[0].name)}</b>` : `<div class="inl"><b>None found</b>${pair ? '' : '<button class="btn" data-connect>Connect</button>'}</div>`
   }</div>${pair && `<div class="srow"><span></span>${pair}</div>`}
   <div class="srow"><span>Delay</span><div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal">Calibrate</button></div></div>
   ${outputLatency() > 0.08 ? `<p class="fine">This device's sound output adds about ${Math.round(outputLatency() * 1000)} ms (Bluetooth?): the count-in and the app's notes reach you that late. Wired headphones or the built-in speakers keep them on time.</p>` : ''}
