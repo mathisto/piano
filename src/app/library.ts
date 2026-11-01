@@ -53,12 +53,6 @@ export async function showLibrary(err = '') {
   mountLibrary($('#library'), prog, libSong)
 }
 
-/** The score behind a cover whose piece is a library piece already on the device; anything else is kept when its row is built. */
-export const coverSong = async (id: string) => {
-  const p = id.startsWith('lib:') ? lib.piece(id.slice(4)) : undefined
-  return p && lib.local(p.id) ? libSong(p) : undefined
-}
-
 export async function libSong(p: Piece) {
   return store.toSong({ id: `lib:${p.id}`, title: p.title, bytes: await lib.pieceBytes(p), added: 0, kind: p.format === 'midi' ? 'midi' : 'xml', pick: p.pick, tempo: p.tempo ? { bpm: p.tempo, guess: p.flags.includes('tempo-estimated') } : undefined, pickup: p.pickup }, settings.split)
 }

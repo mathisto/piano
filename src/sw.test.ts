@@ -8,6 +8,7 @@ test('what is cached and how', () => {
   expect(r('/', true)).toBe('nav')
   expect(r('/assets/index-BgCh5TlO.js')).toBe('cache-first')
   expect(r('/corpus/p/0123456789abcdef.mxl')).toBe('cache-first')
+  expect(r('/corpus/i/0123456789abcdef.json')).toBe('cache-first') // a piece's opening bars, named by its hash
   expect(r('/samples/salamander/C4.mp3')).toBe('cache-first')
   expect(r('/art/x.jpg')).toBe('revalidate')
   expect(r('/library/lieder-lc4976849.mxl')).toBe('revalidate')

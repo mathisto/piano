@@ -2,15 +2,18 @@
 // Bundled by scripts/library/vite.config.mjs into .cache/library/bin/pipeline.mjs and driven by build.mjs, which fetches,
 // checks licences and normalises. Pure and deterministic: the same inputs give byte-identical output.
 import { createHash } from 'node:crypto'
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { Midi } from '@tonejs/midi'
-import { fromMidi, inspectMidi, type Selection, type Tempo } from '../../src/midi-tracks'
+import { autoSelect, fromMidi, inspectMidi, type Selection, type Tempo } from '../../src/midi-tracks'
 import { formTempo, onsetsOf } from '../../src/formtempo'
 import { fromMusicXml, tempoWord, xmlText } from '../../src/musicxml'
 import { estimateFifths, type Song } from '../../src/song'
 import type { Catalog, Piece } from '../../src/catalog-types'
 import { lyPickup, plays, withRepeats } from './repeats'
 import { SOURCE } from '../../src/credits'
+import { encode, type Enc } from '../../src/incipit'
+import { formOf, kindOf, periodOf } from './kind'
+export { periodOf }
 export { lyPickup, pickLy, pickupWhy, plays, reading, unfold, withRepeats } from './repeats'
 export { kernToMusicXml } from '../../src/kern' // --set chopin: Humdrum **kern, shipped as the MusicXML it converts to
 
@@ -60,8 +63,10 @@ export interface Analysis {
   quality: number
   grade: number
   gradeWhy: number[]
+  feat: number[] // the raw values behind gradeWhy's seven capped terms (FEATURES), for the re-grade
   error?: string
   song?: Song
+  cover?: Song // the score as the app builds it when the catalogue names no tracks (store.toSong: autoSelect), which the sidecar's opening bars must come from
   pick?: Selection
   tracks: number
   tempo?: number // quarter-note bpm the catalogue overrides the MIDI's own with (a tempo word of the .ly)
@@ -90,6 +95,10 @@ function pinHands(buf: ArrayBuffer): Selection | undefined {
   if (!Object.values(hands).includes('R')) hands[[...live].sort((a, b) => b.lo + b.hi - a.lo - a.hi)[0].index] = 'R'
   return { tracks: live.map((t) => t.index), hands }
 }
+
+/** What `feat` holds, in order: onsets a second, notes in the busiest bar (95th percentile), the largest chord, the 95th-percentile chord span, the range in semitones,
+ *  the share of notes outside the key, the share in tuplets, the share of 16ths and shorter. The capped terms of `gradeWhy` are these, scaled. */
+export const FEATURES = ['onsets-per-s', 'bar-p95', 'max-chord', 'span-p95', 'range', 'out-of-key', 'tuplet', '16th']
 
 /** Grade cut points on D, the sum of the seven terms: the 8th, 30th, 60th and 85th percentile of D over the analysed
  * Mutopia set (scripts/library/fit.mjs), so it splits 8/22/30/25/15% into grades 1 to 5. */
@@ -142,18 +151,19 @@ export function judge(s: Song, marks = '', hasTempo = true) {
   const tonic = (((7 * s.fifths) % 12) + 12) % 12
   const scale = new Set([0, 2, 4, 5, 7, 9, 11].map((x) => (x + tonic) % 12))
   const share = (f: (n: (typeof notes)[0]) => boolean) => (notes.length ? notes.filter(f).length / notes.length : 0)
+  const raw = [onsets / Math.max(s.end, 1), p95(perBar), maxChord, spanP95, s.hi - s.lo, share((n) => !scale.has(n.p % 12)), share((n) => !!n.tuplet), share((n) => (n.qd ?? n.beats) <= 0.25 + 1e-6)]
   const why = [
-    clamp(onsets / Math.max(s.end, 1) / 2, 3),
-    clamp((p95(perBar) - 6) / 8, 2),
-    clamp(0.5 * (maxChord - 2), 1.5),
-    clamp((spanP95 - 7) / 4, 1.5),
-    clamp((s.hi - s.lo - 24) / 24, 1),
-    clamp(3 * share((n) => !scale.has(n.p % 12)), 1),
-    clamp(5 * share((n) => !!n.tuplet) + 1.5 * share((n) => (n.qd ?? n.beats) <= 0.25 + 1e-6), 1),
+    clamp(raw[0] / 2, 3),
+    clamp((raw[1] - 6) / 8, 2),
+    clamp(0.5 * (raw[2] - 2), 1.5),
+    clamp((raw[3] - 7) / 4, 1.5),
+    clamp((raw[4] - 24) / 24, 1),
+    clamp(3 * raw[5], 1),
+    clamp(5 * raw[6] + 1.5 * raw[7], 1),
   ].map(r2)
   const D = why.reduce((a, b) => a + b, 0)
   const grade = 1 + CUTS.filter((c) => D >= c).length
-  return { fails, review, flags, tags, grade, gradeWhy: why, quality: 100 - 10 * review.length - 3 * flags.length }
+  return { fails, review, flags, tags, grade, gradeWhy: why, feat: raw.map((x) => Math.round(x * 1000) / 1000), quality: 100 - 10 * review.length - 3 * flags.length }
 }
 
 /** 4-grams of the intervals of the top line (highest note at each onset). */
@@ -193,7 +203,7 @@ const LY_HEAD = /\b(?:title|subtitle|piece|meter)\s*=\s*(?:\\markup\s*)?("(?:[^"
 const lyHeads = (ly: string) => [...ly.replace(/%.*$/gm, ' ').matchAll(LY_HEAD)].map((m) => m[1])
 
 export async function analyse(e: Input): Promise<Analysis> {
-  const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], tracks: 0, fp: new Set<string>() }
+  const base = { id: e.id, review: [], flags: [], tags: [], quality: 0, grade: 0, gradeWhy: [], feat: [], tracks: 0, fp: new Set<string>() }
   try {
     let s: Song, marks: string, hasTempo: boolean, pick: Selection | undefined, tracks: number, tempo: Tempo | undefined, pickup: number | undefined
     if (e.format === 'midi') {
@@ -229,7 +239,8 @@ export async function analyse(e: Input): Promise<Analysis> {
       tracks = (marks.match(/<part id="/g) ?? []).length
       hasTempo = !s.flags?.includes('no-tempo') // a <sound tempo>, a <metronome> or a tempo word (that one flagged 'tempo-estimated')
     }
-    return { ...base, ...judge(s, marks, hasTempo), song: s, pick, tracks, ...(tempo && { tempo: tempo.bpm }), ...(pickup !== undefined && { pickup }), fp: fingerprint(s) }
+    const cover = e.format === 'midi' && !pick ? fromMidi(ab(e.bytes), e.title, e.id, 60, autoSelect(inspectMidi(ab(e.bytes))), tempo, pickup) : undefined
+    return { ...base, ...judge(s, marks, hasTempo), song: s, ...(cover && { cover }), pick, tracks, ...(tempo && { tempo: tempo.bpm }), ...(pickup !== undefined && { pickup }), fp: fingerprint(s) }
   } catch (err) {
     return { ...base, fails: ['parse'], error: String((err as Error).message ?? err) }
   }
@@ -320,6 +331,33 @@ export interface Options {
   grades?: [number, number] // ship only these grades
   limit?: number // ship at most this many: pinned first, then the easiest (grade, then D)
   pinned?: string[] // ids already shipped (public/library): they win dedupe and ship at any grade
+  side?: Side // collects what the sidecar files hold, so a driver that runs one piece at a time (reanalyse.mjs) can write them for all
+}
+
+/** What a run writes beside catalog.json: the opening bars of each shipped piece (i/<sha16>.json, named in the catalogue) and the raw grade features (features.json, not fetched by the app). */
+export interface Side {
+  incipits: Map<string, Enc>
+  features: Map<string, number[]>
+}
+
+/** The sidecar: `i/<sha16>.json`, content-addressed like the pieces, so the service worker keeps it for good. Returns its path, for catalog.json's `incipits`. */
+export function writeSidecar(out: string, side: Side): string {
+  const body = JSON.stringify({ v: 1, p: Object.fromEntries([...side.incipits].sort((a, b) => idOrder(a[0], b[0]))) })
+  const name = `i/${sha(body).slice(0, 16)}.json`
+  mkdirSync(`${out}/i`, { recursive: true })
+  writeFileSync(`${out}/${name}`, body)
+  writeFileSync(`${out}/features.json`, JSON.stringify({ v: 1, names: FEATURES, p: Object.fromEntries([...side.features].sort((a, b) => idOrder(a[0], b[0]))) }) + '\n')
+  return name
+}
+
+/** What reanalyse.mjs takes from a fresh run of a published piece: the analysis fields of `q`; everything else (title, licence, file, tags with the style ...) stays as published.
+ *  A field `q` no longer has (a `meter` the source does not state) is dropped. */
+export const ANALYSIS = new Set(['fifths', 'mode', 'keys', 'meter', 'bars', 'sec', 'bpm', 'notes', 'lo', 'hi', 'tracks', 'pick', 'tempo', 'pickup', 'kind', 'form', 'grade', 'gradeWhy', 'gradeOverride', 'quality', 'flags'])
+export function reanalysed(p: Piece, q: Piece): Piece {
+  const r: Record<string, unknown> = {}
+  for (const k of Object.keys(q)) r[k] = ANALYSIS.has(k) ? q[k as keyof Piece] : p[k as keyof Piece]
+  for (const k of Object.keys(p)) if (!(k in r) && !ANALYSIS.has(k)) r[k] = p[k as keyof Piece]
+  return r as unknown as Piece
 }
 
 export interface Row {
@@ -335,9 +373,18 @@ const sha = (b: Uint8Array | string) => createHash('sha256').update(b).digest('h
 const parseComposer = (c: string) => {
   const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(c)
   const ys = (m?.[2] ?? '').match(/\d{4}/g) ?? []
-  return { name: (m?.[1] ?? c).trim(), born: ys.length > 1 ? Number(ys[0]) : undefined, died: Number(ys[ys.length - 1]) }
+  const born = ys.length > 1 ? Number(ys[0]) : undefined
+  const died = Number(ys[ys.length - 1])
+  return { name: (m?.[1] ?? c).trim(), born, died, period: periodOf({ born, died }) }
 }
 const lname = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/, ' $1')
+
+/** The kind and form fields of a piece: the style is a tag too (a Hanon exercise is tagged technique), so it counts before the tags are written. */
+function kindForm(e: Input, a: Analysis, s: Song) {
+  const kind = kindOf({ source: e.source, tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])], bars: s.bars.length, sec: s.end })
+  const form = formOf(e.title)
+  return { ...(kind && { kind }), ...(form && { form }) }
+}
 
 export async function run(inputs: Input[], out: string, o: Options = {}): Promise<Row[]> {
   const pinned = new Set(o.pinned)
@@ -370,6 +417,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
 
   // emit
   mkdirSync(`${out}/p`, { recursive: true })
+  const side = o.side ?? { incipits: new Map(), features: new Map() }
   const composers = [...new Map(ship.map(({ e }) => [parseComposer(e.composer).name, parseComposer(e.composer)])).values()].sort((a, b) => (a.name < b.name ? -1 : 1))
   const licences = [...new Map(ship.map(({ e }) => [e.licence, { id: e.licence, url: e.licenceUrl }])).values()].sort((a, b) => (a.id < b.id ? -1 : 1))
   const pieces: Piece[] = []
@@ -391,7 +439,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       fifths: s.fifths,
       ...(s.stated?.mode && { mode: s.stated.mode }),
       ...(keys && { keys }),
-      meter: `${full.n}/${full.den}`,
+      ...(s.stated?.meter && { meter: `${full.n}/${full.den}` }),
       bars: s.bars.length,
       sec: Math.round(s.end * 10) / 10,
       bpm: Math.round(60 / s.spb),
@@ -402,6 +450,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       ...(a.pick && { pick: a.pick }),
       ...(a.tempo && { tempo: a.tempo }),
       ...(a.pickup !== undefined && { pickup: a.pickup }),
+      ...kindForm(e, a, s),
       grade: a.grade,
       gradeWhy: a.gradeWhy,
       ...(go && { gradeOverride: go }),
@@ -421,13 +470,20 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       sha256: h,
     })
     set(e.id, 'shipped', [], a)
+    side.features.set(e.id, a.feat)
+    try {
+      side.incipits.set(e.id, encode(a.cover ?? s))
+    } catch (err) {
+      console.warn(`${e.id}: no incipit (${(err as Error).message})`) // the cover keeps its blank staff
+    }
   }
+  const incipits = writeSidecar(out, side)
   for (const f of readdirSync(`${out}/p`)) if (!files.has(f)) rmSync(`${out}/p/${f}`)
   // a dropped duplicate's id leads to the piece that ships instead, unless it was shipped itself (then it is the bundle's)
   const aliases = Object.fromEntries(dropped.filter((d) => !pinned.has(d.id) && pieces.some((p) => p.id === d.dupOf)).map((d) => [d.id, d.dupOf]))
   // the app refetches only when built changes, so it hashes what ships, not the inputs (the same inputs ship new files when the code changes)
   const built = sha(JSON.stringify([composers, licences, aliases, pieces])).slice(0, 16)
-  const cat: Catalog = { v: 1, built, composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces }
+  const cat: Catalog = { v: 1, built, incipits, composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces }
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
   writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
   return [...rows.values()].sort((a, b) => idOrder(a.id, b.id))
@@ -462,7 +518,7 @@ ${sa.length ? `## Share-alike (CC BY-SA)\n\n${sa.map((p) => `- \`${p.file}\`: ${
 export function merge(base: string, out: string): string[] {
   const b: Catalog = JSON.parse(readFileSync(`${base}/catalog.json`, 'utf8'))
   const n: Catalog = JSON.parse(readFileSync(`${out}/catalog.json`, 'utf8'))
-  const composers = [...b.composers]
+  const composers = b.composers.map((c) => ({ ...c, period: c.period ?? periodOf(c) }))
   const licences = [...b.licences]
   const at = <T,>(list: T[], item: T, key: (x: T) => string) => {
     const i = list.findIndex((x) => key(x) === key(item))
@@ -475,7 +531,14 @@ export function merge(base: string, out: string): string[] {
     .map((p) => ({ ...p, composer: at(composers, n.composers[p.composer], who), licence: at(licences, n.licences[p.licence], (l) => l.id) }))
   cpSync(`${base}/p`, `${out}/p`, { recursive: true })
   const aliases = { ...b.aliases, ...Object.fromEntries(Object.entries(n.aliases ?? {}).filter(([k]) => !have.has(k))) }
-  const cat: Catalog = { v: 1, built: sha(`${b.built} ${n.built}`).slice(0, 16), composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces: [...b.pieces, ...added] }
+  // the sidecars: the base's entries as they were, then the added pieces' from this run's
+  const side = (d: string, c: Catalog) => (c.incipits ? (JSON.parse(readFileSync(`${d}/${c.incipits}`, 'utf8')).p as Record<string, Enc>) : {})
+  const [bi, ni] = [side(base, b), side(out, n)]
+  const incipits = new Map<string, Enc>([...Object.entries(bi), ...added.flatMap((p) => (ni[p.id] ? [[p.id, ni[p.id]] as [string, Enc]] : []))])
+  const fs = (d: string): Record<string, number[]> => (existsSync(`${d}/features.json`) ? JSON.parse(readFileSync(`${d}/features.json`, 'utf8')).p : {})
+  const [bf, nf] = [fs(base), fs(out)]
+  const features = new Map<string, number[]>([...Object.entries(bf), ...added.flatMap((p) => (nf[p.id] ? [[p.id, nf[p.id]] as [string, number[]]] : []))])
+  const cat: Catalog = { v: 1, built: sha(`${b.built} ${n.built}`).slice(0, 16), incipits: writeSidecar(out, { incipits, features }), composers, licences, ...(Object.keys(aliases).length && { aliases }), pieces: [...b.pieces, ...added] }
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
   writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
   return added.map((p) => p.id)

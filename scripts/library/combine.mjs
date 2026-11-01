@@ -20,7 +20,15 @@ A.pieces = A.pieces.map((p) => {
   lic = lic.split(p.file).join(q.file)
   return q
 })
-A.built = createHash('sha256').update(JSON.stringify([A.composers, A.licences, A.aliases ?? {}, A.pieces])).digest('hex').slice(0, 16) // as reanalyse.mjs: a change to the tables alone is a new built too
+// the sidecars: the base's entries, the overlay's over them for the pieces taken from it
+const side = (d, c) => (c.incipits ? JSON.parse(read(d, c.incipits)).p : {})
+const [bi, oi] = [side(base, A), side(over, B)]
+const incipits = Object.fromEntries(A.pieces.map((p) => [p.id, (p === mine.get(p.id) ? oi[p.id] : undefined) ?? bi[p.id] ?? oi[p.id]]).filter((e) => e[1]))
+const body = JSON.stringify({ v: 1, p: incipits })
+A.incipits = `i/${createHash('sha256').update(body).digest('hex').slice(0, 16)}.json`
+mkdirSync(`${out}/i`, { recursive: true })
+writeFileSync(`${out}/${A.incipits}`, body)
+A.built = createHash('sha256').update(JSON.stringify([A.composers, A.licences, A.aliases ?? {}, A.pieces, A.incipits])).digest('hex').slice(0, 16) // as reanalyse.mjs: a change to the tables alone is a new built too
 mkdirSync(`${out}/p`, { recursive: true })
 for (const d of [base, over]) cpSync(`${d}/p`, `${out}/p`, { recursive: true, force: false, errorOnExist: false })
 writeFileSync(`${out}/catalog.json`, JSON.stringify(A))

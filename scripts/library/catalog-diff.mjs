@@ -4,7 +4,8 @@
 // (file, bytes, sha256 together: repeats played out) and those are listed apart; every other differing field is listed by field with its
 // count and, per piece, old -> new (first 6 without --all). Exit 1 when identity does not hold.
 import { createHash } from 'node:crypto'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { gzipSync } from 'node:zlib'
 
 const [A, B] = process.argv.slice(2)
 const all = process.argv.includes('--all')
@@ -14,7 +15,8 @@ const j = JSON.stringify
 const bad = []
 const same = (what, x, y) => j(x) === j(y) || bad.push(what)
 same('piece ids or order', a.pieces.map((p) => p.id), b.pieces.map((p) => p.id))
-same('composers', a.composers, b.composers)
+const bare = (cs) => cs.map(({ period, ...c }) => c) // a composer's period is new (kind.ts); the rest must match
+same('composers', bare(a.composers), bare(b.composers))
 same('licences', a.licences, b.licences)
 same('aliases', a.aliases, b.aliases)
 const B_ = new Map(b.pieces.map((p) => [p.id, p]))
@@ -43,5 +45,19 @@ for (const [k, v] of Object.entries(diffs).sort((x, y) => y[1].length - x[1].len
   console.log(`  ${k}: ${v.length}`)
   for (const s of all ? v : v.slice(0, 6)) console.log(`      ${s}`)
 }
+// what the new catalogue carries that the old did not: a count of each, and the sidecar
+const count = (xs) => Object.entries(xs.reduce((m, x) => ((m[x ?? 'none'] = (m[x ?? 'none'] ?? 0) + 1), m), {})).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${k} ${n}`).join(', ')
+console.log(`mode stated ${b.pieces.filter((p) => p.mode).length}, meter stated ${b.pieces.filter((p) => p.meter).length} of ${b.pieces.length}`)
+console.log(`kind: ${count(b.pieces.map((p) => p.kind ?? 'piece'))}`)
+console.log(`form: ${count(b.pieces.map((p) => p.form))}`)
+console.log(`period (by composer): ${count(b.composers.map((c) => c.period))}; by piece: ${count(b.pieces.map((p) => b.composers[p.composer].period))}`)
+if (b.incipits) {
+  const side = JSON.parse(readFileSync(`${B}/${b.incipits}`, 'utf8')).p
+  const raw = readFileSync(`${B}/${b.incipits}`)
+  const none = b.pieces.filter((p) => !side[p.id]).map((p) => p.id)
+  console.log(`incipits ${b.incipits}: ${Object.keys(side).length} pieces, ${raw.length} bytes, ${gzipSync(raw).length} gzipped${none.length ? `; NONE for ${none.join(' ')}` : ''}`)
+  if (none.length) bad.push(`no incipit for ${none.length} pieces`)
+} else bad.push('catalog.json names no incipits sidecar')
+console.log(`catalog.json ${statSync(`${A}/catalog.json`).size} -> ${statSync(`${B}/catalog.json`).size} bytes, gzipped ${gzipSync(readFileSync(`${A}/catalog.json`)).length} -> ${gzipSync(readFileSync(`${B}/catalog.json`)).length}`)
 console.log(bad.length ? `IDENTITY BROKEN:\n  ${bad.join('\n  ')}` : 'identity holds: ids, order, tables, aliases, LICENSES.md, every old p/ file, and every file, bytes and sha256 but the new files above')
 process.exit(bad.length ? 1 : 0)

@@ -516,6 +516,7 @@ async function songsFlow() {
   await skipSetup(page)
   await feature('7 Songs: 5,000-row search, paging, bundled piece, fix-it chain', page, async () => {
     await ev(page, () => window.__piano.catalog(5000))
+    await page.check('input[name=libLane][value=all]', { force: true }) // the list opens on Pieces: the synthetic catalogue has Lieder and studies too
     await wait(page, () => document.querySelector('#libCount')?.textContent === '5,000')
     ok((await page.$$('#libRows tr[data-lib]')).length === 50, 'first page is not 50 rows')
     await page.click('#libMore')
@@ -552,6 +553,79 @@ async function songsFlow() {
     await ev(page, (b0) => window.__e2e.follow(`g.loop && g.loop.b > ${b0}`, 120000), b0)
     ok(/Clean three times/.test(await text(page, '#banner')), 'no fix-it message')
     await leave(page, 'library')
+  })
+  // a synthetic catalogue whose sidecar is served from the page: every piece's opening bars are the first starter's
+  const sidecar = (page) =>
+    ev(page, async () => {
+      const [{ encode }, { fromSpec }, { STARTERS }] = await Promise.all([import('/src/incipit.ts'), import('/src/song.ts'), import('/src/starters.ts')])
+      const enc = encode(fromSpec(STARTERS[0].spec))
+      const orig = window.fetch
+      window.fetch = (u, ...a) => (String(u).includes('/i/synthetic.json') ? Promise.resolve(new Response(JSON.stringify({ v: 1, p: Object.fromEntries(Array.from({ length: 5000 }, (_, i) => [`syn-${i}`, enc])) }))) : orig(u, ...a))
+    })
+  await feature('7 Songs: a library row not on the device shows noteheads from the sidecar', page, async () => {
+    await boot(page)
+    await sidecar(page)
+    await ev(page, () => window.__piano.catalog(300))
+    await wait(page, () => document.querySelector('#libRows tr[data-lib]'))
+    await page.locator('#libRows').scrollIntoViewIfNeeded() // covers are drawn as their rows come into view
+    await wait(page, () => document.querySelectorAll('#libRows .cover[data-drawn]').length >= 3)
+    const rows = await page.$$eval('#libRows .cover[data-drawn]', (cs) => cs.map((c) => ({ id: c.dataset.cv, heads: c.querySelectorAll('text.head').length })))
+    ok(rows.every((r) => r.id.startsWith('lib:syn-') && r.heads > 0), `rows without noteheads: ${JSON.stringify(rows)}`) // none of these pieces is on the device
+    await axe(page, 'Songs with covers from the sidecar', '#library')
+  })
+  await feature('7 Songs: a zero result names its filters, and one tap on a removal brings the count back', page, async () => {
+    await boot(page)
+    await sidecar(page)
+    await ev(page, () => window.__piano.catalog(300))
+    await wait(page, () => document.querySelector('#libRows tr[data-lib]'))
+    const count = async () => Number((await text(page, '#libCount')).replace(/,/g, ''))
+    const all = await count()
+    await page.selectOption('#libPeriod', 'baroque')
+    const baroque = await count()
+    ok(baroque > 0 && baroque < all, `Baroque: ${baroque} of ${all}`)
+    await page.fill('#libQ', 'zzqq')
+    await wait(page, () => document.querySelector('#libRows td.zero'))
+    const zero = await text(page, '#libRows td.zero')
+    ok(/zzqq/.test(zero) && /Baroque/.test(zero), `the zero state does not name its filters: ${zero}`)
+    ok((await count()) === 0, 'count is not zero')
+    await page.click('#libRows td.zero [data-rm=q]')
+    await wait(page, () => document.querySelector('#libRows tr[data-lib]'))
+    ok((await count()) === baroque, `clearing the search gave ${await count()}, not ${baroque}`)
+    ok(await ev(page, () => document.activeElement?.id === 'libQ'), 'focus did not return to the search box')
+    // a filter that is the cause: Studies, with the title of a piece that is not one
+    const title = await page.$eval('#libRows tr[data-lib] td.name', (t) => t.firstChild.textContent.trim())
+    await page.click('#libChips [data-rm=period]')
+    await page.check('input[name=libLane][value=study]', { force: true })
+    await page.fill('#libQ', title)
+    await wait(page, () => document.querySelector('#libRows td.zero'))
+    const w = await page.$eval('#libRows td.zero [data-rm=lane]', (b) => b.textContent)
+    const n = Number(/\+([\d,]+)/.exec(w)[1].replace(/,/g, ''))
+    await page.click('#libRows td.zero [data-rm=lane]')
+    await wait(page, () => document.querySelector('#libRows tr[data-lib]'))
+    ok((await count()) === n, `showing every kind gave ${await count()}, the button said ${n}`)
+    // the Studies lane has its own note and lists only studies
+    await page.fill('#libQ', '')
+    await page.check('input[name=libLane][value=study]', { force: true })
+    await wait(page, () => /exercises, not pieces/.test(document.querySelector('#libNote')?.textContent ?? ''))
+    ok((await page.$$('#libRows tr[data-lib]')).length > 0, 'no study listed')
+    await axe(page, 'Songs, Studies lane', '#library')
+  })
+  await feature('7 Songs: 40 covers drawn from their sidecar entries equal the ones drawn from their scores, string for string', page, async () => {
+    await boot(page)
+    const r = await ev(page, async () => {
+      const [inc, store, { settings }, { draw }, { fromSpec }, { STARTERS }] = await Promise.all([import('/src/incipit.ts'), import('/src/store.ts'), import('/src/settings.ts'), import('/src/cover-draw.ts'), import('/src/song.ts'), import('/src/starters.ts')])
+      const man = await (await fetch('/library/manifest.json')).json()
+      const songs = [...STARTERS.map((s) => fromSpec(s.spec))]
+      for (const m of man) songs.push(await store.toSong({ id: m.id, title: m.title, bytes: await (await fetch('/library/' + m.file)).arrayBuffer(), added: 0, kind: m.format === 'midi' ? 'midi' : 'xml' }, settings.split))
+      const bad = []
+      for (const song of songs) {
+        const got = inc.decode(JSON.parse(JSON.stringify(inc.encode(song))), { id: song.id, title: song.title, fifths: song.fifths, lo: song.lo, hi: song.hi })
+        for (const size of ['thumb', 'card']) if (draw(inc.incipit(song), undefined, size) !== draw(got, undefined, size)) bad.push(`${song.id} ${size}`)
+      }
+      return { n: songs.length, bad }
+    })
+    ok(r.n >= 40, `only ${r.n} scores`)
+    ok(!r.bad.length, `${r.bad.length} of ${r.n} differ: ${r.bad.slice(0, 5)}`)
   })
 }
 
@@ -697,6 +771,7 @@ const shellFlow = () => fresh({
     ok(await ev(page, () => document.querySelector('#read.on') && !document.querySelector('#play.on') && !document.querySelector('#nav').hidden), 'a stale open took over the Read page')
     // two Songs renders in flight: one open library
     await ev(page, () => (document.querySelector('#nav input[value=songs]').click(), window.__piano.catalog(300)))
+    await page.check('input[name=libLane][value=all]', { force: true }) // the synthetic catalogue has Lieder and studies, and the list opens on Pieces
     await wait(page, () => document.querySelector('#libCount')?.textContent === '300')
     await page.waitForTimeout(500)
     ok((await page.$$('#libQ')).length === 1, `${(await page.$$('#libQ')).length} search boxes`)

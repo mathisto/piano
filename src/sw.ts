@@ -13,8 +13,8 @@ export function route(u: URL, origin: string, navigate = false): Route {
   const p = u.pathname
   if (u.origin !== origin || p === '/sw.js' || p === '/version.txt' || p === '/corpus/catalog.json') return 'network' // the catalogue keeps its own offline copy (src/catalog.ts)
   if (navigate) return p === '/' ? 'nav' : 'network'
-  // hashed build files, content-addressed corpus pieces and the instrument recordings never change under their name
-  return /^\/(assets|samples|corpus\/p)\//.test(p) ? 'cache-first' : 'revalidate' // bundled scores, favicon
+  // hashed build files, content-addressed corpus pieces and covers' opening bars (corpus/i/<hash>.json) and the instrument recordings never change under their name
+  return /^\/(assets|samples|corpus\/[pi])\//.test(p) ? 'cache-first' : 'revalidate' // bundled scores, favicon
 }
 
 /** Build files go with their version; the one before is kept too, for a tab still running it (its lazy chunks). Everything else outlives a deploy. */

@@ -1,6 +1,7 @@
 import './cover.css'
-import { LEVEL_GRADE } from './catalog'
+import { CORPUS, LEVEL_GRADE, catalog, piece } from './catalog'
 import type { Piece } from './catalog-types'
+import { decode, type Enc, incipit, KEEP } from './incipit'
 import type { Song } from './song'
 import type { Starter } from './starters'
 import { esc } from './util'
@@ -15,7 +16,7 @@ export const COVER = {
   thumb: { w: 56, h: 42, m: 4, mt: 3.5, hf: 4.5, ry: 0, tf: 0, ty: 0, sf: 0, iy: 10, ih: 29, scale: 0.25 },
   card: { w: 300, h: 200, m: 20, mt: 14, hf: 7, ry: 27, tf: 17, ty: 35, sf: 9, iy: 74, ih: 104, scale: 0.5 },
   start: { w: 600, h: 400, m: 42, mt: 28, hf: 11, ry: 51, tf: 42, ty: 64, sf: 16, iy: 148, ih: 208, scale: 0.8 },
-  keep: 3, // bars kept of a score: the layout shows one or two, and the third stops it ending in a final barline
+  keep: KEEP, // bars kept of a score (incipit.ts): the layout shows one or two, and the third stops it ending in a final barline
   solo: 1.45, // a single line is drawn this much larger than a grand staff
   ledger: 6, // units past the notes a sliding window keeps clear
 } as const
@@ -62,7 +63,7 @@ export const pieceMeta = (p: Piece, composer: string | undefined): CoverMeta => 
     title,
     sub: secondary,
     level: p.gradeOverride ?? p.grade,
-    ...(p.bars && { fifths: p.fifths, meter: p.meter, ...(p.mode && { mode: p.mode }) }),
+    ...(p.bars && { fifths: p.fifths, ...(p.meter && { meter: p.meter }), ...(p.mode && { mode: p.mode }) }), // the metre only when the source states it
   }
 }
 
@@ -99,11 +100,7 @@ export const rightOf = (key: string | undefined, meter: string | undefined, loca
 
 export const leftOf = (m: CoverMeta) => (m.local ? `Your file · ${m.local}` : (m.by ?? ''))
 
-/** The first bars of a score and nothing else: all a cover needs, and a few notes to hold instead of a piece. */
-export function incipit(song: Song): Song {
-  const bars = song.bars.slice(0, COVER.keep)
-  return { ...song, bars, notes: song.notes.filter((n) => n.bar < bars.length), end: bars[bars.length - 1]?.t1 ?? 0, chords: undefined, marks: undefined, wedges: undefined, curve: undefined, dyn: undefined }
-}
+export { incipit }
 
 /** The part of the layout the paper shows, in layout units, scaled to the box: the whole grand staff (or the one staff of a single line), centred, sliding toward
  *  the notes when their ledger lines reach past it, though never so far that the staff leaves the window. `lines` are the staff lines' y, `heads` the notehead y's. */
@@ -144,8 +141,9 @@ export function coverHtml(id: string, size: CoverSize, m: CoverMeta, blank = fal
   const s = said.get(keyId(id))
   const key = m.mode !== undefined && m.fifths !== undefined ? keyName(m.fifths, m.mode) : s?.key
   const meter = m.meter && !m.local ? m.meter : s?.meter
-  const f = blank && m.fifths !== undefined && m.meter ? { fifths: m.fifths, meter: m.meter } : undefined
-  const hit = done.get(doneKey(id, size)) ?? (f && done.get(doneKey(id, size, f))) // already drawn once: in the page at once, no empty paper to flash
+  const f = blank && m.fifths !== undefined ? { fifths: m.fifths, meter: m.meter ?? '4/4' } : undefined // a piece whose metre the source does not state is quantized as 4/4: the empty staff says so, the header does not
+  const real = done.get(doneKey(id, size))
+  const hit = real ?? (f && done.get(doneKey(id, size, f))) // already drawn once: in the page at once, no empty paper to flash. An empty staff is only the stand-in: the notes still come
   const t = c.tf && m.title !== undefined ? titleFit(m.title, size) : undefined
   const full = size !== 'thumb'
   const style = `--cw:${c.w}px;--ch:${c.h}px;--m:${c.m}px;--mt:${c.mt}px;--hf:${c.hf}px;--ry:${c.ry}px;--tf:${t?.px ?? c.tf}px;--ty:${c.ty}px;--sf:${c.sf}px;--iy:${c.iy}px;--ih:${c.ih}px`
@@ -154,7 +152,7 @@ export function coverHtml(id: string, size: CoverSize, m: CoverMeta, blank = fal
     : `<div class="cv-h"><em>${esc(m.token ?? '')}</em></div>`
   const title = full && m.title !== undefined ? `<div class="cv-t"><strong>${esc(m.title)}</strong>${m.sub && t?.one ? `<small>${esc(m.sub)}</small>` : ''}</div>` : ''
   const level = full && m.level ? `<div class="cv-d">${[1, 2, 3, 4, 5].map((i) => `<i${i <= m.level! ? ' class="on"' : ''}></i>`).join('')}</div>` : ''
-  return `<div class="cover cv-${size}" data-cv="${esc(id)}"${f ? ` data-f="${f.fifths}" data-m="${esc(f.meter)}"` : ''}${hit ? ' data-drawn' : ''} style="${style}" aria-hidden="true">${header}${title}<div class="cv-b">${hit ?? ''}</div>${level}</div>`
+  return `<div class="cover cv-${size}" data-cv="${esc(id)}"${f ? ` data-f="${f.fifths}" data-m="${esc(f.meter)}"` : ''}${real ? ' data-drawn' : ''} style="${style}" aria-hidden="true">${header}${title}<div class="cv-b">${hit ?? ''}</div>${level}</div>`
 }
 
 // ---- drawing, lazily ----
@@ -175,8 +173,8 @@ export function forget(id: string) {
   for (const k of done.keys()) if (k.startsWith(`${keyId(id)}|`)) done.delete(k)
 }
 
-/** Draw the covers under `root` as they scroll into view. `load` fetches a score that is on the device but not yet kept (a library piece). */
-export function drawCovers(root: ParentNode, load?: (id: string) => Promise<Song | undefined>) {
+/** Draw the covers under `root` as they scroll into view. `load` finds a score that is not kept yet: by default a library piece's opening bars from the sidecar. */
+export function drawCovers(root: ParentNode, load?: Loader) {
   const seen = new IntersectionObserver(
     (es) => {
       for (const e of es.filter((e) => e.isIntersecting)) {
@@ -189,17 +187,45 @@ export function drawCovers(root: ParentNode, load?: (id: string) => Promise<Song
   for (const el of root.querySelectorAll<HTMLElement>('.cover[data-cv]:not([data-drawn])')) seen.observe(el)
 }
 
-/** Draw one cover now, from the score if it is kept (or `load` finds it), else from the catalogue's key and metre if the cover asked for a blank staff. */
-export async function paint(el: HTMLElement, load?: (id: string) => Promise<Song | undefined>) {
+type Loader = (id: string) => Promise<Song | undefined>
+
+// ---- the sidecar: the opening bars of every library piece, one lazy file (docs/changes/library-c1-s1.md) ----
+
+let side: Promise<Record<string, Enc> | undefined> | undefined
+let lost = 0 // when the last fetch failed: not asked again for 30 s, so an offline list is not 50 failed requests a page
+let have = false
+
+/** The sidecar's entries, fetched once (the service worker keeps it for good: its name is its hash). Undefined when the catalogue names none or it cannot be had. */
+function sidecar() {
+  if (!catalog.incipits || Date.now() - lost < 30_000) return Promise.resolve(undefined)
+  return (side ??= fetch(new URL(catalog.incipits, CORPUS).href)
+    .then(async (r) => ((await r.json()) as { p: Record<string, Enc> }).p)
+    .then((p) => ((have = true), p))
+    .catch(() => ((lost = Date.now()), (side = undefined), undefined)))
+}
+
+/** A library piece's score from its sidecar entry: the same first bars the file gives, drawn by the same engraver. */
+export const fromSidecar: Loader = async (id) => {
+  const p = id.startsWith('lib:') ? piece(keyId(id)) : undefined
+  const e = p && (await sidecar())?.[p.id]
+  return p && e ? decode(e, { id, title: p.title, fifths: p.fifths, lo: p.lo, hi: p.hi, mode: p.mode, meter: p.meter }) : undefined
+}
+
+/** Draw one cover now: from the score if it is kept (or `load` finds it); until the notes arrive, or if there are none, the empty staff of the catalogue's key and metre when the cover asked for one. */
+export async function paint(el: HTMLElement, load: Loader = fromSidecar) {
   if (!el.isConnected) return
   const id = el.dataset.cv!
   const size = ([...el.classList].find((c) => c.startsWith('cv-'))?.slice(3) ?? 'thumb') as CoverSize
-  if (!kept.has(keyId(id)) && load) {
+  const f = el.dataset.f !== undefined ? { fifths: Number(el.dataset.f), meter: el.dataset.m! } : undefined
+  if (!kept.has(keyId(id))) {
+    if (f && !have && catalog.incipits) await put(el, id, size, undefined, f, false) // the empty staff stands in while the file is fetched
     const full = await load(id).catch(() => undefined)
     if (full) keep(id, full)
   }
-  const song = kept.get(keyId(id))
-  const f = el.dataset.f !== undefined ? { fifths: Number(el.dataset.f), meter: el.dataset.m! } : undefined
+  await put(el, id, size, kept.get(keyId(id)), f, true)
+}
+
+async function put(el: HTMLElement, id: string, size: CoverSize, song: Song | undefined, f: { fifths: number; meter: string } | undefined, final: boolean) {
   if (!song && !f) return // nothing to draw from yet: the paper and its header stand
   const key = doneKey(id, size, song ? undefined : f)
   let svg = done.get(key)
@@ -212,5 +238,5 @@ export async function paint(el: HTMLElement, load?: (id: string) => Promise<Song
   const k = el.querySelector<HTMLElement>('.cv-k') // a score that states its key or metre says so in the header
   const s = said.get(keyId(id))
   if (k && s) k.textContent = rightOf(k.dataset.k || s.key, k.dataset.mt || s.meter, 'loc' in k.dataset)
-  el.setAttribute('data-drawn', '')
+  if (final) el.setAttribute('data-drawn', '')
 }

@@ -16,7 +16,7 @@ import { dayKey, improved, lastWeek, weekOf } from '../week'
 import { firstUse, type Go, guideDay, guideDid, guideSave, guideState } from '../guide'
 import { drillStats, hooks, stageById } from './state'
 import { worstBars } from '../util'
-import { coverSong, libraryData } from './library'
+import { libraryData } from './library'
 import { fixBars, openById, openSong } from './play'
 import { readThrough, rtPieces } from './readthrough-ui'
 import { startDrill, startRun } from './drill'
@@ -47,13 +47,19 @@ export async function showToday() {
   const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   const guide = await firstWeek(days)
-  const { coverHtml, drawCovers } = await cover()
+  const { coverHtml, drawCovers, pieceMeta } = await cover()
+  // every piece row carries its cover: a library piece's from the sidecar (an empty staff stands in until it arrives), a starter's or a file's from its score
+  const thumb = (id: string) => {
+    const lp = id.startsWith('lib:') ? lib.piece(id.slice(4)) : undefined
+    const m = all.find((r) => r.id === id)?.cover ?? (lp && pieceMeta(lp, lib.catalog.composers[lp.composer]?.name))
+    return m ? coverHtml(id, 'thumb', m, !!lp) : undefined
+  }
   todayView($('#today'), {
     guide,
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'thumb', last.cover) },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: thumb(last.id) ?? '' },
     again: (() => {
       const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
-      return r ? { id: r.id, title: r.title, sub: 'Due for review' } : undefined
+      return r ? { id: r.id, title: r.title, sub: 'Due for review', cover: thumb(r.id) } : undefined
     })(),
     read: { id: next.stage.id, name: next.due ? `Review: ${next.stage.name}` : next.stage.name, pct: next.pct, line: next.due ? `${next.due} ${next.due === 1 ? 'card' : 'cards'} due` : next.seen ? `${next.seen} of ${next.total} notes seen` : next.stage.blurb },
     tech: ex.title.charAt(0).toUpperCase() + ex.title.slice(1),
@@ -70,9 +76,9 @@ export async function showToday() {
     path: nx?.start && nx.start.kind !== 'scale' ? { title: `Path: ${nx.name}`, sub: `Level ${nx.level}. ${nx.detail}`, start: nx.start } : undefined,
     done: nx?.start && done.includes(PATH_STEP[nx.start.kind]) ? [...done, 'path'] : done,
     recap: recap ?? undefined,
-    sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `One pass, no stopping · ${sight.fresh ? 'a new piece, ' : ''}${sight.piece.level}` },
+    sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `One pass, no stopping · ${sight.fresh ? 'a new piece, ' : ''}${sight.piece.level}`, cover: thumb(sight.piece.id) },
   })
-  drawCovers($('#today'), coverSong)
+  drawCovers($('#today'))
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
     settings.planMin = Number(r.value) as PlanMin
     save()
