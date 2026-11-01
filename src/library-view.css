@@ -48,6 +48,77 @@
   width: auto;
   max-width: 280px;
 }
+.libtools.facets {
+  margin: 0 0 8px;
+}
+/* counts beside a value: quiet, in step with the label, and gone for a value with nothing behind it (the input is off) */
+.biglib .seg small {
+  margin-left: 6px;
+  color: inherit; /* the cell's own colour (Ink Soft, or the accent when chosen): a count dimmed further falls under 4.5:1 */
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.lanenote {
+  max-width: 65ch;
+  margin: 0 0 12px;
+  color: var(--ink-2);
+}
+.lanenote[hidden],
+.libchips[hidden],
+.libextra[hidden] {
+  display: none;
+}
+.libextra {
+  display: contents; /* its selects wrap with the rest of the row */
+}
+.libchips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.libchips .chip-btn {
+  gap: 6px;
+}
+.libchips .chip-btn svg.i {
+  width: 14px;
+  height: 14px;
+  color: var(--ink-3);
+}
+/* a list that came to nothing says what it was asked and how to get pieces back */
+.biglib td.zero {
+  padding: 24px 12px;
+  color: var(--ink-2);
+}
+.zero p {
+  margin: 0;
+}
+.zero .ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+@media (max-width: 720px) {
+  .biglib .seg small {
+    display: none; /* the Level cells are too narrow for a count: it is in the cell's name for a screen reader, and the selects show theirs */
+  }
+  .biglib .seg.lanes small {
+    display: inline;
+  }
+}
+@media (max-width: 640px) {
+  .seg.lanes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .libtools select {
+    flex: 1 1 150px;
+    max-width: none;
+  }
+}
 .biglib table.songs {
   margin-bottom: 0;
 }

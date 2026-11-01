@@ -12,7 +12,7 @@
 // --flag NAME: re-analyse only the pieces carrying that flag; every other piece stays byte for byte as published (formtempo.md: --flag no-tempo).
 // --from: the published output (catalog.json, LICENSES.md, p/), read only. --out: catalog.json, LICENSES.md and a copy of p/ (deploy-library.sh's LIBRARY_OUT).
 // Offline: .ly pages and zips come from .cache/library/http (a miss is fetched, one request a second).
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { sha, sourceOf } from './lib.mjs'
 
@@ -20,18 +20,22 @@ const ROOT = new URL('../..', import.meta.url).pathname
 const arg = (k, d) => (process.argv.includes(`--${k}`) ? process.argv[process.argv.indexOf(`--${k}`) + 1] : d)
 const FROM = arg('from', `${ROOT}.cache/library/out`)
 const OUT = arg('out', `${ROOT}.cache/library/out-rebuilt`)
-const { pickLy, plays, run, withRepeats } = await import(`${ROOT}.cache/library/bin/pipeline.mjs`)
+const { ANALYSIS, periodOf, pickLy, plays, reanalysed, run, withRepeats, writeSidecar } = await import(`${ROOT}.cache/library/bin/pipeline.mjs`)
 const pins = new Set(JSON.parse(readFileSync(`${ROOT}scripts/library-sources.json`, 'utf8')).pieces.map((e) => e.id))
 const lyOnly = process.argv.includes('--ly-only')
 const without = process.argv.includes('--pickup-only') ? { noPickup: true } : lyOnly ? { noPickup: true, noPace: true } : process.argv.includes('--formtempo-only') ? { noFormTempo: true } : undefined
 const flag = arg('flag')
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
 
-// what analyse()/judge()/run() derive from the score; everything else (title, composer, licence, file, sha256, tags with the style) stays as published
-const ANALYSIS = new Set(['fifths', 'keys', 'meter', 'bars', 'sec', 'bpm', 'notes', 'lo', 'hi', 'tracks', 'pick', 'tempo', 'pickup', 'grade', 'gradeWhy', 'gradeOverride', 'quality', 'flags'])
+// ANALYSIS (pipeline.ts): what analyse()/judge()/run() derive from the score; everything else (title, composer, licence, file, sha256, tags with the style) stays as published
 // what a piece that gets a new file takes from the run that made it (repeats-patch.mjs: FIELDS)
 const NEWFILE = [...ANALYSIS].filter((k) => k !== 'gradeOverride').concat(['file', 'bytes', 'sha256'])
 const cat = JSON.parse(readFileSync(`${FROM}/catalog.json`, 'utf8'))
+// the sidecars: what a piece kept as published had before, then each re-run piece's own (run() fills them, one piece at a time)
+const side = { incipits: new Map(), features: new Map() }
+if (cat.incipits) for (const [id, v] of Object.entries(JSON.parse(readFileSync(`${FROM}/${cat.incipits}`, 'utf8')).p)) side.incipits.set(id, v)
+if (existsSync(`${FROM}/features.json`)) for (const [id, v] of Object.entries(JSON.parse(readFileSync(`${FROM}/features.json`, 'utf8')).p)) side.features.set(id, v)
+const spare = () => ({ incipits: new Map(), features: new Map() }) // for the runs whose result is only compared
 const tmp = mkdtempSync(`${tmpdir()}/reanalyse-`)
 const lost = []
 const kept = new Map() // the new files
@@ -45,12 +49,14 @@ for (const p of cat.pieces) {
   }
   const c = cat.composers[p.composer]
   const l = cat.licences[p.licence]
+  const style = p.tags.find((t) => !['ties', 'triplets'].includes(t))
   let unpinned // the same piece through run() unpinned (--ly-only, a piece still at its original MIDI)
   const e = {
     id: p.id, title: p.title, composer: `${c.name} (${c.born ?? ''}–${c.died})`, ...(p.opus && { opus: p.opus }), source: p.source,
     sourceUrl: p.sourceUrl, licenceEvidence: p.licenceEvidence, licence: l.id, licenceUrl: l.url, edition: p.edition,
     ...(p.typesetter && { typesetter: p.typesetter }), ...(p.arranger && { arranger: p.arranger }), format: p.format,
     bytes: new Uint8Array(readFileSync(`${FROM}/${p.file}`)), upstreamSha: p.sha256,
+    ...(style && { style }), // the style is a tag too (technique): kind reads it
     ...(p.flags.includes('voice-folded') && { voice: 'folded' }), ...(p.flags.includes('voice-dropped') && { voice: 'dropped' }),
   }
   // --ly-only: a movement's pace stays as published. Its .ly is its book's (a megabyte with every movement's \tempo in it), and lyPace reads text, not the score
@@ -69,7 +75,7 @@ for (const p of cat.pieces) {
     if (!same) skewed.push(p.id)
     if (lyOnly && ly && !pins.has(p.id) && sha(new Uint8Array(midi)) === p.sha256 && plays(e.bytes, ly)) {
       // still the original MIDI, and this .ly is its score: through run() as a build does it, which plays the repeats out where the reader can (repeats-patch.mjs)
-      await run([{ ...e, ly, matched: undefined, pickup: undefined }], tmp, { overrides })
+      await run([{ ...e, ly, matched: undefined, pickup: undefined }], tmp, { overrides, side })
       unpinned = JSON.parse(readFileSync(`${tmp}/catalog.json`, 'utf8')).pieces[0]
     }
   }
@@ -83,7 +89,7 @@ for (const p of cat.pieces) {
     continue
   }
   // pinned alone: no dedupe partner, no unfold, shipped at any grade (the published bytes stay)
-  await run([e], tmp, { overrides, pinned: [p.id] })
+  await run([e], tmp, { overrides, pinned: [p.id], side })
   const q = JSON.parse(readFileSync(`${tmp}/catalog.json`, 'utf8')).pieces[0]
   if (!q || q.sha256 !== p.sha256) {
     lost.push(p.id)
@@ -92,7 +98,7 @@ for (const p of cat.pieces) {
   }
   let r = {}
   if (without) {
-    await run([{ ...e, ...without }], tmp, { overrides, pinned: [p.id] })
+    await run([{ ...e, ...without }], tmp, { overrides, pinned: [p.id], side: spare() })
     const b = JSON.parse(readFileSync(`${tmp}/catalog.json`, 'utf8')).pieces[0]
     r = { ...p }
     for (const k of new Set([...Object.keys(q), ...Object.keys(b)])) if (k !== 'tags' && JSON.stringify(q[k]) !== JSON.stringify(b[k])) q[k] === undefined ? delete r[k] : (r[k] = q[k])
@@ -108,16 +114,17 @@ for (const p of cat.pieces) {
       if (had !== has) (r.flags = has ? [...r.flags, f] : r.flags.filter((x) => x !== f)), (r.quality += has ? -3 : 3)
     }
   } else {
-    for (const k of Object.keys(q)) r[k] = ANALYSIS.has(k) ? q[k] : p[k]
-    for (const k of Object.keys(p)) if (!(k in r) && !ANALYSIS.has(k)) r[k] = p[k]
+    r = reanalysed(p, q)
   }
   pieces.push(r)
 }
 cat.pieces = pieces
+cat.composers = cat.composers.map((c) => ({ ...c, period: periodOf(c) }))
 if (skewed.length) console.log(`fresh build would ship other bytes: ${skewed.join(' ')}`)
 if (lost.length) console.log(`NOT re-analysed (dropped by the gates or sha mismatch), kept as published: ${lost.join(' ')}`)
-cat.built = sha(JSON.stringify([cat.composers, cat.licences, cat.aliases ?? {}, cat.pieces])).slice(0, 16) // the app refetches on a new built
 mkdirSync(OUT, { recursive: true })
+cat.incipits = writeSidecar(OUT, side)
+cat.built = sha(JSON.stringify([cat.composers, cat.licences, cat.aliases ?? {}, cat.pieces, cat.incipits])).slice(0, 16) // the app refetches on a new built
 cpSync(`${FROM}/p`, `${OUT}/p`, { recursive: true })
 let licences = readFileSync(`${FROM}/LICENSES.md`, 'utf8')
 for (const [, now, was] of unfolded) {

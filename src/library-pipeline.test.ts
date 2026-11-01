@@ -3,7 +3,10 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import { movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
-import { analyse, dedupe, GATES, judge, lyPace, merge, reach, run, type Input } from '../scripts/library/pipeline'
+import { analyse, dedupe, FEATURES, GATES, judge, lyPace, merge, reach, reanalysed, run, type Input } from '../scripts/library/pipeline'
+import { formOf, kindOf, periodOf } from '../scripts/library/kind'
+import type { Catalog, Piece } from './catalog-types'
+import { decode, incipit } from './incipit'
 import { Midi } from '@tonejs/midi'
 import { fromMusicXml, xmlText } from './musicxml'
 import { fromSpec, type Song } from './song'
@@ -282,5 +285,88 @@ describe('dedupe: editions of one song', () => {
     expect(song.keep.map((x) => x.e.id)).toEqual(['g'])
     expect(song.dropped).toEqual([{ id: 'sam', dupOf: 'g' }])
     expect(dedupe([item('g', undefined, ['a', 'b', 'c'], 100), item('sam', undefined, ['x', 'y', 'z'], 90)]).keep).toHaveLength(2)
+  })
+})
+
+describe('catalogue fields: mode, a stated metre, kind, form, period, the grade features and the incipit sidecar', () => {
+  const tune = (n: number) => Array.from({ length: n }, (_, i) => ['C5', 'D5', 'E5', 'G5', 'F5', 'E5', 'D5', 'C5'][(i * 3 + (i >> 2)) % 8])
+  const xml = (o: { mode?: string; time?: boolean; bars?: number; same?: boolean }) => {
+    const bars = o.bars ?? 20
+    const ms = Array.from({ length: bars }, (_, m) => {
+      const t = o.same ? ['C5', 'E5', 'G5', 'E5'] : tune(bars * 4).slice(m * 4, m * 4 + 4)
+      const head = m ? '' : `<attributes><divisions>1</divisions><key><fifths>-3</fifths>${o.mode ? `<mode>${o.mode}</mode>` : ''}</key>${o.time === false ? '' : '<time><beats>4</beats><beat-type>4</beat-type></time>'}</attributes><direction><sound tempo="100"/></direction>`
+      return `<measure number="${m + 1}">${head}${t.map((p) => `<note><pitch><step>${p[0]}</step><octave>${p[1]}</octave></pitch><duration>1</duration></note>`).join('')}</measure>`
+    })
+    return `<?xml version="1.0"?><score-partwise><part-list><score-part id="P1"/></part-list><part id="P1">${ms.join('')}</part></score-partwise>`
+  }
+  const input = (id: string, bytes: string, o: Partial<Input> = {}): Input => ({ id, title: 'Minuet in C minor', composer: 'J. S. Bach (1685–1750)', source: 'mutopia', sourceUrl: id, licenceEvidence: 'x', licence: 'Public Domain', licenceUrl: 'u', edition: 'e', format: 'musicxml', bytes: new TextEncoder().encode(bytes), upstreamSha: id, ...o })
+  const built = async (xs: Input[]) => {
+    const d = mkdtempSync(`${tmpdir()}/lib-c1-`)
+    await run(xs, d, { overrides: {} })
+    return { d, cat: JSON.parse(readFileSync(`${d}/catalog.json`, 'utf8')) as Catalog }
+  }
+
+  it('a <mode> in the score is in the catalogue and survives a re-analysis; no <mode> and no <time> write neither field', async () => {
+    const { cat } = await built([input('a', xml({ mode: 'minor' })), input('b', xml({ time: false }), { title: 'Melody' })])
+    const [a, b] = cat.pieces
+    expect([a.mode, a.meter, b.mode, b.meter]).toEqual(['minor', '4/4', undefined, undefined])
+    const published = { ...a, mode: undefined, kind: undefined, form: undefined } as unknown as Piece // a catalogue from before the field
+    const r = reanalysed(published, a)
+    expect([r.mode, r.form]).toEqual(['minor', 'dance'])
+    expect(r.title).toBe(a.title) // everything else stays as published
+    expect(reanalysed({ ...b, meter: '4/4' }, b).meter).toBeUndefined() // a metre the source does not state is taken away again
+  })
+
+  it('a MIDI with no time-signature event states no metre', async () => {
+    const m = new Midi()
+    const t = m.addTrack()
+    for (let i = 0; i < 64; i++) t.addNote({ midi: 60 + [0, 2, 4, 7, 5, 4, 2, 0][i % 8] + (i >> 4), time: i * 0.6, duration: 0.5 })
+    const { cat } = await built([input('m', '', { format: 'midi', bytes: new Uint8Array(m.toArray()) })])
+    expect(cat.pieces[0].meter).toBeUndefined()
+  })
+
+  it('kind: a Lied is accomp, a piece tagged technique a study, under 16 bars or 10 seconds a fragment, the rest unmarked', async () => {
+    const k = (o: Partial<Parameters<typeof kindOf>[0]>) => kindOf({ source: 'mutopia', tags: [], bars: 40, sec: 90, ...o })
+    expect(k({})).toBeUndefined()
+    expect(k({ source: 'openscore-lieder', bars: 10 })).toBe('accomp')
+    expect(k({ tags: ['technique'] })).toBe('study')
+    expect(k({ tags: ['technique'], bars: 8 })).toBe('study') // a study of eight bars is still a study
+    expect(k({ bars: 15 })).toBe('fragment')
+    expect(k({ sec: 9 })).toBe('fragment')
+    expect(k({ tags: ['baroque', 'ties'] })).toBeUndefined()
+    // through run(): the style of a Mutopia piece is a tag, and the length is the score's
+    const { cat } = await built([input('study', xml({}), { title: 'Exercise 1', style: 'Technique' }), input('tune', xml({}), { title: 'Melody' }), input('short', xml({ bars: 8 }), { title: 'Scrap' })])
+    expect(cat.pieces.map((p) => [p.id, p.kind])).toEqual([['short', 'fragment'], ['study', 'study'], ['tune', undefined]])
+  })
+
+  it('period comes from the birth year; form from the title', () => {
+    expect([1685, 1732, 1770, 1810, 1862, 1873].map((born) => periodOf({ born, died: born + 60 }))).toEqual(['baroque', 'classical', 'classical', 'romantic', 'modern', 'modern'])
+    expect(periodOf({ died: 1750 })).toBe('baroque') // no birth year: the death year less 60
+    const f = (t: string) => formOf(t)
+    expect([f('Minuet in G'), f('Das Wohltemperierte Clavier I, Fuga I'), f('Prelude and Fugue in C'), f('Sonatina in C, Op. 36 No. 1: Allegro'), f('Étude Op. 10 No. 3'), f('Nocturne in E-flat'), f('Lieder ohne Worte'), f('Untitled')]).toEqual(['dance', 'fugue', 'prelude', 'sonata', 'study', 'nocturne', 'song', undefined])
+  })
+
+  it('the raw features behind the grade are kept, and are the capped terms before capping', async () => {
+    const j = judge(base(), '', true)
+    expect(j.feat).toHaveLength(FEATURES.length)
+    expect(j.feat[4]).toBe(base().hi - base().lo) // the range
+    expect(Math.min(3, j.feat[0] / 2)).toBeCloseTo(j.gradeWhy[0], 2)
+    const { d, cat } = await built([input('a', xml({}))])
+    const f = JSON.parse(readFileSync(`${d}/features.json`, 'utf8'))
+    expect(f.names).toEqual(FEATURES)
+    expect(Object.keys(f.p)).toEqual([cat.pieces[0].id])
+  })
+
+  it('writes the incipit sidecar, content-addressed and named in the catalogue, with every piece in it, byte-identical on a second run', async () => {
+    const xs = [input('a', xml({ mode: 'minor' })), input('b', xml({}), { title: 'Melody' })]
+    const [x, y] = [await built(xs), await built([...xs].reverse())]
+    expect(x.cat.incipits).toMatch(/^i\/[0-9a-f]{16}\.json$/)
+    expect(x.cat.incipits).toBe(y.cat.incipits)
+    const side = JSON.parse(readFileSync(`${x.d}/${x.cat.incipits}`, 'utf8'))
+    expect(Object.keys(side.p)).toEqual(['a', 'b'])
+    const song = (await analyse(xs[0])).song!
+    const got = decode(side.p.a, { id: 'a', title: 'x', fifths: song.fifths, lo: song.lo, hi: song.hi })
+    expect(got.notes.map((n) => [n.bar, n.p])).toEqual(incipit(song).notes.map((n) => [n.bar, n.p]))
+    expect(readFileSync(`${y.d}/${y.cat.incipits}`).equals(readFileSync(`${x.d}/${x.cat.incipits}`))).toBe(true)
   })
 })

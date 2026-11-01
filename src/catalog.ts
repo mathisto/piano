@@ -33,6 +33,7 @@ export function builtin(list: LibraryEntry[]): Catalog {
       title: e.title,
       composer: at(composers, c, (x) => x.name === c.name),
       fifths: 0, meter: '', bars: 0, sec: 0, bpm: 0, notes: 0, lo: 0, hi: 0, tracks: 0, // read from the file when the row shows
+      ...(lieder && { kind: 'accomp' as const }),
       grade: LEVEL_GRADE[e.level] ?? 3,
       gradeWhy: [],
       tags: [e.level.toLowerCase()],

@@ -48,12 +48,15 @@ export function synthetic(n: number): Catalog {
       file: `p/${i.toString(16).padStart(16, '0')}.mid`,
       bytes: 4000,
       sha256: '0'.repeat(64),
+      ...(i % 11 === 0 ? { kind: 'accomp' as const } : i % 37 === 0 ? { kind: 'study' as const } : {}), // by index, so the sequence above does not move
+      ...(i % 4 === 0 && { form: 'dance' as const }),
     }
   })
   return {
     v: 1,
     built: 'synthetic',
-    composers: COMPOSERS.map(([name, born, died]) => ({ name, born, died })),
+    incipits: 'i/synthetic.json', // the e2e serves it
+    composers: COMPOSERS.map(([name, born, died]) => ({ name, born, died, period: born < 1720 ? ('baroque' as const) : born < 1785 ? ('classical' as const) : born < 1860 ? ('romantic' as const) : ('modern' as const) })),
     licences: [
       { id: 'Public Domain', url: 'https://creativecommons.org/publicdomain/mark/1.0/' },
       { id: 'CC-BY-4.0', url: 'https://creativecommons.org/licenses/by/4.0/' },
