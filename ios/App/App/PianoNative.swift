@@ -1,3 +1,4 @@
+import AVFoundation
 import Capacitor
 import CoreAudioKit
 import CoreMIDI
@@ -15,11 +16,16 @@ class PianoViewController: CAPBridgeViewController {
     @objc func pageKey(_ sender: UIKeyCommand) {
         midi.notifyListeners("menu", data: ["key": sender.propertyList as? String ?? ""])
     }
+
+    // While a run plays a swipe at an edge first shows the home indicator (faded by SystemBars, src/native-app.ts) instead of
+    // leaving: a sleeve or a reach past the stand does not end the run, a second swipe still does. Menus keep the system's edges.
+    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { midi.playing ? .all : [] }
 }
 
 /// WebKit has no Web MIDI. This forwards every connected MIDI source to the page, which fakes
 /// navigator.requestMIDIAccess on top of it (src/native-midi.ts). Also: Apple's Bluetooth MIDI pairing sheet,
-/// the screen kept awake while a run plays, a daily backup to Files, and files opened from other apps.
+/// the screen kept awake while a run plays or the keys are played, a run paused when the sound is taken, a daily backup to
+/// Files, and files opened from other apps.
 @objc(CoreMidiPlugin)
 public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CoreMidiPlugin"
@@ -27,7 +33,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "pairBluetooth", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setAwake", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setPlaying", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveBackup", returnType: CAPPluginReturnPromise),
     ]
@@ -38,6 +44,8 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var started = false
     private var connected = Set<Int32>() // unique ids of the sources we are connected to
     private var sources: [[String: Any]] = []
+    private(set) var playing = false // a run plays or counts in (setPlaying)
+    private var lastKey = -Double.infinity // uptime ms of the last message from a keyboard
 
     /// A MIDI or MusicXML file opened from Files, Mail or AirDrop ("Open in Piano Forte"). Capacitor posts it, on a cold start
     /// once the plugins are loaded; the page may not be listening yet, so the event waits for it.
@@ -48,6 +56,25 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url) else { return }
             self?.notifyListeners("file", data: ["name": url.lastPathComponent, "data": data.base64EncodedString()], retainUntilConsumed: true)
+        }
+        // A call, Siri or an alarm takes the sound, or the headphones come out (Apple: playback pauses at once): the page pauses
+        // a run and stops Listen back. Not on return from the background, which iOS reports as an interruption too: the run paused on leaving.
+        let center = NotificationCenter.default
+        let session = AVAudioSession.sharedInstance()
+        center.addObserver(forName: AVAudioSession.interruptionNotification, object: session, queue: .main) { [weak self] note in
+            let info = note.userInfo ?? [:]
+            guard (info[AVAudioSessionInterruptionTypeKey] as? UInt) == AVAudioSession.InterruptionType.began.rawValue else {
+                try? session.setActive(true) // over: Web Audio's next sound resumes its context (src/audio.ts)
+                return
+            }
+            if (info[AVAudioSessionInterruptionReasonKey] as? UInt) != AVAudioSession.InterruptionReason.appWasSuspended.rawValue {
+                self?.notifyListeners("interrupt", data: nil)
+            }
+        }
+        center.addObserver(forName: AVAudioSession.routeChangeNotification, object: session, queue: .main) { [weak self] note in
+            if (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt) == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue {
+                self?.notifyListeners("interrupt", data: nil)
+            }
         }
     }
 
@@ -91,6 +118,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
                 // and on coming back to the app: a keyboard paired in Settings meanwhile, should a notification go missing
                 NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in self?.refresh() }
+                Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in self?.stayAwake() } // a key's two minutes running out
             }
             self.refresh()
             call.resolve(["sources": self.sources])
@@ -117,13 +145,25 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// Auto-lock off while a run plays or counts in (the page calls this on each phase change), on again otherwise.
-    @objc func setAwake(_ call: CAPPluginCall) {
+    /// A run plays, counts in or waits, or not (the page calls this on each phase change): auto-lock and the screen edges follow
+    /// (PianoViewController).
+    @objc func setPlaying(_ call: CAPPluginCall) {
         let on = call.getBool("on") ?? false
         DispatchQueue.main.async {
-            UIApplication.shared.isIdleTimerDisabled = on
+            self.playing = on
+            self.stayAwake()
+            self.bridge?.viewController?.setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
             call.resolve()
         }
+    }
+
+    /// The idle timer counts touches, and a piano is played without one: auto-lock waits while a run plays and for two minutes
+    /// after the last key, then the system's own Auto-Lock counts from there. Theory, the drills and the start card stay lit
+    /// while the keys are played; a keyboard left on in an empty room does not keep the screen on.
+    // ponytail: two minutes is a guess at "still at the piano"; tune it on the iPad if the screen dims between pieces.
+    private func stayAwake() {
+        let on = playing || Self.uptime() - lastKey < 120_000
+        if UIApplication.shared.isIdleTimerDisabled != on { UIApplication.shared.isIdleTimerDisabled = on }
     }
 
     /// Connect to every source CoreMIDI lists (it delivers nothing from an unconnected one) and tell the page.
@@ -175,6 +215,10 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
         guard !msgs.isEmpty else { return }
-        DispatchQueue.main.async { self.notifyListeners("m", data: ["id": String(uid), "d": msgs]) }
+        DispatchQueue.main.async {
+            self.lastKey = Self.uptime()
+            self.stayAwake()
+            self.notifyListeners("m", data: ["id": String(uid), "d": msgs])
+        }
     }
 }

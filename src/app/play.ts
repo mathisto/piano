@@ -6,7 +6,7 @@ import * as coach from '../coach'
 import { creditLine } from '../credits'
 import type { GameEvent, Mode } from '../game'
 import { facts, startCard } from '../memory'
-import { setAwake } from '../native-midi'
+import { setPlaying } from '../native-midi'
 import { knownPitches } from '../quiet'
 import { paceHint } from '../paced'
 import { lookCard } from '../readthrough'
@@ -197,7 +197,7 @@ game.on((e: GameEvent) => {
       flash(`Tempo ${Math.round(e.rate * 100)}%`)
       break
     case 'phase':
-      setAwake(e.phase === 'countin' || e.phase === 'playing' || e.phase === 'waiting') // the iPad stays lit through a run, Learn's waits included
+      setPlaying(e.phase === 'countin' || e.phase === 'playing' || e.phase === 'waiting') // the iPad stays lit through a run, Learn's waits included
       onPhase()
       break
     case 'pass':
@@ -301,9 +301,9 @@ function chooseMode(mode: Mode) {
 
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) r.onchange = () => chooseMode(r.value as Mode)
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting')) game.toggle()
-})
+const pause = () => (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting') && game.toggle()
+document.addEventListener('visibilitychange', () => document.hidden && pause())
+addEventListener('interrupt', pause) // the iPad app: a call, Siri or an alarm took the sound, or the headphones came out (src/native-app.ts)
 addEventListener('pagehide', () => game.endPass())
 
 /** Fetch a piece from the open library, then play it like any imported file, with its credit on the start card. */
