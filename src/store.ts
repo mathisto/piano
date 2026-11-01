@@ -231,7 +231,7 @@ export const importAll = async (text: string) => (await import('./backup')).impo
 
 export const clearAll = () =>
   serial(async () => {
-    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup):/.test(String(k))) await del(k)
+    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup|pack):/.test(String(k))) await del(k)
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
     } catch {

@@ -244,7 +244,7 @@ export async function drillDone() {
   $('#toStages', res).onclick = leave
 }
 
-Object.assign(hooks, { drillOk })
+Object.assign(hooks, { drillOk, startDrill })
 game.on((e) => {
   const i = e.type === 'wrong' && drill ? drill.noteCard[game.judge.nextPending()] : undefined
   if (i !== undefined) got.set(i, [...(got.get(i) ?? []), (e as { p: number }).p])

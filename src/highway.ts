@@ -239,7 +239,7 @@ export class Highway {
     const pps = H / look
     const fx = settings.fx
     const hide = (g.mode === 'read' && !g.showNotes) || g.view === 'sheet' // reading drills and sheet view: no falling notes
-    const names = g.mode === 'read' ? g.showNames : settings.names
+    const names = (g.mode === 'read' ? g.showNames : settings.names) && g.song.aids?.names !== false // a pack item may turn them off
 
     // ----- bar and beat lines
     const gr = this.grid

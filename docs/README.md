@@ -50,6 +50,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 **Importer and library pipeline**
 - `changes/importer.md`: importer fixes for mass ingestion (key changes, spelling, D.C./D.S., tuplets, tempo).
 - `changes/catalog.md`: the catalogue-driven Songs page, search, offline saving, piece loader, credits.
+- `changes/studies-packs.md`: packs, a small JSON file that names pieces, exercises and stages in an order with notes and never carries music; Studies at the top of Technique and a Packs button on Songs, seven packs that come with the app (Hanon warm-up, Burgmüller, Czerny, Clementi, Schumann, Anna Magdalena), import by file, by the iPad's open-in and by a link that carries the pack in its fragment, sharing, and the Finger numbers switch.
 - `changes/library-c1-s1.md`: the catalogue fix (`mode`, a stated metre, `kind`, `form`, `period`, the raw grade features) and the incipit sidecar; covers for every library row from the sidecar, and the Songs facet engine with its kind lanes and zero state.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.

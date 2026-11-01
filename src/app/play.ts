@@ -364,3 +364,5 @@ export async function openById(id: string, mode: Mode) {
     }
   }
 }
+
+Object.assign(hooks, { openById, openSong })

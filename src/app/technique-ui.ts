@@ -30,6 +30,7 @@ export async function showTechnique() {
   const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) }))
   const { techniqueView } = await import('../ui-views')
   techniqueView(el, settings.tech, touchCal, calMsg, path)
+  await (await import('./pack-ui')).mount(el, 'technique') // Studies, at the top: lazy, with its packs
   void preview(el)
   el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
     const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)

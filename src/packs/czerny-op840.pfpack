@@ -1,0 +1,21 @@
+{
+ "pf": 1,
+ "id": "czerny-op840",
+ "title": "Czerny: melodic studies, Op. 840",
+ "by": "Piano Forte",
+ "about": "Short studies that sing. One a week: hands apart first, then together.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  {"piece": "mutopia-2146", "title": "No. 1"},
+  {"piece": "mutopia-2147", "title": "No. 2"},
+  {"piece": "mutopia-2148", "title": "No. 3"},
+  {"piece": "mutopia-2149", "title": "No. 4"},
+  {"piece": "mutopia-2150", "title": "No. 5"},
+  {"piece": "mutopia-2151", "title": "No. 6"},
+  {"piece": "mutopia-2152", "title": "No. 7"},
+  {"piece": "mutopia-2153", "title": "No. 8"},
+  {"piece": "mutopia-2154", "title": "No. 9"},
+  {"piece": "mutopia-2177", "title": "No. 10"}
+ ]
+}

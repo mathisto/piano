@@ -45,6 +45,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <div class="sgroup">
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch sub"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}${settings.names ? '' : ' disabled'}><i></i>Fade names I know</label>
+    <label class="switch"><input id="sFingers" type="checkbox"${settings.fingers ? ' checked' : ''}><i></i><span><b>Finger numbers</b><small>The fingering drawn on scales. A pack can turn it off for one item.</small></span></label>
     <label class="switch"><input id="sKeys" type="checkbox"${settings.shortcuts ? ' checked' : ''}><i></i><span><b>Keyboard shortcuts</b><small>Single keys such as N, M and V, and the computer keys that play notes. Turn off if you use voice control.</small></span></label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
     <label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs.length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>

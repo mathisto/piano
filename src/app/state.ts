@@ -95,6 +95,11 @@ export const hooks = {} as {
   memStage(stage: number): void
   drillOk(noteId: number, rt: number, clean: boolean): void
   onDone(r: Result): Promise<void>
+  // for the packs (app/pack-ui.ts), which load late: imported, they would split the boot chunk (src/bundle.test.ts)
+  openById: typeof import('./play').openById
+  openSong: typeof import('./play').openSong
+  startDrill: typeof import('./drill').startDrill
+  shareFile(f: File): Promise<void>
 }
 
 export const stageById = (id: string) => STAGES.find((s) => s.id === id)

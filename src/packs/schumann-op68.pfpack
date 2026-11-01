@@ -1,0 +1,30 @@
+{
+ "pf": 1,
+ "id": "schumann-op68",
+ "title": "Schumann: Album for the Young, Op. 68",
+ "by": "Piano Forte",
+ "about": "First real music: the pieces in the library, in the book's order.",
+ "licence": "CC0-1.0",
+ "items": [
+  {"piece": "mutopia-647", "title": "No. 1, Melody"},
+  {"piece": "mutopia-650", "title": "No. 2, Soldiers' March"},
+  {"piece": "mutopia-651", "title": "No. 3, Humming Song"},
+  {"piece": "mutopia-782", "title": "No. 4, Chorale"},
+  {"piece": "mutopia-653", "title": "No. 5, A Little Piece"},
+  {"piece": "mutopia-687", "title": "No. 6, The Poor Orphan"},
+  {"piece": "mutopia-691", "title": "No. 7, Hunting Song"},
+  {"piece": "mutopia-655", "title": "No. 8, The Wild Horseman"},
+  {"piece": "mutopia-675", "title": "No. 9, Folk Song"},
+  {"piece": "mutopia-659", "title": "No. 10, The Happy Farmer"},
+  {"piece": "mutopia-783", "title": "No. 11, Sicilienne"},
+  {"piece": "mutopia-784", "title": "No. 12, Knecht Ruprecht"},
+  {"piece": "mutopia-662", "title": "No. 13, May, Sweet May"},
+  {"piece": "mutopia-786", "title": "No. 14, Little Study"},
+  {"piece": "mutopia-676", "title": "No. 16, First Loss"},
+  {"piece": "mutopia-663", "title": "No. 18, The Reaper's Song"},
+  {"piece": "mutopia-787", "title": "No. 25, Echoes from the Theatre"},
+  {"piece": "mutopia-788", "title": "No. 26, Untitled"},
+  {"piece": "mutopia-692", "title": "No. 32, Sheherazade"},
+  {"piece": "mutopia-688", "title": "No. 36, Song of the Italian Sailors"}
+ ]
+}

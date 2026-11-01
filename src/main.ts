@@ -160,6 +160,10 @@ const stored = (k: string) => {
   }
 }
 
+/** A pack link (src/pack.ts): the whole pack rides in the fragment. At boot, and in a tab that already has the app open. */
+const packLink = () => /^#pack=/.test(location.hash) && import('./app/pack-ui').then((m) => m.fromLink())
+addEventListener('hashchange', packLink)
+
 void (async () => {
   await probe()
   void navigator.storage?.persist?.()?.catch(() => {}) // ask the browser not to evict the songs and progress under storage pressure (Safari drops site data unasked)
@@ -177,6 +181,7 @@ void (async () => {
     /* no Permissions API for midi: the Connect button covers it */
   }
   const want = location.hash.slice(1)
+  packLink()
   const i = STARTERS.findIndex((s) => s.spec.id === want)
   if (i >= 0) void openSong(starters[i], 'perform')
   else if (showSetup({ seen: stored('piano.setup'), saved: stored('piano.settings'), automated: navigator.webdriver, forced: location.search.includes('setup') })) openSetup()

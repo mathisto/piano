@@ -81,26 +81,12 @@ async function openDrawer() {
     save()
     openDrawer() // the fade switch only means something while names are shown
   }, 'change')
-  on('#sKeyTouch', (el) => {
-    settings.keyTouch = el.value as typeof settings.keyTouch
-    save()
-  }, 'change')
-  on('#sMarks', (el) => {
-    settings.marks = el.checked
-    save()
-  }, 'change')
-  on('#sWritten', (el) => {
-    settings.asWritten = el.checked
-    save()
-  }, 'change')
-  on('#sFade', (el) => {
-    settings.fade = el.checked
-    save()
-  }, 'change')
-  on('#sKeys', (el) => {
-    settings.shortcuts = el.checked
-    save()
-  }, 'change')
+  // the plain ones: the setting follows the box (a switch) or the select
+  for (const [id, k] of [['sMarks', 'marks'], ['sWritten', 'asWritten'], ['sFingers', 'fingers'], ['sFade', 'fade'], ['sKeys', 'shortcuts'], ['sKeyTouch', 'keyTouch']] as const)
+    on(`#${id}`, (el) => {
+      ;(settings as unknown as Record<string, unknown>)[k] = el.type === 'checkbox' ? el.checked : el.value
+      save()
+    }, 'change')
   on('#sFull', (el) => {
     settings.full = el.checked
     save()

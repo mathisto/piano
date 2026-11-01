@@ -67,6 +67,7 @@ export interface Song {
   wedges?: { t0: number; t1: number; up: boolean }[] // hairpins, by the first and last note under them (seconds); up is a crescendo
   chords?: Sym[] // Lead sheet: the chord of each half bar, drawn above the staff
   marks?: { t: number; text: string }[] // the dynamic letters a score writes (p, mf, sfz), where it writes them
+  aids?: { names?: boolean; fingers?: boolean } // a pack item's aids: false turns note names or finger numbers off for this piece (src/pack.ts)
   stated?: { mode?: 'major' | 'minor'; meter?: true } // what the source itself says of its key's mode and its metre (MusicXML <mode>, MIDI key and time-signature events, a starter's spec); absent for an estimate, so a cover never passes inference off as data
 }
 

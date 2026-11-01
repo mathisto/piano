@@ -18,6 +18,7 @@ export interface Settings {
   click: number // count-in and metronome click level, 0 = silent count-in
   metro: Metro // practice metronome: off, on the beat, or with eighths between
   names: boolean // note names on keys and notes
+  fingers: boolean // finger numbers on the staff (scales); a pack item may turn them off for itself
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
   fade: boolean // hide the name of a note on the bars once the Read drills show you know it
   planMin: PlanMin // how long a Today plan should take
@@ -53,6 +54,7 @@ const DEFAULTS: Settings = {
   click: 0.6,
   metro: 'off',
   names: true,
+  fingers: true,
   fade: true,
   asWritten: false,
   strict: 'standard',

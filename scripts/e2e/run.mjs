@@ -2,6 +2,7 @@
 // (the dev hooks window.__piano and window.__ear exist only in dev) unless E2E_URL points at one. E2E_HEADED=1 shows the browser.
 // Every feature drives the real UI with synthetic key presses and fails on any console or page error. Docs: docs/changes/e2e.md.
 // E2E_PULSE=1 adds a lane with the three pulse trainers (about 8 minutes on its own, so use E2E_ONLY with it; the watchdog then allows 14 minutes, else 10).
+import { createHash } from 'node:crypto'
 import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -631,10 +632,10 @@ async function songsFlow() {
 
 // ---------------------------------------------------------------- later features, each on a fresh profile of its own, closed when done
 
-async function fresh(fs, opts) {
+async function fresh(fs, opts, routes) {
   const names = Object.keys(fs).filter((n) => ONLY.test(n))
   if (!names.length) return
-  const page = await open(opts)
+  const page = await open(opts, routes)
   await skipSetup(page)
   for (const n of names) await feature(n, page, () => fs[n](page))
   await page.context().close()
@@ -700,6 +701,62 @@ const ladderFlow = () => fresh({
     ok(s.id === 'lib:mutopia-75' && s.mode === 'learn', JSON.stringify(s))
     await leave(page, 'progress') // back where it was opened from (feature 23)
   },
+})
+
+// docs/changes/studies-packs.md: Studies on Technique, a pack started, a pack brought in by link and by file. The corpus is a one-piece catalogue:
+// Hanon No. 1 played from a bundled file's bytes, so the Hanon pack has a piece to start without the network.
+const hanonBytes = readFileSync(new URL('../../public/library/mutopia-2080.mid', import.meta.url))
+const packsFlow = () => fresh({
+  async '25 Packs: Technique opens on Studies; the Hanon warm-up starts No. 1 slow, and its row then holds the lamp'(page) {
+    await wait(page, () => import('/src/catalog.ts').then((m) => !!m.piece('mutopia-2037-1')))
+    await nav(page, 'technique')
+    await page.waitForSelector('#technique [data-pk-go=hanon-warmup]')
+    const h = await ev(page, () => [...document.querySelectorAll('#technique h2.sec')].map((x) => x.textContent))
+    ok(h[0] === 'Studies' && h[1] === 'Exercises', h.join(', '))
+    ok(/Today: No\. 1$/.test(await text(page, '#technique .packs .prow span:not(.pn):not(.tag)')), await text(page, '#technique .packs .prow')) // the one Hanon piece this catalogue has
+    await page.click('#technique [data-pk-go=hanon-warmup]')
+    await ready(page)
+    const s = await ev(page, () => ({ id: window.__piano.game.song.id, mode: window.__piano.game.mode, rate: window.__piano.game.rate }))
+    ok(s.id === 'lib:mutopia-2037-1' && s.mode === 'learn' && s.rate === 0.6, JSON.stringify(s))
+    await leave(page, 'technique')
+    await page.waitForSelector('#technique .packs button.primary[data-pk-go=hanon-warmup]')
+    ok(!(await page.$('#tStart.primary')), 'two lamps on Technique')
+    await page.click('#technique [data-pk-list=hanon-warmup]')
+    await page.waitForSelector('dialog#pack[open] li')
+    ok((await page.$$('dialog#pack li')).length === 20, 'the Hanon list is not 20 long')
+    ok(!/Level/.test(await text(page, 'dialog#pack')), 'a level shown for Hanon (decision 26)')
+    await axe(page, 'pack sheet', 'dialog#pack')
+    await page.keyboard.press('Escape')
+    await axe(page, 'technique with studies', '#technique')
+  },
+  async '25b Packs: a link adds a pack and opens its list, its first item starts with note names off; a file adds one too; both are kept'(page) {
+    const frag = await ev(page, () => import('/src/pack.ts').then((m) => m.packFragment({ pf: 1, id: 'teacher', title: 'Week one', by: 'Ms Lee', items: [{ piece: 'mutopia-647', note: 'Left hand alone first.', rate: 0.7, view: { names: false } }, { read: 't-land' }, { piece: 'not-here' }] })))
+    await page.goto(`${URL_}#${frag}`)
+    await page.waitForSelector('dialog#pack[open] #pkTitle')
+    ok((await text(page, '#pkTitle')) === 'Week one' && /Added from a link/.test(await text(page, '#pkSay')), await text(page, 'dialog#pack'))
+    ok(/From a link/.test(await text(page, 'dialog#pack header')), 'origin not shown')
+    ok(await page.$('dialog#pack li.missing'), 'an unknown id is not greyed')
+    ok(!(await ev(page, () => location.hash)), 'the link stays in the address')
+    await page.click('dialog#pack footer .primary')
+    await ready(page)
+    const s = await ev(page, () => ({ id: window.__piano.game.song.id, aids: window.__piano.game.song.aids, rate: window.__piano.game.rate }))
+    ok(s.id === 'lib:mutopia-647' && s.aids?.names === false && s.rate === 0.7, JSON.stringify(s))
+    await leave(page, 'library')
+    await page.waitForSelector('#pkChip[aria-expanded=true]')
+    ok(/Week one/.test(await text(page, '#pkSongs')), 'the pack is not on Songs')
+    await page.setInputFiles('#pkSongs [data-pk-input]', { name: 'week-two.pfpack', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ pf: 1, id: 'week-two', title: 'Week two', by: 'Ms Lee', kind: 'study', items: [{ drill: { pattern: 'five', tonic: 0, dyn: 'soft', hands: 'L', bpm: 60 } }] })) })
+    await page.waitForSelector('#technique.on')
+    await page.waitForSelector('dialog#pack[open]')
+    ok((await text(page, '#pkTitle')) === 'Week two', await text(page, '#pkTitle'))
+    await page.keyboard.press('Escape')
+    const idb = (await ev(page, () => window.__e2e.snapshot())).idb
+    ok(JSON.parse(idb['pack:teacher']).from === 'link' && JSON.parse(idb['pack:week-two']).pack.title === 'Week two', Object.keys(idb).filter((k) => k.startsWith('pack:')).join())
+  },
+}, {}, async (ctx) => {
+  const sha = createHash('sha256').update(hanonBytes).digest('hex')
+  const hanon = { id: 'mutopia-2037-1', title: 'The Virtuoso Pianist (Part I): Movement 1', composer: 0, fifths: 0, bars: 8, sec: 20, bpm: 100, notes: 64, lo: 48, hi: 79, tracks: 1, kind: 'study', grade: 4, gradeWhy: [], tags: ['technique'], source: 'mutopia', sourceUrl: 'https://www.mutopiaproject.org/', licenceEvidence: 'e2e', licence: 0, edition: 'e2e', quality: 1, flags: [], format: 'midi', file: 'p/hanon1.mid', bytes: hanonBytes.length, sha256: sha }
+  await ctx.route('**/corpus/catalog.json', (r) => r.fulfill({ json: { v: 1, built: 'e2e-packs', composers: [{ name: 'C. L. Hanon', died: 1900 }], licences: [{ id: 'Public Domain', url: 'https://creativecommons.org/publicdomain/mark/1.0/' }], pieces: [hanon] } }))
+  await ctx.route('**/corpus/p/hanon1.mid', (r) => r.fulfill({ body: hanonBytes, contentType: 'audio/midi' }))
 })
 
 // docs/changes/shellfix.md: Escape, stale opens, the way back, focus kept across redraws, a second Songs render
@@ -1187,7 +1244,7 @@ const sheetsFlow = async () => {
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
-  lane(songsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
+  lane(songsFlow, packsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])
