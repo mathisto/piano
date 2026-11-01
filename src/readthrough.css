@@ -64,6 +64,10 @@ body.readthru #modeSeg {
   display: grid;
   gap: 8px;
 }
+.rt-strip {
+  width: calc(var(--n) * 20px - 2px); /* a cell is 18px and a gap 2: the end labels sit under the strip, not at the card's far edge */
+  max-width: 100%;
+}
 .rt-bars {
   display: flex;
   align-items: flex-end;
@@ -85,6 +89,7 @@ body.readthru #modeSeg {
 .rt-ends {
   display: flex;
   justify-content: space-between;
+  margin-top: 6px;
   color: var(--ink-3);
   font: 600 13px/1 var(--ui);
 }

@@ -3,7 +3,7 @@ import * as audio from '../audio'
 import * as lib from '../catalog'
 import type { Result } from '../game'
 import { pct, worstBars } from '../util'
-import { LOOK, pickPiece, type RtPiece, startRate, summaryCard } from '../readthrough'
+import { clock, LOOK, pickPiece, type RtPiece, startRate, summaryCard } from '../readthrough'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
 import * as store from '../store'
@@ -51,13 +51,17 @@ function rtPhase() {
   }
   if (game.rate !== r.rate) game.setRate(r.rate) // a reopen (thinning the notes) loads at full tempo
   staff.aheadBars = settings.readAhead ? 2 : 0
+  const show = () => {
+    document.querySelector<HTMLElement>('#rtMeter')?.style.setProperty('--f', String(Math.min(1, r.left / LOOK)))
+    const l = document.querySelector('#rtLeft')
+    if (l) l.textContent = clock(r.left)
+  }
   if (!r.timer)
     r.timer = window.setInterval(() => {
       if (game.phase !== 'ready') return
       r.left = Math.max(0, r.left - 1)
-      document.querySelector<HTMLElement>('#rtMeter')?.style.setProperty('--f', String(r.left / LOOK))
-      const l = document.querySelector('#rtLeft')
-      if (l) l.textContent = `0:${String(r.left).padStart(2, '0')}`
+      show()
+      if (r.left === 10) say('10 seconds left')
       if (!r.left) game.toggle()
     }, 1000)
   const q = <T extends HTMLElement>(s: string) => $('#ready').querySelector<T>(s)!
@@ -68,6 +72,7 @@ function rtPhase() {
   }
   q('#rtSlower').onclick = () => tempo(-0.05)
   q('#rtFaster').onclick = () => tempo(0.05)
+  q('#rtMore').onclick = () => ((r.left += LOOK), show()) // the limit is the exercise, but it is not everyone's pace: another half minute, as often as asked
   q('#rtGo').onclick = () => game.toggle()
   q<HTMLInputElement>('#rtAhead').onchange = (e) => {
     settings.readAhead = (e.target as HTMLInputElement).checked
