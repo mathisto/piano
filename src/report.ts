@@ -64,7 +64,7 @@ export interface SummaryData {
   progress?: Record<string, Progress>
 }
 
-const AREA: [HistoryEntry['kind'], string][] = [['read', 'Reading'], ['run', 'Sight Run'], ['scale', 'Scales'], ['theory', 'Theory'], ['song', 'Songs'], ['tech', 'Technique']]
+const AREA: [HistoryEntry['kind'], string][] = [['read', 'Reading'], ['run', 'Sight run'], ['scale', 'Scales'], ['theory', 'Theory'], ['song', 'Songs'], ['tech', 'Technique']]
 const mins = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`)
 
 /** A plain-text report for a teacher: what was practised, how accurately, what is solid and what is weak. `titles` maps song ids to names. */
