@@ -7,7 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Piano Forte</title>
     <meta name="description" content="Falling-notes piano trainer for any MIDI file. Plug in a keyboard: wait mode, slow tempo, loops, scoring." />
-    <meta name="theme-color" content="#0c0e12" />
+    <!-- Ground: Matinée, then Nocturne. src/theme.ts sets both when Settings forces one mode. -->
+    <meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)" data-auto="#f3efe6" />
+    <meta name="theme-color" content="#0c0e12" media="(prefers-color-scheme: dark)" data-auto="#0c0e12" />
+    <!-- before first paint: a forced Appearance sets data-theme here (a module script would run after it) -->
+    <script src="/theme.js"></script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>

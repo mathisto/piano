@@ -10,6 +10,10 @@ class PianoViewController: CAPBridgeViewController {
 
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(midi)
+        // The web view's own background, until the page paints: stone in Matinée, ink in Nocturne (the "Ground" colour asset), so neither mode flashes the other
+        let ground = UIColor(named: "Ground")
+        webView?.backgroundColor = ground
+        webView?.scrollView.backgroundColor = ground
     }
 
     /// A menu bar command (AppDelegate.buildMenu): the page acts on it as on its own key (src/native-app.ts).
@@ -34,6 +38,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "pairBluetooth", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setPlaying", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setAppearance", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveBackup", returnType: CAPPluginReturnPromise),
     ]
@@ -141,6 +146,17 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             let sheet = UINavigationController(rootViewController: central)
             sheet.modalPresentationStyle = .formSheet // centred on the iPad, over the dimmed app
             host.present(sheet, animated: true)
+            call.resolve()
+        }
+    }
+
+    /// The Appearance setting (Auto, Dark or Light): the window takes it, so the web view's background, menus and keyboard match the page,
+    /// and the next launch starts in it (SceneDelegate). The launch screen itself can only follow the system.
+    @objc func setAppearance(_ call: CAPPluginCall) {
+        let theme = call.getString("theme") ?? "auto"
+        UserDefaults.standard.set(theme, forKey: "appearance")
+        DispatchQueue.main.async {
+            self.bridge?.viewController?.view.window?.overrideUserInterfaceStyle = SceneDelegate.style(theme)
             call.resolve()
         }
     }

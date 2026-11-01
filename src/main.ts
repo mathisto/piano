@@ -19,6 +19,7 @@ import type { Mode } from './game'
 import { icon } from './icons'
 import { feed } from './midi'
 import { showSetup } from './settings'
+import { applyTheme } from './theme'
 import { STARTERS } from './starters'
 import { lost, probe } from './kv'
 import * as store from './store'
@@ -42,6 +43,8 @@ import { fromKeyboard } from './app/input'
 // last, where the cascade had them: their modules now load lazily, their styles stay in the one stylesheet
 import './take.css'
 import './pulse.css'
+
+applyTheme() // public/theme.js did it before first paint; this also tells the iPad window and covers a missing script
 
 async function showSection(name: Section, err = '') {
   navigated() // a piece still loading stays off the screen

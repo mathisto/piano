@@ -27,6 +27,7 @@ const sw = (): Plugin => ({
 export default defineConfig({
   plugins: [sw()],
   define: { __COMMIT__: JSON.stringify(commit) },
-  build: { target: 'es2022', chunkSizeWarningLimit: 330 },
+  // cssTarget: light-dark() (style.css tokens) stays native. Lowered, it would resolve at :root and a sub-tree with its own color-scheme (#judge, #count) would get the wrong side.
+  build: { target: 'es2022', cssTarget: ['chrome123', 'safari17.5', 'firefox120'], chunkSizeWarningLimit: 330 },
   test: { include: ['src/**/*.test.ts'] },
 })

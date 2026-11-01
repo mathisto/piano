@@ -5,6 +5,7 @@ import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs } from '../midi'
 import { native, pairBluetooth } from '../native-midi'
 import { save, settings } from '../settings'
+import { applyTheme } from '../theme'
 import { STARTERS } from '../starters'
 import * as store from '../store'
 import { $, drawer, keepFocus } from '../ui'
@@ -40,6 +41,11 @@ function openDrawer() {
     save()
   })
   $('#sCal', d).onclick = () => void startCalibration()
+  radios('theme', (v) => {
+    settings.theme = v as typeof settings.theme
+    applyTheme()
+    save()
+  })
   radios('fx', (v) => {
     settings.fx = Number(v) as 0 | 1
     save()

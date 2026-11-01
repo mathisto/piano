@@ -59,7 +59,7 @@
   font-weight: 650;
 }
 .gstep.now .gn {
-  border-color: var(--lamp);
+  border-color: var(--lamp-line);
   color: var(--ink);
 }
 .gact {

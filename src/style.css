@@ -5,50 +5,51 @@
 }
 
 :root {
-  /* Urtext (DESIGN.md, docs/research/urtext.md): Nocturne, the dark mode. A night room around a lit page of music. */
+  /* Urtext (DESIGN.md, docs/research/urtext.md). Every colour that differs by mode is light-dark(Matinée, Nocturne): one line per token, no second block to drift.
+     Nocturne is the dark mode, a night room around a lit page of music; Matinée is the light one, warm stone. Appearance (Settings) sets data-theme on <html>: no attribute follows the system. */
+  color-scheme: light dark;
   /* ground and surfaces */
-  --ground: #0c0e12;
-  --panel: #13161c;
-  --panel-2: #1b1f27;
-  --panel-3: #222731; /* hover on panel-2, sheets */
-  --scrim: rgba(12, 14, 18, 0.82);
-  --shade: rgba(0, 0, 0, 0.6); /* soft shadow under stage words */
-  --drop: rgba(0, 0, 0, 0.45); /* shadow under a raised surface: drawer, results card, dock sheet */
-  --backdrop: rgba(4, 6, 9, 0.7); /* behind a modal dialog */
-  --scrim-hi: rgba(12, 14, 18, 0.94); /* the start card over the highway: more opaque than the scrim */
-  --wash: rgba(255, 255, 255, 0.03); /* row hover */
-  --specular: rgba(255, 255, 255, 0.07); /* the top hairline of a raised surface: overhead light on the bevel */
-  --specular-lamp: rgba(255, 255, 255, 0.28); /* the same on the lamp fill */
-  --loop: rgba(244, 242, 237, 0.14); /* the A-B loop span on the scrub bar */
-  --lamp-glow: rgba(255, 200, 61, 0.7);
-  --great-ring: rgba(61, 214, 140, 0.35); /* the halo on a live keyboard dot */
-  --L-fill: rgba(42, 183, 176, 0.6); /* left-hand swatch and note body */
+  --ground: light-dark(#f3efe6, #0c0e12);
+  --panel: light-dark(#faf7f0, #13161c);
+  --panel-2: light-dark(#eae4d7, #1b1f27);
+  --panel-3: light-dark(#ffffff, #222731); /* hover on panel-2, sheets */
+  --scrim: light-dark(rgba(243, 239, 230, 0.92), rgba(12, 14, 18, 0.82));
+  --shade: rgba(0, 0, 0, 0.6); /* soft shadow under the count-in numeral: the highway is dark in both modes */
+  --drop: light-dark(rgba(58, 46, 28, 0.2), rgba(0, 0, 0, 0.45)); /* shadow under a raised surface: drawer, results card, dock sheet */
+  --backdrop: light-dark(rgba(24, 23, 21, 0.4), rgba(4, 6, 9, 0.7)); /* behind a modal dialog */
+  --scrim-hi: light-dark(rgba(250, 247, 240, 0.95), rgba(12, 14, 18, 0.94)); /* the start card over the highway: more opaque than the scrim */
+  --wash: light-dark(rgba(24, 23, 21, 0.045), rgba(255, 255, 255, 0.03)); /* row hover */
+  --specular: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.07)); /* the top hairline of a raised surface: overhead light on the bevel */
+  --specular-lamp: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28)); /* the same on the lamp fill */
+  --loop: light-dark(rgba(24, 23, 21, 0.14), rgba(244, 242, 237, 0.14)); /* the A-B loop span on the scrub bar */
+  --L-fill: light-dark(rgba(14, 124, 119, 0.3), rgba(42, 183, 176, 0.6)); /* left-hand swatch and note body */
   /* rules and edges: --line for hairlines, --edge for control borders (3:1 on panel), --line-2 for selected and track surfaces */
-  --line: #262a33;
-  --line-2: #363d4e;
-  --edge: #666d7d;
+  --line: light-dark(#e2ddd2, #262a33);
+  --line-2: light-dark(#c7c0b3, #363d4e);
+  --edge: light-dark(#7d776b, #666d7d);
   /* ink */
-  --ink: #f4f2ed;
-  --ink-2: #a6abb8;
-  --ink-3: #8a90a0;
-  /* hands: warm right, cool left; never a judgement hue */
-  --R: #f27d52;
-  --L: #2ab7b0;
-  --L-edge: #6fd6d0;
-  /* judgement: mint, pale mint, neutral, faded neutral, crimson, each with its glyph (● ▲ ▸ ×). Amber and the hand hues are not in it. */
-  --perfect: #3dd68c;
-  --great: #a7e8c4;
-  --good: #c9ccd6;
-  --late: color-mix(in srgb, var(--good) 60%, transparent); /* the worst hit: Good, faded */
-  --bad: #ff3d6e;
+  --ink: light-dark(#181715, #f4f2ed);
+  --ink-2: light-dark(#524f49, #a6abb8);
+  --ink-3: light-dark(#666259, #8a90a0);
+  /* hands: warm right, cool left; never a judgement hue. Swatches and notes, not text. */
+  --R: light-dark(#c94a22, #f27d52);
+  --L: light-dark(#0e7c77, #2ab7b0);
+  --L-edge: light-dark(#0e7c77, #6fd6d0);
+  /* judgement: mint, pale mint, neutral, faded neutral, crimson, each with its glyph (● ○ ▲ ▸ ×). Amber and the hand hues are not in it. On light surfaces they are the --paper-* values (good a shade darker). */
+  --perfect: light-dark(#13794b, #3dd68c);
+  --great: light-dark(#3e8f69, #a7e8c4);
+  --good: light-dark(#67635a, #c9ccd6);
+  --late: light-dark(color-mix(in srgb, var(--good) 80%, transparent), color-mix(in srgb, var(--good) 60%, transparent)); /* the worst hit: Good, faded */
+  --bad: light-dark(#c8164b, #ff3d6e);
   /* the one lamp: "play this" */
-  --lamp: #ffc83d;
-  --lamp-hi: #ffd466;
+  --lamp: light-dark(#f5b316, #ffc83d);
+  --lamp-hi: light-dark(#e09f08, #ffd466);
   --lamp-ink: #14110a;
+  --lamp-line: light-dark(var(--paper-cursor), var(--lamp)); /* the lamp as a line or a border: brass is 1.7:1 on stone, so it darkens as on paper */
   /* the interface's own tint: selection, focus, links. Never on the staff or the lanes. */
-  --accent: #78a9ff;
-  /* the page: the score is always dark ink on warm paper, in both modes */
-  --paper: #efece4;
+  --accent: light-dark(#0058d0, #78a9ff);
+  /* the page: the score is always dark ink on warm paper, in both modes (a shade dimmer at night) */
+  --paper: light-dark(#fbf8f1, #efece4);
   --paper-ink: #161513;
   --paper-line: #524e46;
   --paper-played: #78736a;
@@ -58,6 +59,8 @@
   --paper-great: #3e8f69;
   --paper-good: #6e6a61;
   --paper-miss: #c8164b;
+  /* the highway: dark in both modes (src/palette.ts draws it). Behind the canvas, so a light page never shows before it paints. */
+  --night: #0c0e12;
   /* type: Newsreader (SIL OFL) announces and names the music; the platform's own font for everything tapped or read */
   --display: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif; /* opsz follows font-size (font-optical-sizing: auto): sharp at 18 px, refined at 160 */
   --ui: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif; /* San Francisco on the iPad and the Mac */
@@ -68,6 +71,16 @@
   --r-pill: 999px;
   --control: 40px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+/* what sits on the highway reads on the dark field in both modes: the grade word, the count-in */
+#judge,
+#count {
   color-scheme: dark;
 }
 
@@ -1394,6 +1407,7 @@ body.reading .hud small {
 /* ---------- stage ---------- */
 #stage {
   position: relative;
+  background: var(--night);
   min-height: 0;
   overflow: hidden;
   container: stage / size;
@@ -1639,7 +1653,7 @@ kbd {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--lamp);
+  background: var(--lamp-line);
   pointer-events: none;
 }
 .scrub .lbl {
