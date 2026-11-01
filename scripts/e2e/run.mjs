@@ -319,7 +319,7 @@ async function mainFlow() {
     await ev(page, () => window.__e2e.perform({ skip: [2, 9] })) // every other card on its beat, two never played: the pulse carries on
     const r = await res(page, 'Run results')
     const t = await r.textContent()
-    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.slice(0, 160))
+    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.slice(0, 160) + (t ? '' : ` | #res now: ${(await ev(page, () => document.querySelector('#res').innerHTML)).slice(0, 300)}`)) // ponytail: diagnostic for a full-run-only flake (empty card text), drop once found
     ok(/Missed:/.test(t) && (await page.$$('.pstrip i.off')).length === 2, 'the two missed cards are not shown')
     await axe(page, 'paced results', '#res')
     const st = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'])))
