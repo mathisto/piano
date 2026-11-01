@@ -66,7 +66,7 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
     .join('')
   el.innerHTML = `
     ${head('Read', `${tab === 'stages' && canReview ? '<button class="btn" data-review="1">Review weak notes</button>' : ''}<div class="seg" role="radiogroup" aria-label="Read">${([['stages', 'Stages'], ['run', 'Sight Run']] as const).map(([v, l]) => `<label><input type="radio" name="readTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`)}
-    ${tab === 'run' ? noKeyboard(true) + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
+    ${tab === 'run' ? noKeyboard() + run : `<table class="songs stages"><caption class="sr-only">Stages</caption>
       <colgroup><col><col class="mcol">${timed ? '<col style="width:120px">' : ''}<col style="width:150px"></colgroup>
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th>${timed ? '<th scope="col" class="num">Typical time</th>' : ''}<th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${body}</tbody></table>`}`
@@ -110,7 +110,7 @@ export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, ms
   const rhythm = o.pattern === 'rhythm'
   el.innerHTML = `
     ${head('Technique')}
-    <div class="tech-form">
+    <section class="tcard run" aria-label="Exercise"><div class="tech-form">
       ${sel('tPattern', 'Pattern', Object.entries(PATTERNS).map(([v, l]) => opt(v, l, o.pattern)).join(''))}
       ${
         rhythm
@@ -121,9 +121,8 @@ export function techniqueView(el: HTMLElement, o: Opts, cal: TouchCal | null, ms
               sel('tArtic', 'Articulation', Object.entries(ARTICS).map(([v, l]) => opt(v, l, o.artic ?? 'normal')).join('')))
       }
       ${sel('tBpm', 'Tempo', [50, 60, 72, 84, 96, 108, 120].map((b) => opt(b, `${b} bpm`, o.bpm)).join(''))}
-      <button class="btn primary" id="tStart">${icon('play')}Start</button>
     </div>
-    ${preview ? `<div class="tprev thumb">${preview}</div>` : ''}
+    <div class="row-actions run-go">${preview ? `<div class="tprev thumb">${preview}</div>` : ''}<button class="btn primary" id="tStart">${icon('play')}Start</button></div></section>
     ${touchStrip(cal, msg)}
     ${pathBlock(path)}`
 }
@@ -135,10 +134,10 @@ function pathBlock(path: PathRow[]) {
   if (!path.length) return ''
   const solid = path.filter((p) => p.state === 'solid').length
   const row = (p: PathRow) =>
-    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">Start</button></div></div>`
+    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">${icon('play')}Start</button></div></div>`
   const next = path.filter((p) => p.state !== 'solid').slice(0, 5)
   const rest = path.filter((p) => !next.includes(p))
-  return `<p class="label cap">Path · ${solid} of ${path.length} solid</p>
+  return `<h2 class="sec">Path<span>${solid} of ${path.length} solid</span></h2>
     <div class="plan">${next.map(row).join('')}</div>
     ${rest.length ? `<details class="all"><summary>${rest.length} more</summary><div class="plan">${rest.map(row).join('')}</div></details>` : ''}`
 }
@@ -179,7 +178,7 @@ function overTime(h: HistoryEntry[]) {
         <div class="otv"><b>${Math.round(avg(recent) * 100)}%</b><span>${delta === null ? `${xs.length} sessions` : delta === 0 ? 'steady' : `${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'point' : 'points'} on the five before`}</span></div></div>`
     })
     .join('')
-  return cards ? `<p class="note">Accuracy, session by session, up to the last 24. Each chart runs from 40% to 100%; the dashed line is 100%.</p><div class="over">${cards}</div>` : '<p class="note">Your charts start after two sessions of anything: reading, scales, Theory or a song.</p>'
+  return cards ? `<p class="note">Accuracy per session, the last 24. Charts run from 40% to 100%; dashed is 100%.</p><div class="over">${cards}</div>` : '<p class="note">The charts start after two sessions of anything.</p>'
 }
 
 /** Which notes you read well: one bar per semitone across the keyboard, filled by how often, how cleanly and how fast. */
@@ -200,7 +199,7 @@ function knownStrip(stats: Stats) {
     const m = best.get(p)
     return `<rect x="${(i * w).toFixed(1)}" y="2" width="${(w - 1).toFixed(1)}" height="40" rx="1.5" class="${m === undefined ? 'unseen' : 'seen'}"${m === undefined ? '' : ` style="--m:${(0.15 + 0.85 * m).toFixed(2)}"`}><title>${noteName(p)}${m === undefined ? ', not met yet' : `, ${Math.round(m * 100)}%`}</title></rect>${p % 12 === 0 ? `<text x="${p === hi ? 600 : (i * w).toFixed(1)}"${p === hi ? ' text-anchor="end"' : ''} y="56">${noteName(p)}</text>` : ''}`
   }).join('')
-  return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter is better: met often, answered cleanly and quickly. Dark outlines are notes you have not drilled yet.</p>`
+  return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" preserveAspectRatio="xMinYMid meet" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter: met often, answered cleanly and fast. Outlined: not drilled yet.</p>`
 }
 
 export function progressView(el: HTMLElement, d: ProgressData) {
@@ -211,31 +210,29 @@ export function progressView(el: HTMLElement, d: ProgressData) {
   const X = (i: number) => 8 + (pts.length > 1 ? (i / (pts.length - 1)) * 584 : 292)
   const Y = (v: number) => 146 - (v / 127) * 140
   const spark = pts.length
-    ? `<svg class="hist spark" viewBox="0 0 600 150" role="img" aria-label="Average velocity of your last ${pts.length} sessions">
+    ? `<svg class="hist spark" viewBox="0 0 600 150" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Average velocity of your last ${pts.length} sessions">
         <line class="mid" x1="8" x2="592" y1="${Y(e.soft)}" y2="${Y(e.soft)}" stroke-dasharray="3 5"/><line class="mid" x1="8" x2="592" y1="${Y(e.hard)}" y2="${Y(e.hard)}" stroke-dasharray="3 5"/><text x="592" y="${Y(e.hard) - 5}" text-anchor="end">hard</text><text x="592" y="${Y(e.soft) - 5}" text-anchor="end">soft</text>
         <polyline points="${pts.map((r, i) => `${X(i)},${Y(r.mean)}`).join(' ')}"/>${pts.map((r, i) => `<circle cx="${X(i)}" cy="${Y(r.mean)}" r="3.5"/>`).join('')}</svg>`
     : ''
   const rows = runs
     .slice(-8)
     .reverse()
-    .map((r) => `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode)}</small></td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : ''}</td></tr>`)
+    .map((r) => `<tr><td>${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td class="name">${esc(r.title)}<small>${esc(r.mode.charAt(0).toUpperCase() + r.mode.slice(1))}</small></td><td class="num">${Math.round(r.mean)}</td><td class="num">±${Math.round(r.sd)}</td><td class="num">${r.R.n && r.L.n ? `${Math.round(r.R.mean)} / ${Math.round(r.L.mean)}` : ''}</td></tr>`)
     .join('')
   el.innerHTML = `
     ${head('Progress')}
     <h2 class="sec">This week</h2>
-    <div class="tcard">${weekBlock(d.week, d.goal, d.streak)}
+    <div class="tcard span">${weekBlock(d.week, d.goal, d.streak)}
       <label class="field inline"><span>Weekly goal</span><select id="pGoal">${[30, 60, 90, 120, 180].map((m) => opt(m, `${m} min`, d.goal)).join('')}</select></label></div>
     <h2 class="sec">Over time</h2>
     ${overTime(d.history)}
     ${knownStrip(d.stats)}
-    <h2 class="sec">Reading</h2>
-    <p class="note">${solid} of ${d.stages.length} stages solid.</p>
+    <h2 class="sec">Reading<span>${solid} of ${d.stages.length} stages solid</span></h2>
     <div class="cells">${GROUPS.map(([g, f]) => {
       const rs = d.stages.filter((r) => f(r.stage.id))
       return `<div class="cgrp" role="group" aria-label="${g}, ${rs.filter((r) => r.solid).length} of ${rs.length} solid"><small class="label">${g}</small><div class="crow">${rs.map((r) => `<button class="cell${r.solid ? ' solid' : ''}" data-stage="${r.stage.id}" title="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%" aria-label="${esc(r.stage.name)}, ${Math.round(r.pct * 100)}%${r.solid ? ', solid' : ''}"><b style="height:${Math.round(r.pct * 100)}%"></b></button>`).join('')}</div></div>`
     }).join('')}</div>
-    <h2 class="sec">Technique</h2>
-    <p class="note">${d.tech.filter((t) => t.state === 'solid').length} of ${d.tech.length} exercises solid${d.tech.some((t) => t.state === 'due') ? `, ${d.tech.filter((t) => t.state === 'due').length} due` : ''}.</p>
+    <h2 class="sec">Technique<span>${d.tech.filter((t) => t.state === 'solid').length} of ${d.tech.length} exercises solid${d.tech.some((t) => t.state === 'due') ? `, ${d.tech.filter((t) => t.state === 'due').length} due` : ''}</span></h2>
     <div class="cells">${[...new Set(d.tech.map((t) => t.group))]
       .map((g) => {
         const ts = d.tech.filter((t) => t.group === g)
@@ -272,12 +269,11 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
   const saved = presets
     .map((p, i) => {
       const b = best[bestKey(p)]
-      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Longest streak ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
+      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Longest streak ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">${icon('play')}Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
     })
     .join('')
   const b = best[bestKey(s)]
   return `<section class="tcard run" aria-label="Sight Run">
-    <div class="run-head"><div><h2>Sight Run</h2><p class="fine">Build your own reading run: pick the range and how the notes jump about. ${s.pace ? 'A beat leads and the run does not stop for a miss: look ahead and keep going.' : 'It waits for you, and keeps going until you finish.'}</p></div></div>
     <div class="tech-form">
       ${field('rClef', 'Clef', Object.entries(CLEFS).map(([v, l]) => `<option value="${v}"${v === s.clef ? ' selected' : ''}>${l}</option>`).join(''))}
       ${field('rLo', 'From', picks(s.lo))}
@@ -287,7 +283,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
       ${field('rPaced', 'Pace', [[0, 'Waits for me'], [1, 'Steady beat']].map(([v, l]) => `<option value="${v}"${(v === 1) === !!s.pace ? ' selected' : ''}>${l}</option>`).join(''))}
       ${s.pace ? `<label class="field"><span>Tempo</span><span class="slider"><input id="rPace" type="range" min="${PACE.min}" max="${PACE.max}" step="2" value="${s.pace}" aria-valuetext="${s.pace} beats a minute"><small id="rPaceV" class="bpm">${s.pace} bpm</small></span></label>${field('rEvery', 'A card every', [[1, 'Beat'], [2, 'Two beats']].map(([v, l]) => `<option value="${v}"${v === s.every ? ' selected' : ''}>${l}</option>`).join(''))}` : ''}
       ${field('rLength', 'Length', [[0, s.pace ? '16 cards' : 'Endless'], ...(s.pace ? [] : [[10, '10 cards']]), [25, '25 cards'], [50, '50 cards'], [100, '100 cards']].map(([v, l]) => `<option value="${v}"${v === s.length ? ' selected' : ''}>${l}</option>`).join(''))}
-      ${field('rAhead', 'Reading ahead', (s.pace ? [[4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes']] : [[0, 'Whole set shown'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']]).map(([v, l]) => `<option value="${v}"${v === (s.pace && s.ahead < 2 ? 3 : s.ahead) ? ' selected' : ''}>${l}</option>`).join(''))}
+      ${field('rAhead', 'Reading ahead', (s.pace ? [[4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes']] : [[0, 'Whole set'], [4, 'Next 4 notes'], [3, 'Next 3 notes'], [2, 'Next 2 notes'], [1, 'Only the next note']]).map(([v, l]) => `<option value="${v}"${v === (s.pace && s.ahead < 2 ? 3 : s.ahead) ? ' selected' : ''}>${l}</option>`).join(''))}
       ${slider('rNear', 'Jumps', 'Leaps', 'Steps', s.near)}
       ${slider('rWeak', 'Shuffle', 'Even', 'My weak notes', s.weak)}
     </div>
@@ -355,7 +351,7 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
       <thead><tr><th scope="col">Stage</th><th scope="col">Solid</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${rows
         .map(
-          (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm}.${r.solid ? '' : ` Up next: ${esc(cardName(r.card))}.`}</small></td>
+          (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm}.${r.next ? ` Up next: ${esc(cardName(r.card))}.` : ''}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
         <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practice ${esc(r.stage.name)}">${icon('play')}Practice</button></div></td></tr>`,
         )
@@ -371,8 +367,8 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
     ${ex.why.map((w) => `<p class="fine">${esc(w)}</p>`).join('')}
     <div class="row-actions run-go"><button class="btn primary" id="sgStart">${icon('play')}Start</button></div></section>`
   el.innerHTML = `
-    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'A scale is solid when three runs in a row are clean, in time and even in touch. A scale you miss starts its count again.' : '')}
-    ${tab === 'quiz' && !(quiz && quiz.i < quiz.cards.length) ? noKeyboard(true) : ''}${body}`
+    ${head('Scales', `<div class="seg" role="radiogroup" aria-label="Scales">${([['stages', 'Stages'], ['pick', 'Choose a scale'], ['quiz', 'Quiz']] as const).map(([v, l]) => `<label><input type="radio" name="scaleTab" value="${v}"${tab === v ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>`, tab === 'stages' ? 'Solid after three clean runs in a row, in time and even; a miss starts the count again.' : '')}
+    ${tab === 'quiz' && !(quiz && quiz.i < quiz.cards.length) ? noKeyboard() : ''}${body}`
 }
 
 // ---------------------------------------------------------------- Theory
@@ -396,8 +392,7 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
   let body: string
   if (!run) {
     body = `<div class="plan">${TRAINERS.map(
-      (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span></div>
-      ${t.levels.length ? `<label class="field inline"><span class="sr-only">Level of ${esc(t.name)}</span><select data-tlevel="${t.id}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}
+      (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span>${t.levels.length ? `<label class="pick">${icon('back')}<select data-tlevel="${t.id}" aria-label="Level of ${esc(t.name)}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}</div>
       <div class="pact"><button class="btn ghost" data-trainer="${t.id}">${icon('play')}Start</button></div></div>`,
     ).join('')}</div>`
   } else if (run.i >= run.cards.length) {
@@ -415,9 +410,8 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
       ${c.play?.kind === 'pulse' ? pulseBars(c.play) : ''}${c.play && run.ear ? earBlock(c, run.ear, run.answered) : ''}
       <div class="row-actions run-go">${c.play && run.ear && !run.answered ? replayBtn(run.ear) : ''}<button class="btn ghost" id="thMenu">Stop</button>${run.answered === 'miss' ? '<button class="btn primary" id="thNext">Next</button>' : ''}</div></section>`
   }
-  el.innerHTML = `${head('Theory', '', run ? '' : 'Every answer is played on your keyboard, in any octave. A session is 15 cards; the ones you miss come back sooner.')}${run ? '' : noKeyboard(true)}${body}`
+  el.innerHTML = `${head('Theory', '', run ? '' : 'Answer on your keyboard, in any octave.')}${run ? '' : noKeyboard()}${body}`
 }
 
 
-/** The Connect line, and with `osk` the switch for the on-screen keys (app/osk-ui.ts). */
-const noKeyboard = (osk = false) => keyboardLine(inputs().length > 0) + (osk ? `<label class="switch osk-sw"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs().length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>` : '')
+const noKeyboard = () => keyboardLine(inputs().length > 0)

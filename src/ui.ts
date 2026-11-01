@@ -12,7 +12,7 @@ import { type RunSpec } from './run'
 import { startAttr, streakHtml } from './habit-ui'
 import type { Start } from './grades'
 import { PLAN_LENGTHS, planOf, type PlanMin } from './plan'
-import { guideCard, tabNote, type Guide } from './guide'
+import { guideCard, type Guide } from './guide'
 import type { Streak } from './streak'
 import { esc, focusKey } from './util'
 
@@ -143,7 +143,7 @@ export const KEY_TOUCH_HINT = 'Match the setting on your keyboard.' // it is onl
 export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
 export const head = (title: string, actions = '', lede = '') =>
-  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>${tabNote(title)}`
+  `<div class="lib-head"><h1>${title}</h1>${lede ? `<p>${lede}</p>` : ''}${actions ? `<div class="head-actions">${actions}</div>` : ''}</div>`
 
 
 
@@ -251,7 +251,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     { key: 'read', min: 3, title: d.read.name, sub: d.read.line, mid: `<div class="mrow">${meter(d.read.pct, false, 'Mastery')}<b>${Math.round(d.read.pct * 100)}%</b></div>`, act: (c) => `<button class="btn${c}" data-today="read" data-id="${esc(d.read.id)}">${icon('play')}Practice</button>` },
     { key: 'piece', min: 5, title: d.last.title, sub: d.last.sub, act: (c) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.last.id)}">${icon('play')}${d.last.first ? 'Start' : 'Continue'}</button>` },
     ...(d.sight ? [{ key: 'sight', min: 4, title: d.sight.title, sub: d.sight.sub, act: (c: string) => `<button class="btn${c}" data-today="sight" data-id="${esc(d.sight!.id)}">${icon('play')}Read through</button>` }] : []),
-    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">Play</button>` }] : []),
+    ...(d.again ? [{ key: 'again', min: 5, title: d.again.title, sub: d.again.sub, act: (c: string) => `<button class="btn${c}" data-today="continue" data-id="${esc(d.again!.id)}">${icon('play')}Play</button>` }] : []),
     ...(d.fix ? [{ key: 'fix', min: 4, title: `Bars ${d.fix.a + 1} to ${d.fix.b + 1} of ${d.fix.title}`, sub: 'Slow loop at 70%', act: (c: string) => `<button class="btn${c}" data-today="fix" data-id="${esc(d.fix!.id)}" data-a="${d.fix!.a}" data-b="${d.fix!.b}">${icon('loop')}Loop</button>` }] : []),
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
     ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
@@ -266,7 +266,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
   const rows = ordered
     .map((r) => {
       const done = d.done.includes(r.key)
-      const cls = r === first ? ' primary' : done ? ' ghost' : ''
+      const cls = r === first ? ' primary' : ' ghost' // one lamp; every other row's action is quiet, as on Read and Songs
       return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
