@@ -30,7 +30,7 @@ export function calibrated(r: Result) {
     <h2>${ok ? 'Calibration done' : 'Not enough notes'}</h2>
     <p style="margin:0;color:var(--ink-2)">${
       ok
-        ? `Your setup runs about <b style="color:var(--ink)">${Math.abs(med)} ms ${med >= 0 ? 'late' : 'early'}</b> (from ${offs.length} notes). Applying ${med} ms shifts the timing windows to match.`
+        ? `Your setup runs about <b style="color:var(--ink)">${Math.abs(med)} ms ${med >= 0 ? 'late' : 'early'}</b>, measured over ${offs.length} notes. Apply sets Delay to ${med} ms, so notes are judged when you played them.`
         : `Only ${offs.length} of 16 notes landed close enough. Try again and play on each beat.`
     }</p>
     <div class="row">${ok ? '<button class="btn primary" id="apply">Apply</button>' : ''}<button class="btn" id="retry">Try again</button><button class="btn ghost" id="cancel">Cancel</button></div>

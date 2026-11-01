@@ -70,11 +70,11 @@ export function chooseInput(id: string) {
 
 /** Resolves with the connected inputs; rejects with a reason a human can act on. */
 export async function connect(onChange: () => void): Promise<Input[]> {
-  if (!midiSupported) throw new Error('This browser has no Web MIDI. Use Chrome, Edge or Firefox on a computer.')
+  if (!midiSupported) throw new Error('No MIDI in this browser. Use Chrome, Edge or Firefox on a computer, or play the computer keys A to ;.')
   try {
     access ??= await navigator.requestMIDIAccess() // one access for the session: a second Connect reuses it
   } catch {
-    throw new Error('MIDI access was blocked. Allow it in the address bar, then reload.')
+    throw new Error('MIDI is blocked for this site. Allow it in the address bar, then reload.')
   }
   access.onstatechange = () => {
     pedal = false // a keyboard plugged in again sends its pedal afresh

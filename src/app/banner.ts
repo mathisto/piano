@@ -31,9 +31,9 @@ export function updateBanner() {
   const have = inputs().length > 0
   if (note) html = `<span>${esc(note)}</span>`
   else if (!current || played || have) html = ''
-  else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer. You can still play the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span>`
-  else if (midiState === 'blocked') html = `<span><b>MIDI access is blocked.</b> Allow it in the address bar, then reload. Computer keys work meanwhile.</span>`
-  else if (native) html = `<span><b>No keyboard.</b> ${PLUG} Or connect one over Bluetooth.</span>${PAIR}`
+  else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer, or play the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span>`
+  else if (midiState === 'blocked') html = `<span><b>MIDI is blocked for this site.</b> Allow it in the address bar, then reload.</span>`
+  else if (native) html = `<span><b>No keyboard.</b> ${PLUG}</span>${PAIR}`
   else
     html = `<span><b>No keyboard.</b> ${PLUG} Or play the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" id="connectBtn">Connect</button>`
   b.innerHTML = html ? `<div class="banner">${html}</div>` : '' // #banner is the one live region: its words change, the region stays
@@ -63,8 +63,8 @@ export function midiLine() {
   const list = inputs()
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
   if (pick) return `${pick.name}, connected`
-  if (midiState === 'unsupported') return 'No MIDI in this browser. The computer keys still play.'
-  if (midiState === 'blocked') return 'MIDI is blocked. Allow it for this site, then reload.'
+  if (midiState === 'unsupported') return 'No MIDI in this browser. Use Chrome, Edge or Firefox on a computer, or play the computer keys.'
+  if (midiState === 'blocked') return 'MIDI is blocked for this site. Allow it in the address bar, then reload.'
   return `No keyboard. ${PLUG}`
 }
 
@@ -77,7 +77,7 @@ export async function connectMidi() {
       else {
         if (game.phase === 'playing' || game.phase === 'waiting' || game.phase === 'countin') {
           game.toggle()
-          flash('Keyboard disconnected. Plug it back in and press Space to resume.') // the banner is a live region
+          flash(`Keyboard disconnected. Plug it back in, then ${matchMedia('(pointer: coarse)').matches ? 'tap Play' : 'press Space'}.`) // the banner is a live region
         } else say('Keyboard disconnected')
         game.letGo() // its keys and pedal never send their up
       }

@@ -109,7 +109,7 @@ export async function openTracks(id: string) {
     })
     dlg.querySelector<HTMLButtonElement>('#tkCancel')?.addEventListener('click', () => dlg.close())
     $('#tkRemove', dlg).onclick = async () => {
-      if (!confirm(`Remove ${s.title} from this browser?`)) return
+      if (!confirm(`Remove ${s.title} from this device?`)) return
       await store.removeSong(id)
       dlg.close()
       void showLibrary()
@@ -148,13 +148,13 @@ export async function importFiles(files: FileList | File[]) {
   const errs: string[] = []
   for (const f of files) {
     if (!/\.(mid|midi|xml|musicxml|mxl)$/i.test(f.name)) {
-      errs.push(`${f.name}: only MIDI (.mid) and MusicXML (.musicxml, .mxl) files.`)
+      errs.push(`${f.name} is not a MIDI or MusicXML file. Add a .mid, .musicxml or .mxl file.`)
       continue
     }
     try {
       await store.addFile(f)
     } catch (err) {
-      errs.push(`${f.name}: ${(err as Error).message || 'could not read this MIDI file.'}`)
+      errs.push((err as Error).message ? `${f.name}: ${(err as Error).message}` : `${f.name} could not be read. It may be damaged; try saving it again from where it came.`)
     }
   }
   if (!current) await hooks.showSection('songs', errs.join(' '))

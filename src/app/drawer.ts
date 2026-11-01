@@ -1,7 +1,6 @@
 // The settings drawer, and the Set up and Credits dialogs it opens.
 import * as audio from '../audio'
 import * as lib from '../catalog'
-import { PLUG } from '../guide'
 import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs } from '../midi'
 import { native } from '../native-midi'
@@ -130,7 +129,7 @@ async function openDrawer() {
   $('#sSetup', d).onclick = openSetup
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
-    await shareFile(new File([await store.exportAll()], 'piano-progress.json', { type: 'application/json' }))
+    await shareFile(new File([await store.exportAll()], 'piano-forte-backup.json', { type: 'application/json' }))
   }
   $('#sSummary', d).onclick = async () => {
     const { buildSummary } = await import('../report')
@@ -150,7 +149,7 @@ async function openDrawer() {
     }
   }
   $('#sClear', d).onclick = async () => {
-    if (!confirm('Delete your songs, progress and settings from this device?')) return
+    if (!confirm('Delete your files, progress and settings from this device? This cannot be undone. Export first to keep a copy.')) return
     await store.clearAll()
     location.reload()
   }
@@ -190,9 +189,9 @@ $('#dev').addEventListener('click', () => {
   const ins = inputs()
   $('#kbMenu').innerHTML = `<p class="kbstate">${ins.length ? `${ins.length > 1 ? 'Keyboards' : 'Connected'}` : 'No keyboard'}</p>${
     ins.length > 1
-      ? `<select id="sDevice" aria-label="Keyboard"><option value="">All</option>${ins.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
+      ? `<select id="sDevice" aria-label="Keyboard"><option value="">All keyboards</option>${ins.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
       : ins.length ? `<p class="kbname">${esc(ins[0].name)}</p>` : ''
-  }${native ? '<button class="btn" data-pair>Pair a Bluetooth keyboard</button>' : midiState === 'ok' ? '' : '<button class="btn" data-connect>Connect</button>'}${ins.length ? '' : `<p class="kbnote">${PLUG}</p>`}`
+  }${native ? '<button class="btn" data-pair>Pair a Bluetooth keyboard</button>' : midiState === 'ok' ? '' : '<button class="btn" data-connect>Connect</button>'}${ins.length ? '' : `<p class="kbnote">${native ? 'Plug in a USB keyboard and switch it on; it connects by itself.' : midiState === 'ok' ? 'A USB keyboard connects by itself when it is plugged in and switched on.' : 'After the first Connect, a USB keyboard connects by itself whenever it is plugged in and switched on.'}</p>`}`
   $<HTMLSelectElement>('#kbMenu').querySelector('select')?.addEventListener('change', (e) => {
     settings.device = (e.target as HTMLSelectElement).value
     chooseInput(settings.device)

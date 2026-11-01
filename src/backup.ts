@@ -99,7 +99,7 @@ const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === '
 export const importAll = (text: string) =>
   serial(async () => {
     const d = JSON.parse(text)
-    if (d?.version !== 1) throw new Error('Not a piano export.')
+    if (d?.version !== 1) throw new Error('This file is not a Piano Forte export. Choose a file saved with Export.')
     await set('backup:last', await exportAll()) // the one before the last import, to undo it by hand
     for (const [id, p] of Object.entries(d.progress ?? {}) as [string, Progress][]) {
       if (!Array.isArray(p?.heat)) continue

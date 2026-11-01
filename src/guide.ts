@@ -1,6 +1,7 @@
 // Help for a new learner: the first-week card on Today, and the "connect your keyboard" line (the Help sheet's text is in ui-sheets.ts).
 import './guide.css'
 import { icon } from './icons'
+import { native } from './native-midi'
 import { settings } from './settings'
 
 export type Go = 'read' | 'scale' | 'theory' | 'sight' | 'tech' | 'mem' | 'progress'
@@ -101,8 +102,8 @@ export function guideCard(g: Guide): string {
 }
 
 /** The one instruction for the no-keyboard state, wherever it is said. */
-export const PLUG = 'Plug in a USB keyboard and switch it on; it connects by itself.'
+export const PLUG = native ? 'Plug in a USB keyboard, or tap the keyboard button at the top right to connect over Bluetooth.' : 'Plug in a USB keyboard and switch it on, then choose Connect.'
 
 /** Shown while no MIDI keyboard is connected, with the switch for the on-screen keys (app/osk-ui.ts); banner.ts hides it when one is and shows it again if it goes. */
 export const keyboardLine = (connected: boolean) =>
-  `<div class="kbline"${connected ? ' hidden' : ''}><span><b>No keyboard.</b> ${PLUG} Or play the on-screen keys, or the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><span class="row-actions"><label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? !connected) ? ' checked' : ''}><i></i>On-screen keys</label><button class="btn" data-connect>Connect</button></span></div>`
+  `<div class="kbline"${connected ? ' hidden' : ''}><span><b>No keyboard.</b> ${PLUG} Or play the on-screen keys${globalThis.matchMedia?.('(pointer: coarse)').matches ? '' : ', or the computer keys <kbd>A</kbd> to <kbd>;</kbd>'}.</span><span class="row-actions"><label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? !connected) ? ' checked' : ''}><i></i>On-screen keys</label><button class="btn" data-connect>Connect</button></span></div>`
