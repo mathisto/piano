@@ -4,6 +4,7 @@ import { INSTRUMENTS, instrument } from './instruments'
 import type { Input } from './midi'
 import { icon } from './icons'
 import { noteName } from './spell'
+import { native } from './native-midi'
 import { settings } from './settings'
 import { KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
 
@@ -37,6 +38,14 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     ${row('Appearance', seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme), "Auto follows this device's light or dark setting.")}
     ${row('Effects', seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx)), 'A soft glow on the falling notes and keys as you play.')}
   </div>
+  ${
+    native
+      ? `<h3 class="sgh">Reminder</h3>
+  <div class="sgroup">
+    ${row('Remind me', `<div class="inl">${seg('remind', 'Practice reminder', [['0', 'Off'], ['1', 'On']], settings.remind === undefined ? '0' : '1')}<input id="sRemindAt" type="time" value="${String(Math.floor((settings.remind ?? 1140) / 60)).padStart(2, '0')}:${String((settings.remind ?? 1140) % 60).padStart(2, '0')}" aria-label="Reminder time"${settings.remind === undefined ? ' disabled' : ''}></div>`, 'One note a day at this time, never on a day you have already practised. It stops after three days you do not open the app, and it says what is next, not what you might lose. <span id="sRemindNote" role="status"></span>')}
+  </div>`
+      : ''
+  }
   <h3 class="sgh">Your data</h3>
   <div class="sgroup">
     ${row('Backup', `<div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" id="sSummary">Summary for a teacher</button><button class="btn ghost" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div>`, 'Everything stays on this device. Export saves your progress, settings and files in one file; Import restores it, here or on another device.')}

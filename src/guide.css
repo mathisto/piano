@@ -12,7 +12,7 @@
 }
 .guide h2 {
   margin: 0;
-  font: 600 18px/1.25 var(--ui);
+  font: 600 calc(18px * var(--ts))/1.25 var(--ui);
 }
 .guide header p {
   margin: 6px 0 0;
@@ -33,7 +33,7 @@
   border-top: 1px solid var(--line);
 }
 .gstep .pwho b {
-  font-size: 16px;
+  font-size: calc(16px * var(--ts));
 }
 .gstep.later .pwho b,
 .gstep.skipped .pwho b {
@@ -45,7 +45,7 @@
   font-weight: 500;
 }
 .gstep.now .pwho b {
-  font-size: 18px;
+  font-size: calc(18px * var(--ts));
 }
 .gn {
   display: inline-grid;
@@ -55,7 +55,7 @@
   border: 1px solid var(--line-2);
   border-radius: var(--r-pill);
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: calc(13px * var(--ts));
   font-weight: 650;
 }
 .gstep.now .gn {
@@ -76,7 +76,7 @@
 .gact .link,
 .gsk {
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .gact .link {
   min-width: var(--control);

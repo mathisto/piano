@@ -1,5 +1,6 @@
 // The iPad app's side of src/native-midi.ts, loaded only inside the app: the CoreMidi plugin's events stamped on the page's
-// clock, the menu bar's commands, files opened from other apps, the sound taken away, and a daily backup to Files.
+// clock, the menu bar's commands, files opened from other apps, the sound taken away, a daily backup to Files, the system text
+// size and the practice reminder.
 import { registerPlugin, SystemBars, SystemBarType } from '@capacitor/core'
 import { onWrite } from './kv'
 import type { Port, Source } from './native-midi'
@@ -11,9 +12,11 @@ interface Native {
   setAppearance(o: { theme: string }): Promise<void>
   now(): Promise<{ t: number }>
   saveBackup(o: { text: string }): Promise<void>
+  textSize(): Promise<{ category: string }>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
   addListener(event: 'menu', cb: (d: { key: string }) => void): Promise<unknown>
   addListener(event: 'file', cb: (d: { name: string; data: string }) => void): Promise<unknown>
+  addListener(event: 'textSize', cb: (d: { category: string }) => void): Promise<unknown>
   addListener(event: 'interrupt', cb: () => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
@@ -25,6 +28,12 @@ export function offsetOf(samples: [number, number, number][]): number | undefine
 }
 
 const n = registerPlugin<Native>('CoreMidi')
+
+// Apple's body sizes by content size category (Dynamic Type), in points
+const BODY: Record<string, number> = { XS: 14, S: 15, M: 16, L: 17, XL: 19, XXL: 21, XXXL: 23, AccessibilityM: 28, AccessibilityL: 33, AccessibilityXL: 40, AccessibilityXXL: 47, AccessibilityXXXL: 53 }
+
+/** The root font scale (--ts, src/style.css) for a content size category: Apple's body size over the default Large's 17 pt. Never below 1 (the type is read from a music stand at 60 to 90 cm), and 2 at most, the largest the pages are made to hold. */
+export const textScale = (category: string) => Math.min(2, Math.max(1, (BODY[category.replace('UICTContentSizeCategory', '')] ?? 17) / 17))
 
 let offset: number | undefined
 let syncing = false
@@ -52,13 +61,12 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   void n.addListener('sources', (d) => sync(d.sources))
   // opened from Files, Mail or AirDrop: into the library as a dropped file goes
   void n.addListener('file', (d) => void import('./app/library').then((l) => l.importFiles([new File([Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0))], d.name)])))
-  // the menu bar: a tab (only while the tab bar shows), Settings, or one of the page's own keys (src/app/input.ts)
-  void n.addListener('menu', ({ key }) => {
-    if (key.startsWith('tab:')) {
-      if (!document.querySelector('#nav')?.hasAttribute('hidden')) document.querySelector<HTMLInputElement>(`#nav input[value=${key.slice(4)}]`)?.click()
-    } else if (key === 'settings') document.querySelector<HTMLElement>('#settingsBtn')?.click()
-    else document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
-  })
+  // the menu bar: one of the page's own keys (src/app/input.ts; src/menu.test.ts keeps the two lists together)
+  void n.addListener('menu', ({ key }) => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })))
+  // the system text size: one root scale for the type (src/style.css), the staff and the highway keep their own zoom
+  const text = (category: string) => document.documentElement.style.setProperty('--ts', String(+textScale(category).toFixed(2)))
+  void n.addListener('textSize', (d) => text(d.category))
+  void n.textSize().then((d) => text(d.category)).catch(() => {})
   // a call, Siri or an alarm took the sound, or the headphones came out: src/app/play.ts pauses a run, take-ui.ts stops Listen back
   void n.addListener('interrupt', () => dispatchEvent(new Event('interrupt')))
   void n.addListener('m', (d) => {
@@ -92,7 +100,11 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
     clearTimeout(timer)
     timer = window.setTimeout(backup, 30_000)
   })
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && timer && backup())
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') return
+    if (timer) backup()
+    void import('./native-reminder').then((r) => r.scheduleReminders()) // leaving the app is when the next three are set, skipping a day practised
+  })
   /** A run plays or not: auto-lock and the screen edges (PianoNative.swift), and the home indicator fades (Capacitor's SystemBars). */
   const playing = (on: boolean) => {
     void n.setPlaying({ on })

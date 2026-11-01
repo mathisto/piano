@@ -14,7 +14,7 @@
   border: 1px solid var(--line-2);
   border-radius: var(--r-1);
   color: var(--ink-3);
-  font: 700 14px/1 var(--ui);
+  font: 700 calc(14px * var(--ts))/1 var(--ui);
   font-style: normal;
 }
 .ear-grid i:nth-child(odd):not(:first-child) {

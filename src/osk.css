@@ -50,7 +50,7 @@ body.zen #app {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  font: 700 13px/1 var(--ui);
+  font: 700 calc(13px * var(--ts))/1 var(--ui);
   font-style: normal;
   transition: background 0.06s;
 }
