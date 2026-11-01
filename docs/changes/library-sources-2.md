@@ -102,4 +102,4 @@ To rebuild: `npx vite build --config scripts/library/vite.config.mjs`; `node scr
 
 ## Checked
 
-`npx tsc --noEmit -p .` clean; `npx vitest run`: see the end of this file's commit message and the report; new tests in `src/library-pipeline.test.ts` for the composer rule, `retitle`, `lilypondMidi` (cache and missing binary) and `pdmx-pick` (licence, conflict, scrap, mislabelled subtitle, outvoted numbers).
+`npx tsc --noEmit -p .` clean (exit 0). `npx vitest run`: Test Files 71 passed | 1 skipped (72); Tests 979 passed | 4 skipped (983). New tests in `src/library-pipeline.test.ts` for the composer rule, `retitle`, `lilypondMidi` (cache and missing binary) and `pdmx-pick` (licence, conflict, scrap, mislabelled subtitle, outvoted numbers).
