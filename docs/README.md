@@ -99,6 +99,7 @@ Dated reports behind the decisions; read the ratings before relying on a claim.
 
 - `research/urtext.md`: the Urtext design direction (1 Nov 2026): what was taken from the brief, what was corrected, the Matinée tokens and the rollout order.
 - `research/practice-path.md`: graded results, wrong-key and early or late marks kept on the score, Continue, and one "what next" behind Today, each section and the results card (1 Nov 2026): the design, the evidence, a phased plan and the owner's decisions.
+- `research/library-and-profile.md`: Apple Intelligence (not on the iPad Air 4), a long-term player profile from raw logs, one difficulty scale with skill tags and a fit function for the next piece, four Songs page layouts, and a cover for every piece from a sidecar of opening bars (1 Nov 2026): the plan, how it slots into practice-path's phases, and decisions 11 to 22.
 - `research/learning-science.md`: what the evidence says about piano practice.
 - `research/products-and-ux.md`: practice products, rhythm-game design, settings and progression UX.
 - `research/ui-critique.md`: the independent UI critique of 19 Oct 2026, before the overhaul.
