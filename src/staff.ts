@@ -393,8 +393,9 @@ export class Staff {
     // the wrong keys of a finished run, at the pitch played and the moment it was played
     if (this.game.phase === 'done') {
       const { bars } = this.game.song
+      const taken: { x: number; y: number }[] = []
       this.game.judge.strays.forEach(({ p, t }, s) => {
-        if (t >= bars[L.from].t0 - 0.05 && t < bars[L.to - 1].t1) this.notehead(p, t, true).g.dataset.s = String(s)
+        if (t >= bars[L.from].t0 - 0.05 && t < bars[L.to - 1].t1) this.notehead(p, t, true, taken).g.dataset.s = String(s)
       })
     }
   }
@@ -494,17 +495,27 @@ export class Staff {
   }
 
   /** A hollow dashed notehead at the pitch and time of a key: not part of the score, but the note you played. */
-  private notehead(pitch: number, t: number, stray = false) {
+  private notehead(pitch: number, t: number, stray = false, taken: { x: number; y: number }[] = []) {
     const L = this.L!
     const { pos, sp, clef, step, y } = this.place(pitch, t)
+    const acc = sp.acc !== keyAcc(this.an?.bars[L.from]?.fifths ?? this.game.song.fifths)[sp.letter]
+    // a wrong key on a head's column (written, or a wrong key already drawn) a step or less from it stands beside it, as an engraver sets a second:
+    // on the side it was played (early left), far enough out for a small accidental between the two
+    let x = pos.x
+    const near = (h: { x: number; y: number }) => Math.abs(h.x - x) < 13 && Math.abs(h.y - y) <= 5
+    const o = stray && [...this.all, ...taken].find(near)
+    const d = o ? (pos.x < o.x ? -1 : 1) * (acc ? 24 : 14) : 0
+    if (o) x = o.x + d
+    if (o && taken.some(near)) x = o.x - d // a wrong key already stands there: the other side
+    taken.push({ x, y })
     const g = el('g', { class: stray ? 'ghost stray' : 'ghost', 'aria-hidden': 'true' }, this.svg) as SVGGElement
-    g.style.transform = `translate(${pos.x}px, ${y}px)`
+    g.style.transform = `translate(${x}px, ${y}px)`
     const bottom = BOTTOM_STEP[clef]
     const off = (st: number) => yOf(st, clef, L.base) + pos.dy - y
     for (let st = bottom - 2; st >= step; st -= 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
     for (let st = bottom + 10; st <= step; st += 2) el('line', { x1: -11, x2: 11, y1: off(st), y2: off(st) }, g)
     el('ellipse', { rx: 6.4, ry: 4.7, transform: 'rotate(-20)' }, g)
-    if (sp.acc !== keyAcc(this.an?.bars[L.from]?.fifths ?? this.game.song.fifths)[sp.letter]) el('text', { class: 'smufl', x: -16, y: 0, 'text-anchor': 'middle' }, g, sp.acc > 0 ? G.sharp : sp.acc < 0 ? G.flat : G.natural)
+    if (acc) el('text', { class: 'smufl', x: d ? -13 / 0.75 : -16, y: 0, 'text-anchor': 'middle', transform: d ? 'scale(0.75)' : '' }, g, sp.acc > 0 ? G.sharp : sp.acc < 0 ? G.flat : G.natural)
     if (stray) el('path', { d: X, class: 'x' }, g)
     return { g }
   }
@@ -575,16 +586,14 @@ export class Staff {
     }
   }
 
-  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour: great ●, good ▲, late ▹ (outlined). Perfect has none: a clean note just goes quiet. Miss is a × (flag). It sits left of the head when the key was early and right of it when late. */
+  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour, centred under its head so a run of quick notes never leaves it between two:
+   * great ● (the key inside the window), good a filled triangle pointing the way the key missed the beat (◂ early, ▸ late, as the live ‹ › word), late an outlined ▹.
+   * Perfect has none: a clean note just goes quiet. Miss is a × (flag). */
   private shape(id: number, p: Placed, grade: string) {
     if (p.head.parentElement?.querySelector(`.gshape[data-id="${id}"]`)) return
-    const off = this.game.judge.off[id]
-    const x = p.x + (off < 0 ? -5 : 5) // left of the head: early; right: late
+    const { x } = p
     const y = p.y + 13
-    const d =
-      grade === 'great' ? `M${x - 2.8},${y} a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0`
-      : grade === 'late' ? `M${x - 2.4},${y - 3.4} L${x + 3.2},${y} L${x - 2.4},${y + 3.4} Z`
-      : `M${x},${y - 3.4} L${x + 3.6},${y + 2.6} L${x - 3.6},${y + 2.6} Z`
+    const d = grade === 'great' ? `M${x - 2.8},${y} a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0` : this.game.judge.off[id] < 0 ? `M${x + 3},${y - 3.8} L${x - 3.6},${y} L${x + 3},${y + 3.8} Z` : `M${x - 3},${y - 3.8} L${x + 3.6},${y} L${x - 3},${y + 3.8} Z`
     const m = el('path', { class: `gshape ${grade}`, 'data-id': id, d }, p.head.parentElement!)
     m.setAttribute('aria-hidden', 'true')
   }

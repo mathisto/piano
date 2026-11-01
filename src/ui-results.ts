@@ -52,18 +52,23 @@ const at = (ms: Mark[], ...kinds: Mark['kind'][]) => {
   return bars.length && bars.length < 4 ? ` (${barList(bars)})` : ''
 }
 
+/** The paper's own run marks, drawn small for the legend (staff.ts draws them on the score). */
+const CROSS = 'M-3.4,-3.4 L3.4,3.4 M3.4,-3.4 L-3.4,3.4'
+const TRI = 'M-3,-3.8 L3.6,0 L-3,3.8Z'
+const pm = (cls: string, d: string, more = '') => `<svg class="pm ${cls}" viewBox="-7 -6 14 12" aria-hidden="true">${more}<path d="${d}"/></svg>`
+
 /** One line of the card: what was measured, in plain counts, and whether it decides that the run counts. */
 const measure = (name: string, text: string, status = '') => `<div><dt>${name}</dt><dd>${text}</dd><dd class="cnt">${status}</dd></div>`
 
 /** The song card. `from`: the page the Back button returns to, named on it. `ctx`: the piece and the marks the run left on its score, for the bars and the Mark list. */
-export function results(r: Result, next: Next | null, note = '', from = 'Songs', ctx?: { song: Song; marks: Mark[] }) {
+export function results(r: Result, next: Next | null, note = '', from = 'Songs', ctx?: { song: Song; marks: Mark[]; worst?: { a: number; b: number } | null }) {
   const ms = ctx?.marks ?? []
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
   const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
   const bias = r.timing ? r.timing.bias : mean
-  const lean = `${Math.abs(bias) < 8 ? 'on the beat' : `about ${Math.round(Math.abs(bias))} ms ${bias > 0 ? 'late' : 'early'}`} on average${r.timing ? `, steady within ±${Math.round(r.timing.spread)} ms` : ''}`
+  const lean = `${Math.abs(bias) < 8 ? 'neither early nor late' : `about ${Math.round(Math.abs(bias))} ms ${bias > 0 ? 'late' : 'early'}`} on average${r.timing ? `, steady within ±${Math.round(r.timing.spread)} ms` : ''}`
   const hist = bins
     .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
@@ -90,30 +95,53 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs',
     r.touchPct >= 0 && `<b>${Math.round(r.touchPct * 100)}%</b> of notes in range.`,
   ].filter(Boolean)
   const lines = [
-    measure('Notes', [`<b>${right}</b> of ${r.total} right${waited ? ' first time' : ''}`, r.wrong > 0 && `${plural(r.wrong, 'wrong key')}${at(ms, 'wrong')}`, !waited && r.counts.miss > 0 && `${r.counts.miss} missed${at(ms, 'miss')}`].filter(Boolean).join(' · '), 'counts'),
+    // the figure says how many were right: the line says what went wrong, and where
+    measure('Notes', [r.wrong > 0 && `<b>${r.wrong}</b> ${r.wrong === 1 ? 'wrong key' : 'wrong keys'}${at(ms, 'wrong')}`, !waited && r.counts.miss > 0 && `<b>${r.counts.miss}</b> missed${at(ms, 'miss')}`].filter(Boolean).join(' · ') || (waited ? 'No wrong key.' : 'No wrong key, none missed.'), 'counts'),
     waited ? measure('Time', 'The song waited, so time is not measured.') : hits ? measure('Time', `<b>${r.counts.perfect + r.counts.great}</b> of ${hits} on the beat · ${lean}`, perform ? 'counts' : 'not counted yet') : '',
     r.holds >= 0 ? measure('Holds', `<b>${Math.round(r.holds * 100)}%</b> released on time`, 'not counted yet') : '',
     touch.length ? measure('Touch', touch.join(' '), (id.startsWith('tech:') && r.touchPct >= 0) || (id.startsWith('scale:') && r.even) ? 'counts' : 'not counted yet') : '',
   ].join('')
   const slips = ms.filter((m) => m.kind === 'wrong' || m.kind === 'miss')
+  const slipBars = [...new Set(slips.map((m) => m.bar + 1))]
   const head = r.clean
     ? `Clean${waited ? ', with the song waiting' : ''}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}.`
-    : `Not clean yet${slips.length ? `: ${plural(slips.length, 'slip')} in ${barList([...new Set(slips.map((m) => m.bar + 1))])}` : ''}.`
+    : `Not clean yet${slips.length ? `: ${plural(slips.length, 'slip')} in ${barList(slipBars)}` : ''}.`
+  // what went right, only when it is true and says something: the bars with no slip, as runs
+  const bars = ctx?.song.bars.length ?? 0
+  const runs: string[] = []
+  for (let b = 1; b <= bars; b++) if (!slipBars.includes(b) && (b === 1 || slipBars.includes(b - 1))) {
+    let e = b
+    while (e < bars && !slipBars.includes(e + 1)) e++
+    runs.push(e > b ? `${b} to ${e}` : `${b}`)
+  }
+  const went = slips.length && runs.length ? `<p class="went">${runs.length > 3 ? `${bars - slipBars.length} of ${bars} bars` : `${runs.length > 1 || runs[0].includes(' ') ? 'Bars' : 'Bar'} ${runs.length > 1 ? `${runs.slice(0, -1).join(', ')} and ${runs.at(-1)}` : runs[0]}`} had no slips.</p>` : ''
+  // the coaching points, by priority (docs/research/practice-path.md 2.2): why the lamp loops the bars it does, then a lean worth checking. A clean run gets none.
+  // The loop is the footer's lamp, not a second button here: one action, one place (Continue takes that place in phase 2, and is this loop after a run that was not clean).
+  const w = ctx?.worst
+  const loopBars = w ? slips.filter((m) => m.bar >= w.a && m.bar <= w.b) : []
+  const where = w && (w.b > w.a ? `Bars ${w.a + 1} and ${w.b + 1}` : `Bar ${w.a + 1}`)
+  const first = loopBars.find((m) => m.kind === 'wrong' && m.written !== undefined && m.written !== m.p) ?? loopBars[0]
+  const points = [
+    next?.kind === 'loop' && where && `<li><p>${loopBars.length ? `${where} had ${loopBars.length === slips.length ? (slips.length === 1 ? 'the slip' : `all ${slips.length} slips`) : `${loopBars.length} of the ${slips.length} slips`}. ${esc(markLine(first, ctx!.song))}` : `${where} held you up longest.`}</p></li>`,
+    !waited && r.timing && Math.abs(r.timing.bias) >= 30 && `<li><p>Most notes came about ${Math.round(Math.abs(r.timing.bias))} ms ${r.timing.bias > 0 ? 'late' : 'early'}. If they felt on the beat, calibrate Delay in Set up.</p></li>`,
+  ].filter(Boolean)
   const review = ms.length
     ? `<button class="btn" id="review" aria-expanded="false">Review on the score</button><details class="all marklist"><summary>Mark list</summary><ol>${ms.map((m, i) => `<li><button class="lnk" data-m="${i}">${esc(markLine(m, ctx!.song))}</button></li>`).join('')}</ol></details>`
     : ''
   const reviewbar = ms.length
-    ? `<div class="reviewbar"><button class="btn" id="unfold">Results</button><button class="btn icon ghost" id="markPrev" aria-label="Previous mark">${icon('back')}</button><span id="markAt" aria-live="polite"></span><button class="btn icon ghost" id="markNext" aria-label="Next mark">${icon('back')}</button>
-    ${perform ? `<label class="switch"><input type="checkbox" id="allTiming"><i></i>Show all timing</label>` : ''}
-    <p class="legend">${jg('miss')}missed · dashed head: a wrong key, at the pitch you played · ${jg('good')}${jg('late')}early or late: left of its note is early, right is late</p></div>`
+    ? `<div class="reviewbar"><button class="btn" id="unfold">Results</button><button class="btn icon ghost" id="markPrev" aria-label="Previous mark">${icon('back')}</button><span id="markAt"></span><button class="btn icon ghost" id="markNext" aria-label="Next mark">${icon('back')}</button><p id="markSay" aria-live="polite"></p>
+    ${perform && r.counts.great ? `<label class="switch"><input type="checkbox" id="allTiming"><i></i>Show all timing</label>` : ''}
+    <p class="legend">${pm('x', CROSS)}missed · ${pm('x', CROSS, '<ellipse rx="6.4" ry="4.7" transform="rotate(-20)"/>')}wrong key, at the pitch played · ${pm('', 'M3,-3.8 L-3.6,0 L3,3.8Z')}a little early · ${pm('', TRI)}a little late · ${pm('o', TRI)}late</p></div>`
     : ''
   return `
   <div class="results on-stage"><div class="card song-res" role="region" aria-label="Results">
     <h2>${head}</h2>
     <div class="big-grade"><b>${right} of ${r.total}</b><span class="hcap">${waited ? 'right first time' : 'notes right'}</span></div>
     <div class="stats">
+    ${went}
     ${note ? `<p class="line">${note}</p>` : ''}
     <dl class="measures">${lines}</dl>
+    ${points.length ? `<ol class="points">${points.join('')}</ol>` : ''}
     ${coachLines(r, liveMarks === 'none' && !!r.even)}
     <div class="reviewrow">${review}<details class="all more"><summary>Details</summary>${more}</details></div>
     ${reviewbar}
