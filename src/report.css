@@ -1,15 +1,16 @@
 /* Report a problem: a quiet text link under a piece's credit, on the start card and in each Credits entry */
 a.report {
-  color: var(--ink-3);
+  color: var(--accent);
   font-size: 14px;
   text-decoration: underline;
-  text-underline-offset: 3px;
   pointer-events: auto;
   display: inline-block;
   padding: 6px 4px; /* a touch target, not a button */
 }
-a.report:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  a.report:hover {
+    color: var(--ink);
+  }
 }
 dialog.sheet .credlist a.report {
   margin: -6px 0 6px;

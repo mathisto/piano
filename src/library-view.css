@@ -35,8 +35,10 @@
 .libq input::placeholder {
   color: var(--ink-3);
 }
-.libq input:hover {
-  border-color: var(--ink-3);
+@media (hover: hover) {
+  .libq input:hover {
+    border-color: var(--ink-3);
+  }
 }
 .libq input:focus-visible {
   outline-offset: 0;
@@ -77,10 +79,6 @@
   .pfacts {
     white-space: normal;
   }
-}
-dialog.sheet .fine a {
-  color: var(--ink);
-  text-underline-offset: 3px;
 }
 .biglib td.name small span {
   display: inline-block; /* a sub-line breaks between composer, level and licence, not inside one, unless one is longer than the line */

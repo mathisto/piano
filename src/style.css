@@ -17,6 +17,8 @@
   --backdrop: rgba(4, 6, 9, 0.7); /* behind a modal dialog */
   --scrim-hi: rgba(12, 14, 18, 0.94); /* the start card over the highway: more opaque than the scrim */
   --wash: rgba(255, 255, 255, 0.03); /* row hover */
+  --specular: rgba(255, 255, 255, 0.07); /* the top hairline of a raised surface: overhead light on the bevel */
+  --specular-lamp: rgba(255, 255, 255, 0.28); /* the same on the lamp fill */
   --loop: rgba(244, 242, 237, 0.14); /* the A-B loop span on the scrub bar */
   --lamp-glow: rgba(255, 200, 61, 0.7);
   --great-ring: rgba(61, 214, 140, 0.35); /* the halo on a live keyboard dot */
@@ -74,6 +76,10 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line-2) transparent;
 }
+html {
+  accent-color: var(--accent); /* native checkboxes and the caret, themed */
+  caret-color: var(--accent);
+}
 html,
 body {
   height: 100%;
@@ -102,12 +108,16 @@ a,
 img {
   -webkit-user-drag: none; /* a long press on the iPad lifts a link or an image out to drag; the app's are not for dragging */
 }
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
 ::selection {
-  background: var(--lamp);
-  color: var(--lamp-ink);
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--ink);
 }
 :focus-visible {
-  outline: 2px solid var(--lamp);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--r-1);
 }
@@ -174,7 +184,7 @@ table.songs caption,
   border-radius: var(--r-1);
 }
 .brand:focus-visible {
-  outline: 2px solid var(--lamp);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .song-title {
@@ -236,10 +246,19 @@ table.songs caption,
   color: var(--ink-2);
   font-weight: 600;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 var(--specular);
+  transition:
+    border-color 0.15s,
+    transform 0.15s var(--ease);
 }
-.chip:hover {
-  border-color: var(--ink-3);
-  color: var(--ink);
+@media (hover: hover) {
+  .chip:hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
+}
+.chip:active {
+  transform: scale(0.97);
 }
 .chip .dot {
   width: 10px;
@@ -271,19 +290,13 @@ table.songs caption,
   border-radius: var(--r-2);
   border: 1px solid var(--edge);
   background: var(--panel-2);
+  box-shadow: inset 0 1px 0 var(--specular);
   cursor: pointer;
   font-weight: 650;
   transition:
     background 0.15s,
     border-color 0.15s,
     transform 0.15s var(--ease);
-}
-.btn:hover {
-  border-color: var(--ink-3);
-  background: var(--panel-3);
-}
-.btn:active {
-  transform: translateY(1px);
 }
 .btn.icon {
   width: var(--control);
@@ -294,10 +307,7 @@ table.songs caption,
   border-color: var(--lamp);
   color: var(--lamp-ink);
   font-weight: 800;
-}
-.btn.primary:hover {
-  background: var(--lamp-hi);
-  border-color: var(--lamp-hi);
+  box-shadow: inset 0 1px 0 var(--specular-lamp);
 }
 .btn.big {
   height: 52px;
@@ -311,11 +321,7 @@ table.songs caption,
   background: transparent;
   border-color: transparent;
   color: var(--ink-2);
-}
-.btn.ghost:hover {
-  color: var(--ink);
-  background: var(--panel-2);
-  border-color: var(--line);
+  box-shadow: none;
 }
 .btn.sm {
   height: 36px;
@@ -325,7 +331,59 @@ table.songs caption,
   color: var(--ink-3);
   background: transparent;
   border-color: var(--line);
+  box-shadow: none;
   cursor: not-allowed;
+}
+/* a floating surface is already Panel Raised: its buttons step up one more */
+:is(.drawer, dialog.sheet, .popmenu) .btn:where(:not(.primary, .ghost, :disabled)) {
+  background: var(--panel-3);
+}
+@media (hover: hover) {
+  :is(.drawer, dialog.sheet, .popmenu) .btn:where(:not(.primary, .ghost, :disabled)):hover {
+    background: color-mix(in srgb, var(--panel-3), var(--ink) 6%);
+  }
+}
+/* hover only where a pointer can hover: on the iPad a tap would leave it stuck. :where keeps these level with the base rules, so the order below decides. */
+@media (hover: hover) {
+  .btn:where(:not(:disabled)):hover {
+    border-color: var(--ink-3);
+    background: var(--panel-3);
+  }
+  .btn:where(.primary:not(:disabled)):hover {
+    background: var(--lamp-hi);
+    border-color: var(--lamp-hi);
+  }
+  .btn:where(.ghost:not(:disabled)):hover {
+    color: var(--ink);
+    background: var(--panel-2);
+    border-color: transparent;
+  }
+}
+.btn:where(:not(:disabled)):active {
+  transform: scale(0.97);
+  background: var(--panel);
+}
+.btn:where(.primary:not(:disabled)):active {
+  background: var(--lamp);
+}
+.btn:where(.ghost:not(:disabled)):active {
+  background: var(--panel-3);
+}
+/* selected: the one treatment, on a segment, a section tab, a filter chip, a toggle that is on and a button whose menu is open. A raised fill and the accent as text, a quiet edge; never colour alone. */
+.seg input:checked + span,
+.chip-btn.on,
+.btn[aria-pressed='true'],
+.btn[aria-expanded='true'] {
+  background: var(--panel-3);
+  color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 var(--specular),
+    inset 0 0 0 1px var(--line-2);
+}
+.btn[aria-pressed='true'],
+.btn[aria-expanded='true'] {
+  border-color: var(--line-2);
+  box-shadow: inset 0 1px 0 var(--specular);
 }
 
 /* segmented switch */
@@ -358,19 +416,29 @@ table.songs caption,
   color: var(--ink-2);
   font-weight: 650;
   white-space: nowrap;
-}
-.seg input:checked + span {
-  background: var(--line-2);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--edge);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.15s var(--ease);
 }
 .seg input:focus-visible + span {
-  outline: 2px solid var(--lamp);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.seg input:not(:checked):hover + span {
-  color: var(--ink);
-  background: var(--panel-2);
+@media (hover: hover) {
+  .seg input:not(:checked):hover + span {
+    color: var(--ink);
+    background: var(--panel-2);
+  }
+}
+.seg input:active + span {
+  transform: scale(0.97);
+}
+.seg input:disabled + span {
+  opacity: 0.45;
+}
+.seg input:disabled {
+  cursor: not-allowed;
 }
 
 /* sliders */
@@ -395,6 +463,20 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 50%;
   background: var(--ink);
   border: 3px solid var(--panel);
+  box-shadow: 0 1px 4px var(--drop);
+  transition: transform 0.15s var(--ease);
+}
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+input[type='range']:focus-visible {
+  outline: none; /* the ring goes round the thumb, not the whole track */
+}
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+input[type='range']:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 input[type='range']::-moz-range-track {
   height: 6px;
@@ -444,6 +526,7 @@ input[type='range']::-moz-range-thumb {
   background: var(--ink-3);
   transition:
     transform 0.2s var(--ease),
+    width 0.15s var(--ease),
     background 0.15s;
 }
 .switch input:checked + i {
@@ -454,8 +537,18 @@ input[type='range']::-moz-range-thumb {
   background: var(--ground);
 }
 .switch input:focus-visible + i {
-  outline: 2px solid var(--lamp);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+.switch:active i::after {
+  width: 24px; /* the thumb widens under the finger, as on iOS */
+}
+.switch:active input:checked + i::after {
+  transform: translateX(16px);
+}
+.switch:has(input:disabled) {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ---------- pages: songs and read ---------- */
@@ -821,10 +914,6 @@ table.stages td.name small {
   font-weight: 600;
   text-overflow: ellipsis;
   cursor: pointer;
-}
-.pick select:focus-visible {
-  outline: 2px solid var(--lamp);
-  outline-offset: 2px;
 }
 @media (hover: hover) {
   .pick select:hover {
@@ -1368,9 +1457,11 @@ body.reading .hud small {
   max-width: min(760px, 100%);
   padding: 12px 16px;
   background: var(--panel-2);
-  border: 1px solid var(--edge);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-3);
-  box-shadow: 0 10px 30px var(--drop);
+  box-shadow:
+    inset 0 1px 0 var(--specular),
+    0 10px 30px var(--drop);
   color: var(--ink-2);
 }
 .banner b {
@@ -1401,9 +1492,6 @@ kbd {
   display: flex;
   font-size: 15px;
   color: var(--ink-2);
-}
-.ready .seg input:checked + span {
-  color: var(--ink);
 }
 .ready .hint {
   font-size: 15px;
@@ -1486,6 +1574,7 @@ kbd {
 #dock {
   background: var(--panel);
   border-top: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 var(--specular);
   padding: 10px 16px 12px;
   display: grid;
   gap: 8px;
@@ -1533,7 +1622,6 @@ kbd {
   bottom: 0;
   width: 2px;
   background: var(--lamp);
-  box-shadow: 0 0 6px var(--lamp);
   pointer-events: none;
 }
 .scrub .lbl {
@@ -1714,6 +1802,11 @@ kbd {
 #nav::-webkit-scrollbar {
   display: none;
 }
+/* the tab capsule: a solid pill, the same selected treatment as every segment (no blur: the highway is WebGL) */
+#nav,
+#nav span {
+  border-radius: var(--r-pill);
+}
 #play.resopen #go,
 #play.resopen #restart {
   visibility: hidden;
@@ -1749,9 +1842,11 @@ kbd {
   bottom: 0;
   width: min(440px, 100%); /* the system font is wider than the old one: Touch coach's four choices fit */
   z-index: 20;
-  background: var(--panel);
-  border-left: 1px solid var(--edge);
-  box-shadow: -18px 0 40px var(--drop);
+  background: var(--panel-2);
+  border-left: 1px solid var(--line-2);
+  box-shadow:
+    inset 1px 0 0 var(--specular),
+    -18px 0 40px var(--drop);
   overflow: auto;
   padding: 20px 22px 40px;
   animation: slide 0.22s var(--ease);
@@ -1798,10 +1893,6 @@ kbd {
 }
 .drawer details[open] > summary::before {
   content: '−';
-}
-.drawer a {
-  color: var(--ink);
-  text-underline-offset: 3px;
 }
 .drawer p {
   margin: 0;
@@ -1869,7 +1960,7 @@ input[type='number'] {
 button.link {
   border: 0;
   background: none;
-  color: var(--ink-2);
+  color: var(--accent);
   font: inherit;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -2208,12 +2299,10 @@ body.zen .bar {
   overflow: hidden;
   cursor: pointer;
 }
-.cell:hover {
-  background: var(--panel-3);
-}
-.cell:focus-visible {
-  outline: 2px solid var(--lamp);
-  outline-offset: 2px;
+@media (hover: hover) {
+  .cell:hover {
+    background: var(--panel-3);
+  }
 }
 .cell b {
   position: absolute;
@@ -2277,10 +2366,6 @@ body.zen .bar {
   font: 14px/1.45 var(--ui);
   color: var(--ink-2);
 }
-.credlist a {
-  color: var(--ink);
-  text-underline-offset: 3px;
-}
 .credlist pre::first-line {
   color: var(--ink);
   font-weight: 700;
@@ -2304,10 +2389,13 @@ body.zen .bar {
 
 /* ---------- one sheet for every dialog: header, scrolling body, pinned footer ---------- */
 dialog.sheet {
-  background: var(--panel);
+  background: var(--panel-2);
   color: var(--ink);
-  border: 1px solid var(--edge);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-3);
+  box-shadow:
+    inset 0 1px 0 var(--specular),
+    0 24px 64px var(--drop);
   padding: 0;
   width: min(680px, 94vw);
   max-height: 86vh;
@@ -2450,9 +2538,11 @@ dialog.sheet .tksum .fine {
   min-width: 200px;
   padding: 10px 14px;
   background: var(--panel-2);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-2);
-  box-shadow: 0 -8px 24px var(--drop);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  box-shadow:
+    inset 0 1px 0 var(--specular),
+    0 -8px 24px var(--drop);
 }
 .popmenu.end {
   left: auto;
@@ -2581,17 +2671,27 @@ dialog.sheet footer .btn {
   color: var(--ink-2);
   font: 600 14px/1 var(--ui);
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.15s var(--ease);
+}
+@media (hover: hover) {
+  .chip-btn:not(:disabled, .on):hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
+}
+.chip-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.chip-btn.on {
+  border-color: var(--line-2);
 }
 @media (pointer: coarse) {
   .chip-btn {
     min-height: var(--control);
     min-width: var(--control);
   }
-}
-.chip-btn.on {
-  background: var(--panel-3);
-  color: var(--ink);
-  border-color: var(--line-2);
 }
 .chip-btn:has(svg.i) {
   display: inline-flex;

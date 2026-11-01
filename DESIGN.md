@@ -97,9 +97,9 @@ typography:
     fontFamily: "Bravura"
     fontSize: "40px"
 rounded:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
+  xs: "6px"
+  sm: "10px"
+  md: "14px"
   pill: "999px"
 spacing:
   hair: "4px"
@@ -160,8 +160,8 @@ components:
     rounded: "{rounded.sm}"
     padding: "3px"
   segmented-selected:
-    backgroundColor: "{colors.line-2}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.panel-3}"
+    textColor: "{colors.accent}"
     rounded: "{rounded.xs}"
     height: "32px"
   switch:
@@ -225,13 +225,13 @@ components:
   tag-next:
     textColor: "{colors.lamp}"
   sheet:
-    backgroundColor: "{colors.panel}"
+    backgroundColor: "{colors.panel-2}"
     textColor: "{colors.ink}"
     rounded: "{rounded.md}"
     width: "680px"
   popmenu:
     backgroundColor: "{colors.panel-2}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.md}"
     padding: "10px 14px"
   chord-readout:
     backgroundColor: "{colors.scrim}"
@@ -276,14 +276,19 @@ A navy-ink night palette with one amber lamp, two hand hues, and a four-step jud
 ### Tertiary (judgement spectrum)
 - **Perfect Lime** (#d7ff3d), **Great Mint** (#34e89a), **Good Orange** (#ff8a3d), **Miss Red** (#ff4a3d, `--bad` in CSS). Late (the right key up to a beat after the window, the worst hit) shares Good Orange at 60% (`--late`). Each is paired with its word in the judge popup; Great, Good and Late also leave a persistent shape on the staff (dot, diamond, faded diamond), Miss a triangle. Miss red marks wrong staff heads and the bar heat on the scrubber. Mint additionally marks MIDI connected (chip dot).
 
+### Interface tint
+- **Accent** (#78a9ff; Matinée #0058d0): the focus ring, the selected state (text on a raised fill), links, text selection. 6.4:1 on Panel Hover, 7.7:1 on Panel. See the Accent Rule.
+
 ### Neutral
-- **Ground** (#090b17): page, stage clear colour, wells (segmented, scrubber, inputs, kbd).
-- **Panel** (#10132a): top bar, staff strip, dock, drawer, cards, results card.
-- **Panel Raised** (#181c3b) and **Panel Hover** (#20254b): buttons, chips, banner, band chips, mastery-cell track; hover step.
-- **Line** (#262b55): hairlines, row dividers, meter track, scrubber border.
-- **Line Strong** (#3a4180): the selected / track surface: selected segment, switch track, table-head rule.
-- **Edge** (#5a6196): every control and card border, slider track (3:1 against Panel). Line stays hairline-only.
-- **Scrim** (rgba 9,11,23 at .82): ready card, results overlay, chord readout. **Shade** (rgba 0,0,0 at .6): the soft shadow under stage words. Named tokens for the other translucent values, all in `:root`: `--scrim-hi` (the start card), `--backdrop` (behind a dialog), `--drop` (shadow under a raised surface), `--wash` (row hover), `--loop` (the A-B span), `--lamp-glow`, `--great-ring`, `--L-fill`.
+- **Ground** (#0c0e12): page, stage clear colour, wells (segmented, scrubber, inputs, kbd).
+- **Panel** (#13161c): top bar, staff strip, dock, cards, results card.
+- **Panel Raised** (#1b1f27): buttons, chips, band chips, mastery-cell track, and every floating surface (drawer, dialog sheets, popovers, banner).
+- **Panel Hover** (#222731): hover, a selected segment, a button resting on a floating surface.
+- **Line** (#262a33): hairlines, row dividers, meter track, scrubber border.
+- **Line Strong** (#363d4e): a floating surface's border, the selected ring, switch track, table-head rule.
+- **Edge** (#666d7d): every control border (3:1 on its surface), slider track. Line stays hairline-only.
+- **Specular** (white at 7%; at 28% on the lamp fill): the 1px inset top edge of a raised surface.
+- **Scrim** (rgba 12,14,18 at .82): ready card, results overlay, chord readout. **Shade** (rgba 0,0,0 at .6): the soft shadow under stage words. Named tokens for the other translucent values, all in `:root`: `--scrim-hi` (the start card), `--backdrop` (behind a dialog), `--drop` (shadow under a raised surface), `--wash` (row hover), `--loop` (the A-B span), `--lamp-glow`, `--great-ring`, `--L-fill`.
 - **Ink** (#ecebf5), **Ink Soft** (#a9acd0), **Ink Faint** (#8a8fbd): primary, secondary, and caption/label text. Ink Faint is the floor for text on Panel.
 - Stage-only (palette.ts mirrors the CSS custom properties): lane tints #161b42 / #0b0e25 alternate per white key, octave and bar grid #4a528f, receptor #fff3d6, key white #e7e6f1, key black #15182e, muted key names and unlit receptor lamps #5b5f8a.
 
@@ -292,7 +297,9 @@ A navy-ink night palette with one amber lamp, two hand hues, and a four-step jud
 
 **The Calm Staff Rule.** Notation is Ink on Panel. Colour appears on a staff glyph only as state: lamp for awaited, grade colour for a hit, miss red for a miss; it then decays to Ink Faint as "played". A hold outline (orange for held too long, red for released early) is the one state that stays on the head. Aids that are not score (ghost notes, the Technique aim-for dynamics, 8va brackets, the Dense hint, the dots of a Ghost of last run) are Ink Soft or Ink Faint; the notes the app plays in accompaniment are the same heads at 40%. The score's own marks (articulation, slurs, hairpins, dynamic letters) are Ink at 70%.
 
-**The One Lamp Rule.** Amber means "play this, now": the verb and the now-markers. It is never chrome, never selection, never a judgement grade. Counted per screen: at most one lamp-filled button, and the lamp Next word only on that button's row. A page with nothing left to do (every plan row done) shows none. On the play screen the dock Play is the one fill; the cursor, awaited heads, receptor lamps and count-in are its now-markers.
+**The One Lamp Rule.** Amber means "play this, now": the verb and the now-markers. It is never chrome, never selection, never the focus ring, never a link, never text selection, never a judgement grade. Those belong to the Accent. Counted per screen: at most one lamp-filled button, and the lamp Next word only on that button's row. A page with nothing left to do (every plan row done) shows none. On the play screen the dock Play is the one fill; the cursor, awaited heads, receptor lamps and count-in are its now-markers.
+
+**The Accent Rule.** Slate blue (#78a9ff; #0058d0 in Matinée) is the interface's own tint and has four jobs: the focus ring, the selected state, links, and text selection. It is never on the staff or in the lanes, never a fill larger than a control, and never the only sign of a state (a selected control also has its raised fill).
 
 **The Semantic Hue Rule.** Hand colours (cyan, magenta + pink edge) and judgement colours (lime, mint, orange, red) appear only where a hand or a grade is being reported, never as chrome, decoration, selection or emphasis.
 
@@ -328,7 +335,7 @@ Seven rules every screen is checked against:
 4. **One icon family.** No icon drawn by hand next to Lucide's.
 5. **Three actions at most** on show on any summary or end surface, sheet or settings row (a primary, Again, a More menu, and the way back apart); the rest go in a ⋯ More menu (`rowMenu` in `src/ui.ts`).
 6. **The right container.** Choices go in a pop-up anchored to their button (Tempo, Practice, a row's More), tasks in a sheet, playing full screen with the controls fading.
-7. **Touch.** 44pt targets, nothing hover-only, reduced motion honoured, no imitation glass, chrome never glows (the lamp's glow is a now-marker, not chrome).
+7. **Touch.** 44pt targets, nothing hover-only (hover styles sit in `@media (hover: hover)`, so a tap never leaves one stuck), reduced motion honoured, no imitation glass (`backdrop-filter` is banned: it costs frames over the WebGL highway), chrome never glows. Pressed is a 0.97 scale.
 SF Symbols are not used: Apple's licence ties them to apps for Apple platforms and the same code is the public website.
 
 ## Layout
@@ -341,7 +348,7 @@ Spacing rhythm is 4 / 8 / 12 / 16 / 24 / 32 with 6, 10, 14, 18, 20 inside contro
 
 ## Elevation & Depth
 
-Tonal layering, mostly flat: Ground wells recess into Panel surfaces, Edge borders separate cards and controls, Line hairlines separate rows. Real shadows are reserved for things that float: banner (`0 10px 30px rgba(0,0,0,.5)`), the drawer (`-18px 0 40px rgba(0,0,0,.45)`), the Aids popover (`0 -8px 24px rgba(0,0,0,.4)`) and the Listen bar (`0 8px 24px` in `--drop`). A dialog sheet has no shadow: Edge border over a dark backdrop (`rgba(5,6,13,.7)`). Stage words sit on a soft Shade (`0 2px 24-28px`); the judge popup uses a Ground halo (`0 0 6px, 0 0 14px`, no offset). Light is a state signal: the staff cursor, scrubber head, hit notes and ghost snaps carry a glow in their own colour; the highway adds additive radial glows and sparks at Calm (Effects is Off or Calm). Sheet view forces effects off; under `prefers-reduced-motion` CSS motion collapses to ~0ms and the canvas glow stops swelling and the waiting ring holds steady (Calm is the only tier, so there is nothing to cap).
+Depth is luminance steps and a top hairline, never a glow. Five steps: Ground (wells, the recessed track), Panel (the page's surfaces: top bar, dock, cards), Panel Raised (controls, and every floating surface: the drawer, dialog sheets, popovers, the banner), Panel Hover (a button on a floating surface, a selected segment, hover). `--specular` (white at 7%) is the 1px inset top edge of a raised surface, as overhead light on a bevel (`inset 0 1px 0 var(--specular)`): buttons, chips, the dock, popovers, sheets, the banner (the drawer takes it down its left edge); the lamp fill takes `--specular-lamp`. Hairlines: Line separates rows, Line Strong (`--line-2`) outlines a floating surface and a selected cell, Edge outlines a control (3:1 on its surface). Real shadows are reserved for things that float, all soft and offset: the banner (`0 10px 30px`), the drawer (`-18px 0 40px`), popovers (`0 -8px 24px`), dialog sheets (`0 24px 64px`), the Listen bar (`0 8px 24px`), all in `--drop`, and a slider thumb (`0 1px 4px`). Stage words sit on a soft Shade (`0 2px 24-28px`); the judge popup uses a Ground halo (`0 0 6px, 0 0 14px`, no offset). Light is a state signal and only on the stage: the staff cursor, hit notes and ghost snaps carry a glow in their own colour; the highway adds additive radial glows and sparks at Calm (Effects is Off or Calm). The scrubber head is a plain 2px lamp line. Sheet view forces effects off; under `prefers-reduced-motion` CSS motion collapses to ~0ms and the canvas glow stops swelling and the waiting ring holds steady (Calm is the only tier, so there is nothing to cap). No `backdrop-filter` anywhere: the brief's frosted tab capsule and dock were not taken (urtext.md, Not taken).
 
 ### Named Rules
 **The Glow Means State Rule.** A glow is allowed only on an element reporting live state in its own colour. Chrome does not glow.
@@ -350,11 +357,13 @@ Tonal layering, mostly flat: Ground wells recess into Panel surfaces, Edge borde
 
 ## Shapes
 
-Four radii and one control height. 4px (kbd, thumbnails, scrubber, segment cells, focus ring, band chips, tags, mastery cells, swatches), 8px (buttons, segmented outer, selects, Aids popover), 12px (cards, dialog sheets, banner, ready, results, chord readout), pill (chips, switches, slider tracks, meters). Controls are 40px (44 coarse); small 36 (44 coarse); big 52; segment cells 32 (38 coarse) inside a 3px well. Every control border is Edge. Falling notes are 5px rounded bars inset 3px inside their lane (1.5px on black keys), with a 3px bright bottom edge marking the moment to play. Left-hand bars are tinted with a lighter outline, right-hand bars solid.
+Four radii and one control height. 6px `--r-1` (kbd, thumbnails, scrubber, segment cells, tags, mastery cells, swatches, the dock's inner wells), 10px `--r-2` (buttons, segmented outer, selects, number fields), 14px `--r-3` (cards, dialog sheets, popovers, banner, ready, results, chord readout), pill (chips, switches, slider tracks, meters, the section tab capsule and its cells). Controls are 40px (44 coarse); small 36 (44 coarse); big 52; segment cells 32 (38 coarse) inside a 3px well. Every control border is Edge; a floating surface's border is Line Strong. Falling notes are 5px rounded bars inset 3px inside their lane (1.5px on black keys), with a 3px bright bottom edge marking the moment to play. Left-hand bars are tinted with a lighter outline, right-hand bars solid.
 
 ## Components
 
-Each component: anatomy, then states. All interactive states share the 2px Lamp focus ring, 2px offset.
+Each component: anatomy, then states. Every interactive state shares one focus ring: 2px Accent, 2px offset (a slider's goes round the thumb). Hover applies only to a hover-capable pointer. Pressed scales to 0.97 (a switch thumb widens, a slider thumb grows 10%). Disabled is Ink Faint text, transparent fill, Line border (a segment drops to 45%, a switch to 40%).
+
+**Selected, everywhere.** One treatment for a segment, a section tab, a filter chip, a toggle button that is on (`aria-pressed`) and a button whose menu is open (`aria-expanded`): Panel Hover fill, Accent text, a 1px Line Strong ring, the specular hairline. Not a lamp, not a colour alone.
 
 ### The PF mark
 
@@ -365,22 +374,23 @@ Piano Forte, PF for short: a P and an F built from rounded blocks, as if two not
 Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpad pinch on a computer, the - and = keys, and ⌘= and ⌘- in the app's menu bar. The single-pointer alternative WCAG 2.5.1 asks for is Staff minus, Fit and plus in the dock's Practice menu (Fit pressed again goes back to the normal size). Nothing floats over the staff.
 
 ### Segmented control
-- Ground well, Edge border, 8px, 3px padding, 2px gap; cells 32px at 4px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
-- Selected: Line Strong fill, Ink text, inset 1px Edge ring (no amber). Hover on unselected: Ink text, Panel Raised fill.
+- Ground well, Edge border, 10px, 3px padding, 2px gap; cells 32px at 6px radius (38 coarse), Ink Soft text 650. Radio inputs are visually hidden over the cell.
+- Selected: the one selected treatment above (Panel Hover fill, Accent text, Line Strong ring). Hover on unselected: Ink text, Panel Raised fill.
+- **Section tabs** (`#nav`) are the same control as a solid capsule: pill well, pill cells, an icon and the word. Not a floating blurred pill: the top bar stays a full-width Panel band (title, HUD, keyboard chip and Settings share it at 590px, and the capsule scrolls sideways there, keeping the selected tab in view).
 - Used for: section tabs, Perform | Learn (bar and start card), view, hand modes and the Metronome (Practice menu), plan length (5 / 10 / 20 / 30 / 45 min), Read (Stages | Sight Run), Scales (Stages | Choose a scale | Quiz), the Songs Level filter (All levels, 1 to n), Notes shown (Full, Thin chords, Melody and bass, Melody, Lead sheet) and every drawer choice row.
 
 ### Switch
 - 46x26 pill, 20px thumb; label 600 beside it, min-height 40px. Off: Line Strong track, inset Edge ring, Ink Faint thumb. On: Ink Soft track, thumb Ground, 20px travel. Never amber.
 
 ### Buttons
-- 8px radius, 40px high (44 coarse), 1px Edge border, 650 weight, no offset shadow; active nudges 1px down.
-- **Default:** Panel Raised fill; hover Panel Hover fill and Ink Faint border.
-- **Primary:** Lamp fill, Lamp Ink text, 800; hover Lamp Bright. One per view. A leading 20px solid play icon marks "start/continue".
+- 10px radius, 40px high (44 coarse), 1px Edge border, 650 weight, a specular top hairline, no offset shadow; pressed scales to 0.97.
+- **Default (secondary):** Panel Raised fill; hover Panel Hover fill and Ink Faint border; pressed Panel. On a floating surface (drawer, sheet, popover) it rests on Panel Hover and hovers a step lighter.
+- **Primary:** Lamp fill and border, Lamp Ink text, 800, a `--specular-lamp` hairline; hover Lamp Bright; pressed Lamp. One per view. A leading 20px solid play icon marks "start/continue".
 - **Big:** primary at 52px, Display 28px italic uppercase, min 124px; results and the dock Play.
-- **Ghost:** transparent, Ink Soft; hover Ink, Panel Raised, Line border. Row actions (Learn on song rows, Practice on non-next stage rows), the More button and its menu items, icon buttons (close, focus).
+- **Ghost:** transparent, no hairline, Ink Soft; hover Ink on Panel Raised (no border); pressed Panel Hover. Row actions (Learn on song rows, Practice on non-next stage rows), the More button and its menu items, icon buttons (close, focus).
 - **Small:** 36px, 0 12px (44 coarse); drawer data buttons and tempo presets.
 - **Icon:** 40px square, 20px stroked SVG, 2px round caps.
-- **Disabled:** Ink Faint text, transparent fill, Line border.
+- **Disabled:** Ink Faint text, transparent fill, Line border, no hairline, no hover or press.
 
 ### Select and number field
 - 40px (44 coarse), Ground fill, Edge border, 8px, 0 10px padding, full width of its cell. In a `.field` the 650 label sits above with 6px gap; `.field.inline` puts it left of an auto-width select.
@@ -416,7 +426,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - One marker for every `<details>`: a 1.2em slot holding "+" (closed) or "−" (open) in Ink Faint, native triangle removed. Summary is Ink Faint (Progress Path levels: 18px 650 Ink with a 15px Ink Faint count beside it), 44px row on coarse pointers. Used by drawer Advanced, the Progress Path levels (the first with work left is open) and the Technique Path "n more".
 
 ### Dialog sheet
-- `dialog.sheet`: Panel, Edge border, 12px, `min(680px, 94vw)` wide, max 86vh, flex column over a dark backdrop. Header (20px 22px 8px 26px): a 22px 600 system-font h2, optional Ink Soft line under it, an optional ghost ⋯ More and the ghost icon close at the right. Body scrolls (4px 26px 12px); `h3` is a 13px 600 label in Ink Faint; `.fine` is Ink Soft; rows inside line up with the title (no card inset). Footer is pinned, and only when the sheet has an action besides closing (the header's close is the one way out): Line rule above, actions right-aligned, 8px gap, `.grow` spacer to split left and right actions, nowrap buttons. Used by Options (facts list; Tracks with "n of m in use" and a ghost Pick for me on one line, then track switches with a hand select each; More holds Share file and Remove file; footer Cancel and primary Use these, only for a file with several tracks), Credits (no footer), Set up (footer Done) and Help (no footer). The settings drawer is a side panel, not a sheet.
+- `dialog.sheet`: Panel Raised, Line Strong border, 14px, a specular hairline and a soft `0 24px 64px` shadow, `min(680px, 94vw)` wide, max 86vh, flex column over a dark backdrop. Header (20px 22px 8px 26px): a 22px 600 system-font h2, optional Ink Soft line under it, an optional ghost ⋯ More and the ghost icon close at the right. Body scrolls (4px 26px 12px); `h3` is a 13px 600 label in Ink Faint; `.fine` is Ink Soft; rows inside line up with the title (no card inset). Footer is pinned, and only when the sheet has an action besides closing (the header's close is the one way out): Line rule above, actions right-aligned, 8px gap, `.grow` spacer to split left and right actions, nowrap buttons. Used by Options (facts list; Tracks with "n of m in use" and a ghost Pick for me on one line, then track switches with a hand select each; More holds Share file and Remove file; footer Cancel and primary Use these, only for a file with several tracks), Credits (no footer), Set up (footer Done) and Help (no footer). The settings drawer is a side panel, not a sheet: Panel Raised, a Line Strong left edge with a specular hairline, `-18px 0 40px` shadow.
 
 ### Set up sheet
 - A `dialog.sheet` that opens once on a first launch with no saved settings, and again from Settings > Set up. Title Set up, line "Four checks. Skip any of them." The body is plan rows, not a wizard: Keyboard (MIDI status in words, updated live, a Connect button until one is found), Touch range (hands over to the touch calibration), Delay (hands over to Calibrate) and Key touch (the same select as the drawer, with its hint). Footer: the free line at the left in 13px, primary Done at the right. Escape, the close button or Done skips it; nothing blocks.
@@ -442,7 +452,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - `.pulse` on a pulse-trainer card (Theory): one bar per figure, 170px wide (300px for Hold a rhythm), 40px tall, a Line Strong border, a Line rule on every beat, and a 10px Ink Soft dot where a tap is wanted, placed along the bar by its beat. A silent bar (Keep the beat) is a dashed border with hollow dots and a 12px Ink Faint caption under it. Ink, not Lamp: the card's Next is the one lamp. The click is the prompt; the bars give the count.
 
 ### Aids popover
-- `.pop` in the Learn dock: an "Aids" button (`aria-expanded`) opening `.popmenu` upward: Panel Raised, Edge border, 8px, 200px min, 10px 14px padding, 4px gap, soft shadow. Two switches: Hide played, Hold to advance (Auto tempo is the Ladder button on the tempo group). Closes on an outside click or Escape (focus returns to the button).
+- `.pop` in the Learn dock: an "Aids" button (`aria-expanded`) opening `.popmenu` upward: Panel Raised, Line Strong border, 14px, 200px min, 10px 14px padding, 8px gap, specular hairline and a soft shadow; the button that opened it shows the selected treatment while it is open. Two switches: Hide played, Hold to advance (Auto tempo is the Ladder button on the tempo group). Closes on an outside click or Escape (focus returns to the button).
 
 ### Learn dock
 - One row (30 Oct 2026; Apple's toolbars keep to a few groups and one prominent action): Play, Restart, the bar scrubber, the beat dots (metronome on), Loop worst bars and Clear loop (Learn, when there is something to loop), a Tempo pop-up (Learn and reading: a 13px "Tempo" and the value in Display 22px; inside, a slider between minus and plus, presets 50%, 75%, 100% and the Ladder when looping) and a Practice pop-up (Wait for me, Hide played, Hold to advance, the reading switches, the Metronome (Off | Beats | Eighths), the two hands' Play, Listen, Hide, and Staff minus, Fit, plus; each segmented row is a 13px caption at the left and its control at the right: pinch, double-tap, the keys and the menu bar do the same). The pop-ups open upwards from their button's right edge, one at a time; an outside tap or Escape closes them. The row fades with the top bar 2.5 s into a run and comes back on any touch or key (a MIDI key is not one); playing and waiting taking turns in Learn do not restart that clock. No floating zoom buttons on the staff and no Hide controls button (M still hides the top bar).
@@ -569,11 +579,11 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - **Do** keep notation Ink on Panel and let it ignite only for state.
 - **Do** pair every judgement colour with a word or position.
 - **Do** differentiate hands by hue, fill style (solid vs. tinted with a lighter outline) and lane edge.
-- **Do** reserve Lamp (#ffc83d) for the verb and the now-markers, and use the 2px/2px Lamp focus ring everywhere.
-- **Do** draw control borders in Edge (#5a6196) and keep Line for hairlines.
+- **Do** reserve Lamp (#ffc83d) for the verb and the now-markers, and use the 2px/2px Accent focus ring everywhere.
+- **Do** draw control borders in Edge (#666d7d), a floating surface's in Line Strong, and keep Line for hairlines.
 - **Do** use Ink 2, not Ink 3, for text read mid-song (HUD captions, bar numbers, dock labels, scrub labels): Ink 3 is 5.9:1 and Apple asks 7:1 for small dark-mode text. Ink 3 stays for icons, grabbers and menus read at arm's length.
 - **Do** keep the staff at print size (staff space about 1.9 mm); the divider's 26% minimum guards it.
-- **Do** build controls from `--control` and the four radii (4, 8, 12, pill) so touch sizing follows.
+- **Do** build controls from `--control` and the four radii (6, 10, 14, pill) so touch sizing follows.
 - **Do** start every non-play page with the page head and the 1100px measure.
 - **Do** write plan, song and stage rows in the same row grammar.
 - **Do** build every modal as `dialog.sheet`; header with close, scrolling body, a pinned footer when there is an action besides closing.
@@ -585,10 +595,11 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - **Do** collapse CSS motion under `prefers-reduced-motion`; on the canvas the hit glow fades at one size and the waiting ring and ghost key hold steady (Calm is the only tier).
 
 ### Don't:
-- **Don't** add synthwave sun, perspective grid, or glow on chrome.
+- **Don't** add glow on chrome, or a frosted-glass imitation.
 - **Don't** add a hard offset shadow or a hard text-shadow; use Shade.
 - **Don't** colour notation permanently; colour is a transient state.
-- **Don't** use amber for selection, switches, slider thumbs, the PF mark in the bar or the HUD numerals, and never for a judgement grade.
+- **Don't** use amber for focus, selection, links, switches, slider thumbs, the PF mark in the bar or the HUD numerals, and never for a judgement grade.
+- **Don't** use `backdrop-filter`, or an Accent fill larger than a control.
 - **Don't** reuse a hand or judgement colour for chrome.
 - **Don't** set text dimmer than Ink Faint (#8a8fbd) on Panel, or smaller than 12px.
 - **Don't** invent a second dialog layout, an inline-styled modal or a coloured tag.
@@ -602,9 +613,11 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 
 | Group | Token | Value | Use |
 |---|---|---|---|
-| Colour | ground / panel / panel-2 / panel-3 | #090b17 / #10132a / #181c3b / #20254b | well, surface, raised, hover |
-| Colour | line / line-2 / edge | #262b55 / #3a4180 / #5a6196 | hairline, selected-track, control border |
-| Colour | ink / ink-2 / ink-3 | #ecebf5 / #a9acd0 / #8a8fbd | text primary, secondary, caption floor |
+| Colour | ground / panel / panel-2 / panel-3 | #0c0e12 / #13161c / #1b1f27 / #222731 | well, surface, raised and floating, hover and selected |
+| Colour | line / line-2 / edge | #262a33 / #363d4e / #666d7d | hairline, floating-surface and selected ring, control border |
+| Colour | accent | #78a9ff | focus ring, selected text, links, text selection |
+| Colour | specular / specular-lamp | white at 7% / 28% | the top hairline of a raised surface / of the lamp fill |
+| Colour | ink / ink-2 / ink-3 | #f4f2ed / #a6abb8 / #8a90a0 | text primary, secondary, caption floor |
 | Colour | lamp / lamp-hi / lamp-ink | #ffc83d / #ffd766 / #1a1300 | verb and now |
 | Colour | R / L / L-edge | #3fe0ff / #ff4fa3 / #ff7bbd | hands |
 | Colour | perfect / great / good / bad | #d7ff3d / #34e89a / #ff8a3d / #ff4a3d | judgement |
