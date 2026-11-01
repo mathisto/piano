@@ -180,7 +180,7 @@ function drillHud() {
   const { arc, spec } = run
   const streak = $('#rStreak')
   const paced = !!spec.pace
-  $('small', streak.parentElement!).textContent = paced ? 'On the beat' : 'Streak'
+  $('small', streak.parentElement!).textContent = paced ? 'On the beat' : 'In a row'
   if (paced) {
     const sc = score(drill.cards, struck())
     $('#hCards').textContent = `${sc.n}/${drill.cards.length}`

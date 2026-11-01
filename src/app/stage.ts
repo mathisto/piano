@@ -295,7 +295,7 @@ export function feel(n: Note, v: number) {
 
 const WORDS: Record<Grade, string> = { perfect: 'Perfect', great: 'Great', good: 'Good', late: 'Late', miss: 'Miss' }
 
-const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too hard' }
+const TOUCH: Record<VelGrade, string> = { ok: 'touch ✓', low: 'too soft', high: 'too loud' }
 
 /** `grade` is null in wait mode, where only the touch has a verdict. */
 export function popup(grade: Grade | null, off: number, p: number, noteId: number, vel?: VelGrade) {

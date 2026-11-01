@@ -832,7 +832,7 @@ table.songs tr.band th {
 }
 .tech-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* "Steady medium" fits its select */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* "Medium throughout" fits its select */
   align-items: end;
   gap: 16px;
   margin-bottom: 20px;

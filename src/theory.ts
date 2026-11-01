@@ -5,7 +5,7 @@ import { degreeCards as earDegrees, intervalCards as earIntervals, playCards, rh
 import { keyDeck, pc, type Step, type TCard, type Trainer } from './theory-cards'
 
 export const TRAINERS: { id: Trainer; name: string; blurb: string; levels: string[] }[] = [
-  { id: 'chords', name: 'Chords', blurb: 'A chord name; play it. Triads first, then every root, then inversions, then sevenths.', levels: ['Major and minor on the white keys', 'Major and minor in every key', 'Diminished, augmented and inversions', 'Seventh chords'] },
+  { id: 'chords', name: 'Chords', blurb: 'Read a chord name, then play it. Triads first, then every root, then inversions, then sevenths.', levels: ['Major and minor on the white keys', 'Major and minor in every key', 'Diminished, augmented and inversions', 'Seventh chords'] },
   { id: 'keys', name: 'Key signatures', blurb: 'Given a signature, play the key\'s chord; given a key, play its sharps or flats.', levels: [] },
   { id: 'intervals', name: 'Intervals', blurb: 'Play the note an interval above or below a given note.', levels: [] },
   { id: 'cadences', name: 'Cadences', blurb: 'Play a progression in a key, a chord at a time.', levels: ['I–IV–V–I', 'Adds ii–V–I', 'Adds I–V–vi–IV and I–vi–IV–V'] },
@@ -13,11 +13,11 @@ export const TRAINERS: { id: Trainer; name: string; blurb: string; levels: strin
   { id: 'earplay', name: 'Ear: play it back', blurb: 'Hear 2 to 5 notes in a key; play them back in order, in any octave.', levels: ['Steps in C major', 'Steps and thirds', 'Leaps up to an octave', 'Other major keys', 'Minor keys', 'A note off the scale'] },
   { id: 'earint', name: 'Ear: intervals', blurb: 'Hear two notes, up, down or together; play the second one.', levels: ['2nds and 3rds', '4ths and 5ths', '6ths and 7ths', 'Octaves', 'All intervals'] },
   { id: 'eardeg', name: 'Ear: scale degrees', blurb: 'A short cadence sets the key; then one note to play back. A miss tells you its degree.', levels: ['Degrees 1, 3 and 5 in C, G and F', 'All seven degrees in C, G and F', 'All seven degrees in every key'] },
-  { id: 'rhythm', name: 'Rhythm echo', blurb: 'Tap back a bar heard on a click. Shows how far you sit from the click, apart from how even you are.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
+  { id: 'rhythm', name: 'Rhythm echo', blurb: 'Tap back a bar you hear over a click. Shows how early or late you are, and how even, separately.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
   { id: 'keepbeat', name: 'Keep the beat', blurb: 'A click, then silence: keep tapping the beat. Shows whether you sped up or slowed down.', levels: ['1 silent bar', '2 silent bars', '4 silent bars'] },
   { id: 'subdiv', name: 'Subdivisions', blurb: 'Tap eighths, triplets, sixteenths or swung eighths on any key against a quarter-note click.', levels: ['Eighths', 'Triplets', 'Sixteenths', 'Mixed, with swung eighths'] },
   { id: 'holdrhythm', name: 'Hold a rhythm against the beat', blurb: 'A bar is written as marks on a grid; tap it twice through against a steady click.', levels: ['Quarters and halves', 'Adds eighths', 'Adds dotted rhythms', 'Syncopation'] },
-  { id: 'earchord', name: 'Ear: chords', blurb: 'Hear a chord or a short progression, arpeggiated and then blocked; play it back, or just its root.', levels: ['Major or minor on C', 'Major or minor on any root', 'Inversions: which note is lowest', 'I–IV–V–I and I–V–vi–IV in a key', 'Dominant 7ths'] },
+  { id: 'earchord', name: 'Ear: chords', blurb: 'Hear a chord or a short progression, one note at a time, then together; play it back, or just its root.', levels: ['Major or minor on C', 'Major or minor on any root', 'Inversions: which note is lowest', 'I–IV–V–I and I–V–vi–IV in a key', 'Dominant 7ths'] },
   { id: 'earqa', name: 'Ear: question and answer', blurb: 'Answer a two-bar phrase on the click. Judged on form only: the key, the last note, the pulse.', levels: ['C major', 'Any major key', 'Minor keys', 'Echo the rhythm'] },
 ]
 

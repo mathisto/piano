@@ -32,8 +32,8 @@ export function timing(hits: { t: number; p: number; h: Hand; off: number }[]): 
 
 export function timingLine(x: Timing) {
   const b = Math.round(Math.abs(x.bias))
-  const lean = Math.abs(x.bias) < ON_BEAT ? 'you sit on the beat' : `you run <b>${b} ms</b> ${x.bias > 0 ? 'behind' : 'ahead of'} the beat`
-  return `Timing: your gaps vary by about <b>${Math.round(x.spread)} ms</b>; ${lean}.`
+  const lean = Math.abs(x.bias) < ON_BEAT ? 'on the beat on average' : `on average <b>${b} ms</b> ${x.bias > 0 ? 'late' : 'early'}`
+  return `Timing: ${lean}; spread <b>±${Math.round(x.spread)} ms</b>.`
 }
 
 // ---------- articulation ----------
@@ -344,6 +344,6 @@ export function coachLines(r: { timing: Timing | null; artic: Artic | null; voic
   if (r.artic) out.push(articLine(r.artic))
   if (r.voice) out.push(voiceLine(r.voice))
   if (r.fixed !== undefined)
-    out.push(settings.keyTouch === 'Fixed' ? `Key touch is Fixed: every note came in at ${r.fixed}, so evenness cannot be measured.` : `Every note came in at velocity ${r.fixed}. If the keyboard's key touch is Fixed, evenness cannot be measured.`)
+    out.push(settings.keyTouch === 'Fixed' ? `Key touch is Fixed: every note came in at ${r.fixed}, so evenness cannot be measured.` : `Every note came in equally loud (${r.fixed}). If your keyboard's key touch is set to Fixed, evenness cannot be measured.`)
   return out.length ? `<div class="coachlines">${out.map((l) => `<p>${l}</p>`).join('')}</div>` : ''
 }

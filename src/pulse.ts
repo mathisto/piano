@@ -50,8 +50,8 @@ export function keepCards(level: number): TCard[] {
     const bar = (label: string, silent?: boolean): PulseBar => ({ label, silent, marks: [0, 1, 2, 3] })
     return {
       id: `pulse:keep:${silent}:${bpm}`,
-      prompt: `Keep the beat through ${plural(silent, 'silent bar')}, ${bpm} beats a minute`,
-      name: `keep the beat ${plural(silent, 'bar')} at ${bpm}`,
+      prompt: `Keep the beat through ${plural(silent, 'silent bar')}, ${bpm} bpm`,
+      name: `keep the beat ${plural(silent, 'bar')} at ${bpm} bpm`,
       steps: [],
       show: 'The click is back on the true beat',
       play: {
@@ -75,8 +75,8 @@ export function subCards(level: number): TCard[] {
     const words = kinds[0] === kinds[1] ? KINDS[kinds[0]].word : `${KINDS[kinds[0]].word}, then ${KINDS[kinds[1]].word}`
     return {
       id: `pulse:sub:${kinds.join('+')}:${bpm}`,
-      prompt: `Tap ${words} on the click, ${bpm} beats a minute`,
-      name: `${words} at ${bpm}`,
+      prompt: `Tap ${words} on the click, ${bpm} bpm`,
+      name: `${words} at ${bpm} bpm`,
       steps: [],
       show: 'Here is the bar again, on the click',
       play: {
@@ -139,7 +139,7 @@ export function scorePulse(p: PulsePlay, taps: number[]): PulseScore {
   return { ok: err.every((e) => Math.abs(e) <= KEEP.window) && Math.abs(drift) <= KEEP.maxDrift, bias: me + drift * (p.want[0] - mx), spread, drift }
 }
 
-/** In plain words: "You sped up by 6 ms a beat. Bias 12 ms late, spread 15 ms." */
+/** In plain words: "You sped up by 6 ms a beat. 12 ms late, spread 15 ms." */
 export function pulseText(s: PulseScore): string {
   if (s.note) return s.note
   if (s.drift === undefined) return `${s.ok ? '' : 'Too uneven. '}${biasText(s.bias, s.spread)}.`

@@ -127,8 +127,8 @@ function judge(e: EarRun, c: TCard) {
 
 export function earView(e: EarRun): EarView {
   const parts = []
-  if (e.spread.length) parts.push(`Over the session: ${biasText(mean(e.bias), mean(e.spread))}. Bias is where your whole bar sat against the click; spread is how uneven the taps were inside it.`)
-  if (e.drift.length) parts.push(`Your beat drifted ${mean(e.drift) < 0 ? 'faster' : 'slower'} by ${Math.abs(Math.round(mean(e.drift)))} ms a beat on average.`)
+  if (e.spread.length) parts.push(`Over the session: ${biasText(mean(e.bias), mean(e.spread))}. Early or late is where your whole bar sat against the click; spread is how uneven the taps were inside it.`)
+  if (e.drift.length) parts.push(`Your beat ${mean(e.drift) < 0 ? 'sped up' : 'slowed down'} by ${Math.abs(Math.round(mean(e.drift)))} ms a beat on average.`)
   if (e.replays) parts.push(`Replays: ${e.replays}.`)
   return { replays: e.replays, last: e.last, summary: parts.join(' ') }
 }

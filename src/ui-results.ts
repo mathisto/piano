@@ -39,8 +39,8 @@ function touchBlock(t: TouchStats, hands = true) {
   const regs = (['low', 'mid', 'high'] as const).filter((r) => t.regions[r].n >= 4)
   const where = regs.length >= 2 ? ` · ${regs.map((r) => `${r === 'mid' ? 'middle' : r} keys ${Math.round(t.regions[r].mean)}`).join(', ')}` : ''
   return `<div>
-    <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Key velocity, soft to hard, average ${Math.round(t.mean)}">${bars}<line class="mid" x1="${x}" x2="${x}" y1="0" y2="62"/><text x="6" y="80">soft</text><text x="390" y="80" text-anchor="end">hard</text></svg>
-    <div style="color:var(--ink-2)">Touch: average <b>${Math.round(t.mean)}</b> (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
+    <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Loudness, soft to hard, average ${Math.round(t.mean)}">${bars}<line class="mid" x1="${x}" x2="${x}" y1="0" y2="62"/><text x="6" y="80">soft</text><text x="390" y="80" text-anchor="end">hard</text></svg>
+    <div style="color:var(--ink-2)">Loudness: average <b>${Math.round(t.mean)}</b> of 127 (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
 }
 
 /** `from`: the page the Back button returns to, named on it; a scale or exercise is a run, not a song. */
@@ -49,7 +49,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
   const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
-  const lean = r.timing ? timingLine(r.timing) : Math.abs(mean) < 8 ? 'Your timing is centred.' : mean < 0 ? `You tend to play about ${Math.round(-mean)} ms early.` : `You tend to play about ${Math.round(mean)} ms late.`
+  const lean = r.timing ? timingLine(r.timing) : Math.abs(mean) < 8 ? 'On the beat on average.' : mean < 0 ? `On average about ${Math.round(-mean)} ms early.` : `On average about ${Math.round(mean)} ms late.`
   const hist = bins
     .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
@@ -59,7 +59,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
   const more =
     (perform
       ? `<div><div class="counts"><span>${jg('perfect')}Perfect ${r.counts.perfect}</span><span>${jg('great')}Great ${r.counts.great}</span><span>${jg('good')}Good ${r.counts.good}</span>${r.counts.late ? `<span>${jg('late')}Late ${r.counts.late}</span>` : ''}<span>${jg('miss')}Miss ${r.counts.miss}</span></div>
-      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on time</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
+      <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on the beat</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
     (even?.chart ?? '')
@@ -69,7 +69,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
   const facts = [
     !waited && nw(`<b>${r.counts.miss}</b> missed`),
     nw(`<b>${r.wrong}</b> wrong`),
-    perform && nw(`longest run <b>${r.maxCombo}</b>`),
+    perform && nw(`most in a row <b>${r.maxCombo}</b>`),
     r.dyn === 'even' && r.touch.n >= 4 && nw(`spread <b>±${Math.round(r.touch.sd)}</b>`),
     r.touchPct >= 0 && nw(`touch in range <b>${Math.round(r.touchPct * 100)}%</b>`),
     perform && r.holds >= 0 && nw(`held <b>${Math.round(r.holds * 100)}%</b>`),
@@ -78,7 +78,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
   <div class="results"><div class="card song-res" role="region" aria-label="Results">
     <div class="big-grade">${waited ? (r.first === 1 ? 100 : Math.min(99, Math.round(r.first * 100))) : Math.round(r.acc * 100)}%<span class="hcap">${waited ? 'first time right' : 'accuracy'}</span></div>
     <div class="stats">
-    <h2>${perform ? (from === 'Songs' ? 'Song complete' : 'Run complete') : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
+    <h2>${perform ? (from === 'Songs' ? 'Piece complete' : 'Run complete') : r.clean ? 'Clean' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
     <p class="line">${facts.join(' · ')}</p>
     ${note ? `<p class="line">${note}</p>` : ''}
     ${perform ? `<p class="line sub">${lean}</p>` : ''}
@@ -90,7 +90,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
       ${next ? `<button class="btn primary" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn${next ? '' : ' primary'}" id="again">${icon('restart')}Again</button>
       <div class="pop"><button class="btn icon" data-more aria-label="More" aria-expanded="false" aria-controls="resMenu">${icon('more')}</button><div class="popmenu" id="resMenu" hidden></div></div>
-      <button class="btn ghost" id="toLib">${from}</button>
+      <button class="btn ghost" id="toLib">Back to ${from}</button>
     </div>
   </div></div>`
 }
@@ -114,12 +114,12 @@ export function drillResults(d: DrillSummary) {
   return `
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Drill results">
     <h2>${esc(d.stage)}: set complete</h2>
-    <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · median <b>${secs(d.medianMs)}</b> a card</p>
+    <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · typical <b>${secs(d.medianMs)}</b> a card</p>
     <div>
       <p class="line" style="margin-bottom:6px">${d.fast ? 'Fluent' : 'Stage mastery'} went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${
         d.solid
-          ? d.fast ? '. Fluent.' : '. Solid. The next tier is Fluent: the same cards, faster. Practice for speed from the stage list.'
-          : `. It is ${d.fast ? 'fluent' : 'solid'} when every card is first-try right in under ${secs(d.goalMs)}.`
+          ? d.fast ? '. Fluent.' : '. Solid. Next is Fluent: the same cards, answered faster. Choose Faster on the stage list.'
+          : `. It is ${d.fast ? 'fluent' : 'solid'} when every card is right first try, in under ${secs(d.goalMs)}.`
       }</p>
       <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, `${d.fast ? 'Fluent' : 'Stage mastery'} after this set`)}<b>${Math.round(d.after * 100)}%</b></div>
     </div>
@@ -159,10 +159,10 @@ export function runResults(d: RunSummary) {
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Run results">
     <h2>Run complete</h2>
     <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
-    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
+    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · most in a row <b>${d.arc.best}</b> · typical <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Most yet on this range</span>' : d.best ? ` · your most in a row here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, × marks a note you missed, redder is missed more.</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
   </div></div>`
 }
 
@@ -191,6 +191,6 @@ export function pacedResults(d: PacedSummary) {
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
     <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
     <p class="line">${esc(d.note)}</p>
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
   </div></div>`
 }
