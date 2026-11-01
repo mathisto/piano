@@ -33,7 +33,7 @@ export function keepFocus<T>(root: Element, render: () => T): T {
 export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
-    <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="9 9 48 36" width="40" height="30" fill="currentColor" aria-hidden="true"><rect x="10" y="10" width="8" height="34" rx="2"/><rect x="10" y="10" width="20" height="8" rx="2"/><rect x="24" y="10" width="8" height="22" rx="2"/><rect x="10" y="24" width="22" height="8" rx="2"/><rect x="38" y="10" width="8" height="34" rx="2"/><rect x="38" y="10" width="18" height="8" rx="2"/><rect x="38" y="24" width="14" height="8" rx="2"/></svg></button>
+    <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="160 362 704 360" width="36" height="18" fill="currentColor" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><span class="wordmark" aria-hidden="true">Piano Forte</span></button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="today" checked><span>${icon('today')}Today</span></label>
       <label><input type="radio" name="nav" value="songs"><span>${icon('songs')}Songs</span></label>
