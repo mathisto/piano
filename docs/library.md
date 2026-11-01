@@ -8,7 +8,7 @@
 - Non-commercial licences (CC BY-NC, CC BY-NC-SA) are refused unless the piece carries `"nc": true` in the sources and the licence is one of the `NC_OK` names in the script. The owner decides case by case. The manifest keeps `nc: true` and the credit line says "(non-commercial)".
 - Scores are **data, not code**. The app is MIT. Each score stays under its own licence, recorded in `manifest.json` and `public/library/LICENSES.md`.
 - **CC BY-SA files stay CC BY-SA**, including any converted or edited copy. Do not mix them into the MIT code, into hand-written starter specs in `src/starters.ts`, or into another score. The credit block prints a share-alike notice for them.
-- Only Mutopia and OpenScore Lieder are fetched by script. IMSLP is never scripted (its terms); PDMX and MuseScore are not used. See `docs/research/public-domain-sources.md`.
+- The big corpus (`scripts/library/build.mjs`) takes Mutopia, OpenScore Lieder, the Chopin Institute's first editions, LilyPond files whose own header states the licence (`--set open`) and a hand-picked part of PDMX (`--set pdmx`: scores their MuseScore.com uploaders marked Public Domain or CC0, composers dead by 1930, from the Zenodo dataset, never from musescore.com). IMSLP is never scripted (its terms) and nothing is downloaded from musescore.com (its terms). See `docs/changes/library-sources-2.md` and `docs/research/public-domain-sources.md`.
 
 ## What a piece must have
 

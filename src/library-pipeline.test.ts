@@ -1,4 +1,5 @@
 // The big-library pipeline (scripts/library/): every gate fires on a fixture, licences are refused, and a rerun is byte-identical.
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
@@ -133,6 +134,43 @@ describe('LilyPond source from a repository', () => {
     writeFileSync(`${cache}/${sha(ly)}-2.26.0.mid`, 'MThd')
     expect(lilypondMidi(ly, cache, '/nonexistent/lilypond').toString()).toBe('MThd')
     expect(() => lilypondMidi(`${ly} `, cache, '/nonexistent/lilypond')).toThrow(/no lilypond binary/) // another source, another key
+  })
+})
+
+describe('pdmx-pick: study books out of the PDMX table', () => {
+  const COLS = ['path', 'metadata', 'mxl', 'license', 'license_conflict', 'title', 'subtitle', 'composer_name', 'artist_name', 'song_length.bars']
+  const row = (id: number, title: string, o: { lic?: string; conflict?: string; sub?: string; bars?: number } = {}) =>
+    [`./data/${id}.json`, `./metadata/${id % 10}/${id}.json`, `./mxl/${id}.mxl`, o.lic ?? 'cc-zero', o.conflict ?? 'False', title, o.sub ?? 'NA', 'whoever', 'NA', o.bars ?? 24].map((v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v)).join(',')
+  const pick = (rows: string[]) => {
+    const d = mkdtempSync(`${tmpdir()}/lib-pdmx-`)
+    writeFileSync(`${d}/PDMX.csv`, [COLS.join(','), ...rows].join('\n') + '\n')
+    execFileSync('node', ['scripts/library/pdmx-pick.mjs', `${d}/PDMX.csv`, `${d}/picks.json`], { stdio: 'pipe' })
+    return (JSON.parse(readFileSync(`${d}/picks.json`, 'utf8')).picks as { id: string; book: string; n: number; composer: string; licence: string }[]).map((p) => `${p.id} ${p.book} ${p.n} ${p.licence}`)
+  }
+  it('takes a numbered title, a CC0 or Public Domain Mark with no conflict, and the book table names the composer', () => {
+    const got = pick([
+      row(101, 'Lemoine: Études enfantines op. 37 no. 3'),
+      row(102, 'Lemoine: Études enfantines op. 37 no. 4', { lic: 'publicdomain' }),
+      row(103, 'Lemoine: Études enfantines op. 37 no. 5', { conflict: 'True' }), // PDMX's own licence conflict
+      row(104, 'Lemoine: Études enfantines op. 37 no. 6', { lic: 'cc-by' }), // not a licence the table keeps
+      row(105, 'Lemoine: Études enfantines op. 37 no. 7 training'), // not the book's title shape
+      row(106, 'Lemoine: Études enfantines op. 37 no. 8', { bars: 2 }), // a scrap
+      row(107, 'Something else entirely'),
+    ])
+    expect(got).toEqual(['pdmx-101 Études enfantines 3 CC0-1.0', 'pdmx-102 Études enfantines 4 Public Domain'])
+  })
+  it('a subtitle that names another opus or number means the title is mislabelled; uploaders who disagree about a number are outvoted', () => {
+    const got = pick([
+      row(201, 'Czerny - School Of Velocity - Op. 299 No. 1', { bars: 22 }),
+      row(202, 'School Of Velocity op. 299 no.1 Czerny', { bars: 22 }),
+      row(203, 'Czerny - The School of Velocity (Op.299) - no. 1', { sub: 'Op. 299 No. 10', bars: 44 }), // mislabelled
+      row(204, 'The School Of Velocity - 1', { bars: 44 }), // disagrees with the two typesets of 22 bars
+      row(205, 'Czerny - The School of Velocity (Op.299) - no. 8', { sub: 'Op. 266', bars: 110 }),
+      row(206, 'Czerny - The School of Velocity (Op.299) - no. 2', { bars: 21 }),
+      row(207, 'Czerny - The School of Velocity (Op.299) - no. 3', { bars: 24 }),
+      row(208, 'Czerny - School Of Velocity - Op. 299 No. 3', { bars: 60 }), // two for No. 3, far apart: neither stays
+    ])
+    expect(got).toEqual(['pdmx-201 The School of Velocity 1 CC0-1.0', 'pdmx-202 The School of Velocity 1 CC0-1.0', 'pdmx-206 The School of Velocity 2 CC0-1.0'])
   })
 })
 

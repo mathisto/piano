@@ -51,6 +51,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/importer.md`: importer fixes for mass ingestion (key changes, spelling, D.C./D.S., tuplets, tempo).
 - `changes/catalog.md`: the catalogue-driven Songs page, search, offline saving, piece loader, credits.
 - `changes/library-c1-s1.md`: the catalogue fix (`mode`, a stated metre, `kind`, `form`, `period`, the raw grade features) and the incipit sidecar; covers for every library row from the sidecar, and the Songs facet engine with its kind lanes and zero state.
+- `changes/library-sources-2.md`: the missing study books: sources checked one by one, 106 pieces added (Lemoine Op. 37, Duvernoy Op. 176, Czerny Op. 599, 299, 740 and more) from PDMX and a LilyPond repository, Clementi Op. 42's lesson titles, Czerny Op. 840 as studies, and the sources that need the owner.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.

@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 // Pick study books and easy repertoire out of PDMX (Zenodo 15571083, CC BY 4.0: 250,000 MuseScore.com scores their uploaders marked Public Domain or CC0):
-//   node scripts/library/pdmx-pick.mjs <PDMX.csv> [out.json]      (default: scripts/library/pdmx-picks.json)
+//   node scripts/library/pdmx-pick.mjs <PDMX.csv> [out.json] [--metadata DIR]      (default out: scripts/library/pdmx-picks.json)
 // Nothing here is trusted because a label says so: a row must have no licence conflict (PDMX's own check), a licence of 'publicdomain' or 'cc-zero', a composer who
 // died by 1930 (fixed by the BOOKS table, not read from the uploader's free-text composer), and a title that names the book's opus and a number, with no
 // other opus or number in the subtitle. Where several uploaders typeset the same number, all stay: dedupe in pipeline.ts keeps the best by its gates and drops
 // the others as duplicates. A book is added by adding a line to BOOKS. The scores themselves come from mxl.tar.gz (build.mjs --set pdmx reads them).
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-const [csvPath, outPath = new URL('pdmx-picks.json', import.meta.url).pathname] = process.argv.slice(2)
+const args = process.argv.slice(2)
+const mi = args.indexOf('--metadata')
+const metaDir = mi >= 0 ? args.splice(mi, 2)[1] : undefined // the extracted metadata.tar.gz (metadata/<d>/<score>.json): names the uploader
+const [csvPath, outPath = new URL('pdmx-picks.json', import.meta.url).pathname] = args
 if (!csvPath) throw new Error('usage: pdmx-pick.mjs <PDMX.csv> [out.json]')
 
 // re: matches the uploader's title, capturing the number (and for Schumann the name); opus: the opus every other number in the subtitle must agree with
@@ -15,7 +18,7 @@ const N = '(\\d+)'
 const BOOKS = [
   { key: 'lemoine-37', composer: 'Henry Lemoine (1786–1854)', book: 'Études enfantines', opus: 37, re: new RegExp(`^Lemoine: .tudes enfantines op\\. 37 no\\. ${N}$`, 'i') },
   { key: 'duvernoy-176', composer: 'Jean-Baptiste Duvernoy (1802–1880)', book: 'Elementary Studies', opus: 176, re: new RegExp(`^Elementary Studies \\(op 176\\) Etude ${N} by`, 'i') },
-  { key: 'czerny-299', composer: 'Carl Czerny (1791–1857)', book: 'The School of Velocity', opus: 299, re: new RegExp(`(?:school of velocity|op ?299)[^\\d]*?(?:op\\.? ?299)?[^\\d]*?(?:no\\.?|nr\\.?|-)?\\s*${N}\\s*$`, 'i') },
+  { key: 'czerny-299', composer: 'Carl Czerny (1791–1857)', book: 'The School of Velocity', opus: 299, re: new RegExp(`(?:school of velocity|op ?299)[^\\d]*?(?:op\\.? ?299)?[^\\d]*?(?:no\\.?|nr\\.?|-)?\\s*${N}\\s*(?:czerny)?\\s*$`, 'i') },
   { key: 'czerny-740', composer: 'Carl Czerny (1791–1857)', book: 'The Art of Finger Dexterity', opus: 740, re: new RegExp(`Finger Dexterity \\(Op\\. 740\\) - No\\. ${N}$`, 'i') },
   { key: 'czerny-740b', composer: 'Carl Czerny (1791–1857)', book: 'The Art of Finger Dexterity', opus: 740, re: new RegExp(`Etude in .* Op\\. 740 no\\. ${N}$`, 'i') },
   { key: 'czerny-139', composer: 'Carl Czerny (1791–1857)', book: 'One Hundred Progressive Studies', opus: 139, re: new RegExp(`Czerny Op\\. 139 No\\. ${N}$`, 'i') },
@@ -89,7 +92,7 @@ for (const r of it) {
   const h = HAND.find((x) => x.title.test(title))
   if (h) {
     const score = Number(/(\d+)\.json$/.exec(r[col.metadata])[1])
-    picks.push({ id: `pdmx-${score}`, score, mxl: r[col.mxl].replace(/^\.\//, ''), composer: h.composer, as: h.as, opus: h.opus, licence: LICENCE[lic][0], licenceUrl: LICENCE[lic][1], uploaded: title, bars: Number(r[col['song_length.bars']]) })
+    picks.push({ id: `pdmx-${score}`, score, mxl: r[col.mxl].replace(/^\.\//, ''), meta: r[col.metadata].replace(/^\.\//, ''), composer: h.composer, as: h.as, opus: h.opus, licence: LICENCE[lic][0], licenceUrl: LICENCE[lic][1], uploaded: title, bars: Number(r[col['song_length.bars']]) })
     continue
   }
   for (const b of BOOKS) {
@@ -108,6 +111,7 @@ for (const r of it) {
       id: `pdmx-${score}`,
       score,
       mxl: r[col.mxl].replace(/^\.\//, ''),
+      meta: r[col.metadata].replace(/^\.\//, ''),
       composer: b.composer,
       book: b.book,
       opus: `Op. ${b.opus}`,
@@ -135,5 +139,15 @@ const kept = picks.filter((x) => !odd.has(x.id))
 console.log(`${odd.size} dropped where uploaders disagree: ${[...odd].join(' ')}`)
 picks.length = 0
 picks.push(...kept)
-writeFileSync(outPath, JSON.stringify({ record: 'https://zenodo.org/records/15571083', picks }, null, 1) + '\n')
+if (metaDir)
+  for (const p of picks) {
+    const f = `${metaDir}/${p.meta}`
+    if (!existsSync(f)) continue
+    const sc = JSON.parse(readFileSync(f, 'utf8')).data?.score
+    // the score's own page data says the same licence as PDMX.csv, or the pick is dropped (PDMX records 12% of its scores as in conflict)
+    if (sc && sc.license !== { 'Public Domain': 'publicdomain', 'CC0-1.0': 'cc-zero' }[p.licence]) (p.drop = true), console.log(`${p.id}: metadata says license ${sc.license}, CSV says ${p.licence}`)
+    if (sc?.user?.name) p.uploader = sc.user.name.trim()
+    if (sc?.share?.publicUrl) p.url = sc.share.publicUrl
+  }
+writeFileSync(outPath, JSON.stringify({ record: 'https://zenodo.org/records/15571083', picks: picks.filter((p) => !p.drop) }, null, 1) + '\n')
 console.log(`${picks.length} picks (${seen.size} numbers) from ${BOOKS.length} books -> ${outPath}`)

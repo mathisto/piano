@@ -5,6 +5,7 @@
    "id": "pdmx-6249350",
    "score": 6249350,
    "mxl": "mxl/1/35/Qmbofv2sjUCjQitqsPAagzNjdBKFpmbTm2Zq5t7WqYebCL.mxl",
+   "meta": "metadata/3/6249350.json",
    "composer": "Henri Bertini (1798–1876)",
    "book": "Twenty-Four Études",
    "opus": "Op. 29",
@@ -12,12 +13,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Bertini Etude Op.29 No.1 in C major.",
-   "bars": 41
+   "bars": 41,
+   "uploader": "Joaquin Amaya.",
+   "url": "https://musescore.com/user/34051195/scores/6249350"
   },
   {
    "id": "pdmx-5982350",
    "score": 5982350,
    "mxl": "mxl/1/40/QmbrdXPYHECGyFgbkL8adrnPH8qec9VqGVxxjjTPDyXzGS.mxl",
+   "meta": "metadata/3/5982350.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -25,12 +29,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 9",
-   "bars": 71
+   "bars": 71,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982350"
   },
   {
    "id": "pdmx-6187844",
    "score": 6187844,
    "mxl": "mxl/1/38/QmbqmQjEVxiyCmmdmGPBAMDYTSDsfDFxgS8HdQe7kgFm6v.mxl",
+   "meta": "metadata/0/6187844.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -38,12 +45,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 6",
-   "bars": 80
+   "bars": 80,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6187844"
   },
   {
    "id": "pdmx-5934183",
    "score": 5934183,
    "mxl": "mxl/1/51/QmbWunB17ujTVJRfAHeBUoL75ZwntQNPLaaQAErv1AHZ2b.mxl",
+   "meta": "metadata/2/5934183.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -52,12 +62,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 12 Santa Claus",
-   "bars": 112
+   "bars": 112,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5934183"
   },
   {
    "id": "pdmx-3371851",
    "score": 3371851,
    "mxl": "mxl/1/8/Qmb9FznCmCeajMPZ8Pqt7Mjid57MAAJ9NSR2pS6ac79ZCz.mxl",
+   "meta": "metadata/7/3371851.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -65,12 +78,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 8 by Jean Baptiste Duvernoy",
-   "bars": 40
+   "bars": 40,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/3371851"
   },
   {
    "id": "pdmx-6249393",
    "score": 6249393,
    "mxl": "mxl/1/0/Qmb1Jz9hLTxaJDUfjRUiDXR7DduU98LBn14fyHmAQK6f6F.mxl",
+   "meta": "metadata/5/6249393.json",
    "composer": "Henri Bertini (1798–1876)",
    "book": "Twenty-Four Études",
    "opus": "Op. 29",
@@ -78,12 +94,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Bertini Etude Op.29 No.3 in G Minor.",
-   "bars": 30
+   "bars": 30,
+   "uploader": "Joaquin Amaya.",
+   "url": "https://musescore.com/user/34051195/scores/6249393"
   },
   {
    "id": "pdmx-5872697",
    "score": 5872697,
    "mxl": "mxl/1/19/QmbfyiJud1qMHTrUYSMq6dwgouNxVWTjkg9ViBSLLYQGTz.mxl",
+   "meta": "metadata/4/5872697.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -92,12 +111,31 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 5 - A Little Piece",
-   "bars": 26
+   "bars": 26,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5872697"
+  },
+  {
+   "id": "pdmx-5683860",
+   "score": 5683860,
+   "mxl": "mxl/2/4/Qmc5Vd3rrHo7e2yyaaiKfAuyeifXbNJgwZrhBCppLiyMDu.mxl",
+   "meta": "metadata/2/5683860.json",
+   "composer": "Carl Czerny (1791–1857)",
+   "book": "The School of Velocity",
+   "opus": "Op. 299",
+   "n": 1,
+   "licence": "CC0-1.0",
+   "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "uploaded": "School Of Velocity op. 299 no.1 Czerny",
+   "bars": 22,
+   "uploader": "Kuschy",
+   "url": "https://musescore.com/user/29926531/scores/5683860"
   },
   {
    "id": "pdmx-5982331",
    "score": 5982331,
    "mxl": "mxl/2/48/QmcvjWXvkPvixdMuwivGURTtPgE778KSZBLEYJhkCA2ao9.mxl",
+   "meta": "metadata/8/5982331.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -105,12 +143,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 4",
-   "bars": 26
+   "bars": 26,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982331"
   },
   {
    "id": "pdmx-5982378",
    "score": 5982378,
    "mxl": "mxl/2/38/QmcqrxFbyzwTtohiNJhER6c9Rd1TxcYxKUpkoWX6pZsQkD.mxl",
+   "meta": "metadata/7/5982378.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -118,12 +159,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 3",
-   "bars": 98
+   "bars": 98,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982378"
   },
   {
    "id": "pdmx-6228543",
    "score": 6228543,
    "mxl": "mxl/2/24/QmcHfAjabEk9u3JJoMZRKPT6TvXs5jFC94Xo28USbXfu2b.mxl",
+   "meta": "metadata/6/6228543.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -131,12 +175,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 15",
-   "bars": 28
+   "bars": 28,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228543"
   },
   {
    "id": "pdmx-5982343",
    "score": 5982343,
    "mxl": "mxl/2/54/QmcyP6kLSZ8Ea5CLkziSCcgiaMxnEBcJVy2E84Q7C8ySCY.mxl",
+   "meta": "metadata/0/5982343.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -144,12 +191,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 6",
-   "bars": 32
+   "bars": 32,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982343"
   },
   {
    "id": "pdmx-6272925",
    "score": 6272925,
    "mxl": "mxl/2/25/QmcibUVKciUYWV84FmNEgG1Fz1KBDoGPapXVx6Y3KfS6B6.mxl",
+   "meta": "metadata/6/6272925.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -157,12 +207,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 25",
-   "bars": 106
+   "bars": 106,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6272925"
   },
   {
    "id": "pdmx-5982375",
    "score": 5982375,
    "mxl": "mxl/2/55/QmcYhUL8E5YezzQY3861WQa3fZtTQqEBQVMLNMn6mKYs5G.mxl",
+   "meta": "metadata/6/5982375.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -170,12 +223,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 2",
-   "bars": 91
+   "bars": 91,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982375"
   },
   {
    "id": "pdmx-6350288",
    "score": 6350288,
    "mxl": "mxl/2/31/QmcmPtY7yU2SuvFawoyPFEUqR43MfU1dvUVFBviftUkp5v.mxl",
+   "meta": "metadata/5/6350288.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -183,12 +239,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 33",
-   "bars": 24
+   "bars": 24,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6350288"
   },
   {
    "id": "pdmx-470311",
    "score": 470311,
    "mxl": "mxl/2/8/Qmc9Km8ufiLXnpMepS5vBYXxfBuSRU5ZMEkTwzLb3EdzS5.mxl",
+   "meta": "metadata/9/470311.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -196,12 +255,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 5 by Jean Baptiste Duvernoy",
-   "bars": 22
+   "bars": 22,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/470311"
   },
   {
    "id": "pdmx-6228163",
    "score": 6228163,
    "mxl": "mxl/2/39/QmcQsnnzorLzs1YRpa5YCzEWxHvxNEKLiF9Rih3C67Yo75.mxl",
+   "meta": "metadata/3/6228163.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -209,12 +271,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 12",
-   "bars": 30
+   "bars": 30,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228163"
   },
   {
    "id": "pdmx-5612128",
    "score": 5612128,
    "mxl": "mxl/2/33/QmcnHx5NQFbrBC7NxcNec9Zn4WcEVxTi9JQc3ZcqtRht3y.mxl",
+   "meta": "metadata/8/5612128.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "Practical Method for Beginners",
    "opus": "Op. 599",
@@ -222,12 +287,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny Exercise n. 69 from Op. 599",
-   "bars": 32
+   "bars": 32,
+   "uploader": "Rodolfo Medina",
+   "url": "https://musescore.com/user/26978497/scores/5612128"
   },
   {
    "id": "pdmx-5931641",
    "score": 5931641,
    "mxl": "mxl/14/44/QmWtdfjiWmcuRCyiESBj2ycQ3i9TZsNfqQLK2sXw4MPcBq.mxl",
+   "meta": "metadata/1/5931641.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -236,12 +304,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 3 Humming-tune",
-   "bars": 24
+   "bars": 24,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5931641"
   },
   {
    "id": "pdmx-5982358",
    "score": 5982358,
    "mxl": "mxl/14/48/QmWvrNqEHHdYYymDNv38zaaDWVTbEqa6bjAPnPibZji2Ce.mxl",
+   "meta": "metadata/5/5982358.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -249,12 +320,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 1",
-   "bars": 83
+   "bars": 83,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982358"
   },
   {
    "id": "pdmx-6103460",
    "score": 6103460,
    "mxl": "mxl/14/48/QmWv8j5aBfrngumYUtvweQSPTktWuP9dcK6U1yYegfX8HU.mxl",
+   "meta": "metadata/4/6103460.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -262,12 +336,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 13 by Jean Baptiste Duvernoy",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/6103460"
   },
   {
    "id": "pdmx-6080531",
    "score": 6080531,
    "mxl": "mxl/14/41/QmWRxYQDfXpXsQj9RbrcVMza6LNZk7PLTYYcXTcZnurZD5.mxl",
+   "meta": "metadata/9/6080531.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "Practical Method for Beginners",
    "opus": "Op. 599",
@@ -275,12 +352,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny Op.599 n.63",
-   "bars": 32
+   "bars": 32,
+   "uploader": "araulorn",
+   "url": "https://musescore.com/user/32731100/scores/6080531"
   },
   {
    "id": "pdmx-5942974",
    "score": 5942974,
    "mxl": "mxl/14/39/QmWQGeMMH6h27WrVL62zjr5zRmRx1DA89Bkv5oNNEDLstW.mxl",
+   "meta": "metadata/6/5942974.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -289,12 +369,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann Album for the Young Op. 68 No. 15 Song of Spring",
-   "bars": 46
+   "bars": 46,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5942974"
   },
   {
    "id": "pdmx-6398171",
    "score": 6398171,
    "mxl": "mxl/14/19/QmWftP3RBg1To9Afb1eYP2TWjSf5qosWso3WsZvCAm9Gh1.mxl",
+   "meta": "metadata/3/6398171.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -302,12 +385,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 45",
-   "bars": 28
+   "bars": 28,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6398171"
   },
   {
    "id": "pdmx-6218109",
    "score": 6218109,
    "mxl": "mxl/14/56/QmWzoWDuMenyrawN3s8bNz9s5NLADBmSSm1jJZKkBb6ZUM.mxl",
+   "meta": "metadata/2/6218109.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -315,12 +401,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 7",
-   "bars": 54
+   "bars": 54,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6218109"
   },
   {
    "id": "pdmx-6287054",
    "score": 6287054,
    "mxl": "mxl/7/11/QmPbPALatG3PJWYphoxyRqKRiwbK8AFh3mTG3iWbkvqUcY.mxl",
+   "meta": "metadata/9/6287054.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -328,12 +417,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 27",
-   "bars": 90
+   "bars": 90,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6287054"
   },
   {
    "id": "pdmx-6187841",
    "score": 6187841,
    "mxl": "mxl/7/35/QmPoBmXaEnsTfa9FZ8MAQRUEEiAEjs2mYC6Ta38R4nHt8q.mxl",
+   "meta": "metadata/9/6187841.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -341,12 +433,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 5",
-   "bars": 16
+   "bars": 16,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6187841"
   },
   {
    "id": "pdmx-5687420",
    "score": 5687420,
    "mxl": "mxl/7/55/QmPYtfcM5EjGQr5TnBATQte5ZW68ptkFzB9ENB3F6HAem3.mxl",
+   "meta": "metadata/6/5687420.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -354,24 +449,30 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 11 by Jean Baptiste Duvernoy",
-   "bars": 25
+   "bars": 25,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/5687420"
   },
   {
    "id": "pdmx-912266",
    "score": 912266,
    "mxl": "mxl/7/55/QmPYa6XPhNR2SAyGq9dzgkrnSeaX3UtobGwBPZdcqTNc3f.mxl",
+   "meta": "metadata/4/912266.json",
    "composer": "Pyotr Ilyich Tchaikovsky (1840–1893)",
    "as": "Waltz, Op. 39 No. 8",
    "opus": "Op. 39",
    "licence": "Public Domain",
    "licenceUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
    "uploaded": "8. Waltz Childrens Album Tchaikovsky",
-   "bars": 85
+   "bars": 85,
+   "uploader": "skiridova",
+   "url": "https://musescore.com/user/927326/scores/912266"
   },
   {
    "id": "pdmx-5655877",
    "score": 5655877,
    "mxl": "mxl/7/42/QmPsvQrAW9FDUrjUyeXGsjZYP4nAoAWiVzB3DyvXa2atYu.mxl",
+   "meta": "metadata/1/5655877.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "One Hundred Progressive Studies",
    "opus": "Op. 139",
@@ -379,24 +480,46 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Carl Czerny Op. 139 No. 2",
-   "bars": 32
+   "bars": 32,
+   "uploader": "brnmrqs",
+   "url": "https://musescore.com/user/31372848/scores/5655877"
   },
   {
    "id": "pdmx-5841493",
    "score": 5841493,
    "mxl": "mxl/7/33/QmPntU8tX6xg8CsDWpWWoMhFskjyS15Dqez1baCcKouRwZ.mxl",
+   "meta": "metadata/2/5841493.json",
    "composer": "C. P. E. Bach (1714–1788)",
    "as": "March in D major, BWV Anh. 122",
    "opus": "BWV Anh. 122",
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "01- Marche in D Major C.P.E. Bach",
-   "bars": 48
+   "bars": 48,
+   "uploader": "pental",
+   "url": "https://musescore.com/user/4887176/scores/5841493"
+  },
+  {
+   "id": "pdmx-5683865",
+   "score": 5683865,
+   "mxl": "mxl/3/40/QmdrVZUULpogWzEQJdswuH3UBacKdKmJNSdENY75rjVJ7v.mxl",
+   "meta": "metadata/3/5683865.json",
+   "composer": "Carl Czerny (1791–1857)",
+   "book": "The School of Velocity",
+   "opus": "Op. 299",
+   "n": 2,
+   "licence": "CC0-1.0",
+   "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "uploaded": "School Of Velocity op.299 no.2 Czerny",
+   "bars": 21,
+   "uploader": "Kuschy",
+   "url": "https://musescore.com/user/29926531/scores/5683865"
   },
   {
    "id": "pdmx-5655842",
    "score": 5655842,
    "mxl": "mxl/3/6/Qmd7dSAZr6bPX6f5YZR9CNXwoynEjNwNwkoYe4b3AqoEgs.mxl",
+   "meta": "metadata/0/5655842.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "One Hundred Progressive Studies",
    "opus": "Op. 139",
@@ -404,12 +527,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Carl Czerny Op. 139 No. 1",
-   "bars": 32
+   "bars": 32,
+   "uploader": "brnmrqs",
+   "url": "https://musescore.com/user/31372848/scores/5655842"
   },
   {
    "id": "pdmx-6373045",
    "score": 6373045,
    "mxl": "mxl/3/19/Qmdfbk7NKM7aMGSm3nKtahjCG9guY88pGa86hYq73JsWQM.mxl",
+   "meta": "metadata/0/6373045.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -417,12 +543,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 38",
-   "bars": 56
+   "bars": 56,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6373045"
   },
   {
    "id": "pdmx-5923372",
    "score": 5923372,
    "mxl": "mxl/16/48/QmYviMfD4LoS3cKWimKbfxqdoA7jBUaw4R8WeM3zPLUVJW.mxl",
+   "meta": "metadata/4/5923372.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -430,12 +559,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Op 299 19",
-   "bars": 12
+   "bars": 12,
+   "uploader": "pierssnell",
+   "url": "https://musescore.com/user/3827041/scores/5923372"
   },
   {
    "id": "pdmx-5935743",
    "score": 5935743,
    "mxl": "mxl/16/42/QmYsvuAhMmDSnFy3fyHJfxnDQVn5j6S2XBq4ZDbQkCCC7M.mxl",
+   "meta": "metadata/3/5935743.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -444,12 +576,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 13 May Lovely May",
-   "bars": 54
+   "bars": 54,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5935743"
   },
   {
    "id": "pdmx-6353139",
    "score": 6353139,
    "mxl": "mxl/16/14/QmYCLDXeG1pN2pPmKXkQuaQgxpfNECaDUvjmtAF5wN8jAs.mxl",
+   "meta": "metadata/8/6353139.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -457,12 +592,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 36",
-   "bars": 50
+   "bars": 50,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6353139"
   },
   {
    "id": "pdmx-144446",
    "score": 144446,
    "mxl": "mxl/10/29/QmSKsFjf24tonfSwbfx62wkQDrbHzAnR6Tt15DAEM2RRKH.mxl",
+   "meta": "metadata/4/144446.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -470,12 +608,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 1 by Jean Baptiste Duvernoy",
-   "bars": 33
+   "bars": 33,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/144446"
   },
   {
    "id": "pdmx-5860733",
    "score": 5860733,
    "mxl": "mxl/10/23/QmShZjqEGhJ7ehVM5mcPQhHUwT9jRioyVeBKSp8TXw1NQN.mxl",
+   "meta": "metadata/0/5860733.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -484,12 +625,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 2 Soldiers Marching",
-   "bars": 48
+   "bars": 48,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5860733"
   },
   {
    "id": "pdmx-6286857",
    "score": 6286857,
    "mxl": "mxl/10/43/QmSSpxWJcGsVEFHcm8NUh7DFF2hTc8ffu6kcRsFzY8NNqq.mxl",
+   "meta": "metadata/8/6286857.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -497,12 +641,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 26",
-   "bars": 66
+   "bars": 66,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6286857"
   },
   {
    "id": "pdmx-6028645",
    "score": 6028645,
    "mxl": "mxl/10/0/QmS1FmNRJdaZjyCpjGZvnWr8GxSZeosRjnq11Tk6Eoh7eA.mxl",
+   "meta": "metadata/2/6028645.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -510,12 +657,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny: Etude in G minor Op. 740 no. 50",
-   "bars": 79
+   "bars": 79,
+   "uploader": "Joaquin Amaya.",
+   "url": "https://musescore.com/user/34051195/scores/6028645"
   },
   {
    "id": "pdmx-6103494",
    "score": 6103494,
    "mxl": "mxl/10/53/QmSXB1DWnqKnuj3FEiGFQe1hQpWCGmzFniyNcD8typjpcr.mxl",
+   "meta": "metadata/7/6103494.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -523,12 +673,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 16 by Jean Baptiste Duvernoy",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/6103494"
   },
   {
    "id": "pdmx-3275086",
    "score": 3275086,
    "mxl": "mxl/12/35/QmUoPiKBCbG6U7A1HQpgpKfgYMaN862Y7cEvX72TMvVu19.mxl",
+   "meta": "metadata/6/3275086.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -536,12 +689,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 7 by Jean Baptiste Duvernoy",
-   "bars": 48
+   "bars": 48,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/3275086"
   },
   {
    "id": "pdmx-5982337",
    "score": 5982337,
    "mxl": "mxl/12/40/QmUr8dRqvboQSfcSdHNRGyN4im9yomq2CgDcDfy6mhwrdd.mxl",
+   "meta": "metadata/9/5982337.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -549,12 +705,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 5",
-   "bars": 52
+   "bars": 52,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982337"
   },
   {
    "id": "pdmx-5982385",
    "score": 5982385,
    "mxl": "mxl/12/40/QmUru5MPjtQhqocYpmQfwH4Pi6x2kM4MNxaHGPx8LNhAgq.mxl",
+   "meta": "metadata/9/5982385.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -562,12 +721,31 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 5",
-   "bars": 60
+   "bars": 60,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982385"
+  },
+  {
+   "id": "pdmx-5683877",
+   "score": 5683877,
+   "mxl": "mxl/12/26/QmUjHfQJL5qUC3kL5bQDuZQshDQs2P8cTLJvAKExxMaBzf.mxl",
+   "meta": "metadata/4/5683877.json",
+   "composer": "Carl Czerny (1791–1857)",
+   "book": "The School of Velocity",
+   "opus": "Op. 299",
+   "n": 3,
+   "licence": "CC0-1.0",
+   "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "uploaded": "School Of Velocity Op.299 No.3 Czerny",
+   "bars": 24,
+   "uploader": "Kuschy",
+   "url": "https://musescore.com/user/29926531/scores/5683877"
   },
   {
    "id": "pdmx-55816",
    "score": 55816,
    "mxl": "mxl/12/8/QmU9SDE1zj64UvBxWuhxmoRyZEJvRUykLjmMy1vFutv8va.mxl",
+   "meta": "metadata/1/55816.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -575,12 +753,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - School Of Velocity - Op. 299 No. 2",
-   "bars": 21
+   "bars": 21,
+   "uploader": "Open Songbook Project",
+   "url": "https://musescore.com/user/37774/scores/55816"
   },
   {
    "id": "pdmx-6249403",
    "score": 6249403,
    "mxl": "mxl/12/9/QmUaMYfUz6j7Nm7kVkfTk783ZzZpMn5mfHuaPDuUsGEwXk.mxl",
+   "meta": "metadata/6/6249403.json",
    "composer": "Henri Bertini (1798–1876)",
    "book": "Twenty-Four Études",
    "opus": "Op. 29",
@@ -588,12 +769,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Bertini Etude Op.29 No.4 in B-flat major",
-   "bars": 43
+   "bars": 43,
+   "uploader": "Joaquin Amaya.",
+   "url": "https://musescore.com/user/34051195/scores/6249403"
   },
   {
    "id": "pdmx-6288124",
    "score": 6288124,
    "mxl": "mxl/12/57/QmUZSdMpnmadMnkRaiLVxQAwyMbvu5SFsT2vXpx6zjYJu1.mxl",
+   "meta": "metadata/0/6288124.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -601,12 +785,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 28",
-   "bars": 48
+   "bars": 48,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6288124"
   },
   {
    "id": "pdmx-55810",
    "score": 55810,
    "mxl": "mxl/12/45/QmUTPfE4U6guy8NNcobNDepDKgnQvVZXrTaVLZruedA436.mxl",
+   "meta": "metadata/0/55810.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -614,12 +801,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - School Of Velocity - Op. 299 No. 1",
-   "bars": 22
+   "bars": 22,
+   "uploader": "Open Songbook Project",
+   "url": "https://musescore.com/user/37774/scores/55810"
   },
   {
    "id": "pdmx-5982345",
    "score": 5982345,
    "mxl": "mxl/9/22/QmRGA2Zf9fYKQ1fUVXT569xs5cyv2332BLzXNzv3TcaZYU.mxl",
+   "meta": "metadata/1/5982345.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -627,12 +817,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 7",
-   "bars": 45
+   "bars": 45,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982345"
   },
   {
    "id": "pdmx-5275596",
    "score": 5275596,
    "mxl": "mxl/9/36/QmRpxhZo8SGNNrxNEthwA6UUSE1zPMe5MMqrP6btpXduSt.mxl",
+   "meta": "metadata/3/5275596.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -640,12 +833,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 9 by Jean Baptiste Duvernoy",
-   "bars": 22
+   "bars": 22,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/5275596"
   },
   {
    "id": "pdmx-6351684",
    "score": 6351684,
    "mxl": "mxl/9/1/QmR2F2ASyKfTWhKM6gB6Qcc5SJyuwcZBbvnzmRZW8YxMeA.mxl",
+   "meta": "metadata/6/6351684.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -653,24 +849,30 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 34",
-   "bars": 76
+   "bars": 76,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6351684"
   },
   {
    "id": "pdmx-804341",
    "score": 804341,
    "mxl": "mxl/9/39/QmRQ7omr7jH2RHTxbXx7cwvd4MG5MCJtGpN8pxRLYQKEwp.mxl",
+   "meta": "metadata/7/804341.json",
    "composer": "Johann Sebastian Bach (1685–1750)",
    "as": "Menuet in D minor, BWV Anh. 132",
    "opus": "BWV Anh. 132",
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Anh 132: Menuet D minor (A = 415 Hz)",
-   "bars": 32
+   "bars": 32,
+   "uploader": "verits99",
+   "url": "https://musescore.com/user/13172/scores/804341"
   },
   {
    "id": "pdmx-6411337",
    "score": 6411337,
    "mxl": "mxl/9/0/QmR1XyEYYWU2FG9xBeFXDAihgM5Zh4JA73mHNPfHv1NVcr.mxl",
+   "meta": "metadata/6/6411337.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -678,12 +880,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 50",
-   "bars": 24
+   "bars": 24,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6411337"
   },
   {
    "id": "pdmx-6174683",
    "score": 6174683,
    "mxl": "mxl/9/56/QmRzbbEvQmaHqVqzAawLUFk7tB8YRy2LNN6FQhU6kjptPy.mxl",
+   "meta": "metadata/4/6174683.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Preluding",
    "opus": "Op. 300",
@@ -691,24 +896,30 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "The Art of Preluding (Op. 300 - N 8) - Carl Czerny",
-   "bars": 12
+   "bars": 12,
+   "uploader": "Virginia Macario",
+   "url": "https://musescore.com/user/871376/scores/6174683"
   },
   {
    "id": "pdmx-5841679",
    "score": 5841679,
    "mxl": "mxl/4/37/QmePc8C23mTQ3J2jyem7jYiG1AtEvLEjxsJ61hPmCuKBNp.mxl",
+   "meta": "metadata/4/5841679.json",
    "composer": "C. P. E. Bach (1714–1788)",
    "as": "Polonaise in G minor, BWV Anh. 125",
    "opus": "BWV Anh. 125",
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "04-Polonaise in G minor C.P.E. Bach",
-   "bars": 40
+   "bars": 40,
+   "uploader": "pental",
+   "url": "https://musescore.com/user/4887176/scores/5841679"
   },
   {
    "id": "pdmx-5275600",
    "score": 5275600,
    "mxl": "mxl/4/26/QmejRNBbCxTb1rHxbu3enM4Ch29MR7Nn2S7wyR6DNKH9Q9.mxl",
+   "meta": "metadata/4/5275600.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -716,12 +927,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 10 by Jean Baptiste Duvernoy",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/5275600"
   },
   {
    "id": "pdmx-5930799",
    "score": 5930799,
    "mxl": "mxl/4/36/Qmepg1r1PyQ5N2bT28PjPV6ZRVVBNopDd8nHJjbcJc3np9.mxl",
+   "meta": "metadata/0/5930799.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -730,12 +944,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 11 Sicilienne",
-   "bars": 56
+   "bars": 56,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5930799"
   },
   {
    "id": "pdmx-6309861",
    "score": 6309861,
    "mxl": "mxl/4/43/QmeSrZrdF28AA3sVYRsmi9Eos46B77D9vhqpM93AostmXt.mxl",
+   "meta": "metadata/1/6309861.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -743,12 +960,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 29",
-   "bars": 96
+   "bars": 96,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6309861"
   },
   {
    "id": "pdmx-5982399",
    "score": 5982399,
    "mxl": "mxl/4/21/QmegfQ6N9qvEQp15Be3nnkxSWf8cGSbRAVf9tBj4a6nYzX.mxl",
+   "meta": "metadata/0/5982399.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -756,12 +976,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 6",
-   "bars": 74
+   "bars": 74,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982399"
   },
   {
    "id": "pdmx-5926036",
    "score": 5926036,
    "mxl": "mxl/4/53/QmeXMHJephGkxhaJ3pN4PftMJbTNqVuX5o8DfHN6byquDm.mxl",
+   "meta": "metadata/7/5926036.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -770,12 +993,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 8 The Rough Rider",
-   "bars": 36
+   "bars": 36,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5926036"
   },
   {
    "id": "pdmx-6388923",
    "score": 6388923,
    "mxl": "mxl/0/48/QmavZZZRxHYcu1BX1CQPHXx1jt3mYhdWJo43ZrTtmW8sai.mxl",
+   "meta": "metadata/5/6388923.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -783,12 +1009,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 42",
-   "bars": 56
+   "bars": 56,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6388923"
   },
   {
    "id": "pdmx-5982427",
    "score": 5982427,
    "mxl": "mxl/0/25/QmaiRVth8392Xmd1hDNhmJJSZE1aM9pRggx5L6XeiWGj6P.mxl",
+   "meta": "metadata/1/5982427.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -796,12 +1025,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 7",
-   "bars": 70
+   "bars": 70,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982427"
   },
   {
    "id": "pdmx-6390198",
    "score": 6390198,
    "mxl": "mxl/0/55/QmaYaHuseatKuhxin7yBu7Kx1CH9VzxbaR5khoBot918z3.mxl",
+   "meta": "metadata/6/6390198.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -809,12 +1041,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 43",
-   "bars": 36
+   "bars": 36,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6390198"
   },
   {
    "id": "pdmx-6184792",
    "score": 6184792,
    "mxl": "mxl/0/36/Qmap8rVxQ8TStPSay2JHdiT4GJbAwQ9RrXxahy1trf2T5m.mxl",
+   "meta": "metadata/5/6184792.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of the Left Hand",
    "opus": "Op. 399",
@@ -822,12 +1057,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Die Schule der linken Hand Op.399 No.1",
-   "bars": 113
+   "bars": 113,
+   "uploader": "LoquaciousLouis",
+   "url": "https://musescore.com/user/35305123/scores/6184792"
   },
   {
    "id": "pdmx-6228749",
    "score": 6228749,
    "mxl": "mxl/0/42/QmasXS6JcJbF8zbYytgRDZ1qCfEHP1tvzeQQSanYPBsewM.mxl",
+   "meta": "metadata/9/6228749.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -835,12 +1073,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 18",
-   "bars": 68
+   "bars": 68,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228749"
   },
   {
    "id": "pdmx-6256177",
    "score": 6256177,
    "mxl": "mxl/0/17/Qmaeb2NaNBDbg1Ed6FAXJ58gQAoSLwk56Yti9wFvwHk5Y1.mxl",
+   "meta": "metadata/2/6256177.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -848,12 +1089,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 21",
-   "bars": 63
+   "bars": 63,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6256177"
   },
   {
    "id": "pdmx-6228604",
    "score": 6228604,
    "mxl": "mxl/0/33/Qmanb7t1S9RSRSt7Yy9zWzzLfsMBdaVvMEJMoDwJuUvNLu.mxl",
+   "meta": "metadata/7/6228604.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -861,12 +1105,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 16",
-   "bars": 18
+   "bars": 18,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228604"
   },
   {
    "id": "pdmx-5982433",
    "score": 5982433,
    "mxl": "mxl/8/28/QmQkqbAqe7hdBtT39jYCMpiUxQLfhF4UF1RmckuarQXfkQ.mxl",
+   "meta": "metadata/2/5982433.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -874,12 +1121,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 8",
-   "bars": 66
+   "bars": 66,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982433"
   },
   {
    "id": "pdmx-5837129",
    "score": 5837129,
    "mxl": "mxl/8/36/QmQpYnSgWdZyuqx7dsdwh9DQo7or7f1agVLjqsoK6UyNfo.mxl",
+   "meta": "metadata/8/5837129.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -888,12 +1138,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 1 Melody",
-   "bars": 24
+   "bars": 24,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5837129"
   },
   {
    "id": "pdmx-6187835",
    "score": 6187835,
    "mxl": "mxl/8/43/QmQS3ZrekjxAPZprawcGhGqr1eFAF4KxzTju7X1diPRXyX.mxl",
+   "meta": "metadata/8/6187835.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -901,12 +1154,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 4",
-   "bars": 22
+   "bars": 22,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6187835"
   },
   {
    "id": "pdmx-5945395",
    "score": 5945395,
    "mxl": "mxl/8/8/QmQ91CoSnRCiMV4oVgLTJruJcnLjXPS4Myxj5P5o7Rr3ug.mxl",
+   "meta": "metadata/7/5945395.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -915,12 +1171,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 16 First Grief",
-   "bars": 51
+   "bars": 51,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5945395"
   },
   {
    "id": "pdmx-6312358",
    "score": 6312358,
    "mxl": "mxl/8/1/QmQ28Yxrk2nx7uWVcDZF5ZXanRrBCQSdegzyCoaJXX79KJ.mxl",
+   "meta": "metadata/2/6312358.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -928,12 +1187,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 30",
-   "bars": 32
+   "bars": 32,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6312358"
   },
   {
    "id": "pdmx-6373953",
    "score": 6373953,
    "mxl": "mxl/8/14/QmQCN43DjjA1iKpUXEWGqPKiXWosDSqV25RQAnaYsJbVKq.mxl",
+   "meta": "metadata/1/6373953.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -941,12 +1203,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 39",
-   "bars": 40
+   "bars": 40,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6373953"
   },
   {
    "id": "pdmx-149033",
    "score": 149033,
    "mxl": "mxl/8/45/QmQTS9efHxwxbt8RMrJeiZPia9r4kSKRP696C2o7Xa4NKX.mxl",
+   "meta": "metadata/6/149033.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -954,12 +1219,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 2 by Jean Baptiste Duvernoy",
-   "bars": 25
+   "bars": 25,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/149033"
   },
   {
    "id": "pdmx-6228503",
    "score": 6228503,
    "mxl": "mxl/8/49/QmQVnDKSjV2kkfDoHYu92o9LAV29eJwX17WVw3ykkdAAb8.mxl",
+   "meta": "metadata/5/6228503.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -967,12 +1235,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 14",
-   "bars": 48
+   "bars": 48,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228503"
   },
   {
    "id": "pdmx-5924738",
    "score": 5924738,
    "mxl": "mxl/8/7/QmQ8P6f2cjiAZz7mmKMU6ype6FzErMJLZSUpRb2UwYUo9v.mxl",
+   "meta": "metadata/5/5924738.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -980,12 +1251,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Op 299 22",
-   "bars": 16
+   "bars": 16,
+   "uploader": "pierssnell",
+   "url": "https://musescore.com/user/3827041/scores/5924738"
   },
   {
    "id": "pdmx-6334153",
    "score": 6334153,
    "mxl": "mxl/17/30/QmZLmH4rC6AGdK4MYd4L7bhADET4o9wRSjoVWYJRoW6mrV.mxl",
+   "meta": "metadata/3/6334153.json",
    "composer": "Anton Diabelli (1781–1858)",
    "book": "Sonatina in F",
    "opus": "Op. 168",
@@ -993,12 +1267,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Diabelli: Sonatina in F major op. 168 no. 1 - 1st movement",
-   "bars": 53
+   "bars": 53,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6334153"
   },
   {
    "id": "pdmx-5891528",
    "score": 5891528,
    "mxl": "mxl/17/29/QmZKna9E8zfnV3rG3KeNafWy2rqXcBiaQwxci1Z8BjuTNH.mxl",
+   "meta": "metadata/5/5891528.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1007,12 +1284,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 6 The Poor Orphan-Child",
-   "bars": 34
+   "bars": 34,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5891528"
   },
   {
    "id": "pdmx-5982355",
    "score": 5982355,
    "mxl": "mxl/17/40/QmZrZjENQBgpUkF1MyN6reMU57uyX5A3fCDuSVGqznw8md.mxl",
+   "meta": "metadata/4/5982355.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -1020,12 +1300,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 10",
-   "bars": 30
+   "bars": 30,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982355"
   },
   {
    "id": "pdmx-6350241",
    "score": 6350241,
    "mxl": "mxl/17/20/QmZFmBizj98vteXpGqpWfQ9Xf9oAKEJ8zw1WPQ5azLiCJ5.mxl",
+   "meta": "metadata/4/6350241.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1033,12 +1316,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 32",
-   "bars": 64
+   "bars": 64,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6350241"
   },
   {
    "id": "pdmx-1565001",
    "score": 1565001,
    "mxl": "mxl/17/54/QmZyi8gtK8quGzsGtM4jr8Nkrk3jswuCLTf1ASKo4My9Uj.mxl",
+   "meta": "metadata/3/1565001.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "Thirty New Studies in Technics",
    "opus": "Op. 849",
@@ -1046,12 +1332,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Etude in G minor No. 26",
-   "bars": 72
+   "bars": 72,
+   "uploader": "mooing",
+   "url": "https://musescore.com/user/1397281/scores/1565001"
   },
   {
    "id": "pdmx-174933",
    "score": 174933,
    "mxl": "mxl/17/43/QmZSkkMsNLuU9vFB1MXJAJpCncYyCvehigxXEutumcSkGV.mxl",
+   "meta": "metadata/5/174933.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1059,24 +1348,30 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 4 by Jean Baptiste Duvernoy",
-   "bars": 31
+   "bars": 31,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/174933"
   },
   {
    "id": "pdmx-130610",
    "score": 130610,
    "mxl": "mxl/17/21/QmZgvodjsWjsTqWVEgNhDyjbzZe6vBXkQReZuLAgscaAEw.mxl",
+   "meta": "metadata/8/130610.json",
    "composer": "Johann Sebastian Bach (1685–1750)",
    "as": "Menuet in D minor, BWV Anh. 132",
    "opus": "BWV Anh. 132",
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Anh. 132 Menuet",
-   "bars": 32
+   "bars": 32,
+   "uploader": "verits99",
+   "url": "https://musescore.com/user/13172/scores/130610"
   },
   {
    "id": "pdmx-5872610",
    "score": 5872610,
    "mxl": "mxl/17/49/QmZV18xdpHyW6Yhdc2uFEALbKNFkHsBX6xbV2qzgLS2J42.mxl",
+   "meta": "metadata/3/5872610.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1085,12 +1380,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 4 A Hymn-Tune - Choral",
-   "bars": 32
+   "bars": 32,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5872610"
   },
   {
    "id": "pdmx-5902900",
    "score": 5902900,
    "mxl": "mxl/11/30/QmTL6KwevKHk1hbysVBQcdVvfHekHPzzFbQc2dSJc5hKCZ.mxl",
+   "meta": "metadata/8/5902900.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -1098,12 +1396,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - Op 299 No 1",
-   "bars": 22
+   "bars": 22,
+   "uploader": "Robin Pannenberg",
+   "url": "https://musescore.com/user/12975456/scores/5902900"
   },
   {
    "id": "pdmx-5911122",
    "score": 5911122,
    "mxl": "mxl/11/5/QmT6BtJwE9qzQ7wb4w9cEk4f988aQzDYxzCDWHyPDbw3MG.mxl",
+   "meta": "metadata/6/5911122.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1112,12 +1413,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 7 The Little Hunter's Song",
-   "bars": 60
+   "bars": 60,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5911122"
   },
   {
    "id": "pdmx-6410998",
    "score": 6410998,
    "mxl": "mxl/11/10/QmTAoKvK1hKq24Wnw6FVSFugiEDPKgXurEKowycFN9tNTU.mxl",
+   "meta": "metadata/5/6410998.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1125,12 +1429,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 49",
-   "bars": 32
+   "bars": 32,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6410998"
   },
   {
    "id": "pdmx-5940010",
    "score": 5940010,
    "mxl": "mxl/11/38/QmTqcy2mY1vfL5RyJZ2HUp6jEYMHevt1yHAmdq5yinK7RX.mxl",
+   "meta": "metadata/5/5940010.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1139,12 +1446,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann Album for the Young Op. 68 No. 14 Short Study",
-   "bars": 128
+   "bars": 128,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5940010"
   },
   {
    "id": "pdmx-6272314",
    "score": 6272314,
    "mxl": "mxl/11/8/QmT9dsYHXujDY8weVjYBiKd4717hbqK2FDRc8UjrnNKsbK.mxl",
+   "meta": "metadata/3/6272314.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1152,12 +1462,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 22",
-   "bars": 28
+   "bars": 28,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6272314"
   },
   {
    "id": "pdmx-154426",
    "score": 154426,
    "mxl": "mxl/11/42/QmTsCiXWCh3ggFRndi6DfFvogb94S3Gj2HL46cf5Bfgzx7.mxl",
+   "meta": "metadata/9/154426.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1165,12 +1478,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 3 by Jean Baptiste Duvernoy",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/154426"
   },
   {
    "id": "pdmx-5971576",
    "score": 5971576,
    "mxl": "mxl/11/27/QmTJXhw9fpnpkvxUQ8n7s1L4zt4CZaBK9LWmjn9A1zmV4T.mxl",
+   "meta": "metadata/0/5971576.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1179,12 +1495,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 19 A Little Romance",
-   "bars": 22
+   "bars": 22,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5971576"
   },
   {
    "id": "pdmx-6183782",
    "score": 6183782,
    "mxl": "mxl/11/39/QmTQNZfJ93arTcjRvXP6E4pFxXXREVpfqVvKXC65Ce28XY.mxl",
+   "meta": "metadata/3/6183782.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1192,12 +1511,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 19 by Jean Baptiste Duvernoy",
-   "bars": 40
+   "bars": 40,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/6183782"
   },
   {
    "id": "pdmx-6187781",
    "score": 6187781,
    "mxl": "mxl/11/12/QmTB8JLeWuY2o3WxtARaKg7p6LCmCV8eDUkg71smFVkAMq.mxl",
+   "meta": "metadata/5/6187781.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1205,24 +1527,30 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 1",
-   "bars": 16
+   "bars": 16,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6187781"
   },
   {
    "id": "pdmx-5841506",
    "score": 5841506,
    "mxl": "mxl/13/11/QmVbkKcaEgbmJG7CB1M1UCjKasRRCMMnZNFvkLBEiPZdrf.mxl",
+   "meta": "metadata/3/5841506.json",
    "composer": "C. P. E. Bach (1714–1788)",
    "as": "March in G major, BWV Anh. 124",
    "opus": "BWV Anh. 124",
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "03- Marche in Gmajor C.P.E. Bach",
-   "bars": 44
+   "bars": 44,
+   "uploader": "pental",
+   "url": "https://musescore.com/user/4887176/scores/5841506"
   },
   {
    "id": "pdmx-5982382",
    "score": 5982382,
    "mxl": "mxl/13/10/QmVASXPxnfdiFZgwET3C52FMQ9AgzBa2zvGkWkMsRijW5g.mxl",
+   "meta": "metadata/8/5982382.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Finger Dexterity",
    "opus": "Op. 740",
@@ -1230,12 +1558,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The Art Of Finger Dexterity (Op. 740) - No. 4",
-   "bars": 114
+   "bars": 114,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982382"
   },
   {
    "id": "pdmx-6221578",
    "score": 6221578,
    "mxl": "mxl/13/23/QmVhEjy7RH7GBVDMmZ3xE9gkSsygd4yuJEnCxh3iBD7AzV.mxl",
+   "meta": "metadata/8/6221578.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1243,12 +1574,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 19",
-   "bars": 56
+   "bars": 56,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6221578"
   },
   {
    "id": "pdmx-6187813",
    "score": 6187813,
    "mxl": "mxl/13/50/QmVw5uLZf9zfzqzkBWT8xKuBX9vXZ5SUCL4CCdRSnUJjmr.mxl",
+   "meta": "metadata/6/6187813.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1256,12 +1590,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 2",
-   "bars": 16
+   "bars": 16,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6187813"
   },
   {
    "id": "pdmx-6374020",
    "score": 6374020,
    "mxl": "mxl/13/33/QmVnqoCSpfXukuHqS1szmjLPEFvH4xUrC3HAuRxNuWBW3E.mxl",
+   "meta": "metadata/2/6374020.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1269,12 +1606,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 40",
-   "bars": 35
+   "bars": 35,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6374020"
   },
   {
    "id": "pdmx-5982324",
    "score": 5982324,
    "mxl": "mxl/13/56/QmVz2EWfpFufPTqCVgq5Z2GZumEaRWH3pTGGyDMGJRmWDa.mxl",
+   "meta": "metadata/6/5982324.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -1282,12 +1622,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 2",
-   "bars": 21
+   "bars": 21,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982324"
   },
   {
    "id": "pdmx-6103493",
    "score": 6103493,
    "mxl": "mxl/5/4/Qmf5AjxKyR2tQEWruKi8zyNHpXg1zhz79bTzBa6cmYVhVh.mxl",
+   "meta": "metadata/6/6103493.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1295,12 +1638,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 15 by Jean Baptiste Duvernoy",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/6103493"
   },
   {
    "id": "pdmx-6228634",
    "score": 6228634,
    "mxl": "mxl/5/45/QmfTvtpvFyWHHZ95rBcfNob9yWF1wme3VoKo2S24WARpVX.mxl",
+   "meta": "metadata/8/6228634.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1308,12 +1654,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 17",
-   "bars": 54
+   "bars": 54,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6228634"
   },
   {
    "id": "pdmx-55817",
    "score": 55817,
    "mxl": "mxl/5/34/QmfNvPgreRuWGZmdcDxV1rUFJeg8pdzp2Z17EPijMMTfDH.mxl",
+   "meta": "metadata/2/55817.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -1321,12 +1670,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - School Of Velocity - Op. 299 No. 3",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Open Songbook Project",
+   "url": "https://musescore.com/user/37774/scores/55817"
   },
   {
    "id": "pdmx-6103506",
    "score": 6103506,
    "mxl": "mxl/6/11/QmNbf4MLLRvF5rVJbsks3GzaqnmCghwi1ZgKEUX2Sbowxf.mxl",
+   "meta": "metadata/9/6103506.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1334,12 +1686,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 18 by Jean Baptiste Duvernoy",
-   "bars": 56
+   "bars": 56,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/6103506"
   },
   {
    "id": "pdmx-5982329",
    "score": 5982329,
    "mxl": "mxl/6/19/QmNf5hccoTgWA4WfR8FrMLqaYpEcVtXG2BYxxjdHr2c3tP.mxl",
+   "meta": "metadata/7/5982329.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The School of Velocity",
    "opus": "Op. 299",
@@ -1347,12 +1702,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Czerny - The School of Velocity (Op.299) - no. 3",
-   "bars": 24
+   "bars": 24,
+   "uploader": "Tim Roust",
+   "url": "https://musescore.com/user/1977/scores/5982329"
   },
   {
    "id": "pdmx-6174686",
    "score": 6174686,
    "mxl": "mxl/6/33/QmNnKqxQrUPJm5EyiRExBg4e81iHGsRwccGeKSYi1PgZoR.mxl",
+   "meta": "metadata/5/6174686.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Preluding",
    "opus": "Op. 300",
@@ -1360,12 +1718,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "The Art of Preluding (Op. 300 - N 24) - Carl Czerny",
-   "bars": 10
+   "bars": 10,
+   "uploader": "Virginia Macario",
+   "url": "https://musescore.com/user/871376/scores/6174686"
   },
   {
    "id": "pdmx-6351722",
    "score": 6351722,
    "mxl": "mxl/15/40/QmXrV8VzEXWj5Cb7DTsMnQrEJabUrX6eHJQazGGN4zBAF2.mxl",
+   "meta": "metadata/7/6351722.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1373,12 +1734,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 35",
-   "bars": 24
+   "bars": 24,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6351722"
   },
   {
    "id": "pdmx-6215786",
    "score": 6215786,
    "mxl": "mxl/15/20/QmXFv9T6f8ea1tQhhMPToeRNdAok8d4hNA919SD2dTx3xR.mxl",
+   "meta": "metadata/7/6215786.json",
    "composer": "Carl Czerny (1791–1857)",
    "book": "The Art of Preluding",
    "opus": "Op. 300",
@@ -1386,12 +1750,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "The Art of Preluding (Op. 300 - N 10) by Carl Czerny",
-   "bars": 13
+   "bars": 13,
+   "uploader": "Virginia Macario",
+   "url": "https://musescore.com/user/871376/scores/6215786"
   },
   {
    "id": "pdmx-5860770",
    "score": 5860770,
    "mxl": "mxl/15/23/QmXhXHMhzkHYQujVGM8aTMzrHDh4XDGtt1gHtAB7bzSedP.mxl",
+   "meta": "metadata/1/5860770.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1400,12 +1767,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 10 The Merry Peasant",
-   "bars": 21
+   "bars": 21,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5860770"
   },
   {
    "id": "pdmx-6390522",
    "score": 6390522,
    "mxl": "mxl/15/47/QmXUZtzTjArGemB7PvJFUBCSTa6frGBYzaNQ4gQtyT4zsy.mxl",
+   "meta": "metadata/8/6390522.json",
    "composer": "Henry Lemoine (1786–1854)",
    "book": "Études enfantines",
    "opus": "Op. 37",
@@ -1413,12 +1783,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Lemoine: Études enfantines op. 37 no. 44",
-   "bars": 36
+   "bars": 36,
+   "uploader": "richardpohl",
+   "url": "https://musescore.com/user/27021897/scores/6390522"
   },
   {
    "id": "pdmx-5953762",
    "score": 5953762,
    "mxl": "mxl/15/33/QmXnQ9fmNqCZQnr5YPyutjTh53qfEHVkvtxgV3egdEbzoC.mxl",
+   "meta": "metadata/8/5953762.json",
    "composer": "Robert Schumann (1810–1856)",
    "book": "Album for the Young",
    "opus": "Op. 68",
@@ -1427,12 +1800,15 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Schumann - Album for the Young Op. 68 No. 17 Little Morning-Wanderer",
-   "bars": 44
+   "bars": 44,
+   "uploader": "jadr",
+   "url": "https://musescore.com/user/31901603/scores/5953762"
   },
   {
    "id": "pdmx-1691766",
    "score": 1691766,
    "mxl": "mxl/15/7/QmX8Adb4sJp5KsY7PS6ECNa4hxci1voWafLU5p99PSygXg.mxl",
+   "meta": "metadata/3/1691766.json",
    "composer": "Jean-Baptiste Duvernoy (1802–1880)",
    "book": "Elementary Studies",
    "opus": "Op. 176",
@@ -1440,7 +1816,9 @@
    "licence": "CC0-1.0",
    "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
    "uploaded": "Elementary Studies (op 176) Etude 6 by Jean Baptiste Duvernoy",
-   "bars": 21
+   "bars": 21,
+   "uploader": "Anes",
+   "url": "https://musescore.com/user/75150/scores/1691766"
   }
  ]
 }

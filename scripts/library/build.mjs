@@ -381,7 +381,7 @@ async function pdmxSet() {
     }
     const bytes = readFileSync(f)
     const title = p.as ?? `${p.name ? `${p.name}, ` : `${p.book}, `}${p.opus} No. ${p.n}`
-    const edition = `MuseScore.com score ${p.score}${p.uploader ? `, typeset by ${p.uploader}` : ''}, from a public-domain edition; marked ${p.licence === 'CC0-1.0' ? 'CC0' : 'Public Domain'} by its uploader; collected in PDMX`
+    const edition = `MuseScore.com score ${p.score}${p.uploader ? `, typeset by ${p.uploader}` : ''}; source edition not stated; marked ${p.licence === 'CC0-1.0' ? 'CC0' : 'Public Domain'} by its uploader; collected in PDMX`
     const why = licenceCheck({ id: p.id, licence: p.licence, composer: p.composer, edition })
     if (why.length) {
       refuse(p.id, 'licence', why)
@@ -393,7 +393,7 @@ async function pdmxSet() {
       composer: p.composer,
       opus: p.as ? p.opus : `${p.opus}, No. ${p.n}`,
       source: 'pdmx',
-      sourceUrl: `https://musescore.com/score/${p.score}`,
+      sourceUrl: p.url ?? `https://musescore.com/score/${p.score}`,
       licenceEvidence: record,
       licence: p.licence,
       licenceUrl: p.licenceUrl,
