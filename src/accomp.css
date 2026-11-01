@@ -1,6 +1,6 @@
 /* ---------- Accompaniment: the start card's 'You play', the notes the app plays for you ---------- */
 #staff .head.app {
-  opacity: 0.4; /* the app plays these: there to read along, not to play */
+  opacity: 0.5; /* the app plays these: there to read along, not to play. 50% is 3.4:1 on paper (40% was 2.5:1: still information) */
 }
 .ready .accomp .hint {
   max-width: 46ch;
@@ -20,10 +20,5 @@
   }
   #ready .accomp .hint {
     display: none;
-  }
-}
-@container stage (max-height: 420px) {
-  #stage:has(.banner) #ready:has(.accomp) > .seg + .hint {
-    display: none; /* the mode line: the Play button says the same. The credit stays */
   }
 }

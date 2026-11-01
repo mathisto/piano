@@ -20,7 +20,7 @@ import { $, keepFocus } from '../ui'
 import { esc } from '../util'
 import { calibrating, current, dock, drill, drillStats, game, highway, hooks, mem, navAt, navigated, resOpen, rt, say, type Section, setCalibrating, setCurrent, setDock, setDrill, setHighway, setRun, setStaff, staff, starters } from './state'
 import { flash, updateBanner } from './banner'
-import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, screenKeys, shown, syncMode, view, wake, zen } from './stage'
+import { applyLayout, chordUpdate, feel, felt, fixChain, flushPractice, frame, popup, screenKeys, shown, syncMode, unhush, view, wake, zen } from './stage'
 import { libSong, showLibrary } from './library'
 import { covers, cover } from './lazy'
 
@@ -111,7 +111,10 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
   if (stale()) return false
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
-  $('#stagesBtn').hidden = mode !== 'read'
+  const bb = $('#stagesBtn') // the way back, named for where it goes (a drill's button is set by its code: All stages, Finish)
+  bb.hidden = false
+  if (mode === 'read') bb.removeAttribute('aria-label')
+  else (bb.querySelector('span')!.textContent = backName()), bb.setAttribute('aria-label', `Back to ${backName()}`)
   document.body.classList.toggle('reading', mode === 'read')
   $('#brand').setAttribute('aria-label', 'Piano Forte: leave this piece')
   if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
@@ -133,7 +136,7 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
 export function leave() {
   if (document.body.classList.contains('zen')) zen()
   void flushPractice()
-  document.body.classList.remove('hush')
+  unhush()
   const to = backTo()
   endFeatures()
   staff.lookahead = 0
@@ -145,7 +148,12 @@ export function leave() {
   $('#play').classList.remove('drill')
   $('#brand').setAttribute('aria-label', 'Piano Forte: Today')
   history.replaceState(null, '', location.pathname)
-  void hooks.showSection(to)
+  void hooks.showSection(to).then(() => {
+    if (document.activeElement !== document.body) return // the brand keeps its focus; the Play or results button it came from is gone
+    const h = document.querySelector<HTMLElement>(`#${to === 'songs' ? 'library' : to} h1`)
+    h?.setAttribute('tabindex', '-1')
+    h?.focus({ preventScroll: true })
+  })
 }
 
 game.on((e: GameEvent) => {
@@ -210,6 +218,7 @@ game.on((e: GameEvent) => {
   }
 })
 
+let toldWait = false // Learn waits on every note and a drill on every card: "Waiting for you" is said once a run, not at each one
 export function onPhase() {
   if (!dock || !current) return
   if (game.phase === 'ready') {
@@ -241,7 +250,7 @@ export function onPhase() {
     const st = STARTERS.find((x) => x.spec.id === current!.base.id)
     covers?.keep(current.base.id, current.base)
     // the cover is the card's title block (the title stays in the page for the screen reader): the 600pt density where the stage is tall, the 300pt one beside the choices where it is short
-    const meta = covers && (lp ? covers.pieceMeta(lp, lib.catalog.composers[lp.composer]?.name) : st ? covers.starterMeta(st) : covers.metaOf.get(current.base.id) ?? covers.fileMeta('midi', current.song.title))
+    const meta = covers && (lp ? covers.pieceMeta(lp, lib.catalog.composers[lp.composer]?.name) : st ? covers.starterMeta(st) : covers.metaOf.get(current.base.id) ?? (/^(tech|scale):/.test(current.base.id) ? covers.exerciseMeta(current.base.id, current.song) : covers.fileMeta('midi', current.song.title)))
     const coverHtml = covers && meta ? covers.coverHtml(current.base.id, 'start', meta) + covers.coverHtml(current.base.id, 'card', meta) : '' // loaded with the stage, before any card shows
     const html = mem
       ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
@@ -281,8 +290,10 @@ export function onPhase() {
   }
   if (rt) hooks.rtPhase()
   wake(true)
+  $('#paused').hidden = game.phase !== 'paused'
   if (game.phase === 'paused') say('Paused')
-  if (game.phase === 'waiting') say('Waiting for you')
+  if (game.phase === 'waiting' && !toldWait) say('Waiting for you')
+  toldWait = game.phase === 'waiting' || (toldWait && game.phase === 'playing')
   updateBanner()
 }
 

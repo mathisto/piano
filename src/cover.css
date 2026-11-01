@@ -228,6 +228,12 @@
   }
   #ready > :not(.cover) {
     grid-column: 2;
+    justify-self: center; /* each choice at its own width: a stretched Perform | Learn leaves an empty well */
+  }
+  /* beside the cover the choices have the cover's 200 px: the colour legend fits, and the first-time learner has it (the mode line is not dropped either) */
+  #stage #ready:has(.cv-card) .legend {
+    display: flex;
+    margin-top: 6px;
   }
   #ready > b.ttl {
     position: absolute;

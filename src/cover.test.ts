@@ -1,6 +1,8 @@
 import { expect, it } from 'vitest'
 import type { Piece } from './catalog-types'
-import { COVER, cropOf, fileMeta, incipit, keyName, leftOf, pieceMeta, rightOf, starterMeta, titleFit } from './cover'
+import { COVER, cropOf, exerciseMeta, fileMeta, incipit, keyName, leftOf, pieceMeta, rightOf, starterMeta, titleFit } from './cover'
+import { exercise } from './technique'
+import { scaleSong } from './scales'
 import { fromSpec } from './song'
 import { STARTERS } from './starters'
 
@@ -45,6 +47,18 @@ it('a local import says what it is and "Key —", "Metre —" for what the file 
   expect(rightOf(undefined, undefined, true)).toBe('KEY — · METRE —')
   expect(rightOf('A minor', undefined, true)).toBe('A minor · METRE —')
   expect(rightOf(undefined, '3/4', true)).toBe('KEY — · 3/4')
+})
+
+it('an exercise the app made names its kind, key and metre, not a local import', () => {
+  const t = exercise({ pattern: 'five', tonic: 9, minor: true, dyn: 'even', hands: 'R', bpm: 80 })
+  const m = exerciseMeta(t.id, t)
+  expect([leftOf(m), m.mode, m.meter]).toEqual(['Technique', 'minor', '4/4'])
+  expect(keyName(m.fifths!, m.mode!)).toBe('A minor')
+  const sc = scaleSong({ form: 'major', tonic: 7, hands: 'R', oct: 1 }, 60)
+  expect([leftOf(exerciseMeta(sc.id, sc)), exerciseMeta(sc.id, sc).mode]).toEqual(['Scale', 'major'])
+  expect(exerciseMeta('scale:chromatic:0:R:1:60', sc).mode).toBeUndefined() // a chromatic run has no key to name
+  const r = exercise({ pattern: 'rhythm', tonic: 0, dyn: 'even', hands: 'R', bpm: 80, level: 1 })
+  expect(exerciseMeta(r.id, r).mode).toBeUndefined()
 })
 
 it('difficulty is the catalogue grade, or the starter level mapped to 1-5', () => {

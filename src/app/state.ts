@@ -15,7 +15,7 @@ skeleton($('#app')) // first: every feature wires its listeners to this DOM as i
 
 export const game = new Game()
 export const starters = STARTERS.map((s) => fromSpec(s.spec))
-export const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+export const reduced = matchMedia('(prefers-reduced-motion: reduce)') // live: the setting can change while the app is open
 
 export type Section = 'today' | 'songs' | 'read' | 'scales' | 'theory' | 'technique' | 'progress'
 

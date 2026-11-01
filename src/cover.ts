@@ -83,6 +83,16 @@ export const fileMeta = (kind: 'xml' | 'midi' | undefined, title: string, added?
   return { local, title: title.trim() || (kind === 'xml' ? 'Untitled score' : 'Untitled MIDI'), sub: added ? new Date(added).toLocaleDateString(undefined, { dateStyle: 'long' }) : '', token: local }
 }
 
+const MODES: [RegExp, 'major' | 'minor'][] = [[/^scale:(major|arpMajor):/, 'major'], [/^scale:(natural|harmonic|melodic|arpMinor):/, 'minor'], [/^tech:(?!rhythm)\w+:\d+:/, 'major'], [/^tech:(?!rhythm)\w+:\d+m:/, 'minor']]
+
+/** A scale or technique exercise the app made: it knows its kind, its metre and its key (a scale's form, a pattern's tonic, names the mode; a chromatic run or a rhythm has no key to name). */
+export const exerciseMeta = (id: string, song: Song): CoverMeta => {
+  const b = song.bars[0]
+  const kind = id.startsWith('scale:') ? 'Scale' : 'Technique'
+  const mode = MODES.find(([r]) => r.test(id))?.[1]
+  return { by: kind, token: kind, title: song.title, fifths: song.fifths, ...(mode && { mode }), ...(b && { meter: `${b.n}/${b.den}` }) }
+}
+
 /** The header's right. A key is named only when the source states its mode; an import says "Key —" and "Metre —" for what it does not. */
 export const rightOf = (key: string | undefined, meter: string | undefined, local?: boolean) =>
   local ? `${key ?? 'KEY —'} · ${meter ?? 'METRE —'}` : [key, meter].filter(Boolean).join(' · ')

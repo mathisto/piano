@@ -31,6 +31,7 @@ export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
     <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="160 362 704 360" width="36" height="18" fill="currentColor" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><span class="wordmark" aria-hidden="true">Piano Forte</span></button>
+    <button class="btn ghost" id="stagesBtn" hidden>${icon('back')}<span></span></button>
     <div class="seg" id="nav" role="radiogroup" aria-label="Section">
       <label><input type="radio" name="nav" value="today" checked><span>${icon('today')}Today</span></label>
       <label><input type="radio" name="nav" value="songs"><span>${icon('songs')}Songs</span></label>
@@ -41,7 +42,6 @@ export function skeleton(app: HTMLElement) {
       <label><input type="radio" name="nav" value="progress"><span>${icon('progress')}Progress</span></label>
     </div>
     <div class="song-title" id="title" role="heading" aria-level="1"></div>
-    <button class="btn" id="stagesBtn" hidden>All stages</button>
     <div class="seg" id="modeSeg" hidden role="radiogroup" aria-label="Mode">
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
       <label><input type="radio" name="mode" value="learn"><span>Learn</span></label>
@@ -76,6 +76,7 @@ export function skeleton(app: HTMLElement) {
         <div id="judge" aria-hidden="true"></div>
         <div class="stagecol"><div id="banner"></div><div id="ready" class="ready" hidden></div></div>
         <div id="count" class="countin" hidden aria-hidden="true"></div>
+        <div id="paused" class="paused" hidden aria-hidden="true">Paused</div>
         <div id="res" hidden></div>
         <div id="live" class="sr-only" aria-live="polite" style="position:absolute;left:-9999px"></div>
       </div>

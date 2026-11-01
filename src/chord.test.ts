@@ -22,6 +22,7 @@ describe('chord naming', () => {
   })
   it('names intervals and single notes, and spells flats in flat keys', () => {
     expect(n(60, 67)).toBe('fifth')
+    expect(n(48, 55, 67)).toBe('C fifth') // never "C5": the keyboard strip labels a key C5
     expect(n(60, 64)).toBe('major third')
     expect(n(60, 72)).toBe('octave')
     expect(n(61)).toBe('C♯4')

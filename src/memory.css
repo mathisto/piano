@@ -20,7 +20,7 @@ body.memorise #modeSeg {
   padding: 4px 8px 4px 16px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
-  font-size: 13px;
+  font-size: 15px; /* read mid-pass from the music stand */
   color: var(--ink-2);
 }
 .mem-bar .mem-live {
