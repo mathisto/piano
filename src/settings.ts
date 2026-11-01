@@ -6,7 +6,10 @@ import type { PlanMin } from './plan'
 export type KeyTouch = 'Light' | 'Medium' | 'Heavy' | 'Fixed' | 'Unknown'
 export const KEY_TOUCH: KeyTouch[] = ['Unknown', 'Light', 'Medium', 'Heavy', 'Fixed']
 
+export type Theme = 'auto' | 'dark' | 'light'
+
 export interface Settings {
+  theme: Theme // Appearance: follow the system, or Nocturne (dark) or Matinée (light)
   fx: 0 | 1 // effects: off, calm
   fall: number // seconds of look-ahead on the highway
   sound: boolean // browser sound for the played notes; the keyboard's own speakers are the default
@@ -40,6 +43,7 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
+  theme: 'auto',
   fx: 1,
   fall: 3,
   sound: false,
@@ -82,6 +86,7 @@ function load(): Settings {
     delete saved.zpos // the staff size buttons moved into the dock's Practice menu (30 Oct 2026)
     // a value of the wrong kind (a hand-edited file, an older version) falls back to the default: a zoom of "big" must not stop the app starting
     for (const k of Object.keys(DEFAULTS) as (keyof Settings)[]) if (k in saved && (typeof saved[k] !== typeof DEFAULTS[k] || Array.isArray(saved[k]) !== Array.isArray(DEFAULTS[k]) || saved[k] === null)) delete saved[k]
+    if (!['auto', 'dark', 'light'].includes(saved.theme)) delete saved.theme
     if (![5, 10, 20, 30, 45].includes(saved.planMin)) delete saved.planMin
     return { ...DEFAULTS, ...saved }
   } catch {

@@ -188,6 +188,7 @@ export function drawer(el: HTMLElement, inputs: Input[], pair = '') {
   ${seg('coach', 'Touch coach', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach)}
   <div class="srow"><span>Key touch</span>${keyTouchSelect('sKeyTouch')}</div>
   <p class="fine">${KEY_TOUCH_HINT}</p>
+  ${seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme)}
   ${seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx))}
   <hr>
   <div class="srow"><span>Data</span><div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" role="menuitem" id="sSummary">Summary for a teacher</button><button class="btn ghost" role="menuitem" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div></div>

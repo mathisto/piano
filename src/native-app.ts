@@ -8,6 +8,7 @@ interface Native {
   start(): Promise<{ sources: Source[] }>
   pairBluetooth(): Promise<void>
   setPlaying(o: { on: boolean }): Promise<void>
+  setAppearance(o: { theme: string }): Promise<void>
   now(): Promise<{ t: number }>
   saveBackup(o: { text: string }): Promise<void>
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
@@ -22,6 +23,8 @@ export function offsetOf(samples: [number, number, number][]): number | undefine
   const best = samples.reduce<[number, number, number] | undefined>((b, s) => (!b || s[2] - s[0] < b[2] - b[0] ? s : b), undefined)
   return best && (best[0] + best[2]) / 2 - best[1]
 }
+
+const n = registerPlugin<Native>('CoreMidi')
 
 let offset: number | undefined
 let syncing = false
@@ -42,8 +45,10 @@ async function syncClock(n: Native) {
   }
 }
 
+/** The Appearance setting (Auto, Dark, Light) for the window: PianoNative.swift. */
+export const setAppearance = (theme: string) => n.setAppearance({ theme })
+
 export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => void) {
-  const n = registerPlugin<Native>('CoreMidi')
   void n.addListener('sources', (d) => sync(d.sources))
   // opened from Files, Mail or AirDrop: into the library as a dropped file goes
   void n.addListener('file', (d) => void import('./app/library').then((l) => l.importFiles([new File([Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0))], d.name)])))
