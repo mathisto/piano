@@ -207,7 +207,7 @@ export class Highway {
     const key = text
     let tex = this.labelTex.get(key)
     if (!tex) {
-      const t = new Text({ text, style: { fontFamily: 'Barlow Condensed', fontWeight: '700', fontSize: 28, fill: 0xffffff } })
+      const t = new Text({ text, style: { fontFamily: '-apple-system, system-ui, "Segoe UI", Roboto, sans-serif', fontWeight: '600', fontSize: 28, fill: 0xffffff } })
       tex = this.app.renderer.generateTexture({ target: t, resolution: 2 })
       this.labelTex.set(key, tex)
       t.destroy()

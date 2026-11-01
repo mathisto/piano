@@ -34,9 +34,7 @@
   white-space: nowrap;
 }
 .takebar b {
-  font: 800 italic 22px/1 var(--display);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font: 650 22px/1 var(--display);
 }
 .takebar small {
   color: var(--ink-3);
@@ -112,8 +110,6 @@
   display: block;
   margin-top: 4px;
   font: 500 13px/1 var(--ui);
-  letter-spacing: 0;
-  text-transform: none;
 }
 .cmp-bars small {
   color: var(--ink-3);

@@ -36,7 +36,8 @@ body.memorise #modeSeg {
 }
 .ready .mem-seg span {
   min-width: 44px;
-  font: 800 italic 22px/1 var(--display);
+  font: 650 22px/1 var(--ui);
+  font-variant-numeric: tabular-nums;
 }
 @container stage (max-height: 420px) {
   #ready #memName {

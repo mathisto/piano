@@ -41,41 +41,49 @@ colors:
   key-muted: "#5e6472"
 typography:
   display:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "40px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.01em"
-  hud-numeral:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "30px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.01em"
-  title:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "28px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.04em"
-  heading-lg:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "34px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.03em"
-  section:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "22px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.03em"
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "44px"
+    fontWeight: 500
+    lineHeight: 1.1
+    letterSpacing: "-0.01em"
   stage-word:
-    fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
-    fontSize: "54px"
-    fontWeight: 800
-    lineHeight: 0.95
-    letterSpacing: "0.02em"
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "52px"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.01em"
+  figure:
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "88px"
+    fontWeight: 400
+    lineHeight: 0.9
+    fontFeature: "tabular-nums"
+  heading-lg:
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "34px"
+    fontWeight: 500
+    lineHeight: 1.1
+  title:
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: 1
+  piece-name:
+    fontFamily: "Newsreader Variable, Iowan Old Style, Georgia, serif"
+    fontSize: "20px"
+    fontWeight: 560
+    lineHeight: 1.25
+  hud-numeral:
+    fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
+    fontSize: "30px"
+    fontWeight: 650
+    lineHeight: 1
+    fontFeature: "tabular-nums"
+  section:
+    fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: 1.25
   body-lg:
     fontFamily: "-apple-system, system-ui, Segoe UI, Roboto, sans-serif"
     fontSize: "18px"
@@ -92,7 +100,6 @@ typography:
     fontSize: "13px"
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "0.1em"
   notation:
     fontFamily: "Bravura"
     fontSize: "40px"
@@ -247,13 +254,13 @@ components:
 
 **Creative North Star: "The DDR Cabinet at Night"**
 
-A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in heavy condensed italic. The cabinet lives on the stage (highway, receptor, lane pulses, sparks); there are no points, ranks, lives or fireworks, and the shell never scores you. The notation does not live there either: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the stage turned down: the staff takes the screen and the highway shrinks to a strip.
+A dark, cool-blue room with lit lane panels, a bright receptor line over the keys, and judgement words in Newsreader. The cabinet lives on the stage (highway, receptor, lane pulses, sparks); there are no points, ranks, lives or fireworks, and the shell never scores you. The notation does not live there either: the grand staff is the scoreboard, set in near-white Bravura on a flat panel, and it ignites only to report state (awaited note, hit grade, miss). The shell around the stage is plain web controls (segmented switch, sliders, buttons, rows) and stays quiet. Reading drills reuse the same room with the stage turned down: the staff takes the screen and the highway shrinks to a strip.
 
 The iPad in landscape is the main screen, a desktop browser the second. The player sits 1-2 m away with busy hands, so state is carried by word, shape, and hue together, never hue alone, and every target is thumb-sized on a coarse pointer. Density is moderate and fixed: a 56px top bar, one view, a docked transport. One control height (40px, 44px on touch) and four radii run through the whole shell. Seven tabs live in the top bar until a piece opens: Today, Songs, Read, Scales, Theory, Technique, Progress. Today is a generated plan, not a menu. Progress is the reward: accuracy over time, mastery, a quiet day streak.
 
 **Key Characteristics:**
 - Cool navy ground with one warm voice, the lamp amber, that means only "play this / now". Everything else in the shell is neutral Ink.
-- Heavy italic condensed display type for what is announced; a quiet grotesk for what is read.
+- Newsreader for what is announced and for the names of music; the system font for what is read.
 - Glow is a state signal on the staff and stage only. No hard offset shadows, no hard text-shadows.
 - Every page shares one measure and one head; plan rows, song rows and stage rows are one grammar.
 - Touch first: `pointer: coarse` raises controls to 44px. The app has no minimum width: portrait and split-view windows reflow (see Responsive).
@@ -300,25 +307,26 @@ A navy-ink night palette with one amber lamp, two hand hues, and a four-step jud
 
 ## Typography
 
-**Display Font:** Barlow Condensed 800 italic (fallback Arial Narrow, sans-serif); 700 upright is loaded for Pixi key labels.
-**Body Font:** the platform's own (`-apple-system, system-ui`): San Francisco on the iPad and the Mac, nothing to download (Hanken Grotesk until 30 Oct 2026). Body sets `tabular-nums` globally so counters never jitter.
+**Display Font:** Newsreader (`@fontsource-variable/newsreader`, SIL OFL; the upright `opsz` file, weight 200-800 and optical size 6-72 on one variable face; Iowan Old Style, Georgia as fallback). It announces and it names music. Always upright and in sentence case. `font-optical-sizing: auto` ties the optical size to the font size, so an 18-20px title is sturdy and the 160px count-in is fine-cut; no size is set by hand. Only the latin file is fetched (unicode-range). The Pixi key labels are drawn in the system font at 600.
+**Body Font:** the platform's own (`-apple-system, system-ui`): San Francisco on the iPad and the Mac, nothing to download (Hanken Grotesk until 30 Oct 2026). Body sets `tabular-nums` globally; the `font` shorthand resets it, so every counter rule (HUD, tempo, timers, percentages, the results figure, the count-in) repeats `font-variant-numeric: tabular-nums`.
 **Notation Font:** Bravura (SMuFL, OFL, self-hosted woff2) for every staff glyph: noteheads, clefs, rests, accidentals, flags, tuplet numerals, time-signature digits, the articulation marks and the dynamic letters (p, m, f, r, s, z, so p to ff, sf and the like).
 
-**Character:** A scoreboard shout over a quiet instruction manual.
+**Character:** An engraver's title page over a quiet instruction manual.
 
 ### Hierarchy
-UI text has three sizes: 13 (label, kbd, fine print, song-row sub-lines), 15 (body, controls, other sub-lines), 18 (row names, ready sentence, result lines). 14 appears in touch-range chips, histogram text and credit blocks (see debt). Display italic as built uses 22, 24, 28, 30, 34, 40 plus stage words. Full table under Design Grammar.
-- **Display** (800 italic, 40px, 1): the page h1 on every page, the judge popup.
-- **HUD numeral** (800 italic, 30px, 1): accuracy, notes in a row, run streak, cards, in Ink, with a 12px Label caption stacked above (15px in Read). The Over time figure on Progress is the same face at 24px.
-- **Title** (800 italic, 28px, 1, uppercase, +0.04em): drawer and dialog-sheet headings, big buttons, tempo value.
-- **Heading large** (800 italic, 34px, uppercase): results heading, chord readout.
-- **Section** (800 italic, 22px, uppercase, +0.03em): `h2.sec` blocks on Progress.
+UI text has three sizes: 13 (label, kbd, fine print, song-row sub-lines), 15 (body, controls, other sub-lines), 18 (row names, ready sentence, result lines). 14 appears in touch-range chips, histogram text and credit blocks (see debt). Newsreader as built uses 19 to 52 plus the stage figures. Full table under Design Grammar.
+- **Display** (Newsreader 500, 44px, 1.1, -0.01em): the page h1 on every page.
+- **Piece name** (Newsreader 560, 20px, 1.25): the title on a song or library row, with a 13px Ink Faint system sub-line. The play screen's top title is the same face at 19px.
+- **HUD numeral** (system 650, 30px, 1, tabular): accuracy, notes in a row, run streak, cards, in Ink, with a 12px Label caption stacked above (15px in Read). The Over time figure on Progress, the tempo value and the Memorise stage digits are the same numeral at 24, 28 and 22px.
+- **Title** (Newsreader 600, 28px, 1): the big button's label, the dock's Play.
+- **Heading large** (Newsreader 500, 34px, 1.1): the results verdict. The chord readout is a system 650 32px.
+- **Section** (system 600, 20 to 22px): `h2.sec` blocks on Progress, drawer and dialog-sheet headings.
 - **Body** (400-650, 15px, 1.45): controls, notes. Row names 18px, sub-line 15px Ink Faint on stage, plan, path and requirement rows (13px on song rows); prose capped at 52-56ch.
-- **Label** (700, 13px, +0.1em, uppercase): the one label style: HUD captions (12px), table heads and captions, group caps, the Next tag and the outlined tags.
-- **Stage words:** ready title 54px (38px under 820px tall), count-in 160px, results figure 88px top right of the card (a percentage, a stage, or a 72px check in Learn), staff grade word 17px. Display italic, over a soft Shade.
+- **Label** (600, 13px, sentence case): the one label style: HUD captions (12px), table heads and captions, group caps, the Next tag and the outlined tags.
+- **Stage words:** ready title 52px (38px under 820px tall, 34px on a short stage), count-in 160px at 400, results figure 88px at 400 top right of the card (a percentage, a stage, or a 72px check in Learn), judge word 42px at 650, staff grade word 19px at 650. Over a soft Shade.
 
 ### Named Rules
-**The Two Voices Rule** (was Announce Versus Read). Barlow Condensed italic capitals are for what is announced: page titles, the big figures (results, HUD, count-in), judgements, the results verdict, the Listening back pill, the dock's Play. Everything tapped or read is the system font in sentence case: section and sheet titles (600, 18 to 22px), labels (600 13px; no tracked capitals anywhere), controls and sentences.
+**The Two Voices Rule** (was Announce Versus Read). Newsreader versus the system font. Newsreader is for what is announced (page titles, the results figure and verdict, the count-in numeral, judgement words, the dock's Play) and for the names of music (piece titles on rows, cards, the start card, the play screen's top title). It is upright and in sentence case, never italic, never tracked capitals. Everything tapped or read, and every counter, is the system font in sentence case: section and sheet titles (600, 18 to 22px), labels (600 13px), controls, sentences, the HUD, the tempo, the timers.
 
 ### The design language (30 Oct 2026; research in `docs/research/design-language.md`)
 Seven rules every screen is checked against:
@@ -376,7 +384,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - 8px radius, 40px high (44 coarse), 1px Edge border, 650 weight, no offset shadow; active nudges 1px down.
 - **Default:** Panel Raised fill; hover Panel Hover fill and Ink Faint border.
 - **Primary:** Lamp fill, Lamp Ink text, 800; hover Lamp Bright. One per view. A leading 20px solid play icon marks "start/continue".
-- **Big:** primary at 52px, Display 28px italic uppercase, min 124px; results and the dock Play.
+- **Big:** primary at 52px, Newsreader 600 28px, min 124px; results and the dock Play.
 - **Ghost:** transparent, Ink Soft; hover Ink, Panel Raised, Line border. Row actions (Learn on song rows, Practice on non-next stage rows), the More button and its menu items, icon buttons (close, focus).
 - **Small:** 36px, 0 12px (44 coarse); drawer data buttons and tempo presets.
 - **Icon:** 40px square, 20px stroked SVG, 2px round caps.
@@ -410,7 +418,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - Strip card: a Label "Touch range" over three value chips (Soft 1-n, Medium n-m, Hard m+), 4px apart, max 600px, each flex-proportional to its velocity range. Chip is outlined (1px Edge, transparent, 4px radius), 650 14px Ink Soft, nowrap; `role="img"` states the ranges. Beside it a ghost "Use defaults" once set and "Set touch range". While calibrating the chips are replaced by "Play 10 soft notes: k of 10" and Cancel; a status line (`p.note`) may follow the card.
 
 ### Tag
-- A Label-style word (13px 700, +0.1em, uppercase) outlined 1px Edge, 4px radius, padding 3px 6px 2px, Ink Soft, 10px left of the name. "Due" on a Technique path row, "n due" on a Read row, "Ready" on a starter piece or your file once it has been played on two days. `.tag.next` ("Next") drops the outline and the padding and takes Lamp; it sits only on the row that holds the primary.
+- A Label-style word (13px 600, sentence case) outlined 1px Edge, 4px radius, padding 3px 6px 2px, Ink Soft, 10px left of the name. "Due" on a Technique path row, "n due" on a Read row, "Ready" on a starter piece or your file once it has been played on two days. `.tag.next` ("Next") drops the outline and the padding and takes Lamp; it sits only on the row that holds the primary.
 
 ### Disclosure
 - One marker for every `<details>`: a 1.2em slot holding "+" (closed) or "−" (open) in Ink Faint, native triangle removed. Summary is Ink Faint (Progress Path levels: 18px 650 Ink with a 15px Ink Faint count beside it), 44px row on coarse pointers. Used by drawer Advanced, the Progress Path levels (the first with work left is open) and the Technique Path "n more".
@@ -426,7 +434,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - A `dialog.sheet`, no footer. It opens with the line "Free, no subscription, no ads, no account." (Ink Soft, 13px), then Sounds (one `pre` block each: grand piano, electric piano, harp, organ and strings, music box, with their licences), then Scores: a fine line that scores are public domain or openly licensed and keep their own licence, links to the licence lists for the pieces in the app and for the whole library, and one block per piece you have played or saved, with the changes made to it (voice folded or dropped). With none: "Pieces you play or save for offline appear here." The same free line closes the Set up sheet.
 
 ### Start here card
-- `.tcard.guide` on Today, between the head and the last-week recap, for the first seven days of use (`src/guide.ts`; day 8 is the last it can show, after that or once every step is done or skipped it is gone). Header: Display 22px italic "Start here", an Ink Soft line "Day n of 7, in any order.", and a ghost Hide at the right. Below it an ordered list in the plan-row grammar (a Line rule between steps): the lead is a 20px ring with the step number (Line Strong; the day's own step ring is Lamp, with an Ink numeral) or a check in Ink Soft once done. The day's step shows its title at 18px with a sub-line and a button Start (a plain button: Today's one lamp stays on the plan) and a quiet Skip; earlier undone steps show a ghost Start and Skip; later steps are Ink Faint titles with no action; a skipped step reads "Skipped". Seven steps: Read Treble landmarks, C major right hand, chord triads on white keys, a read-through, five-finger Technique, Memorise a short piece, Review and look at Progress. Under 760px the actions wrap under the title.
+- `.tcard.guide` on Today, between the head and the last-week recap, for the first seven days of use (`src/guide.ts`; day 8 is the last it can show, after that or once every step is done or skipped it is gone). Header: 22px "Start here", an Ink Soft line "Day n of 7, in any order.", and a ghost Hide at the right. Below it an ordered list in the plan-row grammar (a Line rule between steps): the lead is a 20px ring with the step number (Line Strong; the day's own step ring is Lamp, with an Ink numeral) or a check in Ink Soft once done. The day's step shows its title at 18px with a sub-line and a button Start (a plain button: Today's one lamp stays on the plan) and a quiet Skip; earlier undone steps show a ghost Start and Skip; later steps are Ink Faint titles with no action; a skipped step reads "Skipped". Seven steps: Read Treble landmarks, C major right hand, chord triads on white keys, a read-through, five-finger Technique, Memorise a short piece, Review and look at Progress. Under 760px the actions wrap under the title.
 
 ### Connect line
 - `.kbline` heads Theory, the Scales Quiz and the Sight Run builder while no MIDI keyboard is connected: a Panel row with a Line Strong border, "No keyboard connected." in Ink and "Play the on-screen keys, or the computer keys A to ;." in Ink Soft, then the On-screen keys switch (below) and a Connect keyboard button, which wrap together to the right under the words in a narrow window. It hides, switch and all, when an input appears (the drawer's Advanced keeps the switch) and returns when it goes, and on Theory and the Quiz it shows on the trainer list only, not over a card.
@@ -462,12 +470,12 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - On: each key of the last run is a dim dot behind its head on the staff (Ink Soft at 50%; an on-time key hides under its note, an early or late one shows beside it), and in the lanes a bright tick where the key went down (Ink at 70%) with a thin hairline while it was held (Ink at 40%).
 
 ### Memorise card and strip
-- The start card of a Memorise session hides Perform | Learn (the stage is the choice) and shows a "Stage" segment of five digits 0 to 4 (Display italic 22px, min 44px wide; each radio is named, "Stage 2, every 2nd bar hidden"), the stage's name (kept on the short card) and a "Look first" facts list (key, time, bars, each hand's range, bars that repeat an earlier bar).
+- The start card of a Memorise session hides Perform | Learn (the stage is the choice) and shows a "Stage" segment of five digits 0 to 4 (system 650 22px tabular, min 44px wide; each radio is named, "Stage 2, every 2nd bar hidden"), the stage's name (kept on the short card) and a "Look first" facts list (key, time, bars, each hand's range, bars that repeat an earlier bar).
 - While playing, `.mem-bar` is its own row above the staff, never over notation: Scrim, Line border, 8px radius, 13px Ink Soft with Ink figures: "Stage 2 · Every 2nd bar hidden" and "n right · k slips · clean j of 2", and from stage 1 a small Peek button (page icon) that shows the awaited bar for 2 seconds. At stage 4 (no staff) it is the same row at 15px.
 - The pass card is the results card's single column: the stage played, slips, peeks, a strip of bars and up to three weak spots; a loop pass reports in the banner. Songs rows show a "Memorised n/4" tag.
 
 ### Look-through card
-- The start card of a read-through: title, one hint line ("Look it through: the key, the time, the bars that look hard. Nothing counts yet."), a 4px meter that drains over 30 seconds beside "0:27" (15px Ink Faint, `role="timer"`), then one wrapped row: Tempo with - and + icon buttons around a 28px italic percentage (default 70%), the switch "Only the next two bars", and a plain "Start now". A 13px Ink Faint line says why this piece was offered, and a second carries the credit. No Perform | Learn switch shows for the pass. The staff shrinks to fit the piece (not below zoom 0.6) and goes back afterwards.
+- The start card of a read-through: title, one hint line ("Look it through: the key, the time, the bars that look hard. Nothing counts yet."), a 4px meter that drains over 30 seconds beside "0:27" (15px Ink Faint, `role="timer"`), then one wrapped row: Tempo with - and + icon buttons around a 28px tabular percentage (default 70%), the switch "Only the next two bars", and a plain "Start now". A 13px Ink Faint line says why this piece was offered, and a second carries the credit. No Perform | Learn switch shows for the pass. The staff shrinks to fit the piece (not below zoom 0.6) and goes back afterwards.
 
 ### Read-through summary
 - The results card in its single-column grammar: accuracy percentage as the big figure, "Read through at 70% tempo", one line (accuracy, notes caught of total, wrong notes), a strip of one cell per bar (slipped bars Miss Red and taller, the rest Line Strong 8px; height says it as well as colour) with a sentence naming the slipped bars, the weakest two bars, the next piece and why. Actions: primary Next piece, Fix these (opens Learn on those bars looped at 70%), Songs.
@@ -497,7 +505,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - Drill and Sight Run results are single column in a fixed overlay under the bar. Drill: stage, cards, first try, median, mastery before and after as a meter, the weakest notes. Sight Run: cards, first try, best streak, median, a per-note bar strip (height is time, redder is missed more), the notes that need most work, Run again, Back to Read. A record shows an outlined "Longest yet on this range" tag in the Next style (see debt).
 
 ### Judgement popup
-- `#judge`: Display 40px italic uppercase, centred over the stage, colour by grade (lime, mint, orange, faded orange for Late, red), word always present. Beneath it a 15px early/late or touch line (none for Late: the word says it) in Ink at 85%. Ground halo, no offset.
+- `#judge`: Newsreader 650 42px sentence case, centred over the stage, colour by grade (lime, mint, orange, faded orange for Late, red), word always present. Beneath it a 15px early/late or touch line (none for Late: the word says it) in Ink at 85%. Ground halo, no offset.
 
 ### Ghost note
 - What the player is pressing, drawn on the staff: hollow notehead, dashed Ink Soft stroke 1.5, ledger/accidental text Ink Soft, ignores the pointer. Hit: slides onto the written note, fills 40% in the grade colour with a same-colour glow, fades by 0.52s. Wrong key: stroke Miss Red, an X, a 0.5s shake. Released unscored: fades 0.25s. Max 12.
@@ -522,10 +530,10 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - Absolute at the right of the play view, 16px in: Scrim, Edge border, 12px, min 120px, right-aligned. Chord name in Display 34px; a 13px Ink Faint line under it. Pointer-transparent, `aria-hidden`.
 
 ### Count-in numeral
-- 160px Display italic in Lamp, 36% from the top, centred, over a soft Shade, pointer-transparent. One numeral per beat.
+- 160px Newsreader 400 in Lamp, 36% from the top, centred, over a soft Shade, pointer-transparent. One numeral per beat.
 
 ### Listen bar
-- `.takebar` floats at the top centre of the stage while a take plays back: a pill (Scrim, Edge border, soft drop shadow), a Display 22px italic word ("Listening back" or "Last time"), a 13px Ink Faint "Any key stops" and a small Stop with an x icon. The staff cursor, falling notes and scrubber head follow the take. A piano key, a tap or Escape stops it; Escape does not leave the piece while it plays.
+- `.takebar` floats at the top centre of the stage while a take plays back: a pill (Scrim, Edge border, soft drop shadow), a Newsreader 650 22px word ("Listening back" or "Last time"), a 13px Ink Faint "Any key stops" and a small Stop with an x icon. The staff cursor, falling notes and scrubber head follow the take. A piano key, a tap or Escape stops it; Escape does not leave the piece while it plays.
 
 ### Drawer row
 - `.srow`: grid 6.5rem label (Ink Soft) + control, 12px gap, min-height 40px (44 coarse). Controls: a segmented control for choices, a select, a range, or read-only bold text. Instrument and Volume appear only under Sound "This device". Keyboard shows a select only with more than one input. Delay and Data hold inline fields and small buttons. Rows in four groups split by a Line hairline: Keyboard and Delay; Sound, Instrument and Volume, Click volume; Strictness, Touch coach (Off | Gentle | Steady | Strict), Key touch (a select, "Match the setting on your keyboard." under it), Effects (Off | Calm); Data (Export, Import and a ⋯ More holding Summary for a teacher and Delete all data). Advanced is a Disclosure holding Note names, "Fade names I know" (indented, disabled while names are off), All 88 keys, "Always show touch marks", Play the file's dynamics, Fall speed (Slow to Fast slider), Hand split. Footer: Set up, Help and Credits links, 24px apart, open dialog sheets. The drawer is a side panel; Tab and Shift+Tab wrap inside it while it is open (the page behind is inert), and Escape closes it and returns focus to its button. `.fine` lines (13px Ink Faint) sit under the control column: the Key touch hint, and a line on a fault.
@@ -545,7 +553,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 
 ### Over time card
 - A sentence under the heading gives the axis: accuracy per session, up to the last 24, drawn from 40% to 100%, the dashed line being 100%. The chart sits 4px above its figure.
-- On Progress, one card per kind of practice with two or more sessions (Reading drills, Sight Run, Scales, Theory, Songs, Technique), in an auto-fill grid (260px min, 12px / 24px gaps): a Label, a 52px sparkline of accuracy over the last 24 sessions (a 40 to 100 percent axis, a dashed line at 100, a 2px Ink Soft line and no dots), then the average of the last five in 24px italic with "up 4 points on the five before", "down n points", "steady" or "n sessions" in 14px Ink Faint. Before any kind has two sessions one sentence says the charts start after two.
+- On Progress, one card per kind of practice with two or more sessions (Reading drills, Sight Run, Scales, Theory, Songs, Technique), in an auto-fill grid (260px min, 12px / 24px gaps): a Label, a 52px sparkline of accuracy over the last 24 sessions (a 40 to 100 percent axis, a dashed line at 100, a 2px Ink Soft line and no dots), then the average of the last five in 24px tabular system 650 with "up 4 points on the five before", "down n points", "steady" or "n sessions" in 14px Ink Faint. Before any kind has two sessions one sentence says the charts start after two.
 
 ### Notes you know
 - A 600x62 strip of one bar per semitone from C2 to C7: Ink at an opacity that rises with how often the note was met, how cleanly and how fast, and a Line Strong outline for notes never drilled. C labels sit under the bars; each bar has a title with its percentage. Ink, not a hand hue, by the Semantic Hue Rule.
@@ -561,7 +569,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - Notes the app plays in accompaniment fall at 40% (Listen's treatment). A Ghost of last run adds a hairline trace per key in its lane. Alternating lane tints per white key, brighter line at each C and bar, a bright receptor line over the keys with a small lamp per white key (Lamp when lit, muted otherwise), on-screen keyboard (Key White / Key Black). Held keys pulse a lane gradient in the hand's hue. Awaited notes get a pulsing Lamp outline.
 
 ### Grand staff (signature)
-- SVG painted from a pure layout module (`layout.ts`: analysis, window, positions; `staff.ts` only draws and animates). Bravura at 40px (10-unit staff space; grace notes 26px), Ink on Panel, 1.1 staff lines in Ink Faint, 1.4 bar lines, lamp cursor. Bar numbers 12px Ink Faint. The layout draws rests, ties (Ink), tuplets (numeral plus 1.2 bracket), grace notes, 8va / 15ma (15px italic Ink Soft word over a dashed 1.2 bracket), key and time signature changes, and meter-aware beams. Horizontal spacing is a monotone time-to-x map: onset columns never closer than 14 units, wider bars get more room. A bar too crowded at full spacing shows "Too dense: tap to thin" in 12px Ink Soft beside its number; tapping it steps Simplify up one level. A played chord (head, stem, beam, accidental, dot) dims as one group to 42% opacity after its hit flash; hits ignite 0.8s in grade colour then settle. When the app plays a part, those heads are dimmed to 40% and never judged. Great and Good leave a persistent 0.8-opacity shape (mint dot, orange diamond); Miss a red triangle, the head fading to Ink Faint after 2s. In Staff view the grade also shows as a 17px word above the notation, fading in about 1s. Beams are flat Ink rectangles. Hide played clips the notation at the cursor so played notes vanish. Note names fade per pitch once known (Fade names I know). In a reading drill the awaited card is every notehead of the next chord in Lamp, staff lines 1.7. In a read-through the bars beyond the next two are masked (chords, beams and rests) once the music moves. On Scales exercises each note carries its finger number (15px 700, Ink Soft) on the side away from the stem; the system grows to keep the numbers inside it. Touch coach marks: a note struck louder or softer than its neighbours gets a small Ink triangle over (louder) or under (softer) the head, 85% opacity, never colour; after three even runs in a row the triangles drop to 35%, and every fourth run of an exercise is a quiet test run with none at all (a flash at the start says so, and results repeat it). "Always show touch marks" turns the fading and the test runs off; Touch coach Off turns the marks off.
+- SVG painted from a pure layout module (`layout.ts`: analysis, window, positions; `staff.ts` only draws and animates). Bravura at 40px (10-unit staff space; grace notes 26px), Ink on Panel, 1.1 staff lines in Ink Faint, 1.4 bar lines, lamp cursor. Bar numbers 12px Ink Faint. The layout draws rests, ties (Ink), tuplets (numeral plus 1.2 bracket), grace notes, 8va / 15ma (15px italic Ink Soft word over a dashed 1.2 bracket), key and time signature changes, and meter-aware beams. Horizontal spacing is a monotone time-to-x map: onset columns never closer than 14 units, wider bars get more room. A bar too crowded at full spacing shows "Too dense: tap to thin" in 12px Ink Soft beside its number; tapping it steps Simplify up one level. A played chord (head, stem, beam, accidental, dot) dims as one group to 42% opacity after its hit flash; hits ignite 0.8s in grade colour then settle. When the app plays a part, those heads are dimmed to 40% and never judged. Great and Good leave a persistent 0.8-opacity shape (mint dot, orange diamond); Miss a red triangle, the head fading to Ink Faint after 2s. In Staff view the grade also shows as a 19px Newsreader word above the notation, fading in about 1s. Beams are flat Ink rectangles. Hide played clips the notation at the cursor so played notes vanish. Note names fade per pitch once known (Fade names I know). In a reading drill the awaited card is every notehead of the next chord in Lamp, staff lines 1.7. In a read-through the bars beyond the next two are masked (chords, beams and rests) once the music moves. On Scales exercises each note carries its finger number (15px 700, Ink Soft) on the side away from the stem; the system grows to keep the numbers inside it. Touch coach marks: a note struck louder or softer than its neighbours gets a small Ink triangle over (louder) or under (softer) the head, 85% opacity, never colour; after three even runs in a row the triangles drop to 35%, and every fourth run of an exercise is a quiet test run with none at all (a flash at the start says so, and results repeat it). "Always show touch marks" turns the fading and the test runs off; Touch coach Off turns the marks off.
 
 ## Do's and Don'ts
 
@@ -579,7 +587,7 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 - **Do** build every modal as `dialog.sheet`; header with close, scrolling body, a pinned footer when there is an action besides closing.
 - **Do** mark every disclosure with the shared +/− marker.
 - **Do** show tags as outlined Ink Soft words; only Next is lamp, on the primary's row.
-- **Do** use Barlow Condensed 800 italic for announced values and the system font for everything read or tapped; keep numerals tabular.
+- **Do** use Newsreader (upright, sentence case) for what is announced and for names of music, and the system font for everything read or tapped; repeat `font-variant-numeric: tabular-nums` on any counter whose rule uses the `font` shorthand.
 - **Do** mirror any new colour in `src/palette.ts` if Pixi draws it.
 - **Do** show mastery and effort as Ink meters, cells, charts and dots plus a number or word.
 - **Do** collapse CSS motion under `prefers-reduced-motion`; on the canvas the hit glow fades at one size and the waiting ring and ghost key hold steady (Calm is the only tier).
@@ -608,8 +616,9 @@ Two fingers on the staff zoom it, a double-tap resets it, ⌘-wheel or a trackpa
 | Colour | lamp / lamp-hi / lamp-ink | #ffc83d / #ffd766 / #1a1300 | verb and now |
 | Colour | R / L / L-edge | #3fe0ff / #ff4fa3 / #ff7bbd | hands |
 | Colour | perfect / great / good / bad | #d7ff3d / #34e89a / #ff8a3d / #ff4a3d | judgement |
-| Type, Display italic | 17 / 22 / 24 / 28 / 30 / 34 / 40 / 54 | staff grade word / section / Over time figure / title, big button, tempo, drawer h2 / HUD numeral / results h2, chord / page h1, judge / ready title | announced |
-| Type, Display italic, stage | 160 / 88 | count-in / results figure | announced |
+| Type, Newsreader | 19 / 20 / 28 / 34 / 42 / 44 / 52 | top title / piece name / big button, Listening back / results verdict / judge / page h1 / ready title | announced, names of music |
+| Type, Newsreader, stage | 160 / 88 | count-in / results figure | announced |
+| Type, system numeral (tabular) | 22 / 24 / 28 / 30 / 32 | Memorise digits / Over time / tempo / HUD / chord readout | counters |
 | Type, system | 12 / 13 / 15 / 18 / 20 / 22 | HUD caption, bar numbers / label, kbd, fine, sub-line / body, controls / row name, ready sentence | read |
 | Spacing | 4 / 8 / 12 / 16 / 24 / 32 | gaps, card gaps, bar padding, section gaps, page top | rhythm |
 | Spacing | 6, 10, 14, 18, 20 | inside controls, rows and cards | local |
@@ -658,7 +667,7 @@ HUD by mode: Perform shows Accuracy (a percentage, a dash until a note is judged
 ### Copy rules
 
 - Label, value, nothing else. A control that names itself gets no sentence.
-- Sentence case everywhere; Display italic is uppercased by CSS, not by typing.
+- Sentence case everywhere, in both voices; nothing is uppercased by CSS.
 - No parentheticals, no "please", "simply", "note that", no hedging.
 - One fact once. A number or state is not repeated in a header, a caption and a note.
 - Empty states carry one action in one sentence ("Add a MIDI or MusicXML file, or drop one anywhere on this page.").
@@ -701,7 +710,7 @@ Recorded from the build; none of these is a rule for new surfaces.
 - The Sight Run record tag uses the Next style away from its button, stretching the One Lamp Rule (the rhythm echo's struck cells are Ink now).
 - The Theory and Scales ledes and the Sight Run card carry sentences, against the copy rule.
 - Progress mastery cells are 30px wide with a fine pointer (44px on touch), under the 40px floor.
-- Memorise's Display-italic stage digits differ from other segments, on purpose.
+- Memorise's larger stage digits (22px) differ from other segments, on purpose.
 - The metronome's beat dots are unlabelled.
 - The HUD shows a dash and "In a row 0" before a note is played; the "In a row" and "Streak" counters are accuracy runs, kept on purpose.
 - The Compare strip colours a column Great mint or Miss red for better or worse; the line beside it says the same in words, but the colour is spent on a bar, against the Semantic Hue Rule. The On-screen keys use Right-Hand Cyan for a pressed key, a hand hue on chrome. The Start here card ringed in Lamp is a now-marker that is not a button.
