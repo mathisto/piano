@@ -133,7 +133,7 @@ function listen(k: Take, back: HTMLElement, label: string) {
   }
   const bar = document.createElement('div')
   bar.className = 'takebar'
-  bar.innerHTML = `<b>${label}</b><small>Any key stops</small><button class="btn sm" type="button">${icon('x')}Stop</button>`
+  bar.innerHTML = `<b>${label}</b><small>Tap or press any key to stop</small><button class="btn sm" type="button">${icon('x')}Stop</button>`
   const key = (e: Event) => {
     e.preventDefault()
     e.stopImmediatePropagation() // Escape would leave the piece, Space would start it again
@@ -155,7 +155,7 @@ function listen(k: Take, back: HTMLElement, label: string) {
   $('#stage').append(bar)
   addEventListener('keydown', key, true)
   addEventListener('pointerdown', tap, true)
-  say(`${label}. Any key stops.`)
+  say(`${label}. Tap or press any key to stop.`)
   follow()
 }
 
@@ -190,8 +190,8 @@ function compareHtml(k: Take, last: Take): string {
   const w = c.bars.length * W
   const [na, la] = c.all
   const said = [
-    up.length ? `${jg('great')}More right in ${list(up)}.` : '',
-    down.length ? `${jg('miss')}Fewer right in ${list(down)}.` : '',
+    up.length ? `${jg('great')}More right notes in ${list(up)}.` : '',
+    down.length ? `${jg('miss')}Fewer right notes in ${list(down)}.` : '',
     !up.length && !down.length ? 'Bar by bar, much as last time.' : '',
     na.off !== null && la.off !== null ? `On average ${ms(na.off)}; last time ${ms(la.off)}.` : '',
   ]

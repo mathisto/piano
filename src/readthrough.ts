@@ -39,7 +39,7 @@ export function pickPiece(pieces: RtPiece[], prog: Map<string, Progress>, skip =
   const why = !fresh
     ? 'You have played every piece here, so this is the one you played longest ago.'
     : rank(piece.level) < lv
-      ? `You play ${LEVELS[lv]} pieces. Easy new music is the usual material for practising reading, so this is a new ${piece.level} piece.`
+      ? `A new ${piece.level} piece, below the ${LEVELS[lv]} pieces you play: reading grows with plenty of easy new music.`
       : `A new ${piece.level} piece you have not played yet.`
   return { piece, fresh, why }
 }
@@ -98,19 +98,19 @@ export function summaryCard(s: Summary, back = 'Songs') {
   return `<div class="results"><div class="card rt-card" role="region" aria-label="Read-through summary">
     <div class="big-grade">${pct(s.acc)}<span class="hcap">accuracy</span></div>
     <div class="stats">
-    <h2>Read through${s.rate < 1 ? ` at ${pct(s.rate)} tempo` : ''}</h2>
+    <h2>Read-through${s.rate < 1 ? ` at ${pct(s.rate)} tempo` : ''}</h2>
     <p class="line"><b>${s.caught}</b> of ${s.total} notes caught · <b>${s.wrong}</b> wrong ${s.wrong === 1 ? 'note' : 'notes'}</p>
-    ${silent ? '<p class="line">No notes came in from the keyboard. Is it connected, or was this a listen?</p>' : ''}
+    ${silent ? '<p class="line">No notes came in from the keyboard. Check that it is connected, then try again.</p>' : ''}
     <div class="rt-bars-wrap"><div class="rt-strip" style="--n:${s.bars}"><div class="rt-bars" role="img" aria-label="${bad.length ? `Slipped in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
       <div class="rt-ends" aria-hidden="true"><span>Bar 1</span><span>Bar ${s.bars}</span></div></div>
-      ${silent ? '' : `<p class="line rt-sub">${!bad.length ? 'No bar slipped. Keep going like that.' : bad.length > 6 ? `Slipped in ${bad.length} of ${s.bars} bars.` : `Slipped in ${bad.length === 1 ? 'bar' : 'bars'} ${barList(bad)}.`}</p>`}</div>
+      ${silent ? '' : `<p class="line rt-sub">${!bad.length ? 'No bar slipped.' : bad.length > 6 ? `Slipped in ${bad.length} of ${s.bars} bars.` : `Slipped in ${bad.length === 1 ? 'bar' : 'bars'} ${barList(bad)}.`}</p>`}</div>
     ${s.worst && !silent ? `<p class="line">Bars ${s.worst.a + 1} to ${s.worst.b + 1} slipped most. Loop them slowly, then read on.</p>` : ''}
     ${s.next ? `<p class="line rt-sub">Next: <b>${esc(s.next.piece.title)}</b> · ${esc(s.next.piece.level)}. ${esc(s.next.why)}</p>` : ''}
     </div>
     <div class="row">
       ${s.next ? `<button class="btn primary" id="rtNext">${icon('play')}Next piece</button>` : ''}
-      ${s.worst && !silent ? `<button class="btn${s.next ? '' : ' primary'}" id="rtFix">${icon('loop')}Fix these</button>` : ''}
-      <button class="btn ghost" id="toLib">${back}</button>
+      ${s.worst && !silent ? `<button class="btn${s.next ? '' : ' primary'}" id="rtFix">${icon('loop')}Loop these bars</button>` : ''}
+      <button class="btn ghost" id="toLib">Back to ${back}</button>
     </div>
   </div></div>`
 }

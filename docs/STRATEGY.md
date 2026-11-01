@@ -63,7 +63,7 @@ Five-finger patterns, then C, G, D, F major scales hands separate, then contrary
 
 ## Settings: six rows
 
-Effects, Sound (Keyboard or This device, with Instrument and Volume under the second), Strictness (Easy, Standard, Strict), Keyboard (read-only, a picker only with more than one device), Timing (delay and Calibrate), Data (Export, Import, Clear). Advanced, collapsed: delay as a number, fall speed, all 88 keys, default hand split. Everything else is inline, on a key, per song, or deleted. Instant apply. No paragraphs.
+Effects, Sound (Keyboard or This device, with Instrument and Volume under the second), Timing (Easy, Standard, Strict), Keyboard (read-only, a picker only with more than one device), Delay (the field and Calibrate), Data (Export, Import, Clear). Advanced, collapsed: delay as a number, fall speed, all 88 keys, default hand split. Everything else is inline, on a key, per song, or deleted. Instant apply. No paragraphs.
 
 ## Copy rules
 

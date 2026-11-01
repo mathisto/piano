@@ -76,7 +76,7 @@ async function onDone(r: Result) {
     })
     const s = stats[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]
     note = ok
-      ? s.best > before ? `Three clean runs in a row: <b>${esc(cardName(sc.card))}</b> is solid at ${sc.bpm}.` : `A clean run, ${s.streak} of ${CLEAN_RUNS} at ${sc.bpm}.`
+      ? s.best > before ? `Three clean runs in a row: <b>${esc(cardName(sc.card))}</b> is solid at ${sc.bpm} bpm.` : `A clean run at ${sc.bpm} bpm: ${s.streak} of ${CLEAN_RUNS} in a row.`
       : `This run did not count: ${!r.clean ? 'a missed or wrong note' : r.acc < 0.85 ? 'the timing slipped' : 'the touch was uneven'}. The count starts again.`
   }
   const worst = worstBars(r.heat, c.song.bars.length)

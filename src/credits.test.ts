@@ -30,12 +30,12 @@ describe('credits', () => {
     expect(licenceName('CC-BY-SA-2.5')).toBe('CC BY-SA 2.5')
     expect(licenceName('CC0-1.0')).toBe('CC0 1.0')
     expect(licenceName('CC-BY-NC-SA-4.0')).toBe('CC BY-NC-SA 4.0')
-    expect(licenceName('Public Domain')).toBe('Public Domain')
+    expect(licenceName('Public Domain')).toBe('Public domain')
   })
 
   it('writes a one-line credit', () => {
     expect(creditLine(E)).toBe('Robert Schumann (1810–1856) · Mutopia Project, typeset by Philippe Hézaine · CC BY-SA 2.5')
-    expect(creditLine(PD)).toBe('Robert Schumann (1810–1856) · Mutopia Project, arr. Edvard Grieg · Public Domain')
+    expect(creditLine(PD)).toBe('Robert Schumann (1810–1856) · Mutopia Project, arr. Edvard Grieg · Public domain')
     expect(creditLine({ ...E, nc: true })).toMatch(/\(non-commercial\)$/)
     expect(creditLine(E)).not.toContain('\n')
   })

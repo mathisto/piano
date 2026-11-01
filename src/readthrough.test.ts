@@ -22,7 +22,7 @@ describe('read-through picker', () => {
     const r = pickPiece(P, prog({ i1: { days: [1] } }))!
     expect(r.piece.id).toBe('b1')
     expect(r.fresh).toBe(true)
-    expect(r.why).toMatch(/You play Intermediate pieces.*new Beginner piece/)
+    expect(r.why).toMatch(/A new Beginner piece, below the Intermediate pieces you play/)
   })
 
   it('skips pieces already played, then the nearest easier level, then harder ones', () => {

@@ -89,8 +89,8 @@ export function facts(song: Song): [string, string][] {
   return out.filter(([, v]) => v)
 }
 
-/** "Memorised 3/4" for a Songs row, once any stage is cleared. */
-export const memTag = (p?: Progress) => (p?.memStage ? ` <span class="tag">Memorised ${p.memStage}/${TOP}</span>` : '')
+/** "Memorising 3/4" for a Songs row once any stage is cleared, "Memorised" once the last is. */
+export const memTag = (p?: Progress) => (p?.memStage ? ` <span class="tag">${p.memStage >= TOP ? 'Memorised' : `Memorising ${p.memStage}/${TOP}`}</span>` : '')
 
 
 const stageSeg = (stage: number) =>
@@ -141,13 +141,13 @@ export function passCard(r: PassReport, back = 'Songs') {
     <h2>${STAGES[r.from]}</h2>
     <p class="line"><b>${r.slips}</b> ${r.slips === 1 ? 'slip' : 'slips'} · <b>${r.peeks}</b> ${r.peeks === 1 ? 'peek' : 'peeks'}</p>
     <p class="line">${verdict(r)}</p>
-    <div class="rt-bars-wrap"><div class="rt-strip" style="--n:${r.bars}"><div class="rt-bars" role="img" aria-label="${bad.length ? `Trouble in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
+    <div class="rt-bars-wrap"><div class="rt-strip" style="--n:${r.bars}"><div class="rt-bars" role="img" aria-label="${bad.length ? `Slipped in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
       <div class="rt-ends" aria-hidden="true"><span>Bar 1</span><span>Bar ${r.bars}</span></div></div>
       <p class="line rt-sub">${weak.length ? `Weak spots: ${weak.length === 1 ? 'bar' : 'bars'} ${barList(weak)}. Look at ${weak.length === 1 ? 'it' : 'them'} with the score, then hide ${weak.length === 1 ? 'it' : 'them'} again.` : 'No weak spots this pass.'}</p></div>
     </div>
     <div class="row">
       <button class="btn primary" id="memAgain">${icon('restart')}${r.to.moved > 0 ? 'On to' : 'Again at'} stage ${r.to.stage}</button>
-      <button class="btn ghost" id="toLib">${back}</button>
+      <button class="btn ghost" id="toLib">Back to ${back}</button>
     </div>
   </div></div>`
 }

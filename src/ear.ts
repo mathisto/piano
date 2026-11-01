@@ -193,10 +193,10 @@ export function scoreAt(at: number[], taps: number[], win: number | number[] = R
 /** Score taps against a bar of eighth-note onsets. */
 export const scoreTaps = (onsets: number[], taps: number[], win = RHYTHM.window) => scoreAt(onsets.map((o) => (o * beatMs()) / 2), taps, win)
 
-/** "Bias 12 ms late, spread 18 ms": the offset of the bar from the click, and how even the taps were inside it, kept apart. */
+/** "12 ms late, spread 18 ms": the offset of the bar from the click, and how even the taps were inside it, kept apart. */
 export function biasText(bias: number, spread: number) {
   const b = Math.round(bias)
-  return `Bias ${Math.abs(b) < 5 ? 'none' : `${Math.abs(b)} ms ${b > 0 ? 'late' : 'early'}`}, spread ${Math.round(spread)} ms`
+  return `${Math.abs(b) < 5 ? 'On the beat' : `${Math.abs(b)} ms ${b > 0 ? 'late' : 'early'}`}, spread ${Math.round(spread)} ms`
 }
 
 // ---- the card, as markup ----

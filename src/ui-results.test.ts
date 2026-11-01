@@ -14,6 +14,6 @@ it('a waiting run leads with the notes right first time, not an accuracy that is
 it('a Perform run says what the hero does not, and keeps each count with its word', () => {
   const html = results(r({ mode: 'perform', acc: 0.94, counts: { perfect: 30, great: 5, good: 0, late: 0, miss: 5 }, wrong: 0, maxCombo: 69, holds: 0.97 }), null)
   expect(html).toContain('94%<span class="hcap">accuracy</span>')
-  expect(html).toContain('<span class="nw"><b>5</b> missed</span> · <span class="nw"><b>0</b> wrong</span> · <span class="nw">longest run <b>69</b></span>')
+  expect(html).toContain('<span class="nw"><b>5</b> missed</span> · <span class="nw"><b>0</b> wrong</span> · <span class="nw">most in a row <b>69</b></span>')
   expect(html).toContain('held <b>97%</b>')
 })

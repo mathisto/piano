@@ -97,7 +97,7 @@ export const exerciseMeta = (id: string, song: Song): CoverMeta => {
 export const rightOf = (key: string | undefined, meter: string | undefined, local?: boolean) =>
   local ? `${key ?? 'KEY —'} · ${meter ?? 'METRE —'}` : [key, meter].filter(Boolean).join(' · ')
 
-export const leftOf = (m: CoverMeta) => (m.local ? `LOCAL IMPORT · ${m.local}` : (m.by ?? ''))
+export const leftOf = (m: CoverMeta) => (m.local ? `Your file · ${m.local}` : (m.by ?? ''))
 
 /** The first bars of a score and nothing else: all a cover needs, and a few notes to hold instead of a piece. */
 export function incipit(song: Song): Song {

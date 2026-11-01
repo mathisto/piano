@@ -40,7 +40,7 @@ const ladderRows = (l?: LadderLevel) =>
 export function pathSection(p: Level[], next?: Row, ladder: LadderLevel[] = []): string {
   const open = p.find((l) => l.next)?.level
   return `<h2 class="sec">Path</h2>
-    <p class="note">Five levels from the public graded syllabi, in our own words. Coming: nothing trains it yet.</p>
+    <p class="note">Five levels drawn from the public graded syllabi, in our own words. Coming means the app has nothing to practise it with yet.</p>
     ${p
       .map(
         (l) => `<details class="all lvl"${l.level === open ? ' open' : ''}><summary>Level ${l.level}<span>${l.solid} of ${l.total} solid${l.coming ? ` · ${l.coming} coming` : ''}${ladder[l.level - 1]?.pieces.length ? ` · ${ladder[l.level - 1].ready} of ${ladder[l.level - 1].pieces.length} ${ladder[l.level - 1].pieces.length === 1 ? 'piece' : 'pieces'} ready` : ''}</span></summary>

@@ -82,7 +82,7 @@ Rationale: the incipit is the unique visual data, and the monochrome system scal
 
 ### Missing metadata
 
-- Composer header: `LOCAL IMPORT · MIDI` or `LOCAL IMPORT · MUSICXML`.
+- Composer header: `Your file · MIDI` or `Your file · MUSICXML` (sentence case; the cover's CSS sets the capitals).
 - Title: sanitized filename stem; if empty, `Untitled MIDI` or `Untitled score`.
 - Key/metre: `KEY — · METRE —`.
 - Secondary line: localized import date.

@@ -94,7 +94,7 @@ export function qaCards(level: number): TCard[] {
     const id = `ear:qa:${level}:${answer ? 'a' : 'q'}:${tonic}:${ks.join(',')}:${lens.join('')}`
     out.set(id, {
       id,
-      prompt: `${answer ? 'Answer' : 'Ask back'} in ${key}: finish on ${endName}`,
+      prompt: `${answer ? 'Answer' : 'Ask a question'} in ${key}: end on ${endName}`,
       name: `${answer ? 'answer' : 'question'} in ${key}`,
       steps: [],
       show: `${L.echo ? 'The same rhythm, ' : ''}${MIN_NOTES} notes or more, all in ${key}, a steady pulse, ending on ${endName}`,

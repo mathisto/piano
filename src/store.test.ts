@@ -78,7 +78,7 @@ describe('export and import', () => {
   })
 
   it('refuses what is not an export', async () => {
-    await expect(store.importAll('{"version":2}')).rejects.toThrow('Not a piano export.')
+    await expect(store.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
   })
 
   it('the same file imported again keeps its track choice', async () => {

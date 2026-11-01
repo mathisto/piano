@@ -17,16 +17,16 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <div class="dhead"><h2 id="drawerTitle" tabindex="-1">Settings</h2><button class="btn icon ghost" id="sClose" aria-label="Close settings">${icon('x')}</button></div>
   <h3 class="sgh">Playing</h3>
   <div class="sgroup">
-    ${row('Timing', seg('strict', 'Timing', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict), 'How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less, and also checks how long you hold each note.')}
-    ${row('Touch feedback', seg('coach', 'Touch feedback', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Steady'], ['strict', 'Strict']], settings.coach), 'Marks notes you played much louder or softer than the ones around them. Gentle points out only big jumps; Strict small ones too.')}
-    ${row('Delay', `<div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal"${inputs.length ? '' : ' disabled'}>Calibrate</button></div>`, `Makes up for the time your keyboard and speakers take, so notes are judged when you really played them. Calibrate measures it${inputs.length ? '.' : ', and needs a keyboard: connect one first.'}${outputLatency() > 0.08 ? ` This device's sound adds about ${Math.round(outputLatency() * 1000)} ms (Bluetooth?); wired headphones or the speakers are on time.` : ''}`)}
+    ${row('Timing', seg('strict', 'Timing', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict), 'How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less. In Perform, Standard and Strict also check how long you hold each note; Easy does not.')}
+    ${row('Touch feedback', seg('coach', 'Touch feedback', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']], settings.coach), 'Watches how loud each note is: marks notes much louder or softer than the ones around them, and adds evenness, dynamics and pedal lines to results. Gentle flags only big differences; Strict small ones too.')}
+    ${row('Delay', `<div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal"${inputs.length ? '' : ' disabled'}>Calibrate</button></div>`, `Makes up for the time your keyboard and speakers take, so notes are judged when you really played them. Calibrate measures it${inputs.length ? '.' : ', and needs a keyboard: connect one first.'}${outputLatency() > 0.08 ? ` This device's sound arrives about ${Math.round(outputLatency() * 1000)} ms late, as Bluetooth audio does; wired headphones or the built-in speakers are on time.` : ''}`)}
   </div>
   <h3 class="sgh">Sound</h3>
   <div class="sgroup">
-    ${row('Sound from', seg('sound', 'Sound from', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard'), device ? 'The app plays what you press, with the instrument below.' : "Your keyboard's own speakers. The app stays quiet except for the count-in and metronome.")}
+    ${row('Sound from', seg('sound', 'Sound from', [['keyboard', 'Keyboard'], ['device', 'This device']], device ? 'device' : 'keyboard'), device ? 'The app plays what you press, with the instrument below.' : "Your keyboard's speakers play what you press. The app still sounds what it plays itself: Listen, the parts it plays for you, ear questions, the count-in and the metronome.")}
     ${
       device
-        ? `${row('Instrument', `<select id="sInst" aria-label="Instrument">${INSTRUMENTS.map((i) => `<option value="${i.id}"${settings.instrument === i.id ? ' selected' : ''}>${i.label}</option>`).join('')}</select>`, loadState(settings.instrument) === 'failed' ? `${instrument(settings.instrument).label} failed to load. Using the synth.` : '')}
+        ? `${row('Instrument', `<select id="sInst" aria-label="Instrument">${INSTRUMENTS.map((i) => `<option value="${i.id}"${settings.instrument === i.id ? ' selected' : ''}>${i.label}</option>`).join('')}</select>`, loadState(settings.instrument) === 'failed' ? `${instrument(settings.instrument).label} did not load, so a simple synth is playing. Check the connection, then choose it again.` : '')}
     ${row('Volume', `<input id="sVol" type="range" min="0.1" max="1" step="0.05" value="${settings.volume}" aria-label="Volume">`)}`
         : ''
     }
@@ -34,12 +34,12 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   </div>
   <h3 class="sgh">Display</h3>
   <div class="sgroup">
-    ${row('Appearance', seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme), 'Auto follows the iPad: dark at night, light by day.')}
+    ${row('Appearance', seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme), "Auto follows this device's light or dark setting.")}
     ${row('Effects', seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx)), 'A soft glow on the falling notes and keys as you play.')}
   </div>
   <h3 class="sgh">Your data</h3>
   <div class="sgroup">
-    ${row('Progress', `<div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" id="sSummary">Summary for a teacher</button><button class="btn ghost" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div>`, 'Everything stays on this device. Export saves a file you can import later, or on another device.')}
+    ${row('Backup', `<div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" id="sSummary">Summary for a teacher</button><button class="btn ghost" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div>`, 'Everything stays on this device. Export saves your progress, settings and files in one file; Import restores it, here or on another device.')}
   </div>
   <details><summary>Advanced</summary>
     <div class="sgroup">
@@ -49,9 +49,9 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
     <label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs.length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>
     <label class="switch"><input id="sMarks" type="checkbox"${settings.marks ? ' checked' : ''}><i></i>Always show touch marks</label>
-    <label class="switch"><input id="sWritten" type="checkbox"${settings.asWritten ? ' checked' : ''}><i></i>Play the file's dynamics</label>
+    <label class="switch"><input id="sWritten" type="checkbox"${settings.asWritten ? ' checked' : ''}><i></i>Aim for the file's dynamics</label>
     ${row('Fall speed', `<span class="slider"><small>Slow</small><input id="sFall" type="range" min="1" max="5" step="0.5" value="${6.5 - settings.fall}" aria-label="Fall speed"><small>Fast</small></span>`)}
-    ${row('Hand split', `<select id="sSplit" aria-label="Hand split">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}</option>`).join('')}</select>`, 'In a one-track file, notes from here up go to the right hand.')}
+    ${row('Hand split', `<select id="sSplit" aria-label="Hand split">${[55, 57, 60, 62, 64].map((p) => `<option value="${p}"${p === settings.split ? ' selected' : ''}>${noteName(p)}${p === 60 ? ' (middle C)' : ''}</option>`).join('')}</select>`, 'In a one-track file, notes from here up go to the right hand.')}
     ${row('Key touch', keyTouchSelect('sKeyTouch'), KEY_TOUCH_HINT)}
     </div>
   </details>

@@ -30,7 +30,7 @@ describe('keep the beat', () => {
     expect(s.drift).toBeCloseTo(-6, 5)
     expect(s.spread).toBeCloseTo(0, 5)
     expect(s.ok).toBe(true)
-    expect(pulseText(s)).toMatch(/^You sped up by 6 ms a beat\. Bias 20 ms late, spread 0 ms\.$/)
+    expect(pulseText(s)).toMatch(/^You sped up by 6 ms a beat\. 20 ms late, spread 0 ms\.$/)
   })
   it('a slow-down is positive drift; steady is said to be steady; a constant offset is bias only', () => {
     const p = play(keepCards(1)[0])
@@ -39,7 +39,7 @@ describe('keep the beat', () => {
     expect(flat.drift).toBeCloseTo(0, 5)
     expect(flat.bias).toBeCloseTo(40, 5)
     expect(flat.ok).toBe(true) // bias is reported, not removed: 40 ms is inside the window
-    expect(pulseText(flat)).toMatch(/^You held the beat steady\. Bias 40 ms late/)
+    expect(pulseText(flat)).toMatch(/^You held the beat steady\. 40 ms late/)
   })
   it('fails on drift past the limit or a tap past the window, and says so', () => {
     const p = play(keepCards(3)[0])

@@ -67,7 +67,7 @@ export class Dock {
               <button class="btn icon sm" id="tempoUp" aria-label="Faster">${icon('plus')}</button>
             </div>
             <div class="presets">${[50, 75, 100].map((t) => `<button class="btn sm" data-t="${t}" aria-label="Tempo ${t} percent">${t}%</button>`).join('')}</div>
-            <button class="btn sm" id="ladder" aria-pressed="true" title="Three clean passes of the loop raise the tempo 5%; two messy ones lower it" hidden></button>
+            <button class="btn sm" id="ladder" aria-pressed="true" title="Three clean loops raise the tempo 5%; two loops with slips lower it." hidden></button>
           </div>
         </div>
         <div class="pop">
@@ -164,7 +164,7 @@ export class Dock {
     const lad = this.host.querySelector<HTMLElement>('#ladder')!
     lad.hidden = !learn || !g.loop
     lad.setAttribute('aria-pressed', String(g.autoTempo))
-    lad.textContent = g.autoTempo ? 'Ladder on' : 'Ladder off'
+    lad.textContent = g.autoTempo ? 'Auto tempo on' : 'Auto tempo off'
     this.syncMetro()
     ;(this.host.querySelector('#hidePlayed') as HTMLInputElement).checked = g.hidePlayed
     ;(this.host.querySelector('#holdAdvance') as HTMLInputElement).checked = g.holdAdvance
@@ -177,7 +177,7 @@ export class Dock {
     // in Perform the strip is a progress bar, not a control
     this.scrub.classList.toggle('still', !learn)
     this.scrub.setAttribute('role', learn ? 'slider' : 'progressbar')
-    this.scrub.setAttribute('aria-label', learn ? 'Song position' : 'Song progress')
+    this.scrub.setAttribute('aria-label', learn ? 'Position in the piece' : 'Progress through the piece')
     this.scrub.tabIndex = learn ? 0 : -1
     this.drawLoop()
   }

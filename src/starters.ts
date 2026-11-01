@@ -102,7 +102,7 @@ export const STARTERS: Starter[] = [
     },
   },
   {
-    by: 'Traditional, 16th c.',
+    by: 'Traditional, 16th century',
     level: 'Elementary',
     spec: {
       id: 'starter-greensleeves',

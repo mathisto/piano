@@ -336,7 +336,7 @@ async function mainFlow() {
     const r = await ev(page, () => window.__e2e.perform().then((r) => ({ acc: r.acc, clean: r.clean, even: r.even?.rating })))
     ok(r.clean && r.acc >= 0.95, `run not clean: ${JSON.stringify(r)}`)
     const card = await res(page, 'Results')
-    ok(/A clean run, 1 of 3/.test(await card.textContent()), 'the clean run was not counted')
+    ok(/A clean run at \d+ bpm: 1 of 3 in a row/.test(await card.textContent()), 'the clean run was not counted')
     await axe(page, 'scale results', '#res')
     const st = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['scale:stats'])))
     ok(Object.values(st).some((x) => x.streak === 1 && x.n === 1), 'scale:stats not recorded')
@@ -367,7 +367,7 @@ async function mainFlow() {
 
   await theory(page, ['chords', 'cadences'])
 
-  await feature('5 Read through: look-through, start early, play, summary, Fix these', page, async () => {
+  await feature('5 Read through: look-through, start early, play, summary, Loop these bars', page, async () => {
     await nav(page, 'songs')
     await rowClick(page, '#library [data-rt^=starter-twinkle]')
     await ready(page)
@@ -585,7 +585,7 @@ const guideFlow = () => fresh({
     ok(!(await page.$(card)), 'Hide not remembered')
     await page.keyboard.press('?')
     await page.waitForSelector('dialog#help[open] h2')
-    await wait(page, () => /How the touch coach works/.test(document.querySelector('#help').textContent), undefined, 5000) // the text arrives with ui-sheets
+    await wait(page, () => /How touch feedback works/.test(document.querySelector('#help').textContent), undefined, 5000) // the text arrives with ui-sheets
     await axe(page, 'Help sheet', '#help')
     await page.keyboard.press('Escape')
     await page.waitForSelector('dialog#help:not([open])', { state: 'attached' })
@@ -714,17 +714,17 @@ const shellFlow = () => fresh({
 })
 
 const fluentFlow = () => fresh({
-  async '19 Read: Fluent tag, then For speed once only Solid'(page) {
+  async '19 Read: Fluent tag, then Faster once only Solid'(page) {
     await ev(page, () => window.__piano.solidUpTo(3)) // three stages answered in 1.2 s a card: inside the Fluent clock
     const tags = () => ev(page, () => [...document.querySelectorAll('#read tr')].filter((r) => r.querySelector('button[data-stage]')).slice(0, 4).map((r) => (r.querySelector('td.name .tag:not(.next)')?.textContent ?? '-') + (r.querySelector('button[data-fast]') ? '/speed' : '')))
     ok((await tags()).join() === 'Fluent,Fluent,Fluent,-', `rows ${(await tags()).join()}`)
     await ev(page, async () => { const s = await window.__e2e.idb('drill:stats'); for (const k in s) s[k].rt = 2000; await window.__e2e.idb('drill:stats', s) }) // Solid (2.5 s) but not Fluent (1.5 s)
     await redraw(page, 'read')
     ok((await tags()).join() === '-/speed,-/speed,-/speed,-', `rows ${(await tags()).join()}`)
-    ok(/Solid · Fluent at 1.5 s/.test(await text(page, '#read table')), 'no "Fluent at" line')
-    await page.click('#read button[aria-label="Practice Treble landmarks for speed"]')
+    ok(/Solid · Fluent under 1.5 s a card/.test(await text(page, '#read table')), 'no "Fluent under" line')
+    await page.click('#read button[aria-label="Practise Treble landmarks faster"]')
     await ready(page)
-    ok((await text(page, '#title')).includes('for speed'), 'For speed did not start a speed set')
+    ok((await text(page, '#title')).includes('for speed'), 'Faster did not start a speed set')
     await leave(page, 'read')
   },
 })

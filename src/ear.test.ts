@@ -123,8 +123,8 @@ describe('scoring taps', () => {
     expect(scoreTaps(onsets, [...grid4, 3000]).ok).toBe(false)
   })
   it('names bias and spread apart', () => {
-    expect(biasText(12.4, 18.2)).toBe('Bias 12 ms late, spread 18 ms')
-    expect(biasText(-30, 5)).toBe('Bias 30 ms early, spread 5 ms')
-    expect(biasText(2, 5)).toBe('Bias none, spread 5 ms')
+    expect(biasText(12.4, 18.2)).toBe('12 ms late, spread 18 ms')
+    expect(biasText(-30, 5)).toBe('30 ms early, spread 5 ms')
+    expect(biasText(2, 5)).toBe('On the beat, spread 5 ms')
   })
 })

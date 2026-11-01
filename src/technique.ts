@@ -19,13 +19,13 @@ export interface Opts {
 
 export const PATTERNS: Record<Pattern, string> = { five: 'Five-finger', scale: 'Scale', arp: 'Arpeggio', contrary: 'Contrary motion', rhythm: 'Rhythm', pedal: 'Pedal changes' }
 export const DYNS: Record<Dyn, string> = {
-  soft: 'Steady soft',
-  medium: 'Steady medium',
-  hard: 'Steady hard',
-  cresc: 'Crescendo, soft to hard',
-  decresc: 'Decrescendo, hard to soft',
+  soft: 'Soft throughout',
+  medium: 'Medium throughout',
+  hard: 'Loud throughout',
+  cresc: 'Crescendo, soft to loud',
+  decresc: 'Diminuendo, loud to soft',
   accent: 'Accent the first beat',
-  even: 'Even: every note alike',
+  even: 'Even, any level',
   balance: 'Melody over accompaniment',
 }
 export const ARTICS: Record<'normal' | Artic, string> = { normal: 'Normal', legato: 'Legato', staccato: 'Staccato' }

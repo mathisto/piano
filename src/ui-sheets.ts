@@ -81,18 +81,20 @@ export const HELP = `<h3>What each tab is for</h3>
       <dt>Progress</dt><dd>Your week, accuracy over time and the notes you read well.</dd>
     </dl>
     <h3>Lead sheet</h3>
-    <p class="fine">On a piece with a left hand, Notes shown can be Lead sheet: the melody with a chord symbol where the chord changes. The melody is the voice of a song, else the top note of the right hand. The chords are guessed from the notes a bar or half bar at a time, so a passing note can fool them; they are an aid, not the composer's. App plays the chords sounds each one as a block chord. A run at any level but Full does not count toward Ready.</p>
-    <h3>How the touch coach works</h3>
-    <p class="fine">Your keyboard reports when each key is struck and how hard. The coach marks a note clearly louder or softer than its neighbours with a small triangle: over the head for louder, under for softer. It also measures timing and note length.</p>
-    <p class="fine">It cannot see your fingers, wrist or posture, so even numbers do not prove good technique: ask a teacher about what they cannot show. The marks fade as your touch evens out, and some runs have none on purpose. A keyboard set to fixed touch cannot be measured.</p>
+    <p class="fine">On a piece with a left hand, Notes shown can be Lead sheet: the melody with a chord symbol where the chord changes. The melody is the vocal line when there is one, otherwise the top note of the right hand. The chords are guessed from the notes a bar or half bar at a time, so a passing note can fool them; they are an aid, not the composer's. With App plays the chords on, the app plays each chord as a block, with its bass, at the tempo. A run with Notes shown set to anything but Full does not count toward Ready.</p>
+    <h3>How touch feedback works</h3>
+    <p class="fine">Your keyboard reports when each key is struck and how hard. Touch feedback marks a note clearly louder or softer than its neighbours with a small triangle: over the head for louder, under it for softer. Results also report timing and note length.</p>
+    <p class="fine">It cannot see your fingers, wrist or posture, so even numbers do not prove good technique: ask a teacher about what the numbers cannot show. The marks fade as your touch evens out, and some runs have none on purpose. A keyboard set to fixed touch cannot be measured.</p>
     <h3>How a scale counts as solid</h3>
     <p class="fine">Three runs in a row at tempo, each with every note right, in time and even. A miss starts the count again. A stage is solid when all its scales are.</p>
+    <h3>When a piece is Ready</h3>
+    <p class="fine">After a clean run at 90% of the tempo or more, without Wait for me, on two different days. Runs with fewer notes shown, with only your part, or looped do not count.</p>
     <h3>How review spacing works</h3>
     <p class="fine">A card or piece you get right comes back after about 1 day, then 2, 4, 8 and 16; one you miss comes back sooner. Anything due shows a Due tag. Spaced review is one of the better-supported ways to remember; the exact days are our choice, not a proven best.</p>
     <h3>Keyboard shortcuts</h3>
-    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>B</kbd><span>Metronome</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This help</span></div>
+    <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Switch view: staff, both, falling notes</span><kbd>- +</kbd><span>Staff size</span><kbd>B</kbd><span>Metronome</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide or show controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This help</span></div>
     <p class="fine">Settings, Advanced, Keyboard shortcuts turns the single keys off.</p>
-    <h3>No keyboard</h3>
-    <p class="fine"><kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p>
+    <h3>Computer keys</h3>
+    <p class="fine">With no piano connected, <kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black keys, and <kbd>Z</kbd> and <kbd>X</kbd> shift the octave.</p>
     <h3>Hearing every note twice?</h3>
-    <p class="fine">Turn Local Control off on the keyboard.</p>`
+    <p class="fine">The keyboard and the app are both sounding. In Settings, set Sound from to Keyboard. Or, to hear only the app, turn the keyboard's Local Control off.</p>`
