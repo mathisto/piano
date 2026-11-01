@@ -29,7 +29,6 @@ export function review(res: HTMLElement, r: Result) {
   const host = $('#staff')
   const play = $('#play')
   const marks = marksOf(game.judge, game.song)
-  let was = settings.view
   let at = -1
   let zoom = 0
   let ac: AbortController | undefined
@@ -85,10 +84,9 @@ export function review(res: HTMLElement, r: Result) {
     if (ac) return
     ac = new AbortController()
     const on = { signal: ac.signal }
-    was = settings.view
-    if (was !== 'both') {
+    if (settings.view !== 'both') {
       // the card covers the falling notes: in the staff-only view they are a strip, in the falling-only view there is no paper. Both, until the card goes.
-      settings.view = 'both'
+      game.reviewing = true
       applyLayout()
       highway.layout()
     }
@@ -129,8 +127,8 @@ export function review(res: HTMLElement, r: Result) {
     pop.remove()
     play.classList.remove('alltiming')
     if (root.classList.contains('folded')) fold(false)
-    if (settings.view !== was) {
-      settings.view = was
+    if (game.reviewing) {
+      game.reviewing = false
       applyLayout()
       highway.layout()
       staff.render()

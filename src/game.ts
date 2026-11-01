@@ -119,9 +119,11 @@ export class Game {
     return this.calib ? 0 : settings.offset
   }
 
-  /** Which panes to show. Reading drills always need the staff. */
+  reviewing = false // a song's results card is up: it sits over the falling notes, so both panes show until it goes; the saved view is untouched
+
+  /** Which panes to show. Reading drills, and a run's review, always need the staff. */
   get view(): 'both' | 'sheet' | 'falling' {
-    return this.mode === 'read' ? 'both' : settings.view
+    return this.mode === 'read' || this.reviewing ? 'both' : settings.view
   }
 
   on(fn: (e: GameEvent) => void) {
