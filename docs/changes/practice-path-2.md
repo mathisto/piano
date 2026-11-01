@@ -21,11 +21,11 @@ Branch `feature/path2`. Phase 2 of `docs/research/practice-path.md` (sections 2.
 - Read-through and Memorise cards keep their own next step (Next piece, Again): the brief named the song, Read, Sight run, scales, technique and Theory cards. A read-through's Next piece already is its Continue.
 - History rows of reading sets, Sight runs and Theory still have no `id` (phase 1 gave ids to song, scale and technique rows only); `by` matches an offer to a row by its kind.
 - The plan's done rows are not shown once the whole plan is done (the plan "collapses to one line"); the week strip keeps the minutes.
-- Today's rows and view moved from `ui.ts` (boot) to the lazy `ui-views.ts`, which Today now loads with the covers' chunk it already waited for.
+- Today's rows and view moved from `ui.ts` (boot) to their own lazy chunk, `today-view.ts`, which Today loads beside the covers' chunk it already waited for. Its own chunk, not `ui-views`: with the other pages' views refused (e2e 22b), Today still draws.
 
 ## Boot budget
 
-222,068 bytes before (test mode), 219,923 after: moving Today's rows and view out of boot freed more than `snapshot()`, the launcher, the hooks and the store fields cost. Budget 223,000 untouched; `next` is on the must-stay-lazy list.
+222,068 bytes before (test mode), 219,873 after: moving Today's rows and view out of boot freed more than `snapshot()`, the launcher, the hooks and the store fields cost. Budget 223,000 untouched (it could come down to about 220,500 once the covers branch has merged); `next` and `today-view` are on the must-stay-lazy list.
 
 ## Tested
 

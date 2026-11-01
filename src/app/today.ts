@@ -49,7 +49,7 @@ async function snapshot() {
   const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   const guide = await firstWeek(days)
-  const [{ coverHtml }, { todayRows }] = await Promise.all([cover(), import('../ui-views')]) // the rows' words and buttons load with the page
+  const [{ coverHtml }, { todayRows }] = await Promise.all([cover(), import('../today-view')]) // the rows' words and buttons load with the page
   const d: TodayData = {
     guide,
     last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'thumb', last.cover), pace: last.prog?.pace },
@@ -87,7 +87,7 @@ async function snapshot() {
 }
 
 export async function showToday() {
-  const [{ d, at }, { nextUp }, { drawCovers }, { todayView }] = await Promise.all([snapshot(), import('../next'), cover(), import('../ui-views')])
+  const [{ d, at }, { nextUp }, { drawCovers }, { todayView }] = await Promise.all([snapshot(), import('../next'), cover(), import('../today-view')])
   todayView($('#today'), d, nextUp(at))
   drawCovers($('#today'), coverSong)
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => planLen(Number(r.value) as PlanMin)))

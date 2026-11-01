@@ -3,7 +3,7 @@ vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} })
 const { guideDay } = await import('./guide')
 const { nextUp } = await import('./next')
 const { planOf } = await import('./plan')
-const { todayRows, todayView } = await import('./ui-views')
+const { todayRows, todayView } = await import('./today-view')
 type D = Parameters<typeof todayView>[1]
 
 const d: D = {
