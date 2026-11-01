@@ -314,7 +314,7 @@ export function popup(grade: Grade | null, off: number, p: number, noteId: numbe
   el.style.left = `${x}px`
   el.style.top = `${highway.recY - 96}px`
   el.getAnimations().forEach((a) => a.cancel())
-  const dy = reduced || settings.fx === 0 ? 0 : -22
+  const dy = reduced.matches || settings.fx === 0 ? 0 : -22
   el.animate(
     [
       { opacity: 0, transform: `translate(-50%, ${dy ? 8 : 0}px) scale(${dy ? 0.85 : 1})` },
@@ -347,10 +347,22 @@ let idle = 0
 export function wake(phase = false) {
   const run = !!current && game.phase !== 'ready' && game.phase !== 'paused' && game.phase !== 'done'
   if (phase && run && idle) return
-  document.body.classList.remove('hush')
+  hush(false)
   clearTimeout(idle)
-  idle = run ? window.setTimeout(() => document.body.classList.add('hush'), 2500) : 0
+  idle = run ? window.setTimeout(() => hush(true), 2500) : 0
 }
+/** The bar and dock fade while hushed, and are `inert` with it: the screen reader finds no invisible, dead controls. Focus in them is put back on waking. */
+let held: HTMLElement | undefined
+function hush(on: boolean) {
+  if (document.body.classList.contains('hush') === on) return // every pointer move wakes: nothing to do when already awake
+  const a = document.activeElement as HTMLElement
+  if (on && a.closest('.bar, #dock')) held = a // inert drops focus
+  document.body.classList.toggle('hush', on)
+  for (const e of document.querySelectorAll<HTMLElement>('.bar, #dock')) e.inert = on
+  if (!on && held && document.activeElement === document.body) held.focus({ preventScroll: true })
+  if (!on) held = undefined
+}
+export const unhush = () => hush(false)
 for (const ev of ['pointermove', 'pointerdown', 'keydown']) addEventListener(ev, () => wake(), { passive: true }) // only opacity changes, so waking costs no layout
 
 /** Hide the top bar so the staff and keyboard have the screen (M); again, back. */

@@ -63,12 +63,23 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
     (even?.chart ?? '')
+  // One fact once: the figure the card leads with is the hero, and the line carries what the hero does not (the misses, the wrong keys, the run)
+  const waited = r.first >= 0 // Learn, waiting: every note is played in the end, so accuracy is always 100% and says nothing; what shows is how many came right first
+  const nw = (html: string) => `<span class="nw">${html}</span>`
+  const facts = [
+    !waited && nw(`<b>${r.counts.miss}</b> missed`),
+    nw(`<b>${r.wrong}</b> wrong`),
+    perform && nw(`longest run <b>${r.maxCombo}</b>`),
+    r.dyn === 'even' && r.touch.n >= 4 && nw(`spread <b>±${Math.round(r.touch.sd)}</b>`),
+    r.touchPct >= 0 && nw(`touch in range <b>${Math.round(r.touchPct * 100)}%</b>`),
+    perform && r.holds >= 0 && nw(`held <b>${Math.round(r.holds * 100)}%</b>`),
+  ].filter(Boolean)
   return `
-  <div class="results"><div class="card song-res" role="dialog" aria-label="Results">
-    <div class="big-grade">${perform ? `${Math.round(r.acc * 100)}%` : r.clean ? icon('check') : icon('loop')}</div>
+  <div class="results"><div class="card song-res" role="region" aria-label="Results">
+    <div class="big-grade">${waited ? (r.first === 1 ? 100 : Math.min(99, Math.round(r.first * 100))) : Math.round(r.acc * 100)}%<span class="hcap">${waited ? 'first time right' : 'accuracy'}</span></div>
     <div class="stats">
     <h2>${perform ? (from === 'Songs' ? 'Song complete' : 'Run complete') : r.clean ? 'Cleared' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line"><b>${Math.round(r.acc * 100)}%</b> accuracy${perform ? ` · longest run <b>${r.maxCombo}</b> notes` : ''} · <b>${r.wrong}</b> wrong ${r.wrong === 1 ? 'note' : 'notes'}${r.dyn === 'even' && r.touch.n >= 4 ? ` · spread <b>±${Math.round(r.touch.sd)}</b>` : ''}${r.touchPct >= 0 ? ` · touch in range <b>${Math.round(r.touchPct * 100)}%</b>` : ''}${perform && r.holds >= 0 ? ` · held <b>${Math.round(r.holds * 100)}%</b>` : ''}</p>
+    <p class="line">${facts.join(' · ')}</p>
     ${note ? `<p class="line">${note}</p>` : ''}
     ${perform ? `<p class="line sub">${lean}</p>` : ''}
     ${even?.line ?? ''}
@@ -101,7 +112,7 @@ export interface DrillSummary {
 export function drillResults(d: DrillSummary) {
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Drill results">
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Drill results">
     <h2>${esc(d.stage)}: set complete</h2>
     <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · median <b>${secs(d.medianMs)}</b> a card</p>
     <div>
@@ -122,7 +133,7 @@ export function drillResults(d: DrillSummary) {
     }
     <div class="row">
       <button class="btn primary" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
-      <button class="btn" id="toStages">All stages</button>
+      <button class="btn ghost" id="toStages">All stages</button>
     </div>
   </div></div>`
 }
@@ -139,19 +150,19 @@ export interface RunSummary {
 
 export function runResults(d: RunSummary) {
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
-  const top = Math.max(3000, ...d.notes.map((n) => n.ms / n.n))
+  const top = Math.max(800, ...d.notes.map((n) => n.ms / n.n))
   const strip = [...d.notes]
     .sort((a, b) => a.p - b.p)
     .map((n) => `<div class="hbar" style="--h:${Math.round(((n.ms / n.n) / top) * 100)}%;--m:${Math.round((n.miss / n.n) * 100)}%" title="${esc(noteName(n.p, d.spec.fifths))}: ${secs(n.ms / n.n)}, ${n.miss} missed of ${n.n}"><i></i>${n.miss ? jg('miss') : ''}<span>${esc(noteName(n.p, d.spec.fifths))}</span></div>`)
     .join('')
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Run results">
     <h2>Run complete</h2>
     <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
     <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · best streak <b>${d.arc.best}</b> · median <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Longest yet on this range</span>' : d.best ? ` · your longest here is ${d.best.streak}` : ''}</p>
-    ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, × marks a note you missed, redder is missed more</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
+    ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, × marks a note you missed, redder is missed more.</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
   </div></div>`
 }
 
@@ -172,14 +183,14 @@ export function pacedResults(d: PacedSummary) {
   const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Card ${i + 1}: missed"` : ''}></i>`).join('')
   const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Run results">
+  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Run results">
     <h2>Run complete</h2>
     <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
     <p class="line">Hit <b>${d.hit} of ${d.n}</b> on the beat at <b>${d.spec.pace} bpm</b>, a card ${cardWord}${first >= 0 ? `. You finished after ${first} of ${d.cells.length} cards.` : '.'}</p>
-    <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
+    <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed.</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
     <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
     <p class="line">${esc(d.note)}</p>
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn" id="toStages">Back to Read</button></div>
+    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Run again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
   </div></div>`
 }

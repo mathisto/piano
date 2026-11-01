@@ -15,7 +15,7 @@ const SHAPES: [string, number[]][] = [
   ['dim7', [0, 3, 6, 9]],
   ['6', [0, 4, 7, 9]],
   ['m6', [0, 3, 7, 9]],
-  ['5', [0, 7]],
+  [' fifth', [0, 7]], // never "C5": the keyboard's labels name a key that
 ]
 
 const INTERVALS = ['unison', 'minor second', 'major second', 'minor third', 'major third', 'fourth', 'tritone', 'fifth', 'minor sixth', 'major sixth', 'minor seventh', 'major seventh', 'octave']

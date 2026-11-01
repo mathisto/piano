@@ -273,6 +273,7 @@ async function mainFlow() {
     await ev(page, (n) => window.__e2e.follow(`document.querySelector('#hCards').textContent === '${n}'`), first)
     // the set ended and the next one was dealt and started by itself
     await wait(page, (n) => document.querySelector('#hCards').textContent === String(n) && ['countin', 'playing', 'waiting'].includes(window.__piano.game.phase), first)
+    await page.mouse.move(600, 300) // a pointer wakes the hushed bar (which is inert while hushed)
     await page.click('#stagesBtn') // Finish
     const r = await res(page, 'Run results')
     ok(new RegExp(`${first}\\s*cards`).test(await r.textContent()), 'results do not count the set')
@@ -630,6 +631,26 @@ const shellFlow = () => fresh({
     await page.focus('#aidsMenu input')
     await page.keyboard.press('Escape')
     ok(await ev(page, () => document.querySelector('#aidsMenu').hidden && document.querySelector('#play.on')), 'Escape in Aids left the piece')
+    // a tap or click leaves focus on the button, not in the menu: Escape there closes the menu and stays (UX-2, A11Y-1)
+    for (const id of ['tempoBtn', 'aidsBtn']) {
+      await page.click(`#${id}`)
+      ok(await ev(page, () => !!document.querySelector('#dock .popmenu:not([hidden])')), `${id} did not open its menu`)
+      await page.keyboard.press('Escape')
+      ok(await ev(page, (b) => !document.querySelector('#dock .popmenu:not([hidden])') && document.querySelector('#play.on') && document.activeElement?.id === b, id), `Escape on ${id} left the piece, or dropped focus`)
+    }
+    // Staff view: the start card goes over the paper and holds Perform | Learn and Notes shown whole (UX-1); the way back is on the bar, named for where it goes (UX-3)
+    await ev(page, () => window.__piano.setView('sheet'))
+    await page.waitForTimeout(500)
+    ok(await ev(page, () => {
+      const r = document.querySelector('#ready').getBoundingClientRect()
+      const k = (s) => document.querySelector(`#ready ${s}`)?.getBoundingClientRect()
+      const [seg, shows] = [k('.seg'), k('.shows')]
+      const stage = document.querySelector('#stage').getBoundingClientRect()
+      const inside = (b) => b && b.height > 0 && b.top >= r.top - 1 && b.bottom <= r.bottom + 1
+      return r.bottom <= stage.top && inside(seg) && inside(shows) && document.querySelector('#ready input[name=modeSheet][value=perform]') && r.top > document.querySelector('.bar').getBoundingClientRect().bottom
+    }), 'the Staff view start card is cut off or on the keys')
+    await ev(page, () => window.__piano.setView('both'))
+    ok(await ev(page, () => document.querySelector('#stagesBtn').offsetWidth > 0 && /^Back to /.test(document.querySelector('#stagesBtn').getAttribute('aria-label') ?? '')), 'no visible way back on the play screen')
     // the start card redraws on a choice: focus stays on it, so arrow keys walk the group
     await page.focus('#ready input[name=modeSheet]:checked')
     await page.keyboard.press('ArrowLeft')

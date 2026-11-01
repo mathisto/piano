@@ -1,4 +1,5 @@
 import '@fontsource-variable/newsreader/opsz-italic.css' // the staff's dynamics and expression words; loads with the staff, not at boot
+import { keyName } from './cover'
 import type { Game } from './game'
 import { analyze, densest, figure, fitZoom, layout, windowFor, yOf, S, type Analysis, type Cfg, type Layout, type LChord } from './layout'
 import { settings } from './settings'
@@ -74,9 +75,11 @@ export class Staff {
   ) {
     this.svg = document.createElementNS(NS, 'svg') as SVGSVGElement
     this.svg.setAttribute('role', 'img')
-    this.svg.setAttribute('aria-label', 'Grand staff showing the notes about to be played')
     host.appendChild(this.svg)
-    new ResizeObserver(() => this.render()).observe(host)
+    new ResizeObserver(() => {
+      host.parentElement!.style.setProperty('--paper-h', `${host.clientHeight}px`) // the room the start card takes over when the stage under it is too short (style.css, "over the paper")
+      this.render()
+    }).observe(host)
   }
 
   /** Force a rebuild (new song, settings, resize). */
@@ -246,8 +249,18 @@ export class Staff {
     this.paint(this.L)
   }
 
+  /** What the staff shows, for a screen reader: the piece, its key and metre where the source states them, and the bars in view. Not live. */
+  private describe(L: Layout) {
+    const { song } = this.game
+    const { mode, meter } = song.stated ?? {}
+    const b = song.bars[L.from]
+    const bars = L.to - L.from > 1 ? `bars ${L.from + 1} to ${L.to}` : `bar ${L.from + 1}`
+    this.svg.setAttribute('aria-label', [song.title, mode && keyName(song.fifths, mode), meter && b && `${b.n}/${b.den}`, `${bars} of ${song.bars.length}`, L.clefs.length > 1 ? 'grand staff' : `${L.clefs[0]} staff`].filter(Boolean).join(', '))
+  }
+
   private paint(L: Layout) {
     const svg = this.svg
+    this.describe(L)
     svg.replaceChildren()
     svg.setAttribute('viewBox', `0 0 ${L.w} ${L.h}`)
     svg.style.height = this.game.view === 'sheet' ? '' : `min(calc(100% - 2 * var(--pgy)), ${MAX_H}px)`

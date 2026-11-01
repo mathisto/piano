@@ -6,7 +6,8 @@ import { esc, pct } from './util'
 // Read through: a look-through, then one no-stop pass of a new, easy piece. Sight-reading grows with volume of new music
 // a level or two under what you practise (Mishra 2014); late or wrong notes are missed and the music carries on.
 
-export const LOOK = 30 // seconds of look-through before the count-in
+export const LOOK = 30 // seconds of look-through before the count-in; More time adds this much again
+export const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 export const LEVELS = ['First notes', 'Beginner', 'Elementary', 'Intermediate'] // starters and the library manifest share these names
 
 export interface RtPiece {
@@ -60,12 +61,13 @@ export function barList(bars: number[]): string {
 export function lookCard(o: { title: string; left: number; rate: number; ahead: boolean; why: string; credit?: string }) {
   return `<b>${esc(o.title)}</b>
     <span class="hint">Look it through: the key, the time, the bars that look hard. Nothing counts yet. Once it starts, the music does not stop for you.</span>
-    <div class="rt-timer" role="timer" aria-label="Look-through time left"><i style="--f:${o.left / LOOK}" id="rtMeter"></i><span id="rtLeft">0:${String(o.left).padStart(2, '0')}</span></div>
+    <div class="rt-timer" role="timer" aria-label="Look-through time left"><i style="--f:${Math.min(1, o.left / LOOK)}" id="rtMeter"></i><span id="rtLeft">${clock(o.left)}</span></div>
     <div class="rt-row">
       <div class="rt-tempo" role="group" aria-label="Tempo"><span class="cap">Tempo</span>
         <button class="btn icon sm" id="rtSlower" aria-label="Slower">${icon('minus')}</button><span id="rtRate">${pct(o.rate)}</span><button class="btn icon sm" id="rtFaster" aria-label="Faster">${icon('plus')}</button>
       </div>
       <label class="switch"><input type="checkbox" id="rtAhead"${o.ahead ? ' checked' : ''}><i></i>Only the next two bars</label>
+      <button class="btn" id="rtMore">More time</button>
       <button class="btn" id="rtGo">${icon('play')}Start now</button>
     </div>
     ${o.why ? `<span class="rt-why">${esc(o.why)}</span>` : ''}${o.credit ? `<span class="rt-why">${esc(o.credit)}</span>` : ''}`
@@ -93,14 +95,14 @@ export function summaryCard(s: Summary, back = 'Songs') {
     const h = s.heat[i] ?? 0
     return `<i class="${h > 0 && !silent ? 'hot' : ''}" style="--h:${(h / max).toFixed(2)}" title="Bar ${i + 1}${h > 0 ? ': slipped' : ''}"></i>`
   }).join('')
-  return `<div class="results"><div class="card rt-card" role="dialog" aria-label="Read-through summary">
-    <div class="big-grade">${pct(s.acc)}</div>
+  return `<div class="results"><div class="card rt-card" role="region" aria-label="Read-through summary">
+    <div class="big-grade">${pct(s.acc)}<span class="hcap">accuracy</span></div>
     <div class="stats">
     <h2>Read through${s.rate < 1 ? ` at ${pct(s.rate)} tempo` : ''}</h2>
     <p class="line"><b>${s.caught}</b> of ${s.total} notes caught · <b>${s.wrong}</b> wrong ${s.wrong === 1 ? 'note' : 'notes'}</p>
     ${silent ? '<p class="line">No notes came in from the keyboard. Is it connected, or was this a listen?</p>' : ''}
-    <div class="rt-bars-wrap"><div class="rt-bars" role="img" aria-label="${bad.length ? `Slipped in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
-      <div class="rt-ends" aria-hidden="true"><span>Bar 1</span><span>${s.bars}</span></div>
+    <div class="rt-bars-wrap"><div class="rt-strip" style="--n:${s.bars}"><div class="rt-bars" role="img" aria-label="${bad.length ? `Slipped in bars ${barList(bad)}` : 'No bar slipped'}">${cells}</div>
+      <div class="rt-ends" aria-hidden="true"><span>Bar 1</span><span>Bar ${s.bars}</span></div></div>
       ${silent ? '' : `<p class="line rt-sub">${!bad.length ? 'No bar slipped. Keep going like that.' : bad.length > 6 ? `Slipped in ${bad.length} of ${s.bars} bars.` : `Slipped in ${bad.length === 1 ? 'bar' : 'bars'} ${barList(bad)}.`}</p>`}</div>
     ${s.worst && !silent ? `<p class="line">Bars ${s.worst.a + 1} to ${s.worst.b + 1} slipped most. Loop them slowly, then read on.</p>` : ''}
     ${s.next ? `<p class="line rt-sub">Next: <b>${esc(s.next.piece.title)}</b> · ${esc(s.next.piece.level)}. ${esc(s.next.why)}</p>` : ''}
@@ -108,7 +110,7 @@ export function summaryCard(s: Summary, back = 'Songs') {
     <div class="row">
       ${s.next ? `<button class="btn primary" id="rtNext">${icon('play')}Next piece</button>` : ''}
       ${s.worst && !silent ? `<button class="btn${s.next ? '' : ' primary'}" id="rtFix">${icon('loop')}Fix these</button>` : ''}
-      <button class="btn" id="toLib">${back}</button>
+      <button class="btn ghost" id="toLib">${back}</button>
     </div>
   </div></div>`
 }

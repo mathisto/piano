@@ -22,7 +22,7 @@ export function calibrated(r: Result) {
   const ok = offs.length >= 8
   const med = ok ? Math.round(median(offs) / 5) * 5 : 0
   resOpen(true)
-  res.innerHTML = `<div class="results"><div class="card" style="grid-template-columns:1fr" role="dialog" aria-label="Calibration result">
+  res.innerHTML = `<div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Calibration result">
     <h2>${ok ? 'Calibration done' : 'Not enough notes'}</h2>
     <p style="margin:0;color:var(--ink-2)">${
       ok

@@ -54,6 +54,13 @@ addEventListener('keydown', (e) => {
     settings.names = !settings.names
     save()
   } else if (e.key === 'Escape') {
+    const pop = document.querySelector<HTMLElement>('.popmenu:not([hidden])') // an open pop-up (Tempo, Practice, the keyboard, a ⋯) closes first, wherever focus is
+    if (pop) {
+      const b = pop.previousElementSibling as HTMLElement
+      pop.hidden = true
+      b.setAttribute('aria-expanded', 'false')
+      return b.focus()
+    }
     if (closeDrawer() || !current) return
     if (game.phase === 'playing' || game.phase === 'countin' || game.phase === 'waiting') game.toggle() // the first Escape pauses a run, the next one leaves
     else leave()

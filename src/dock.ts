@@ -27,6 +27,8 @@ export class Dock {
   private song!: Song
   private heat: number[] = []
   private lastHeat = 0
+  private shownBar = 0
+  private kb = 0 // the bar the keyboard is on, while the strip has focus
   private beatKey = ''
   private get bar() {
     return document.querySelector<HTMLElement>('#beatBar')!
@@ -130,7 +132,7 @@ export class Dock {
       game.setLoop(null)
       this.sync()
     }
-    // the two pop-ups: one open at a time, closed by an outside click or Escape (focus back on its button)
+    // the two pop-ups: one open at a time, closed by an outside click or Escape (app/input.ts: focus back on its button)
     const pops = [...host.querySelectorAll<HTMLElement>('.pop')].map((p) => ({ btn: p.querySelector('button')!, menu: p.querySelector<HTMLElement>('.popmenu')! }))
     const set = (o: (typeof pops)[number], open: boolean) => {
       o.menu.hidden = !open
@@ -143,12 +145,6 @@ export class Dock {
         this.closeMenus()
         set(o, open)
       }
-      o.menu.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return
-        e.preventDefault() // handled: the page's Escape (leave the piece) skips it
-        set(o, false)
-        o.btn.focus()
-      })
     }
     document.addEventListener('click', (e) => !(e.target as HTMLElement).closest('.pop') && this.closeMenus())
     this.pointer()
@@ -222,7 +218,7 @@ export class Dock {
   setPhase() {
     const p = this.game.phase
     if (p !== 'ready' && p !== 'paused' && p !== 'done') this.closeMenus() // a run fades the dock: nothing left open under it
-    const label = p === 'ready' ? 'Play' : p === 'paused' ? 'Resume' : p === 'done' ? 'Again' : 'Pause'
+    const label = p === 'ready' ? 'Play' : p === 'paused' ? 'Play' : p === 'done' ? 'Again' : 'Pause'
     this.go.innerHTML = `${icon(label === 'Pause' ? 'pause' : 'play')}${label}`
   }
 
@@ -235,7 +231,9 @@ export class Dock {
     this.song = song
     this.heat = heat
     this.showWorst()
+    this.scrub.setAttribute('aria-valuemin', '1')
     this.scrub.setAttribute('aria-valuemax', String(song.bars.length))
+    this.shownBar = 0
     this.drawMap()
   }
 
@@ -291,7 +289,16 @@ export class Dock {
     const t = Math.min(Math.max(this.game.t, 0), this.song.end)
     this.head.style.left = `${this.barX(t)}%`
     this.dots()
-    this.scrub.setAttribute('aria-valuenow', String(Math.max(0, this.song.bars.findIndex((b) => b.t1 > t)) + 1))
+    const bar = (this.scrub === document.activeElement && (this.game.phase === 'ready' || this.game.phase === 'paused') ? this.kb : this.barIndex(t)) + 1
+    if (bar !== this.shownBar) {
+      this.shownBar = bar
+      this.scrub.setAttribute('aria-valuenow', String(bar))
+      this.scrub.setAttribute('aria-valuetext', `Bar ${bar} of ${this.song.bars.length}`)
+    }
+  }
+
+  private barIndex(t = this.game.t) {
+    return Math.max(0, this.song.bars.findIndex((b) => b.t1 > t))
   }
 
   private barAtX(clientX: number): number {
@@ -331,12 +338,26 @@ export class Dock {
       down = undefined
       this.sync()
     }
+    // the keys step through the bars from `kb`, not from the clock (a jump lands two beats before its bar, so the clock cannot say which bar was asked for);
+    // Shift with an arrow stretches a loop from the bar it started at: the keyboard's way to the drag
+    let anchor = -1
+    this.scrub.onfocus = () => ((this.kb = this.barIndex()), (anchor = -1))
     this.scrub.onkeydown = (e) => {
-      if (this.game.mode !== 'learn' || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
-      const cur = Math.max(0, this.song.bars.findIndex((b) => b.t1 > this.game.t))
-      const i = Math.min(this.song.bars.length - 1, Math.max(0, cur + (e.key === 'ArrowRight' ? 1 : -1)))
-      this.game.jump(this.song.bars[i].t0 - this.song.spb * 2)
+      const bars = this.song.bars
+      const to = { ArrowRight: this.kb + 1, ArrowUp: this.kb + 1, ArrowLeft: this.kb - 1, ArrowDown: this.kb - 1, PageDown: this.kb + 4, PageUp: this.kb - 4, Home: 0, End: bars.length - 1 }[e.key]
+      if (this.game.mode !== 'learn' || to === undefined) return
       e.preventDefault()
+      const from = this.kb
+      this.kb = Math.min(bars.length - 1, Math.max(0, to))
+      if (e.shiftKey) {
+        if (anchor < 0) anchor = from
+        this.game.setLoop({ a: bars[Math.min(anchor, this.kb)].t0, b: bars[Math.max(anchor, this.kb)].t1 })
+        this.sync()
+      } else {
+        anchor = -1
+        this.game.jump(bars[this.kb].t0 - this.song.spb * 2)
+      }
+      this.frame()
     }
   }
 

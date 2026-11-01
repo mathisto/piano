@@ -32,6 +32,7 @@ export interface Result {
   touchPct: number // share of notes with a velocity target struck inside it; -1 when there were none
   holds: number // share of held notes released on time, 0..1; -1 when not graded
   wrong: number
+  first: number // wait mode: the share of notes struck right with no wrong key before them, 0..1; -1 when nothing waited
   offs: number[]
   heat: number[]
   total: number
@@ -99,6 +100,7 @@ export class Game {
   private stallBar = 0
   private lastPerf = 0
   private wrongMark = 0
+  private waited = { n: 0, first: 0 } // wait-mode notes, and those struck right with no wrong key before them
   presses: Press[] = [] // key down and up times of struck notes, for legato and staccato
   private downAt = new Map<number, { i: number; at: number }>()
   readonly pace = new Pace()
@@ -219,6 +221,7 @@ export class Game {
     this.pedals = this.pedal ? [{ t: -1e9, down: true }] : []
     this.downAt.clear()
     this.wrongMark = 0
+    this.waited = { n: 0, first: 0 }
   }
 
   /** Hand the trouble bars from this pass to whoever saves them, then start a fresh tally. */
@@ -439,6 +442,7 @@ export class Game {
       dyn: song.dyn,
       holds: j.cfg.hold && j.cfg.hold !== 'off' ? j.holdPct : -1,
       wrong: j.wrong,
+      first: this.waited.n ? this.waited.first / this.waited.n : -1,
       offs: this.offs.slice(),
       heat: this.heat.slice(),
       total: j.total,
@@ -464,6 +468,8 @@ export class Game {
       } else if (e.k === 'ok') {
         const clean = this.judge.wrong === this.wrongMark
         this.wrongMark = this.judge.wrong
+        this.waited.n++
+        if (clean) this.waited.first++
         const rt = this.phase === 'waiting' ? performance.now() - this.stallAt : 0
         this.quiet.note(clean && e.vel !== 'low' && e.vel !== 'high')
         this.emit({ type: 'ok', note: this.song.notes[e.i], rt, clean, vel: e.vel, v: this.judge.velAt(e.i) })
