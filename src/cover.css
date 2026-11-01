@@ -1,60 +1,129 @@
-/* ---------- the cover: a piece's opening bars on paper (src/cover.ts holds the sizes) ---------- */
+/* ---------- the cover: a piece's opening bars on paper (design/identity/SPEC.md; src/cover.ts holds the sizes) ---------- */
+/* Score paper and ink, the same in both app modes: a cover is a printed page, not a themed surface. Distinct from the practice staff's --paper. */
+:root {
+  --cover-paper: #fbf8f1;
+  --cover-ink: #161513;
+  --cover-ink-2: #4c4842; /* the secondary line: 8.4:1 on the paper */
+}
 .cover {
+  position: relative;
+  flex: none;
   box-sizing: border-box;
   width: var(--cw);
   height: var(--ch);
-  display: grid;
-  grid: var(--hh) 1fr / minmax(0, 1fr); /* the header clips with an ellipsis */
-  padding: 0 var(--pad) var(--pad);
-  background: var(--paper);
-  color: var(--paper-line);
+  background: var(--cover-paper);
+  color: var(--cover-ink);
   border-radius: var(--r-1);
   overflow: hidden;
   line-height: 1;
   text-align: left;
   white-space: nowrap;
 }
+/* the header: system sans 650, capitals, 0.12em; composer and catalogue left, key and metre right, clipped before they touch */
 .cv-h {
-  grid-row: 1;
+  position: absolute;
+  left: var(--m);
+  right: var(--m);
+  top: var(--mt);
   display: flex;
-  align-items: center;
-  font: 600 var(--fs) / 1 var(--ui);
-  letter-spacing: 0.07em;
+  justify-content: space-between;
+  gap: calc(var(--hf) * 1.5);
+  font: 650 var(--hf) / 1 var(--ui);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+.cv-h em {
+  font-style: normal;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.cv-h em + em {
+  flex: none;
+}
+.cv-rule {
+  position: absolute;
+  left: var(--m);
+  right: var(--m);
+  top: var(--ry);
+  height: 1px;
+  background: color-mix(in srgb, var(--cover-ink) 42%, transparent);
+}
+/* the title: Newsreader 560 and -0.018em, two lines at most; the secondary line, 410, when one line left room for it */
+.cv-t {
+  position: absolute;
+  left: var(--m);
+  right: var(--m);
+  top: var(--ty);
+  font-family: var(--display);
+  white-space: normal;
+}
+.cv-t strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font: 560 var(--tf) / 1.06 var(--display);
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+.cv-t small {
+  display: block;
+  margin-top: calc(var(--sf) * 0.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 410 var(--sf) / 1.2 var(--display);
+  color: var(--cover-ink-2);
+}
+/* the incipit: its box is the spec's 52-57% of the height, bottom-anchored above the difficulty rule */
 .cv-b {
-  grid-row: 2;
-  width: calc(var(--cw) - 2 * var(--pad)); /* a narrow window crops the box, never the scale */
-  height: var(--bh);
+  position: absolute;
+  left: var(--m);
+  top: var(--iy);
+  right: var(--m);
+  height: var(--ih);
   overflow: hidden;
 }
 .cv-b svg {
   display: block;
-  width: var(--bw);
-  height: var(--bh);
+  width: 100%;
+  height: 100%;
 }
-/* the staff painter's classes, on paper: ink and one line colour, hairlines that stay hairlines at a thumbnail's scale */
+/* difficulty: five 1px ink segments, the level's 68% and the rest 18% */
+.cv-d {
+  position: absolute;
+  left: var(--m);
+  bottom: calc(var(--ch) * 0.055);
+  display: flex;
+  gap: calc(var(--cw) * 0.008);
+}
+.cv-d i {
+  display: block;
+  width: calc(var(--cw) * 0.033);
+  height: 1px;
+  background: color-mix(in srgb, var(--cover-ink) 18%, transparent);
+}
+.cv-d i.on {
+  background: color-mix(in srgb, var(--cover-ink) 68%, transparent);
+}
+/* the staff painter's classes, on paper: ink only, hairlines that stay hairlines at a thumbnail's scale */
 .cv-b .lines line {
-  stroke: var(--paper-line);
-  stroke-width: 0.8px;
+  stroke: var(--cover-ink);
+  stroke-width: 0.75px;
   vector-effect: non-scaling-stroke;
 }
 .cv-b .bars line,
 .cv-b .ledger,
 .cv-b .stem {
-  stroke: var(--paper-ink);
+  stroke: var(--cover-ink);
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
-}
-.cv-b .bars line {
-  stroke: var(--paper-line);
 }
 .cv-b .smufl {
   font-family: 'Bravura';
   font-size: 40px;
-  fill: var(--paper-ink);
+  fill: var(--cover-ink);
 }
 .cv-b .smufl.small {
   font-size: 26px;
@@ -63,17 +132,15 @@
   font-size: 28px;
 }
 .cv-b .beam,
-.cv-b .tie {
-  fill: var(--paper-ink);
+.cv-b .tie,
+.cv-b .fin {
+  fill: var(--cover-ink);
 }
 .cv-b .tup {
   fill: none;
-  stroke: var(--paper-ink);
+  stroke: var(--cover-ink);
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
-}
-.cv-b .fin {
-  fill: var(--paper-line);
 }
 .cv-b .mk,
 .cv-b .ott,
@@ -81,23 +148,93 @@
 .cv-b .finger {
   display: none; /* a score's marks and a drill's fingers are not an opening's silhouette */
 }
-.ready .cover {
+/* ---------- the start card: the cover is its title block ---------- */
+/* Four densities by the room the stage has, and the title (kept in the page for the screen reader) shows as text only when no cover does:
+   the 600pt cover over the choices on a tall stage with no keyboard banner; the 300pt one over them on a mid-height stage (a portrait iPad with the banner);
+   the 300pt one beside them on a short, wide stage (a landscape iPad); none, title only, in a split view. */
+.ready .cv-start,
+.ready .cv-card {
+  display: none;
   margin: 0 auto 12px;
 }
-/* a short stage has no room above the title for a cover, and one with the keyboard banner over it has room only on a tall stage */
-@container stage (max-height: 420px) {
-  #ready .cover {
+@container stage (min-height: 500px) and (min-width: 480px) {
+  #ready .cv-card {
+    display: block;
+  }
+  #ready > b.ttl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* the mode line under the Perform/Learn switch gives way to the cover when the keyboard banner has taken the room (the Play button says the same) */
+@container stage (min-height: 500px) and (min-width: 480px) {
+  #stage:has(.banner) #ready:has(.cv-card) > .seg + .hint {
     display: none;
   }
 }
-@container stage (max-height: 560px) {
-  #stage:has(.banner) #ready .cover {
+/* the 600pt cover takes 400 of the stage's height: with no banner, from 600 up, the choices under it go into rows (as on the short stage) to fit; with the banner, from 850 */
+@container stage (min-height: 600px) and (min-width: 660px) {
+  #stage:not(:has(.banner)) #ready .cv-card {
     display: none;
   }
+  #stage:not(:has(.banner)) #ready .cv-start {
+    display: block;
+  }
+  #stage:not(:has(.banner)) #ready {
+    padding: 10px 24px 12px;
+  }
+  #stage:not(:has(.banner)) #ready .legend,
+  #stage:not(:has(.banner)) #ready .accomp .hint,
+  #stage:not(:has(.banner)) #ready > .seg + .hint {
+    display: none;
+  }
+  #stage:not(:has(.banner)) #ready :is(.accomp, .shows) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  #stage:not(:has(.banner)) #ready :is(.accomp, .shows) .cap {
+    display: block;
+    margin: 0;
+  }
 }
-/* a mid-width window crops the Songs rows' cover to its first bars, so the title has room */
-@media (max-width: 1000px) {
-  table.songs .cover.cv-row {
-    --cw: 78px !important; /* over the box's own inline size */
+@container stage (min-height: 850px) and (min-width: 660px) {
+  #stage:has(.banner) #ready .cv-card {
+    display: none;
+  }
+  #stage:has(.banner) #ready .cv-start {
+    display: block;
+  }
+}
+@container stage (max-height: 499px) and (min-width: 820px) {
+  #ready:has(.cv-card) {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-content: center;
+    align-items: center;
+    gap: 0 28px;
+    max-width: min(960px, 100%);
+  }
+  #ready .cv-card {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / span 12;
+    margin: 0;
+  }
+  #ready > :not(.cover) {
+    grid-column: 2;
+  }
+  #ready > b.ttl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

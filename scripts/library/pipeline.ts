@@ -389,6 +389,7 @@ export async function run(inputs: Input[], out: string, o: Options = {}): Promis
       composer: composers.findIndex((c) => c.name === parseComposer(e.composer).name),
       ...(e.opus && { opus: e.opus }),
       fifths: s.fifths,
+      ...(s.stated?.mode && { mode: s.stated.mode }),
       ...(keys && { keys }),
       meter: `${full.n}/${full.den}`,
       bars: s.bars.length,

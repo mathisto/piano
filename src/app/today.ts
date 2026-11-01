@@ -50,7 +50,7 @@ export async function showToday() {
   const { coverHtml, drawCovers } = await cover()
   todayView($('#today'), {
     guide,
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'lead', last.cover) },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'thumb', last.cover) },
     again: (() => {
       const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
       return r ? { id: r.id, title: r.title, sub: 'Due for another go' } : undefined

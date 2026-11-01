@@ -12,7 +12,7 @@ export const CORPUS: string =
 
 export const gradeOf = (p: Piece) => p.gradeOverride ?? p.grade
 
-const LEVEL_GRADE: Record<string, number> = { Beginner: 1, Elementary: 2, Intermediate: 3 }
+export const LEVEL_GRADE: Record<string, number> = { Beginner: 1, Elementary: 2, Intermediate: 3 }
 
 const at = <T>(list: T[], item: T, same: (x: T) => boolean) => {
   const i = list.findIndex(same)

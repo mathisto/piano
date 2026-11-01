@@ -15,6 +15,7 @@ export interface Piece {
   composer: number
   opus?: string
   fifths: number
+  mode?: 'major' | 'minor' // only when the source states it (MusicXML <mode>, a MIDI key event): absent for a key that is only estimated
   keys?: number[]
   meter: string
   bars: number

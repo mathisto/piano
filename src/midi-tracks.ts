@@ -181,5 +181,8 @@ export function fromMidi(buf: ArrayBuffer, title: string, id: string, split = 60
     ...(new Set(raw.map((r) => r.track)).size >= 3 && raw.some((r) => !r.h) ? ['three-track-midi'] : []), // hands fell back to a split at one pitch
   ]
   if (flags.length) song.flags = flags
+  const k0 = [...midi.header.keySignatures].sort((a, b) => a.ticks - b.ticks)[0] // the file's own key event (its minor flag is Tone's `scale`); a key that arrives later does not state the opening's
+  const mode = k0 && !k0.ticks && (k0.scale === 'major' || k0.scale === 'minor') ? k0.scale : undefined
+  if (mode || midi.header.timeSignatures.length) song.stated = { ...(mode && { mode }), ...(midi.header.timeSignatures.length && { meter: true as const }) }
   return song
 }

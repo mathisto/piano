@@ -67,6 +67,7 @@ export interface Song {
   wedges?: { t0: number; t1: number; up: boolean }[] // hairpins, by the first and last note under them (seconds); up is a crescendo
   chords?: Sym[] // Lead sheet: the chord of each half bar, drawn above the staff
   marks?: { t: number; text: string }[] // the dynamic letters a score writes (p, mf, sfz), where it writes them
+  stated?: { mode?: 'major' | 'minor'; meter?: true } // what the source itself says of its key's mode and its metre (MusicXML <mode>, MIDI key and time-signature events, a starter's spec); absent for an estimate, so a cover never passes inference off as data
 }
 
 export interface Raw {
@@ -272,6 +273,7 @@ export interface Spec {
   bpm: number
   sig?: [number, number]
   fifths: number
+  mode?: 'major' | 'minor' // the key's mode, as the arrangement's author knows it
   rh: string
   lh: string
 }
@@ -305,5 +307,7 @@ export function fromSpec(s: Spec): Song {
     n,
     den,
   }))
-  return build(s.id, s.title, raw, bars, s.fifths)
+  const song = build(s.id, s.title, raw, bars, s.fifths)
+  song.stated = { ...(s.mode && { mode: s.mode }), meter: true }
+  return song
 }
