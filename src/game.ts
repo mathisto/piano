@@ -368,6 +368,8 @@ export class Game {
     if (this.phase === 'playing') {
       this.dispatch(this.judge.tick(this.t - (this.offset / 1000) * this.rate)) // on the clock the presses are judged on
       if (this.wait) {
+        const next = this.mode === 'read' ? this.judge.nextPending() : -1
+        if (next >= 0 && this.song.notes[next].t > this.t) this.t = this.song.notes[next].t // a reading drill has no tempo: the line goes straight to the next card, so you are never ahead of it
         const req = this.judge.required(this.t)
         if (req.length) {
           const n = this.song.notes[req[0]]

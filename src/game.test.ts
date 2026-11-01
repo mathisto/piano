@@ -176,6 +176,22 @@ describe('the key that starts a reading drill', () => {
       expect(g.phase).toBe('playing')
     }
   })
+  it('on a waiting drill moves the line straight to the next card, so a quick right key is never wrong', async () => {
+    const { deckSong } = await import('./drill')
+    const g = new Game()
+    const s = deckSong('drill:r', 'r', cards as never, 0)
+    g.load(s, 'read')
+    const oks: number[] = []
+    g.on((e) => e.type === 'ok' && oks.push(e.note.p))
+    g.start(60)
+    for (const p of [60, 62, 64, 65]) {
+      run(g, 100)
+      expect(g.t).toBe(s.notes[oks.length].t) // on the card, not trailing towards it
+      g.press(p, 0.7, performance.now())
+    }
+    expect(oks).toEqual([60, 62, 64, 65])
+    expect(g.judge.wrong).toBe(0)
+  })
 })
 
 describe('the key that starts a piece', () => {
