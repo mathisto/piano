@@ -43,7 +43,7 @@ describe('Nocturne contrast (text 4.5:1, graphics 3:1)', () => {
     ['lamp-ink', 'lamp-ink', 'lamp', text],
     ['lamp-ink', 'lamp-ink', 'lamp-hi', text],
     ['accent', 'accent', 'panel', text],
-    ['edge', 'edge', 'panel', graphic],
+    ['edge', 'edge', 'panel', graphic], ['edge', 'edge', 'panel-2', graphic], ['edge', 'edge', 'panel-3', graphic], // Settings' groups are panel-3
     ['perfect', 'perfect', 'panel', text], ['great', 'great', 'panel', text], ['good', 'good', 'panel', text], ['bad', 'bad', 'panel', text],
     ['R', 'R', 'panel', text], ['L', 'L', 'panel', text], ['L-edge', 'L-edge', 'panel', text],
     ['paper-ink', 'paper-ink', 'paper', text], ['paper-line', 'paper-line', 'paper', graphic], ['paper-played', 'paper-played', 'paper', graphic],

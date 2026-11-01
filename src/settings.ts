@@ -28,6 +28,7 @@ export interface Settings {
   marks: boolean // always show the live evenness marks: no fading once the touch is even, no quiet test runs
   keyTouch: KeyTouch // the keyboard's own key touch setting, logged with each touch entry; Fixed makes evenness unmeasurable
   strict: 'easy' | 'standard' | 'strict' // timing windows and key-length grading together (Perform only)
+  shortcuts: boolean // the single-key shortcuts (N, M, V, B, ?, [ ], - +) and the computer-key piano; off for voice control and switch users (WCAG 2.1.4)
   full: boolean // show all 88 keys instead of fitting the song
   view: 'both' | 'sheet' | 'falling' // sheet music only, both, or falling notes only: set by dragging the divider to an end
   pane: number // the staff's share of the room when both show, 0..1
@@ -61,6 +62,7 @@ const DEFAULTS: Settings = {
   planMin: 10,
   goal: 60,
   tech: { pattern: 'five', tonic: 0, dyn: 'medium', hands: 'R', bpm: 72 },
+  shortcuts: true,
   full: false,
   view: 'both',
   pane: 0.4,

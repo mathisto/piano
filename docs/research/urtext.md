@@ -32,7 +32,7 @@ This file records what was taken from that brief, what was corrected, and the or
 | panel-3 | #222731 | #ffffff |
 | line | #262a33 | #e2ddd2 |
 | line-2 | #363d4e | #c7c0b3 |
-| edge | #666d7d | #7d776b |
+| edge | #727a8b | #7d776b |
 | ink | #f4f2ed | #181715 |
 | ink-2 | #a6abb8 | #524f49 |
 | ink-3 | #8a90a0 | #666259 |

@@ -1,10 +1,11 @@
 // The banner over the stage, the keyboard chip in the top bar, and connecting a MIDI keyboard.
+import { PLUG } from '../guide'
 import { chooseInput, connect, inputs, midiSupported } from '../midi'
 import { native, pairBluetooth } from '../native-midi'
 import { settings } from '../settings'
 import { $ } from '../ui'
 import { esc } from '../util'
-import { current, game, hooks, played } from './state'
+import { current, game, hooks, played, say } from './state'
 import { syncOsk } from './osk-ui'
 
 /** The iPad app's way to a Bluetooth keyboard: Apple's pairing sheet. A browser has none. */
@@ -30,12 +31,12 @@ export function updateBanner() {
   const have = inputs().length > 0
   if (note) html = `<span>${esc(note)}</span>`
   else if (!current || played || have) html = ''
-  else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer. You can still play with the computer keyboard (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> …).</span>`
+  else if (midiState === 'unsupported') html = `<span><b>No MIDI in this browser.</b> Use Chrome, Edge or Firefox on a computer. You can still play the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span>`
   else if (midiState === 'blocked') html = `<span><b>MIDI access is blocked.</b> Allow it in the address bar, then reload. Computer keys work meanwhile.</span>`
-  else if (native) html = `<span><b>No keyboard connected.</b> Plug it in over USB, or connect one over Bluetooth.</span>${PAIR}`
+  else if (native) html = `<span><b>No keyboard.</b> ${PLUG} Or connect one over Bluetooth.</span>${PAIR}`
   else
-    html = `<span><b>No keyboard yet.</b> Plug in over USB, then connect. Or play with the computer keys: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd>.</span><button class="btn" id="connectBtn">Connect keyboard</button>`
-  b.innerHTML = html ? `<div class="banner" role="status">${html}</div>` : ''
+    html = `<span><b>No keyboard.</b> ${PLUG} Or play the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><button class="btn" id="connectBtn">Connect</button>`
+  b.innerHTML = html ? `<div class="banner">${html}</div>` : '' // #banner is the one live region: its words change, the region stays
   const c = b.querySelector<HTMLButtonElement>('#connectBtn')
   if (c) c.onclick = () => void connectMidi()
 }
@@ -46,8 +47,9 @@ export function updateChip() {
   chip.classList.toggle('ok', list.length > 0)
   const pick = list.find((i) => i.id === settings.device) ?? list[0]
   $('#devName').textContent = pick ? pick.name : midiState === 'unsupported' ? 'No MIDI here' : 'No keyboard'
-  $('#dev').setAttribute('aria-label', $('#devName').textContent!) // the name is hidden in a narrow window
+  $('#dev').setAttribute('aria-label', `Keyboard: ${$('#devName').textContent}`) // the name is hidden in a narrow window
   document.querySelectorAll<HTMLElement>('.kbline').forEach((e) => (e.hidden = list.length > 0)) // the Connect line on Theory, the Quiz and Sight Run
+  document.querySelectorAll<HTMLElement>('[data-needs]').forEach((e) => (e instanceof HTMLButtonElement ? (e.disabled = !list.length) : (e.hidden = list.length > 0))) // what only a keyboard can do: its button waits, its line says why
   syncOsk() // the on-screen keys follow it
   const su = document.querySelector('#suMidi')
   if (su) {
@@ -63,7 +65,7 @@ export function midiLine() {
   if (pick) return `${pick.name}, connected`
   if (midiState === 'unsupported') return 'No MIDI in this browser. The computer keys still play.'
   if (midiState === 'blocked') return 'MIDI is blocked. Allow it for this site, then reload.'
-  return 'Not connected. Plug it in over USB, then Connect.'
+  return `No keyboard. ${PLUG}`
 }
 
 export async function connectMidi() {
@@ -71,11 +73,12 @@ export async function connectMidi() {
     await connect(() => {
       updateChip()
       updateBanner()
-      if (!inputs().length) {
+      if (inputs().length) say(`${inputs()[0].name} connected`) // the chip changes silently
+      else {
         if (game.phase === 'playing' || game.phase === 'waiting' || game.phase === 'countin') {
           game.toggle()
-          flash('Keyboard disconnected. Plug it back in and press Space to resume.')
-        }
+          flash('Keyboard disconnected. Plug it back in and press Space to resume.') // the banner is a live region
+        } else say('Keyboard disconnected')
         game.letGo() // its keys and pedal never send their up
       }
       if (document.querySelector('#drawer:not([hidden])')) hooks.openDrawer()

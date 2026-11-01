@@ -26,7 +26,7 @@
   /* rules and edges: --line for hairlines, --edge for control borders (3:1 on panel), --line-2 for selected and track surfaces */
   --line: light-dark(#e2ddd2, #262a33);
   --line-2: light-dark(#c7c0b3, #363d4e);
-  --edge: light-dark(#7d776b, #666d7d);
+  --edge: light-dark(#7d776b, #727a8b);
   /* ink */
   --ink: light-dark(#181715, #f4f2ed);
   --ink-2: light-dark(#524f49, #a6abb8);
@@ -288,6 +288,9 @@ table.songs caption,
 }
 .chip:active {
   transform: scale(0.97);
+}
+.chip svg.i {
+  display: none; /* only where the name gives way */
 }
 .chip .dot {
   width: 10px;
@@ -626,6 +629,18 @@ input[type='range']::-moz-range-thumb {
   flex-wrap: wrap;
   gap: 8px;
 }
+.loading {
+  opacity: 0;
+  animation: appear 0.3s var(--ease) 0.4s forwards; /* a quiet line, only if the page is slow */
+}
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+.pwho .needs {
+  display: block;
+}
 .err {
   margin: 0 0 24px;
   color: var(--bad);
@@ -668,8 +683,11 @@ table.songs tr.open {
   }
 }
 table.songs td.name {
-  font: 560 20px/1.25 var(--display);
+  font: 650 18px/1.25 var(--ui); /* a stage or an exercise: the interface's own voice, as on Today */
   overflow-wrap: anywhere; /* a title with no spaces, or a long composer, wraps inside its column instead of running under the buttons */
+}
+table.songs:not(.stages, .touch) td.name {
+  font: 560 20px/1.25 var(--display); /* the names of pieces: the music face */
 }
 table.songs td.name small {
   display: block;
@@ -727,21 +745,6 @@ table.songs td.thumb {
   white-space: nowrap; /* held while a library cover is drawn, so the rows do not jump */
   padding-right: 0;
   line-height: 0;
-}
-.thumb > svg {
-  width: 140px;
-  height: 52px;
-  display: inline-block;
-  vertical-align: top;
-  border-radius: var(--r-1);
-  background: var(--panel);
-}
-.thumb > svg .ln {
-  stroke: var(--edge);
-  stroke-width: 0.8;
-}
-.thumb > svg .nt {
-  fill: var(--ink);
 }
 .empty {
   color: var(--ink-3);
@@ -834,14 +837,15 @@ table.songs tr.band th {
   gap: 16px;
   margin-bottom: 20px;
 }
+.tprev ~ #tStart {
+  align-self: end;
+}
+.tprev .cover {
+  box-shadow: inset 0 0 0 1px var(--line-2); /* the paper on a Matinée card is the same cream: it needs its edge */
+}
 .tprev {
   margin-right: auto; /* the preview at the left of the card's foot, Start at the right */
   line-height: 0;
-}
-.tprev svg {
-  width: 100%;
-  max-width: 260px;
-  height: auto;
 }
 .bands span {
   padding: 8px 0 6px;
@@ -1112,7 +1116,7 @@ table.stages col.mcol {
 }
 #staff .barno {
   fill: var(--paper-ink-2);
-  font: 600 15px var(--display);
+  font: 500 13px var(--display); /* smaller and lighter than a scale's finger numbers (700 15px sans), which sit level with it: "4 5 2" read as one row */
   font-variant-numeric: tabular-nums; /* the font shorthand resets it */
 }
 #staff .ledger {
@@ -1901,6 +1905,19 @@ kbd {
 #nav span {
   border-radius: var(--r-pill);
 }
+#nav em {
+  font-style: normal;
+}
+/* a window under 1040px (portrait, split view; the seven words need about 1040): the tabs show their icon, and the selected one its word too, so all seven fit; the words stay the tabs' names */
+@media (max-width: 1039px) {
+  #nav input:not(:checked) + span em {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
 #play.resopen #go,
 #play.resopen #restart,
 #play.resopen > .mem-bar {
@@ -1959,11 +1976,31 @@ body:has(#play.resopen) #stagesBtn {
     opacity: 0;
   }
 }
-.drawer .switch {
+/* one row for a switch in Settings, the Practice menu and Options: the name at the left, the switch at the right, as iOS Settings */
+:is(.drawer, .popmenu, .tkrow) .switch {
   display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+:is(.drawer, .popmenu, .tkrow) .switch i {
+  order: 1;
+}
+.drawer .switch span {
+  display: grid;
+}
+.drawer .switch small {
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+.dhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 .drawer h2 {
-  margin: 0 0 8px;
+  margin: 0;
   font: 600 22px/1.25 var(--ui);
 }
 .drawer h2:focus {
@@ -2132,6 +2169,9 @@ button.link {
 .tkrow.perc {
   opacity: 0.7;
 }
+.tkrow .switch {
+  flex: 1;
+}
 .tkrow .switch span {
   display: grid;
 }
@@ -2200,7 +2240,10 @@ button.link {
     justify-content: center;
   }
   #devName {
-    display: none; /* the dot says whether a keyboard is in; the name is in Settings */
+    display: none; /* the keyboard glyph and the dot say whether one is in; its name is in the chip's panel */
+  }
+  #dev svg.i {
+    display: block;
   }
   /* the song tables lose their preview and fixed columns: the name comes first */
   table.songs col {
@@ -2466,6 +2509,7 @@ body.zen .bar {
   border: 0;
   border-radius: var(--r-1);
   background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--edge); /* an empty cell is a button: its edge reaches 3:1 */
   overflow: hidden;
   cursor: pointer;
 }
@@ -2760,7 +2804,7 @@ dialog.sheet .tksum .fine {
 }
 
 .drawer .switch.sub {
-  margin-left: 52px;
+  margin-left: 18px;
 }
 .slider {
   display: flex;
@@ -2812,7 +2856,32 @@ dialog.sheet footer .btn {
   margin: 0; /* the card's gap spaces its lines; default margins doubled it */
 }
 .tcard.run > h2 {
-  font: 650 28px/1.2 var(--ui); /* the prompt: read from the music stand */
+  font: 500 34px/1.1 var(--display); /* a verdict, as on every results card */
+  letter-spacing: -0.005em;
+}
+/* a Theory or Quiz card is read from the music stand: its prompt is an announcement, centred in the room above the keys */
+:is(#theory, #scales):has(.tcard.run[data-osk]) {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.tcard.run[data-osk] {
+  align-self: center;
+  justify-items: center;
+  text-align: center;
+  padding: 32px;
+  gap: 16px;
+}
+.tcard.run[data-osk] > h2 {
+  font-size: 56px;
+  letter-spacing: -0.01em;
+}
+.tcard.run[data-osk] > h2:focus-visible {
+  outline: none; /* the focus moves here to be read, not to be pressed */
+}
+.tcard.run[data-osk] .line {
+  font-size: 20px;
+}
+.tcard.run[data-osk] .row-actions {
+  justify-content: center;
 }
 .run .tech-form {
   margin-bottom: 0;

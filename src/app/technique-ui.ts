@@ -4,12 +4,24 @@ import { save, settings } from '../settings'
 import * as store from '../store'
 import { stateOf, SYLLABUS } from '../syllabus'
 import { exercise, type Opts, PATTERNS } from '../technique'
-import { thumb } from '../thumb'
 import { calibrate } from '../touch'
 import { $, CAL_NOTES } from '../ui'
 import type { TouchCal } from '../ui-views'
 import { hooks } from './state'
+import { cover } from './lazy'
 import { openSong } from './play'
+
+/** The exercise engraved on paper: the covers' card, with the key and metre the exercise itself knows. */
+async function preview(el: HTMLElement) {
+  const host = el.querySelector<HTMLElement>('.tprev')
+  const o = settings.tech
+  const song = exercise(o, settings.edges)
+  const { coverHtml, keep, paint } = await cover()
+  if (!host?.isConnected) return
+  keep(song.id, song)
+  host.innerHTML = coverHtml(song.id, 'card', { by: 'Technique', title: song.title[0].toUpperCase() + song.title.slice(1), fifths: song.fifths, ...(o.pattern === 'rhythm' ? {} : { mode: o.minor ? 'minor' : 'major' }), meter: `${song.bars[0].n}/${song.bars[0].den}` })
+  await paint(host.querySelector<HTMLElement>('.cover')!)
+}
 
 export async function showTechnique() {
   const el = $('#technique')
@@ -17,7 +29,8 @@ export async function showTechnique() {
   const today = dayNum()
   const path = SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) }))
   const { techniqueView } = await import('../ui-views')
-  techniqueView(el, settings.tech, touchCal, calMsg, thumb(exercise(settings.tech, settings.edges)), path)
+  techniqueView(el, settings.tech, touchCal, calMsg, path)
+  void preview(el)
   el.querySelectorAll<HTMLButtonElement>('button[data-recipe]').forEach((b) => (b.onclick = () => {
     const r = SYLLABUS.find((x) => x.id === b.dataset.recipe)
     if (r) void openSong(exercise(r.opts, settings.edges), 'perform')
@@ -30,7 +43,7 @@ export async function showTechnique() {
         f(sel.value)
         save()
         if (rerender) redraw()
-        else el.querySelector('.tprev')!.innerHTML = thumb(exercise(settings.tech, settings.edges))
+        else void preview(el)
       })
   }
   on('#tPattern', (v) => (settings.tech.pattern = v as Opts['pattern']), true)
@@ -48,10 +61,10 @@ export async function showTechnique() {
     const b = el.querySelector<HTMLButtonElement>(sel)
     if (b) b.onclick = f
   }
-  click('#calStart', startTouchCal)
+  click('#calStart', () => startTouchCal())
   click('#calCancel', () => {
     touchCal = null
-    void showTechnique()
+    void showTechnique().then(calDone)
   })
   click('#calReset', () => {
     settings.edges = undefined
@@ -64,8 +77,15 @@ export async function showTechnique() {
 let touchCal: TouchCal | null = null
 let calGot: number[][] = [[], [], []]
 let calMsg = ''
+let calBack: (() => void) | undefined // where it was started from (the Set up sheet), to return to
+const calDone = () => {
+  const b = calBack
+  calBack = undefined
+  b?.()
+}
 
-export function startTouchCal() {
+export function startTouchCal(from?: () => void) {
+  calBack = from
   touchCal = { step: 0, got: 0 }
   calGot = [[], [], []]
   calMsg = ''
@@ -90,6 +110,6 @@ export function calNote(vel: number) {
       touchCal = null
     }
   }
-  void showTechnique()
+  void showTechnique().then(() => touchCal || calDone())
   return true
 }

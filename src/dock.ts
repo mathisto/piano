@@ -58,7 +58,7 @@ export class Dock {
           <button class="btn" id="loopClear" hidden>Clear loop</button>
         </div>
         <div class="pop" id="tempoPop" data-modes="learn read">
-          <button class="btn" id="tempoBtn" aria-expanded="false" aria-haspopup="true" aria-controls="tempoMenu"><small>Tempo</small><span class="tempo-val" id="tempoVal">100%</span></button>
+          <button class="btn" id="tempoBtn" aria-label="Tempo 100 percent" aria-expanded="false" aria-controls="tempoMenu"><small>Tempo</small><span class="tempo-val" id="tempoVal">100%</span></button>
           <div class="popmenu end" id="tempoMenu" hidden>
             <span class="cap">Tempo</span>
             <div class="slider">
@@ -71,7 +71,7 @@ export class Dock {
           </div>
         </div>
         <div class="pop">
-          <button class="btn" id="aidsBtn" aria-expanded="false" aria-haspopup="true" aria-controls="aidsMenu">Practice</button>
+          <button class="btn" id="aidsBtn" aria-expanded="false" aria-controls="aidsMenu">Practice</button>
           <div class="popmenu end" id="aidsMenu" hidden>
             <label class="switch" data-modes="learn"><input type="checkbox" id="wait" checked><i></i>Wait for me</label>
             <label class="switch" data-modes="learn"><input type="checkbox" id="hidePlayed"><i></i>Hide played</label>
@@ -159,6 +159,7 @@ export class Dock {
     if (g.paced) this.host.querySelector<HTMLElement>('#tempoPop')!.hidden = true // a paced run's tempo is the one it was built with
     this.tempo.value = String(Math.round(g.rate * 100))
     this.tempoVal.textContent = `${Math.round(g.rate * 100)}%`
+    this.host.querySelector('#tempoBtn')!.setAttribute('aria-label', `Tempo ${Math.round(g.rate * 100)} percent`) // the caption and the value read as one word
     this.wait.checked = g.wait
     const lad = this.host.querySelector<HTMLElement>('#ladder')!
     lad.hidden = !learn || !g.loop

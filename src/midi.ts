@@ -1,3 +1,5 @@
+import { settings } from './settings'
+
 
 export interface MidiMsg {
   on: boolean
@@ -92,7 +94,7 @@ export function typingKeyboard() {
   const down = new Set<string>()
   addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement
-    if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || /INPUT|SELECT|TEXTAREA|BUTTON/.test(t.tagName)) return
+    if (!settings.shortcuts || e.repeat || e.metaKey || e.ctrlKey || e.altKey || /INPUT|SELECT|TEXTAREA|BUTTON/.test(t.tagName)) return
     if (e.key === 'z') shift = Math.max(-24, shift - 12)
     if (e.key === 'x') shift = Math.min(24, shift + 12)
     const p = KEYMAP[e.key]

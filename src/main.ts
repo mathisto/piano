@@ -56,7 +56,9 @@ async function showSection(name: Section, err = '') {
   const id = name === 'songs' ? 'library' : name
   view(id)
   const el = $(`#${id}`)
-  if (name !== 'today' && !el.firstChild) el.innerHTML = `<div class="lib-head wait"><h1>${name[0].toUpperCase() + name.slice(1)}</h1></div>` // a first visit on a slow link: the page's title now, its body when the code arrives
+  const title = name[0].toUpperCase() + name.slice(1)
+  document.title = name === 'today' ? 'Piano Forte' : `${title} · Piano Forte` // the tab and the screen reader name the page
+  if (name !== 'today' && !el.firstChild) el.innerHTML = `<div class="lib-head wait"><h1>${title}</h1></div><p class="note loading wait">Loading…</p>` // a first visit on a slow link: the page's title now, a quiet line after a moment, its body when the code arrives
   try {
     if (name === 'today') await showToday()
     else if (name === 'songs') await showLibrary(err)
@@ -68,7 +70,7 @@ async function showSection(name: Section, err = '') {
   } catch (e) {
     // a page that cannot be drawn says so and offers another go, never a blank screen
     console.error(e)
-    $(`#${id}`).innerHTML = `<div class="lib-head"><h1>${name[0].toUpperCase() + name.slice(1)}</h1></div>${notice('This page could not load. Try again, or reload the app.', '<button class="btn" data-retry>Try again</button>')}`
+    $(`#${id}`).innerHTML = `<div class="lib-head"><h1>${title}</h1></div>${notice('This page could not load. Check the connection, then reload the page.', '<button class="btn" data-retry>Try again</button>')}`
     $(`#${id} [data-retry]`).onclick = () => void showSection(name)
   }
   if (err && name !== 'songs') $(`#${id}`).insertAdjacentHTML('afterbegin', notice(err)) // Songs has its own error line
@@ -81,6 +83,12 @@ new MutationObserver(() => {
   const b = $('#help .helpbody')
   if (!b.firstChild) void import('./ui-sheets').then((m) => (b.innerHTML = m.HELP), () => (b.innerHTML = '<p>Check the connection, then reload the page.</p>'))
 }).observe($('#help'), { attributeFilter: ['open'] })
+
+// a start card that scrolls is a stop for the keyboard (WCAG 2.1.1)
+const ready = $('#ready')
+const scrolls = () => (ready.scrollHeight > ready.clientHeight ? ready.setAttribute('tabindex', '0') : ready.removeAttribute('tabindex'))
+new ResizeObserver(scrolls).observe(ready)
+new MutationObserver(scrolls).observe(ready, { childList: true })
 
 $('#brand').onclick = () => (current ? leave() : void showSection('today'))
 $('#stagesBtn').onclick = () => (run && !run.done && (run.arc.cards || (run.spec.pace && game.judge.judged)) ? void runFinish() : leave())
@@ -113,8 +121,9 @@ document.addEventListener('click', (e) => {
   }
 })
 document.addEventListener('keydown', (e) => {
-  const m = (e.target as HTMLElement).closest?.('[data-more] + .popmenu')
-  if (e.key !== 'Escape' || !m) return
+  const t = e.target as HTMLElement
+  const m = t.closest?.('[data-more] + .popmenu') ?? (t.matches?.('[data-more]') ? t.nextElementSibling : null) // focus inside the menu, or still on its button
+  if (e.key !== 'Escape' || !m || (m as HTMLElement).hidden) return
   e.preventDefault() // the page's Escape (leave the piece) skips it
   closeMenus()
   ;(m.previousElementSibling as HTMLElement).focus()

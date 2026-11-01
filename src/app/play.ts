@@ -111,6 +111,7 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
   if (stale()) return false
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
+  document.title = `${song.title} · Piano Forte`
   const bb = $('#stagesBtn') // the way back, named for where it goes (a drill's button is set by its code: All stages, Finish)
   bb.hidden = false
   if (mode === 'read') bb.removeAttribute('aria-label')

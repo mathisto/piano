@@ -6,10 +6,11 @@ import { playPulse, pulseTap } from '../pulse-play'
 import * as store from '../store'
 import { check as checkAnswer, deal as dealTheory, deckOf, TRAINERS, untimed } from '../theory'
 import type { Trainer } from '../theory-cards'
-import { $ } from '../ui'
+import { $, keepFocus } from '../ui'
 import { type TheoryRunView, theoryView } from '../ui-views'
 import { dayKey } from '../week'
 import { median } from '../util'
+import { say } from './state'
 import { practised } from './stage'
 
 interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {
@@ -27,8 +28,11 @@ let theoryStats: Stats = {}
 export const theoryLevels = Object.fromEntries(TRAINERS.map((t) => [t.id, 1])) as Record<Trainer, number>
 
 export function showTheory() {
-  theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) })
+  keepFocus($('#theory'), () => theoryView($('#theory'), theoryLevels, theory && { ...theory, missed: [...theory.missed], medianMs: median(theory.rts), ear: earView(theory.ears) }))
 }
+
+/** A new card: the focus goes to its prompt, which a screen reader then reads. */
+const prompt = () => $('#theory h2')?.focus({ preventScroll: true })
 
 export async function startTheory(trainer: Trainer) {
   theoryStats = await store.getTheory()
@@ -36,6 +40,7 @@ export async function startTheory(trainer: Trainer) {
   if (theory) stopEar(theory.ears)
   theory = { trainer, level, cards: dealTheory(deckOf(trainer, level), theoryStats, 15), i: 0, step: 0, ok: 0, streak: 0, best: 0, at: performance.now(), rts: [], missed: new Set(), buf: [], timer: 0, ears: newEar() }
   showTheory()
+  prompt()
   promptTheory()
 }
 
@@ -100,6 +105,8 @@ function finishTheory(ok: boolean, rt: number) {
     promptTheory(true)
   }
   showTheory()
+  say(ok ? 'Yes.' : `Not quite. ${c.show}.`) // the card is redrawn: a live region that is not redrawn says it
+  if (!ok) $('#thNext')?.focus({ preventScroll: true })
 }
 
 function nextTheory() {
@@ -113,6 +120,7 @@ function nextTheory() {
   if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: untimed(t.trainer) || isPulse(t.trainer) ? undefined : median(t.rts) })
   promptTheory()
   showTheory()
+  prompt()
 }
 
 $('#theory').addEventListener('change', (e) => {

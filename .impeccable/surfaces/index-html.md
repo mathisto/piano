@@ -9,20 +9,20 @@ related_targets: []
 
 Mode: Operate shell around one Experience-style stage (the play screen). Code-led.
 
-Audience/job: learner at the keyboard in the evening, 1-2 m from the screen, hands busy; see what to play, play it, know how it went. Constraints: desktop Chrome 1280-1440 primary, Sidecar-mirrored iPad (~4:3) must hold, min width 1024.
+Audience/job: learner at the keyboard or on an iPad on the music stand, 60-90 cm from the screen, hands busy; see what to play, play it, know how it went. Constraints: the iPad (landscape or portrait, split view) is the main screen, desktop Chrome the second; no minimum width, narrow windows reflow.
 
-Unresolved: starter songs list is authored in-repo; judgement windows tuned by feel; final type faces chosen at build.
+Unresolved: judgement windows tuned by feel; the page's brightness at night is judged on the iPad.
 
 ## Direction contract
 
-THESIS: The staff is the scoreboard. Arcade juice lives on the stage and rewards learning; the notation stays calm, near-white, and only ignites for state. Refuses synthwave sun/grid and glow-on-everything.
+THESIS: The staff is the page. Dark ink on warm paper, in both modes, calm and adult; the stage beneath it is lit only to report state. No points, ranks, lives or fireworks.
 
-OWN-WORLD: DDR cabinet. Dark cool ground, lit lane panels, a bright marquee receptor line over the keys, judgement words in a heavy condensed italic, tabular HUD numerals. Hands differ by hue AND lightness plus lane-edge style. State palette: perfect, good, early/late, wrong, each with a word and a shape. Standard web controls in the shell (tabs, sliders, buttons).
+OWN-WORLD: Urtext (docs/research/urtext.md, owner-pinned 2026-11-01): an engraving house's cream page and dark ink with a concert grand's precision and native iPadOS. Nocturne (dark, near-black cool ground) and Matinee (light, warm stone). One brass lamp that means only "play this, now". Newsreader for what is announced and the names of music, the system font for the rest, tabular numerals for every counter. Hands differ by hue and by fill style (terracotta right, verdigris left); judgements by glyph and word (mint to crimson through neutral).
 
-STORY: A learner sees upcoming notes on a still grand staff and as falling lanes, plays them, watches each hit ignite on the staff, and ends knowing exactly which bars to loop next.
+STORY: A learner sees upcoming notes on a still page of music and as falling lanes, plays them, sees each hit settle on the staff, and ends knowing which bars to loop next.
 
-FIRST VIEWPORT: top bar (title, Perform|Learn switch, settings), HUD cluster at top right (score, combo, multiplier), staff strip ~22% height with static measure window and sweeping cursor, highway filling the middle with receptor line, on-screen keyboard at the bottom, Learn transport (tempo, wait, hands, A-B loop with miss heat strip) docked under the keyboard. Primary action: Play/Start.
+FIRST VIEWPORT: top bar (the mark, the seven tabs, the keyboard chip, settings), then Today: a plan of rows, one lamp on the one to do first. On the play screen: the title, Perform | Learn, the HUD, the paper staff over the highway, the keys, and the dock (Play, restart, the scrub bar, Tempo, Practice). Primary action: Play or Start.
 
-FORM: DDR cabinet panels and receptor line; brief-pinned (neon arcade), no concept roll. seed: none (unavailable)
+FORM: paper, ink and one lamp; native controls (segments, sliders, rows, a drawer); covers are each piece's own opening bars engraved on paper.
 
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+FINISH: reviewed against DESIGN.md; every shipping raster carries its provenance.

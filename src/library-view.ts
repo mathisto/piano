@@ -27,12 +27,12 @@ function row(p: Piece, prog: Map<string, Progress>) {
   const best = prog.get(`lib:${p.id}`)?.best
   const len = p.sec || meta.get(p.id)
   const cover = coverHtml(`lib:${p.id}`, 'thumb', pieceMeta(p, catalog.composers[p.composer]?.name), !local(p.id))
-  return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${cover}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
-    <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">Learn</button>
-    ${rowMenu(p.title, `<button class="btn ghost" role="menuitem" data-libplay="${esc(p.id)}" data-mode="perform">Perform</button>
-    <button class="btn ghost" role="menuitem" data-listen="lib:${esc(p.id)}">Listen</button>
-    <button class="btn ghost" role="menuitem" data-rt="lib:${esc(p.id)}">Read through</button>
-    <button class="btn ghost" role="menuitem" data-mem="lib:${esc(p.id)}">Memorise</button>`)}</div></td></tr>`
+  return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${cover}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(surname(catalog.composers[p.composer]?.name ?? ''))}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? '').replace('Public Domain', 'Public domain'))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
+    <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">${icon('play')}Learn</button>
+    ${rowMenu(p.title, `<button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="perform">Perform</button>
+    <button class="btn ghost" data-listen="lib:${esc(p.id)}">Listen</button>
+    <button class="btn ghost" data-rt="lib:${esc(p.id)}">Read through</button>
+    <button class="btn ghost" data-mem="lib:${esc(p.id)}">Memorise</button>`)}</div></td></tr>`
 }
 
 /** Read a file already on the device for its cover and a length, one at a time and only for rows scrolled into view:
@@ -86,7 +86,7 @@ export function mountLibrary(host: HTMLElement, prog: Map<string, Progress>, rea
   host.insertAdjacentHTML(
     'beforeend',
     `<section class="biglib" aria-labelledby="libCap">
-    <p class="label cap" id="libCap">Open library <span id="libCount"></span></p>
+    <h2 class="sec" id="libCap">Open library<span id="libCount"></span></h2>
     ${lost ? notice('Showing the pieces that come with the app. The rest of the open library needs a connection.', again) : ''}
     <div class="libtools">
       <label class="libq">${SEARCH}<input type="search" id="libQ" placeholder="Title, composer or opus" aria-label="Search the open library" autocomplete="off" spellcheck="false" value="${esc(ui.q)}"></label>
@@ -186,17 +186,18 @@ function table(caption: string, rows: Row[], empty: string) {
         <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
-          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'} ${esc(r.title)}">${icon('play')}${r.cont ? (r.prog?.last ? 'Continue' : 'Start') : 'Learn'}</button>
-          ${rowMenu(r.title, `<button class="btn ghost" role="menuitem" data-play="${esc(r.id)}" data-mode="perform">Perform</button>
-            <button class="btn ghost" role="menuitem" data-listen="${esc(r.id)}">Listen</button>
-            <button class="btn ghost" role="menuitem" data-rt="${esc(r.id)}">Read through</button>
-            <button class="btn ghost" role="menuitem" data-mem="${esc(r.id)}">Memorise</button>
-            ${r.tracks ? `<button class="btn ghost" role="menuitem" data-tracks="${esc(r.id)}">Options</button>` : ''}`)}
+          <button class="btn${r.cont ? ' primary' : ' ghost'}" data-play="${esc(r.id)}" data-mode="learn" aria-label="Learn ${esc(r.title)}">${icon('play')}Learn</button>
+          ${rowMenu(r.title, `<button class="btn ghost" data-play="${esc(r.id)}" data-mode="perform">Perform</button>
+            <button class="btn ghost" data-listen="${esc(r.id)}">Listen</button>
+            <button class="btn ghost" data-rt="${esc(r.id)}">Read through</button>
+            <button class="btn ghost" data-mem="${esc(r.id)}">Memorise</button>
+            ${r.tracks ? `<button class="btn ghost" data-tracks="${esc(r.id)}">Options</button>` : ''}`)}
         </div></td></tr>`,
         )
         .join('')
     : `<tr><td colspan="${best ? 4 : 3}" class="empty">${empty}</td></tr>`
-  return `<table class="songs"><caption>${caption}</caption>
+  const id = `sec${caption.replace(/\W/g, '')}`
+  return `<h2 class="sec" id="${id}">${caption}${rows.length ? `<span>${rows.length}</span>` : ''}</h2><table class="songs" aria-labelledby="${id}">
     <colgroup><col><col>${best ? '<col style="width:90px">' : ''}<col class="acol"></colgroup>
     ${rows.length ? `<thead><tr><th scope="col"><span class="sr-only">Preview</span></th><th scope="col">Piece</th>${best ? '<th scope="col" class="num">Best</th>' : ''}<th scope="col"><span class="sr-only">Actions</span></th></tr></thead>` : ''}
     <tbody>${body}</tbody></table>`

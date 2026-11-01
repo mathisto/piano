@@ -8,12 +8,16 @@ import { median } from '../util'
 import { game, hooks, resOpen, setCalibrating } from './state'
 import { leave, openSong } from './play'
 
-export async function startCalibration() {
+let back: (() => void) | undefined // where it was started from (the Set up sheet), to return to
+
+export async function startCalibration(from?: () => void) {
   hooks.closeDrawer()
+  back = from
   setCalibrating(true)
   const song = fromSpec({ id: CALIBRATION, title: 'Calibration', bpm: 80, fifths: 0, rh: Array(16).fill('C4:1').join(' '), lh: 'R:16' })
   await openSong(song, 'perform')
   $('#modeSeg').hidden = true
+  $('#hud').hidden = true // it is not a run to score: no accuracy, no streak
 }
 
 export function calibrated(r: Result) {
@@ -35,6 +39,8 @@ export function calibrated(r: Result) {
     setCalibrating(false)
     resOpen(false)
     leave()
+    back?.()
+    back = undefined
   }
   const apply = res.querySelector<HTMLButtonElement>('#apply')
   if (apply)

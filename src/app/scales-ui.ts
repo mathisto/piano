@@ -1,8 +1,9 @@
 // Scales: the stages, a free pick, and the degree quiz.
 import { type Card as ScaleCard, type Form, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, quizDeal, quizRecord, quizRight, type QuizStats, scaleSong, STAGES as SCALE_STAGES } from '../scales'
 import * as store from '../store'
-import { $ } from '../ui'
+import { $, keepFocus } from '../ui'
 import type { QuizState, ScalePick } from '../ui-views'
+import { say } from './state'
 import { openSong } from './play'
 
 let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
@@ -24,8 +25,13 @@ export function answerQuiz(degree: number) {
   if (ok) quiz.ok++
   quizRecord(quizStats, quiz.cards[quiz.i], ok)
   void store.saveQuiz(quizStats)
-  void showScales()
+  void showScales().then(() => {
+    say($('#qFb')?.textContent ?? '') // the card is redrawn: a live region that is not redrawn says it
+    $('#qNext')?.focus({ preventScroll: true })
+  })
 }
+/** A new quiz card: the focus goes to its prompt, which a screen reader then reads. */
+const prompt = () => $('#scales h2')?.focus({ preventScroll: true })
 export const quizOpen = () => $('#scales').classList.contains('on') && scaleTab === 'quiz' && !!quiz
 let scalePick: ScalePick = { tonic: 0, form: 'major', hands: 'R', oct: 1, bpm: 60 }
 
@@ -34,7 +40,7 @@ export async function showScales() {
   const f = nextScaleStage(stats)
   if (scaleTab === 'quiz' && !quiz) await newQuiz()
   const { scalesView } = await import('../ui-views')
-  scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick, quiz)
+  keepFocus($('#scales'), () => scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick, quiz))
 }
 
 export const startScale = (c: ScaleCard, bpm: number) => void openSong(scaleSong(c, bpm), 'perform')
@@ -59,8 +65,8 @@ $('#scales').addEventListener('click', (e) => {
   else if (b.id === 'qNext' && quiz) {
     quiz.i++
     quiz.picked = undefined
-    void showScales()
-  } else if (b.id === 'qAgain') void newQuiz().then(showScales)
+    void showScales().then(prompt)
+  } else if (b.id === 'qAgain') void newQuiz().then(showScales).then(prompt)
   else if (b.dataset.sstage) {
     const st = SCALE_STAGES.find((x) => x.id === b.dataset.sstage)!
     void store.getScales().then((stats) => startScale(nextCard(st, stats), st.bpm))

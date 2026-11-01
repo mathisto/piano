@@ -33,8 +33,8 @@ export function setupDialog(midi: string, connected: boolean, delay: number, pai
   return `<header><div><h2>Set up</h2><p>Four checks. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><div class="plan">
       <div class="prow">${noKeyboardArt()}<div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button>${pair}</div></div>
-      <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span></div><div class="pact"><button class="btn ghost" id="suTouch">Set touch range</button></div></div>
-      <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span></div><div class="pact"><button class="btn ghost" id="suDelay">Calibrate</button></div></div>
+      <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span><span class="needs" data-needs${connected ? ' hidden' : ''}>Needs a keyboard: connect one first.</span></div><div class="pact"><button class="btn ghost" id="suTouch" data-needs${connected ? '' : ' disabled'}>Set touch range</button></div></div>
+      <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span><span class="needs" data-needs${connected ? ' hidden' : ''}>Needs a keyboard: connect one first.</span></div><div class="pact"><button class="btn ghost" id="suDelay" data-needs${connected ? '' : ' disabled'}>Calibrate</button></div></div>
       <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>
     </div></div>
     <footer><span class="fine free">${FREE}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
@@ -48,7 +48,7 @@ export function tracksDialog(title: string, r: Report | undefined, pick: Selecti
   const busy = r ? density(used, r.bars) : 0
   const multi = !!r && r.tracks.length > 1
   return `
-    <header><div><h2>Options</h2><p>${esc(title)}</p></div><div class="pop">${rowMenu(title, '<button class="btn ghost" role="menuitem" id="tkShare">Share file</button><button class="btn ghost" role="menuitem" id="tkRemove">Remove file</button>')}</div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
+    <header><div><h2>Options</h2><p>${esc(title)}</p></div><div class="pop">${rowMenu(title, '<button class="btn ghost" id="tkShare">Share file</button><button class="btn ghost" id="tkRemove">Remove file</button>')}</div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body">
     <dl class="facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
     ${
@@ -74,7 +74,7 @@ export const HELP = `<h3>What each tab is for</h3>
     <dl>
       <dt>Today</dt><dd>Today's plan, 5 to 45 minutes, and your week.</dd>
       <dt>Songs</dt><dd>Starter pieces, your own files and the open library.</dd>
-      <dt>Read</dt><dd>Name notes on the staff and find them on the keys. Sight Run is a longer run of new notes.</dd>
+      <dt>Read</dt><dd>Name notes on the staff and find them on the keys. Sight run is a longer run of new notes.</dd>
       <dt>Scales</dt><dd>Scales and arpeggios with fingering, a stage at a time.</dd>
       <dt>Theory</dt><dd>Chords, keys, intervals, cadences, ear and rhythm, answered on the keys.</dd>
       <dt>Technique</dt><dd>Short exercises for steady timing and an even touch.</dd>
@@ -91,6 +91,7 @@ export const HELP = `<h3>What each tab is for</h3>
     <p class="fine">A card or piece you get right comes back after about 1 day, then 2, 4, 8 and 16; one you miss comes back sooner. Anything due shows a Due tag. Spaced review is one of the better-supported ways to remember; the exact days are our choice, not a proven best.</p>
     <h3>Keyboard shortcuts</h3>
     <div class="sc"><kbd>Space</kbd><span>Play, pause</span><kbd>V</kbd><span>Staff, both, falling</span><kbd>- +</kbd><span>Staff size</span><kbd>B</kbd><span>Metronome</span><kbd>N</kbd><span>Note names</span><kbd>M</kbd><span>Hide controls</span><kbd>[ ]</kbd><span>Tempo down, up</span><kbd>Esc</kbd><span>Back</span><kbd>?</kbd><span>This help</span></div>
+    <p class="fine">Settings, Advanced, Keyboard shortcuts turns the single keys off.</p>
     <h3>No keyboard</h3>
     <p class="fine"><kbd>A</kbd> to <kbd>;</kbd> play the white keys, <kbd>W E T Y U O P</kbd> the black, <kbd>Z X</kbd> shift the octave.</p>
     <h3>Hearing every note twice?</h3>

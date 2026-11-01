@@ -32,15 +32,9 @@ export function skeleton(app: HTMLElement) {
   <header class="bar">
     <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="160 362 704 360" width="36" height="18" fill="currentColor" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><span class="wordmark" aria-hidden="true">Piano Forte</span></button>
     <button class="btn ghost" id="stagesBtn" hidden>${icon('back')}<span></span></button>
-    <div class="seg" id="nav" role="radiogroup" aria-label="Section">
-      <label><input type="radio" name="nav" value="today" checked><span>${icon('today')}Today</span></label>
-      <label><input type="radio" name="nav" value="songs"><span>${icon('songs')}Songs</span></label>
-      <label><input type="radio" name="nav" value="read"><span>${icon('read')}Read</span></label>
-      <label><input type="radio" name="nav" value="scales"><span>${icon('scales')}Scales</span></label>
-      <label><input type="radio" name="nav" value="theory"><span>${icon('theory')}Theory</span></label>
-      <label><input type="radio" name="nav" value="technique"><span>${icon('technique')}Technique</span></label>
-      <label><input type="radio" name="nav" value="progress"><span>${icon('progress')}Progress</span></label>
-    </div>
+    <nav class="seg" id="nav" aria-label="Sections">
+      ${(['today', 'songs', 'read', 'scales', 'theory', 'technique', 'progress'] as const).map((v, i) => `<label><input type="radio" name="nav" value="${v}"${i ? '' : ' checked'}><span>${icon(v)}<em>${v[0].toUpperCase() + v.slice(1)}</em></span></label>`).join('')}
+    </nav>
     <div class="song-title" id="title" role="heading" aria-level="1"></div>
     <div class="seg" id="modeSeg" hidden role="radiogroup" aria-label="Mode">
       <label><input type="radio" name="mode" value="perform"><span>Perform</span></label>
@@ -53,7 +47,7 @@ export function skeleton(app: HTMLElement) {
       <div data-m="read" data-run="all" class="combo" role="group" aria-label="Run streak" title="Streak"><small>Streak</small><b id="rStreak">0</b></div>
       <div data-m="read" role="group" aria-label="Cards" title="Cards"><small>Cards</small><b id="hCards">0/0</b></div>
     </div>
-    <span class="pop"><button class="chip" id="dev" data-more aria-haspopup="true" aria-expanded="false"><span class="dot"></span><span id="devName">No keyboard</span></button><div class="popmenu end kbmenu" id="kbMenu" role="menu" aria-label="Keyboard" hidden></div></span>
+    <span class="pop"><button class="chip" id="dev" data-more aria-expanded="false" aria-controls="kbMenu"><span class="dot"></span>${icon('keyboard')}<span id="devName">No keyboard</span></button><div class="popmenu end kbmenu" id="kbMenu" role="group" aria-label="Keyboard" hidden></div></span>
     <button class="btn icon ghost" id="settingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="drawer">${icon('sliders')}</button>
   </header>
   <dialog id="tracks" class="sheet" aria-label="Options"></dialog>
@@ -74,7 +68,7 @@ export function skeleton(app: HTMLElement) {
       <div id="split" role="separator" aria-orientation="horizontal" aria-label="Resize sheet music and falling notes" aria-valuemin="0" aria-valuemax="100" tabindex="0" hidden></div>
       <div id="stage">
         <div id="judge" aria-hidden="true"></div>
-        <div class="stagecol"><div id="banner"></div><div id="ready" class="ready" hidden></div></div>
+        <div class="stagecol"><div id="banner" role="status"></div><div id="ready" class="ready" hidden></div></div>
         <div id="count" class="countin" hidden aria-hidden="true"></div>
         <div id="paused" class="paused" hidden aria-hidden="true">Paused</div>
         <div id="res" hidden></div>
@@ -84,7 +78,7 @@ export function skeleton(app: HTMLElement) {
       <div id="chord" class="chord" hidden aria-hidden="true"><b></b><small></small></div>
     </section>
   </main>
-  <aside id="drawer" class="drawer" hidden aria-label="Settings"></aside>`
+  <div id="drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-label="Settings"></div>`
 }
 
 // ---------- library ----------
@@ -147,8 +141,9 @@ export const head = (title: string, actions = '', lede = '') =>
 
 
 /** The actions past the first few, behind one ⋯ button: a song row's other ways in, Settings' Data, a file's Options (main.ts opens and closes it). */
-export const rowMenu = (title: string, items: string) =>
-  `<button class="btn ghost icon" data-more aria-label="More for ${esc(title)}" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu rowmenu" role="menu" aria-label="${esc(title)}" hidden>${items}</div>`
+let menus = 0
+export const rowMenu = (title: string, items: string, id = `rm${++menus}`) =>
+  `<button class="btn ghost icon" data-more aria-label="More for ${esc(title)}" aria-expanded="false" aria-controls="${id}">${icon('more')}</button><div class="popmenu rowmenu" id="${id}" role="group" aria-label="${esc(title)}" hidden>${items}</div>`
 
 /** A line of plain words at the top of a page, with an optional button: what is wrong and what can be done about it. */
 export const notice = (text: string, action = '', cls = '') => `<p class="notice${cls}" role="status"><span>${esc(text)}</span>${action}</p>`
@@ -217,7 +212,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     ...(d.scale ? [{ key: 'scale', min: 3, title: d.scale.title, sub: d.scale.sub, mid: `<div class="mrow">${meter(d.scale.pct, false, 'Mastery')}<b>${Math.round(d.scale.pct * 100)}%</b></div>`, act: (c: string) => go(c, d.scale!.start, 'Start') }] : []),
     ...(d.theory ? [{ key: 'theory', min: 3, title: d.theory.title, sub: d.theory.sub, act: (c: string) => go(c, d.theory!.start, 'Start') }] : []),
     ...(d.path ? [{ key: 'path', min: 3, title: d.path.title, sub: d.path.sub, act: (c: string) => go(c, d.path!.start, 'Start') }] : []),
-    { key: 'run', min: 3, title: 'Sight Run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${icon('play')}Start</button>` },
+    { key: 'run', min: 3, title: 'Sight run', sub: 'Fresh notes in a row, at your range', act: (c: string) => `<button class="btn${c}" data-today="run">${icon('play')}Start</button>` },
     ...(d.review ? [{ key: 'review', min: 6, title: d.review.name, sub: d.review.line, act: (c: string) => `<button class="btn${c}" data-today="read" data-id="${esc(d.review!.id)}">${icon('play')}Practice</button>` }] : []),
   ]
   const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
