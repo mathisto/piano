@@ -8,6 +8,7 @@ import type { Progress } from './store'
 import { coverHtml, drawCovers, keep, paint, pieceMeta, surname } from './cover'
 import { head, mmss, notice, rowMenu, type Row } from './ui'
 import { icon } from './icons'
+import { noMusic } from './empty'
 import { esc } from './util'
 
 // The open library on the Songs page: search, level and composer filters, and a list shown a page at a time,
@@ -206,5 +207,5 @@ export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '')
     ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,audio/midi" multiple hidden></label>`)}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${table('Starter pieces', starters, '')}
-    ${table('Your files', mine, 'Add a MIDI or MusicXML file, or drop one anywhere on this page.')}`
+    ${table('Your files', mine, noMusic('Add a MIDI or MusicXML file, or drop one anywhere on this page.'))}`
 }

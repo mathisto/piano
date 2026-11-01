@@ -5,6 +5,7 @@ import { COMFORT, density } from './song'
 import type { Report, Selection, TrackInfo } from './midi-tracks'
 import { DEFAULT_EDGES } from './touch'
 import { esc } from './util'
+import { noKeyboardArt } from './empty'
 
 const SOUNDS = [
   'Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
@@ -31,7 +32,7 @@ export function setupDialog(midi: string, connected: boolean, delay: number, pai
   const e = settings.edges ?? DEFAULT_EDGES
   return `<header><div><h2>Set up</h2><p>Four checks. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><div class="plan">
-      <div class="prow"><div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button>${pair}</div></div>
+      <div class="prow">${noKeyboardArt()}<div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button>${pair}</div></div>
       <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span></div><div class="pact"><button class="btn ghost" id="suTouch">Set touch range</button></div></div>
       <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span></div><div class="pact"><button class="btn ghost" id="suDelay">Calibrate</button></div></div>
       <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>
