@@ -2,6 +2,7 @@ import { keyName, type Card } from './scales'
 import { loadState, outputLatency } from './audio'
 import { INSTRUMENTS, instrument } from './instruments'
 import { icon } from './icons'
+import type { CoverMeta } from './cover'
 import type { Input } from './midi'
 import { noteName } from './spell'
 import { settings, KEY_TOUCH } from './settings'
@@ -100,12 +101,12 @@ export interface Row {
   len: number
   prog?: Progress
   user: boolean
-  thumb: string
+  cover: CoverMeta
   cont?: boolean // the one row to carry the lamp: where to go next
   tracks?: boolean // a multi-track MIDI file whose tracks can be chosen
 }
 
-export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>, thumbs: Map<string, string>): Row[] {
+export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>): Row[] {
   return starts.map((s, i) => ({
     id: s.spec.id,
     title: s.spec.title,
@@ -114,11 +115,11 @@ export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, 
     len: songs[i].end,
     prog: prog.get(s.spec.id),
     user: false,
-    thumb: thumbs.get(s.spec.id) ?? '',
+    cover: { by: s.by, fifths: s.spec.fifths, meter: (s.spec.sig ?? [4, 4]).join('/') },
   }))
 }
 
-export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>, thumbs: Map<string, string>): Row[] {
+export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>): Row[] {
   return stored.map((s) => ({
     id: s.id,
     title: s.title,
@@ -128,7 +129,7 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
     len: lens.get(s.id)?.len ?? 0,
     prog: prog.get(s.id),
     user: true,
-    thumb: thumbs.get(s.id) ?? '',
+    cover: { by: s.kind === 'xml' ? 'MusicXML' : 'MIDI' }, // a file has no composer to name; the score gives its key and metre when its cover is drawn
   }))
 }
 
@@ -215,7 +216,7 @@ interface Go {
 
 export interface TodayData {
   guide?: Guide | null // the first-week card
-  last: { id: string; title: string; sub: string; first: boolean }
+  last: { id: string; title: string; sub: string; first: boolean; cover: string } // cover: the piece's lead cover, as HTML
   again?: { id: string; title: string; sub: string } // a piece whose spaced review is due
   read: { id: string; name: string; pct: number; line: string }
   tech: string
@@ -267,7 +268,7 @@ export function todayView(el: HTMLElement, d: TodayData) {
     .map((r) => {
       const done = d.done.includes(r.key)
       const cls = r === first ? ' primary' : ' ghost' // one lamp; every other row's action is quiet, as on Read and Songs
-      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span><div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
+      return `<div class="prow${done ? ' done' : ''}"><span class="plead">${done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : ''}<div class="pwho"><b>${esc(r.title)}</b><span>${esc(r.sub)}${done ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${r.act(cls)}</div></div>`
     })
     .join('')
   el.innerHTML = `

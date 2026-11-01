@@ -16,12 +16,12 @@ import { dayKey, improved, lastWeek, weekOf } from '../week'
 import { firstUse, type Go, guideDay, guideDid, guideSave, guideState } from '../guide'
 import { drillStats, hooks, stageById } from './state'
 import { worstBars } from '../util'
-import { libraryData } from './library'
+import { coverSong, libraryData } from './library'
 import { fixBars, openById, openSong } from './play'
 import { readThrough, rtPieces } from './readthrough-ui'
 import { startDrill, startRun } from './drill'
 import { stageRows } from './read'
-import { theory } from './lazy'
+import { cover, theory } from './lazy'
 import { startScale } from './scales-ui'
 import { memorise } from './memorise-ui'
 
@@ -47,9 +47,10 @@ export async function showToday() {
   const sight = pickPiece(rtPieces(), await store.allProgress())
   const recap = lw ? { ...lw, better: improved(await store.getSnap(prevKey), snap, Object.fromEntries(rows.map((r) => [r.stage.id, r.stage.name]))) ?? undefined } : null
   const guide = await firstWeek(days)
+  const { coverHtml, drawCovers } = await cover()
   todayView($('#today'), {
     guide,
-    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last },
+    last: { id: last.id, title: last.title, sub: last.prog?.best ? `Best ${Math.round(last.prog.best.acc * 100)}%` : last.sub, first: !last.prog?.last, cover: coverHtml(last.id, 'lead', last.cover) },
     again: (() => {
       const r = all.filter((x) => x.prog?.due !== undefined && x.prog.due <= dayNum() && x.id !== last.id).sort((a, b) => a.prog!.due! - b.prog!.due!)[0]
       return r ? { id: r.id, title: r.title, sub: 'Due for another go' } : undefined
@@ -71,6 +72,7 @@ export async function showToday() {
     recap: recap ?? undefined,
     sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `Read through, no stopping · ${sight.fresh ? 'new ' : ''}${sight.piece.level}` },
   })
+  drawCovers($('#today'), coverSong)
   $('#today').querySelectorAll<HTMLInputElement>('input[name=planMin]').forEach((r) => (r.onchange = () => {
     settings.planMin = Number(r.value) as PlanMin
     save()

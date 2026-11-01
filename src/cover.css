@@ -1,0 +1,115 @@
+/* ---------- the cover: a piece's opening bars on paper (src/cover.ts holds the sizes) ---------- */
+.cover {
+  box-sizing: border-box;
+  width: var(--cw);
+  height: var(--ch);
+  display: grid;
+  grid: var(--hh) 1fr / minmax(0, 1fr); /* the header's left clips with an ellipsis; its right never does */
+  padding: 0 var(--pad) var(--pad);
+  background: var(--paper);
+  color: var(--paper-line);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+.cv-h {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: 600 var(--fs) / 1 var(--ui);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.cv-l {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-r {
+  flex: none;
+  text-transform: none; /* "Em" is E minor, not EM */
+}
+.cv-b {
+  grid-row: 2;
+  width: calc(var(--cw) - 2 * var(--pad)); /* a narrow window crops the box, never the scale */
+  height: var(--bh);
+  overflow: hidden;
+}
+.cv-b svg {
+  display: block;
+  width: var(--bw);
+  height: var(--bh);
+}
+/* the staff painter's classes, on paper: ink and one line colour, hairlines that stay hairlines at a thumbnail's scale */
+.cv-b .lines line {
+  stroke: var(--paper-line);
+  stroke-width: 0.8px;
+  vector-effect: non-scaling-stroke;
+}
+.cv-b .bars line,
+.cv-b .ledger,
+.cv-b .stem {
+  stroke: var(--paper-ink);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.cv-b .bars line {
+  stroke: var(--paper-line);
+}
+.cv-b .smufl {
+  font-family: 'Bravura';
+  font-size: 40px;
+  fill: var(--paper-ink);
+}
+.cv-b .smufl.small {
+  font-size: 26px;
+}
+.cv-b .tupn {
+  font-size: 28px;
+}
+.cv-b .beam,
+.cv-b .tie {
+  fill: var(--paper-ink);
+}
+.cv-b .tup {
+  fill: none;
+  stroke: var(--paper-ink);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.cv-b .fin {
+  fill: var(--paper-line);
+}
+.cv-b .mk,
+.cv-b .ott,
+.cv-b .ottl,
+.cv-b .finger {
+  display: none; /* a score's marks and a drill's fingers are not an opening's silhouette */
+}
+.ready .cover {
+  margin: 0 auto 12px;
+}
+/* a short stage has no room above the title for a cover, and one with the keyboard banner over it has room only on a tall stage */
+@container stage (max-height: 420px) {
+  #ready .cover {
+    display: none;
+  }
+}
+@container stage (max-height: 560px) {
+  #stage:has(.banner) #ready .cover {
+    display: none;
+  }
+}
+/* a mid-width window crops the Songs rows' cover to its first bars, so the title has room */
+@media (max-width: 1000px) {
+  table.songs .cover.cv-row {
+    --cw: 78px !important; /* over the box's own inline size */
+  }
+  table.songs .cover.cv-row .cv-r {
+    display: none;
+  }
+}

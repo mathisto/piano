@@ -2,20 +2,17 @@
 import * as lib from '../catalog'
 import type { Piece } from '../catalog-types'
 import { settings } from '../settings'
-import { fromSpec } from '../song'
 import { noteName } from '../spell'
 import { STARTERS } from '../starters'
 import * as store from '../store'
-import { thumb } from '../thumb'
 import { $, type Row, starterRows, userRows } from '../ui'
+import { cover } from './lazy'
 import { chunkFailed, current, hooks, sheets, starters } from './state'
 
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
-const thumbs = new Map<string, string>(STARTERS.map((st) => [st.spec.id, thumb(fromSpec(st.spec))]))
-
 export async function libraryData() {
-  const [stored, prog] = await Promise.all([store.listSongs(), store.allProgress()])
+  const [stored, prog, { keep, pieceMeta }] = await Promise.all([store.listSongs(), store.allProgress(), cover()])
   for (const s of stored) {
     if (!lens.has(s.id)) {
       try {
@@ -27,18 +24,19 @@ export async function libraryData() {
           tracks = { all: r.tracks.filter((t) => !t.percussion).length, used: (s.pick ?? autoSelect(r)).tracks.length }
         }
         lens.set(s.id, { bars: song.bars.length, len: song.end, tracks })
-        thumbs.set(s.id, thumb(song))
+        keep(s.id, song)
       } catch {
         lens.set(s.id, { bars: 0, len: 0 })
       }
     }
   }
-  const starts = starterRows(STARTERS, starters, prog, thumbs)
-  const mine = userRows(stored, prog, lens, thumbs)
+  starters.forEach((song) => keep(song.id, song))
+  const starts = starterRows(STARTERS, starters, prog)
+  const mine = userRows(stored, prog, lens)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
   const libRows: Row[] = [...prog.keys()].flatMap((k) => {
     const p = k.startsWith('lib:') && lib.piece(k.slice(4))
-    return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, thumb: '' }] : []
+    return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, cover: pieceMeta(lib.catalog.composers[p.composer]?.name, p.opus, p.bars ? p : undefined) }] : []
   })
   const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
   return { starts, mine, last, all: [...starts, ...mine, ...libRows] }
@@ -49,8 +47,15 @@ export async function showLibrary(err = '') {
   last.cont = true
   const [{ library, mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()]) // the page's code: fetched at idle after boot, so usually here already
   library($('#library'), starts, mine, err)
+  ;(await cover()).drawCovers($('#library'))
   if (err) $('#drop').scrollIntoView({ block: 'nearest' }) // a failed piece far down the page, or a dropped file, must not leave its message above the fold
   mountLibrary($('#library'), prog, libSong)
+}
+
+/** The score behind a cover whose piece is a library piece already on the device; anything else is kept when its row is built. */
+export const coverSong = async (id: string) => {
+  const p = id.startsWith('lib:') ? lib.piece(id.slice(4)) : undefined
+  return p && lib.local(p.id) ? libSong(p) : undefined
 }
 
 export async function libSong(p: Piece) {
@@ -116,7 +121,7 @@ export async function openTracks(id: string) {
         if (!pick.tracks.length) return
         await store.setPick(id, pick)
         lens.delete(id)
-        thumbs.delete(id)
+        ;(await cover()).forget(id)
         dlg.close()
         void showLibrary()
       }
