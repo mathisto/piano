@@ -354,6 +354,7 @@ export function wake(phase = false) {
 /** The bar and dock fade while hushed, and are `inert` with it: the screen reader finds no invisible, dead controls. Focus in them is put back on waking. */
 let held: HTMLElement | undefined
 function hush(on: boolean) {
+  if (document.body.classList.contains('hush') === on) return // every pointer move wakes: nothing to do when already awake
   const a = document.activeElement as HTMLElement
   if (on && a.closest('.bar, #dock')) held = a // inert drops focus
   document.body.classList.toggle('hush', on)
