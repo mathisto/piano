@@ -20,6 +20,13 @@ import { memDone, memorise } from './memorise-ui'
 import { drillDone } from './drill'
 import { calibrated } from './calibration'
 
+/** A More menu with one item is that item, as a plain button. */
+const soloMenu = (res: HTMLElement) => {
+  const pop = res.querySelector('.card .row .pop')
+  const items = pop?.querySelectorAll('.popmenu > button')
+  if (items?.length === 1) pop!.replaceWith(items[0])
+}
+
 async function onDone(r: Result) {
   const c = current // the piece this result is for: leaving during an await below ends it
   if (!c) return
@@ -80,9 +87,9 @@ async function onDone(r: Result) {
   const ui = await import('../ui-results')
   if (current !== c) return // left during the saves above: the run is recorded, the card is not wanted
   res.innerHTML = ui.results(r, next, note, backName())
-  if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" role="menuitem" id="memTry">Try it from memory</button>')
+  if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(c.song.id, 1))
-  void import('./take-ui').then((t) => t.takeCard(res)) // Listen back and Compare with last time (loaded with the stage)
+  void import('./take-ui').then((t) => t.takeCard(res)).finally(() => soloMenu(res)) // Listen back and Compare with last time (loaded with the stage)
   resOpen(true)
   res.querySelector<HTMLButtonElement>('#next, #again')?.focus()
   say(`Finished. ${Math.round(r.acc * 100)} percent accuracy.`)

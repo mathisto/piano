@@ -1,6 +1,7 @@
 // The settings drawer, and the Set up and Credits dialogs it opens.
 import * as audio from '../audio'
 import * as lib from '../catalog'
+import { PLUG } from '../guide'
 import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs } from '../midi'
 import { native } from '../native-midi'
@@ -17,11 +18,14 @@ import { leave } from './play'
 import { startCalibration } from './calibration'
 import { startTouchCal } from './technique-ui'
 
+/** The drawer holds focus and the screen reader: the page and the bar behind it are inert, but the Settings button (it closes the drawer) and the main landmark stay. The keyboard still plays. */
+const behind = (on: boolean) => document.querySelectorAll<HTMLElement>('#main > section, .bar > :not(#settingsBtn)').forEach((e) => (e.inert = on))
+
 async function openDrawer() {
   const d = $('#drawer')
   const wasOpen = !d.hidden
   d.hidden = false // open on the tap, before its markup arrives: a second tap closes it rather than opening it twice
-  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
+  behind(true)
   $('#settingsBtn').setAttribute('aria-expanded', 'true')
   let drawer: typeof import('../ui-drawer').drawer
   try {
@@ -44,6 +48,7 @@ async function openDrawer() {
     save()
   })
   $('#sCal', d).onclick = () => void startCalibration()
+  $('#sClose', d).onclick = closeDrawer
   radios('theme', (v) => {
     settings.theme = v as typeof settings.theme
     applyTheme()
@@ -91,6 +96,10 @@ async function openDrawer() {
   }, 'change')
   on('#sFade', (el) => {
     settings.fade = el.checked
+    save()
+  }, 'change')
+  on('#sKeys', (el) => {
+    settings.shortcuts = el.checked
     save()
   }, 'change')
   on('#sFull', (el) => {
@@ -151,7 +160,7 @@ export function closeDrawer() {
   const d = $('#drawer')
   if (d.hidden) return false
   d.hidden = true
-  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = false))
+  behind(false)
   $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')
   return true
@@ -179,11 +188,11 @@ $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDra
 // opens it; this fills it first): what is connected, a choice when there are several, pairing over Bluetooth on the iPad
 $('#dev').addEventListener('click', () => {
   const ins = inputs()
-  $('#kbMenu').innerHTML = `<p class="kbstate">${ins.length ? `${ins.length > 1 ? 'Keyboards' : 'Connected'}` : 'No keyboard connected'}</p>${
+  $('#kbMenu').innerHTML = `<p class="kbstate">${ins.length ? `${ins.length > 1 ? 'Keyboards' : 'Connected'}` : 'No keyboard'}</p>${
     ins.length > 1
       ? `<select id="sDevice" aria-label="Keyboard"><option value="">All</option>${ins.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
       : ins.length ? `<p class="kbname">${esc(ins[0].name)}</p>` : ''
-  }${native ? '<button class="btn ghost" role="menuitem" data-pair>Pair a Bluetooth keyboard</button>' : midiState === 'ok' ? '' : '<button class="btn ghost" role="menuitem" data-connect>Connect</button>'}<p class="kbnote">A USB keyboard connects by itself when it is plugged in and switched on.</p>`
+  }${native ? '<button class="btn" data-pair>Pair a Bluetooth keyboard</button>' : midiState === 'ok' ? '' : '<button class="btn" data-connect>Connect</button>'}${ins.length ? '' : `<p class="kbnote">${PLUG}</p>`}`
   $<HTMLSelectElement>('#kbMenu').querySelector('select')?.addEventListener('change', (e) => {
     settings.device = (e.target as HTMLSelectElement).value
     chooseInput(settings.device)
@@ -228,8 +237,8 @@ export async function openSetup() {
     f()
   }
   $('#suConnect', d).onclick = () => void connectMidi()
-  $('#suTouch', d).onclick = away(startTouchCal)
-  $('#suDelay', d).onclick = away(() => void startCalibration())
+  $('#suTouch', d).onclick = away(() => startTouchCal(openSetup)) // and back here when it is done
+  $('#suDelay', d).onclick = away(() => void startCalibration(openSetup))
   $<HTMLSelectElement>('#suKeyTouch', d).onchange = (e) => {
     settings.keyTouch = (e.target as HTMLSelectElement).value as typeof settings.keyTouch
     save()

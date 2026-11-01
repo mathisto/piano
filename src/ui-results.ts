@@ -78,7 +78,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs')
     <div class="row">
       ${next ? `<button class="btn primary" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
       <button class="btn${next ? '' : ' primary'}" id="again">${icon('restart')}Again</button>
-      <div class="pop"><button class="btn icon" data-more aria-label="More" aria-haspopup="menu" aria-expanded="false">${icon('more')}</button><div class="popmenu" id="resMenu" role="menu" hidden></div></div>
+      <div class="pop"><button class="btn icon" data-more aria-label="More" aria-expanded="false" aria-controls="resMenu">${icon('more')}</button><div class="popmenu" id="resMenu" hidden></div></div>
       <button class="btn ghost" id="toLib">${from}</button>
     </div>
   </div></div>`
