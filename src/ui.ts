@@ -77,7 +77,7 @@ export function skeleton(app: HTMLElement) {
       <div id="chord" class="chord" hidden aria-hidden="true"><b></b><small></small></div>
     </section>
   </main>
-  <div id="drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="drawerTitle"></div>`
+  <div id="drawer" class="drawer" hidden role="dialog" aria-modal="true" aria-label="Settings"></div>`
 }
 
 // ---------- library ----------
