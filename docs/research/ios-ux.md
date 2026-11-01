@@ -11,6 +11,8 @@ Evidence tags:
 
 Numbers in brackets point at the source list at the end.
 
+**Updated 2026-11-01.** Several decisions below were reversed by later work; each is marked "Superseded" in place. Since this note: Urtext replaced the neon look, Matinée (a light mode) shipped, a ⌘ menu bar was built (30 Oct), the web build gained a service worker (offline), the iPad shell allows all four orientations, and the developer account is paid (31 Oct). The owner's iPad runs iPadOS 26.5. Current Apple guidance, Liquid Glass since 26.0 and the native-feature list are in `docs/research/horizon.md` section 4; the shell is in `ios-native.md`.
+
 **Moving target.** While this note was being written another session landed a draggable staff/highway divider (`#split`, `settings.pane`, `setPane`, `nudge` in `main.ts`, 18px bar in `style.css`, modified 12:39). Section 3 audits that code, not a hypothetical. It has not been run on the iPad.
 
 Gaps up front: Apple's own HIG Split Views page returned an empty shell; the text used is a mirror of it [2]. Material 3's bottom-sheet spec page was empty, so no Material numbers are quoted as spec. The Logic Pro iPad page on resize handles was only seen as a search snippet. I found nothing primary on how Simply Piano, flowkey, Yousician, Skoove or Piano Marvel combine falling notes and notation; `products-and-ux.md` already holds what is known. Ableton Note, Notion and Apple Maps were not researched beyond the HIG sheets page.
@@ -28,7 +30,7 @@ Gaps up front: Apple's own HIG Split Views page returned an empty shell; the tex
 7. **Dark-mode contrast: one tier is thin.** `--ink-3` (#8a8fbd) is 5.9:1 on panel [C]. Apple's Dark Mode page asks for 4.5:1 minimum and 7:1 for small custom text [11][V]. 38 rules use `--ink-3`; it passes the floor and misses the aim at 13-15px.
 8. **Distance is the real iPad constraint.** Apple's iPadOS page says to size content for viewing within about three feet [6][V], which matches the 60-90 cm music stand. Body text at 15px is fine in menus and too small to glance at mid-song; play-screen text should be at or above Apple's 17pt default [10][V].
 9. **Windowing is a design decision, not a bug.** HIG: "even landscape-only apps should resize well" [3][V]; iPadOS 26 adds a resize handle on every multitasking-capable app and floating windows [19][V]. The app already has `ResizeObserver`s, but replaces itself with a full-screen notice under 1024px. For a one-user dev app that is defensible; see Decided against.
-10. **Liquid Glass does not apply to this app.** Apple limits it to the functional layer (bars, sidebars, controls) and says to keep it out of the content layer [5][V]. This app is a dark-only immersive surface with no system bars; the only place it would apply is native sheets, which it does not use. The Dark Mode page itself allows an immersive dark-only app (Stocks on iPhone is the cited example) [11][V].
+10. **Liquid Glass does not apply to this app.** Apple limits it to the functional layer (bars, sidebars, controls) and says to keep it out of the content layer [5][V]. This app is a dark-only immersive surface with no system bars; the only place it would apply is native sheets, which it does not use. The Dark Mode page itself allows an immersive dark-only app (Stocks on iPhone is the cited example) [11][V]. (Superseded 2026-11-01 on "dark-only": Matinée shipped. The conclusion on glass stands, for better reasons: Apple's content-layer rule, seven tabs that a native bar would overflow, and the frame cost over WebGL; `horizon.md` 4.1.)
 
 ---
 
@@ -43,10 +45,10 @@ Gaps up front: Apple's own HIG Split Views page returned an empty shell; the tex
 | Hit targets 44pt default, 28pt min, 12pt padding [4] | `--control: 44px` under `pointer: coarse`; small buttons 44; segment cells 38; slider thumb 32; divider hit 46px | Segment cells 38 | Keep. Re-check cell spacing on the iPad; no change needed |
 | Safe areas [3] | `viewport-fit=cover`, `#app` pads `env(safe-area-inset-*)`, `contentInset: never`, `100dvh` | None in full screen. Windowed iPadOS 26: window controls sit at the top-left and the system adds a safe area above the toolbar for apps not updated [19][V]; whether this reaches a WKWebView app is unknown [M] | Test windowed on device (R10). Nothing to build until seen |
 | Status bar / home indicator | `UIStatusBarHidden` true, view-controller-based appearance off; bottom pad from env() | Home indicator stays lit; harmless. Dock sits above the padded strip so the system swipe-up never meets a touchable key | None. Auto-hide is cosmetic (R13) |
-| Typography: 17pt default, 11pt min, Dynamic Type or another way to resize, no thin weights [10] | Fixed px; body 15, labels 13, bar numbers 12; Hanken 400-800, Barlow 800 | No Dynamic Type; 13px labels in ink-3; nothing resizes UI text | Raise play-screen text (R7). Dynamic Type itself: decided against |
+| Typography: 17pt default, 11pt min, Dynamic Type or another way to resize, no thin weights [10] | Fixed px; body 15, labels 13, bar numbers 12; Hanken 400-800, Barlow 800 | No Dynamic Type; 13px labels in ink-3; nothing resizes UI text | Raise play-screen text (R7). Dynamic Type itself: decided against (superseded 2026-11-01: A11Y-7, `horizon.md` decision 32) |
 | Contrast 4.5:1 min, 7:1 for small custom text in dark [11][4] | ink 15.5, ink-2 8.3, ink-3 5.9 on panel; edge border 3.1; lane grid 2.3 (decorative); key-muted 3.2 on ground [C] | ink-3 text below 7:1; muted key names 3.2:1 | R5, R6 |
 | Don't rely on colour alone [12] | Shape plus word plus hue (hand fill style, judgement words, shape swatches) | None. Strong | Keep |
-| Dark mode: elevated vs base, avoid app-only appearance setting [11] | Dark only, `color-scheme: dark`, `theme-color` | Violates "support both" in letter; the page carves out immersive dark-only apps | Keep dark-only; say so in DESIGN.md |
+| Dark mode: elevated vs base, avoid app-only appearance setting [11] | Dark only, `color-scheme: dark`, `theme-color` | Violates "support both" in letter; the page carves out immersive dark-only apps | Keep dark-only; say so in DESIGN.md (superseded 2026-11-01: Nocturne and Matinée, DESIGN.md) |
 | Reduce Motion: fades over movement, tighter springs, no motion as the only signal [4][9] | CSS durations to 0.01ms, canvas capped to Calm, default fx Calm if reduced | Doesn't react live if the setting changes mid-session (`settings.ts` reads it once at load; `highway.ts` re-reads) | Fine. Optional: listen to `change` |
 | Haptics: only for discrete events, optional, never the only cue [8] | None | iPad Air cannot play them | Decided against (headline 1) |
 | Sheets and detents: grabber on resizable sheets, tapping it cycles detents, VoiceOver can resize with it, `largestUndimmedDetent` for a nonmodal sheet [1][22] | Dialogs are centred sheets (page-sheet style, matches HIG iPad advice [1]); the new `#split` is the in-app analogue | Tap-to-cycle on the grabber missing | R2 |
@@ -54,9 +56,9 @@ Gaps up front: Apple's own HIG Split Views page returned an empty shell; the tex
 | Multitasking: save and restore state, pause on leave [7] | `visibilitychange` pauses the game; `pagehide` ends the pass; settings and songs persist | Resume of audio (headline 3); Slide Over / Split View hit the 1024px notice | R1; R11 |
 | Gestures: custom gestures must not be the only way; offer button alternatives [16] | Drag divider plus view switch, scrub bar plus bar tap, dock buttons | Scrub drag has no stepper; fine for a pointer | Keep |
 | Pointer: iPadOS 26 pointer tracks 1:1, no magnetism; highlight effect on controls [19][15] | Hover styles from CSS only; `cursor: row-resize` on the divider | Nothing needed | Keep |
-| Keyboard: Cmd as main modifier, few custom shortcuts, Esc cancels [17] | Plain-letter shortcuts (Space, V, M, [ ], H), no menu bar | Plain letters are fine for a play surface; no menu bar entries | Decided against a menu bar |
+| Keyboard: Cmd as main modifier, few custom shortcuts, Esc cancels [17] | Plain-letter shortcuts (Space, V, M, [ ], H), no menu bar | Plain letters are fine for a play surface; no menu bar entries | Decided against a menu bar (superseded: built 30 Oct, `AppDelegate.buildMenu`; HIG fixes in `horizon.md` 4.2) |
 | Launching: launch screen is not a splash, no text, match the first screen and orientation [14] | Dark splash image with the logo, `scaleAspectFill`, storyboard fallback white | Logo on launch screen is "don't"; fill is a near match for ground (#090b17), confirm exact hex | R12 |
-| App icon: 1024 layered, no text, dark and tinted variants generated by the system [18] | One flat 1024 PNG, dark, three bars and a lamp bar | Fine. Liquid Glass layering optional | Keep |
+| App icon: 1024 layered, no text, dark and tinted variants generated by the system [18] | One flat 1024 PNG, dark, three bars and a lamp bar | Fine. Liquid Glass layering optional | Keep (superseded: default, dark and tinted PNGs now; HIG of 28 Oct 2026 on icon formats; the layered `.icon` is ROADMAP 14) |
 
 ### Divider and panes (details in section 3)
 
@@ -86,7 +88,7 @@ Gaps up front: Apple's own HIG Split Views page returned an empty shell; the tex
 | Audio interruption [31][13] | `ctx.state === 'suspended'` check | Misses `interrupted` | R1 |
 | MIDI and Bluetooth lifecycle | CoreMIDI client re-lists sources on any change; ports reconnect after replug; Web MIDI path fakes `onstatechange` | Foreground return needs nothing if CoreMIDI notifies; README already notes BLE pairing crashes on iPadOS 27.0 | Keep USB; add to device checklist |
 | Offline / PWA | No service worker, no manifest | App bundles its assets so it is offline in the shell. Web build needs the network on first visit | Decided against (iPad Safari has no Web MIDI anyway) |
-| Orientation | iPad landscape left/right only; portrait keys for iPhone family still listed | Matches HIG "landscape-only must work rotated either way" [14] | Keep |
+| Orientation | iPad landscape left/right only; portrait keys for iPhone family still listed | Matches HIG "landscape-only must work rotated either way" [14] | Keep (superseded: all four iPad orientations since the iPadOS 26 windowing work; the app is iPad-only, `TARGETED_DEVICE_FAMILY = 2`) |
 
 ---
 
@@ -145,7 +147,7 @@ Ranked by impact for the owner's actual use (iPad on the stand, FP-10 over USB, 
 - **R12. Launch screen.** Replace the logo on `Splash` with a flat `#090b17` fill, matching the first screen (HIG [14]). Keep the icon; it already follows the "simple shapes, no text" rule [18].
 - **R13. Home indicator auto-hide** via `prefersHomeIndicatorAutoHidden` in `PianoViewController`: cosmetic, three lines of Swift, add only if the lit bar distracts [M].
 
-**Free-provisioning facts that matter (Apple Account Help, via search snippet [38][S]):** profiles expire after 7 days and need a rebuild and reinstall; 3 apps per device; 10 App IDs per rolling week; Apple's DTS advises reusing one bundle ID. `io.mattkelly.piano` is already reused. The README's rule "never delete the app" stands (wipes IndexedDB).
+**Free-provisioning facts that matter (Apple Account Help, via search snippet [38][S]):** (history since 2026-10-31: the account is paid; the 7-day expiry no longer applies, "never delete the app" still does) profiles expire after 7 days and need a rebuild and reinstall; 3 apps per device; 10 App IDs per rolling week; Apple's DTS advises reusing one bundle ID. `io.mattkelly.piano` is already reused. The README's rule "never delete the app" stands (wipes IndexedDB).
 
 ---
 
@@ -168,17 +170,17 @@ What the sources support, and what is inference.
 |---|---|
 | Capacitor Haptics on snap, hit or miss | iPad Air has no Taptic Engine; the plugin no-ops [26][28]. Revisit only for an iPhone build. |
 | Unlocking 120 Hz in the web view | The Air is 60 Hz [29]; the only known routes are private API [30]. Not App Store-safe, and unneeded here. |
-| Liquid Glass chrome | Apple limits it to the functional layer and says use it sparingly [5]; the app has no system bars and a neon-arcade look the owner pinned. Native sheets are not used. |
-| Light mode or an auto appearance | HIG allows dark-only for immersive media apps [11]; the stage and staff are designed for dark; the owner's room is dim. |
-| Dynamic Type via `font: -apple-system-body` | Works in WKWebView [39][S] but ties every size in a tuned condensed/grotesque system to a system scale and breaks the fixed layout grid. HIG allows another way to adjust text size [10]; if ever needed, add a single "UI size" scale on `:root`. |
+| Liquid Glass chrome | Apple limits it to the functional layer and says use it sparingly [5]; the app has no system bars and a neon-arcade look the owner pinned. Native sheets are not used. (Still decided against, 2026-11-01, with the reason restated: Urtext replaced neon; the reasons now are Apple's content-layer rule, seven tabs that a native bar would overflow into "More", and the frame cost over WebGL. `horizon.md` 4.1.) |
+| Light mode or an auto appearance | HIG allows dark-only for immersive media apps [11]; the stage and staff are designed for dark; the owner's room is dim. (Superseded: Matinée shipped with the Urtext direction, 1 Nov.) |
+| Dynamic Type via `font: -apple-system-body` | Works in WKWebView [39][S] but ties every size in a tuned condensed/grotesque system to a system scale and breaks the fixed layout grid. HIG allows another way to adjust text size [10]; if ever needed, add a single "UI size" scale on `:root`. (Superseded: the UI is the system font now, WWDC26 251 expects Dynamic Type of custom fonts, and A11Y-7 plans it; `horizon.md` decision 32.) |
 | Velocity-projected snap and rubber-banding on the divider | Correct for a free-floating sheet [20]; here the control has two ends and one default, and a clamp reads fine. Adds an animation loop to a canvas app that already animates. |
 | Animating the pane change | The staff is an SVG rebuilt per size; animating grid rows would rebuild it every frame. |
-| A menu bar and Cmd shortcuts | iPadOS 26 gives every app a menu bar [19], but the play surface is plain keys and one player. Add a View menu entry for the three views only if a hardware keyboard becomes a real input. |
+| A menu bar and Cmd shortcuts | iPadOS 26 gives every app a menu bar [19], but the play surface is plain keys and one player. Add a View menu entry for the three views only if a hardware keyboard becomes a real input. (Superseded: built 30 Oct.) |
 | Pointer hover effects beyond the CSS | iPadOS 26's pointer tracks 1:1 and no longer magnetises [19]; nothing to adapt. |
-| Service worker and manifest for the web build | iPad Safari has no Web MIDI [PRODUCT.md]; offline matters only in the shell, which is already offline. |
-| Alternate app icon, Icon Composer layers | One person installs it; the flat icon passes the HIG rules [18]. |
+| Service worker and manifest for the web build | iPad Safari has no Web MIDI [PRODUCT.md]; offline matters only in the shell, which is already offline. (Superseded: the service worker shipped, `docs/changes/offline.md`; a manifest is wanted so Chrome installs the site on the Mac, ROADMAP 14.) |
+| Alternate app icon, Icon Composer layers | One person installs it; the flat icon passes the HIG rules [18]. (Superseded for the layers: ROADMAP 14; HIG of 28 Oct 2026.) |
 | `UIRequiresFullScreen` | Would block Stage Manager and Slide Over; HIG says every app should support multitasking [7]. Keep multitasking on, handle small windows by R11. |
-| Core Haptics, Pencil support, widgets | No cause-and-effect fit; the instrument provides the touch. |
+| Core Haptics, Pencil support, widgets | No cause-and-effect fit; the instrument provides the touch. (2026-11-01: haptics still no on the Air; Pencil marks per bar and a streak widget are P3 bets, `horizon.md` 4.5.) |
 
 ---
 

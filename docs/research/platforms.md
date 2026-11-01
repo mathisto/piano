@@ -17,14 +17,14 @@ Numbers in brackets point at the source list at the end. Effort is in working da
 
 ## 1. Headline findings
 
-1. **The iPhone build already exists.** `TARGETED_DEVICE_FAMILY = "1,2"`, and the Info.plist lists iPhone orientations [C]. The app has never been run on an iPhone. iPhone support is therefore a layout and testing job, not a new app.
+1. **The iPhone build already exists.** `TARGETED_DEVICE_FAMILY = "1,2"`, and the Info.plist lists iPhone orientations [C]. The app has never been run on an iPhone. iPhone support is therefore a layout and testing job, not a new app. (**Corrected 2026-11-01:** the project now says `TARGETED_DEVICE_FAMILY = 2`, iPad only, in both configurations, set on purpose by `e1fe5d1` on 30 Oct; the iPhone orientations are still in the Info.plist. iPhone is that one setting back to `"1,2"` plus the layout job; `horizon.md` section 5.)
 2. **Safari still has no Web MIDI in 2026.** caniuse lists desktop Safari as unsupported through 27.1 TP and iOS Safari through 27.2. WebKit bug 107250 is still NEW [1][2][V]. The only route is a third-party Safari extension that adds the API on macOS (Safari 18.4+); it is userland, not WebKit [1][V]. On the Mac the answer stays Chrome, Edge or Firefox, which is what the owner uses today.
 3. **An Apple Watch cannot pair with an iPad.** It pairs only with an iPhone [21][S], and WatchConnectivity links a watch app only to its iPhone app [19][V]. watchOS blocks low-level networking (Network framework, Bonjour) outside audio streaming, VoIP and a tvOS case [20][V]. A watch therefore cannot share a tempo clock with the iPad on a local network. Whatever it learns from the iPad has to travel through an iPhone, CloudKit or HTTPS.
 4. **Haptic metronome limits are documented.** `WKInterfaceDevice.play(_:)` has no effect when the app is in the background or inactive, except during an active workout session. A new call while the engine is still running stops it and waits at least 100 ms. It should not be called while HealthKit gathers heart rate, because heart-rate sampling pauses while the motor runs [16][V]. watchOS has no Core Haptics, so only the fixed `WKHapticType` set is available (click, start, stop and so on) [17][18][V]. No extended runtime session type fits music practice [15][V].
 5. **The evidence for a wrist metronome is mixed.** Tactile synchronization comes close to auditory for simple rhythms, but auditory wins on complex rhythms, and only the auditory condition showed error correction [22][S]. Haptic-only cues lowered drummers' accuracy for less experienced players [23][S]. Users and reviewers report the Apple Watch motor is too weak for a metronome, or cuts out when the wrist drops [24][25][S]. A beginner pianist moves both wrists constantly. Value is low.
 6. **Android may need almost no MIDI code.** MDN's compatibility data lists Android WebView as supporting Web MIDI, mirroring Chrome [7][V]. Chrome 124 and later put all MIDI access behind a permission prompt [8][S]. Capacitor's `BridgeWebChromeClient.onPermissionRequest` grants every resource it does not handle without prompting the user, MIDI among them [9][V]. The web code should therefore run unchanged in a Capacitor Android shell. This has not been run on a device. Chrome on Android also runs the existing website with Web MIDI today [1][V].
 7. **Capacitor has no macOS platform.** Ionic ships no official macOS platform. The community Electron platform's last release was 5.0.1 in September 2023, and Capawesome sells a replacement [5][S]. The real Mac options are the iPad app run on the Mac, Catalyst, or the website in Chrome.
-8. **A paid Apple account unlocks almost everything on this list.** It costs US$99 a year [11][V]. It removes the free team's 7-day expiry (the free team allows 3 devices and 10 App IDs) [12][V]. It unlocks TestFlight, the App Store, CloudKit, the iCloud key-value store (which only works for App Store distribution [26][V]), push and Mac Catalyst [11][V]. Google Play costs US$25 once [13][V], but a new personal account must run a closed test with at least 12 testers opted in for 14 days in a row [14][V].
+8. **A paid Apple account unlocks almost everything on this list.** It costs US$99 a year [11][V]. (Paid since 2026-10-31, team TC8XUVBATG; TestFlight builds ship.) It removes the free team's 7-day expiry (the free team allows 3 devices and 10 App IDs) [12][V]. It unlocks TestFlight, the App Store, CloudKit, the iCloud key-value store (which only works for App Store distribution [26][V]), push and Mac Catalyst [11][V]. Google Play costs US$25 once [13][V], but a new personal account must run a closed test with at least 12 testers opted in for 14 days in a row [14][V].
 9. **Sync matters to the owner already.** ROADMAP lists "storage separate from the website": progress on the iPad and progress in Chrome on the Mac are two islands today [C]. Of everything here, cross-device sync is the change with the most impact for the one real user. It also touches a product principle ("No accounts, no cloud"), so it is a decision for the owner, not a default.
 
 ---
@@ -63,6 +63,7 @@ Use **one universal binary** (it already is one) and a phone layout pass: staff-
 - Effort: **3 to 6 days.** Each of the seven pages at 393 x 852 and 852 x 393, safe areas, the on-screen keys, the start card on a short stage, and one session on a real iPhone with the FP-10.
 - Confidence: **medium.** The geometry is computed, but no peer layout evidence was found, and nobody has opened the app on an iPhone.
 - Depends on: an iPhone to test on (the owner's device list names only the iPad Air 4 and the M1 Max Mac). The paid account is needed only to ship to others.
+- Noted 2026-11-01: Apple's foldable iPhone Duo (iOS 27.1, on sale 23 Oct) adds hinge APIs; a layout that refuses no width already tolerates it. Whether the owner has an iPhone is still unknown (`horizon.md` decision 33).
 
 ---
 
@@ -82,7 +83,7 @@ Use **one universal binary** (it already is one) and a phone layout pass: staff-
 - Effort: **0 now; 0.5 to 1 day** when the App Store build exists.
 - Confidence: **medium-high** for (d). **Medium** for (a): CoreMIDI and Web Audio inside a WKWebView running as an iPad app on a Mac were not found in Apple's pages and are not verified.
 - Side effect worth having: (a) puts the Mac and the iPad in the same Apple world. CloudKit sync (section 6) then covers the Mac without the web.
-- Unverified: whether the free Personal Team can run the app on "My Mac (Designed for iPad)" from Xcode. If it can, the owner can try (a) today without paying. Five minutes in Xcode would settle it.
+- Unverified: whether the free Personal Team can run the app on "My Mac (Designed for iPad)" from Xcode. If it can, the owner can try (a) today without paying. Five minutes in Xcode would settle it. (Moot since 2026-10-31: the team is paid and Xcode lists "My Mac (Designed for iPad)" for the scheme; the five-minute run now settles only whether CoreMIDI shows the FP-10. Apple's "Touch on Mac" news of 28 Oct 2026 says only "start getting ready"; nothing to do yet.)
 
 ---
 
@@ -122,7 +123,7 @@ The paid account, an iPhone app (the universal binary from section 2), a SwiftUI
 - Effort: **6 to 12 days**, plus watch hardware the owner may not have.
 - Confidence: **medium** on the platform facts (primary docs). **Low** on how well a wrist metronome works in practice (only vendor claims and reviews).
 
-**Recommendation: do not build it.** Ship reminders as local notifications from the iPhone app when the iPhone exists. Look again only if the owner wears a watch while practising and asks for it.
+**Recommendation: do not build it.** Ship reminders as local notifications from the iPhone app when the iPhone exists. (2026-11-01: `horizon.md` section 5 refines this: a silent pulse on the staff and a click in the FP-10's headphones first, then a week's trial of an existing watch metronome, a watch app only if that works; and a practice reminder on the iPad itself, decision 29.) Look again only if the owner wears a watch while practising and asks for it.
 
 ---
 
@@ -204,7 +205,7 @@ Today everything sits in IndexedDB on each device. JSON export and import exist 
 | Phase | What | Why this order | Depends on | Effort |
 |---|---|---|---|---|
 | 0, now | Mac: Chrome, Edge or Firefox. Android: try the website in Chrome on a tablet | Already works; costs nothing | An Android device for the check | 0 to 0.5 day |
-| 1 | **iPad device checks (ROADMAP Next 1), then the Apple Developer Program** | Every Apple step below needs the paid account. It also ends the 7-day expiry on the owner's own iPad | US$99; the owner's Apple ID; enrolment takes days [M] | 0.5 day of setup |
+| 1 | **iPad device checks (ROADMAP Next 1), then the Apple Developer Program** (the Program: done 2026-10-31) | Every Apple step below needs the paid account. It also ends the 7-day expiry on the owner's own iPad | US$99; the owner's Apple ID; enrolment takes days [M] | 0.5 day of setup |
 | 2a | **Sync decision, then sync code** | Most impact for the real user: the iPad and the Mac's Chrome hold different progress today. It is platform-agnostic, so every later phase inherits it | Owner sign-off on rewording Principle 5 ("Local and open") and the "No cloud" line; a quartz endpoint | 2 to 4 days |
 | 2b | **iPhone layout pass** in the existing universal binary; TestFlight to the owner | The binary already targets iPhone; Theory, ear and Read work on a phone; the cheapest new platform | Phase 1; an iPhone to test on | 3 to 6 days |
 | 2c | **Mac Designed for iPad**, left on in App Store Connect; one test on the M1 Max | Free once the App Store record exists; Safari users get MIDI through CoreMIDI | Phase 1; an App Store (or TestFlight) build | 0.5 to 1 day |
@@ -217,7 +218,7 @@ Order of dependencies: device checks, then the paid account, then sync and the i
 **Unverified items that could change this plan:**
 - Web MIDI and audio inside an Android WebView on a real device (section 5).
 - CoreMIDI and Web Audio in the iPad app running on a Mac (section 3).
-- Whether a free Personal Team can run the app on "My Mac (Designed for iPad)".
+- Whether a free Personal Team can run the app on "My Mac (Designed for iPad)" (moot: paid since 2026-10-31).
 - Apple's privacy label for end-to-end-encrypted sync data.
 - Haptic timing on a real watch.
 - The owner's device inventory: an iPhone? an Android tablet? a watch?
