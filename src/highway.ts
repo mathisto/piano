@@ -82,6 +82,7 @@ export class Highway {
     })
     this.host.appendChild(this.app.canvas)
     this.app.canvas.setAttribute('aria-hidden', 'true')
+    // white here is a tint base: every sprite made from this texture is tinted a C.* colour
     this.glowTex = radial(128, [[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,.45)'], [1, 'rgba(255,255,255,0)']])
     this.bgGlow = new Sprite(this.glowTex)
     this.bgGlow.blendMode = 'add'
@@ -172,7 +173,7 @@ export class Highway {
     const fx = this.game.view === 'sheet' ? 0 : settings.fx // sheet view stays calm: the staff carries the feedback
     this.flashes.set(p, { at: this.clock, color: C[hand], power: grade === 'perfect' ? 1 : 0.7 })
     if (fx === 0) return
-    this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0))
+    this.glow(k.x + k.w / 2, this.H, color, 1.1 + (grade === 'perfect' ? 0.5 : 0) - (grade === 'late' ? 0.4 : 0)) // late is Good faded: a smaller glow
   }
 
   /** The key under a point on the canvas (black keys sit on top), if it is over the keyboard. */
@@ -342,7 +343,7 @@ export class Highway {
         need.add(n.p)
       }
       if (names && !(g.mode !== 'read' && settings.fade && g.known.has(n.p)) && y2 - yt >= 20 && w >= 20 && y2 > 0 && y2 <= H + 2 && st !== 1) {
-        const s = this.label(noteName(n.p, n.flat ? -2 : g.song.fifths).replace(/\d/, ''), left ? col : C.ground, Math.min(18, w * 0.62))
+        const s = this.label(noteName(n.p, n.flat ? -2 : g.song.fifths).replace(/\d/, ''), left ? C.ink : C.ground, Math.min(18, w * 0.62)) // ink on the left's translucent body, ground on the right's solid one (palette.test.ts)
         s.position.set(x + w / 2, y2 - 16)
         s.alpha = a
       }
@@ -377,14 +378,14 @@ export class Highway {
     const top = H + 4
     const draw = (k: K) => {
       const down = g.held.has(k.p)
-      const [from, until] = g.autoUntil.get(k.p) ?? [0, 0]
+      const [from, until, autoHand] = g.autoUntil.get(k.p) ?? [0, 0, 'R' as const]
       const auto = from <= performance.now() && performance.now() < until
       const ghost = need.has(k.p)
       const kh = k.black ? this.kbH * 0.6 : this.kbH - 4
       let fill: number = k.black ? C.keyBlack : C.keyWhite
       const tint = this.keyHue.get(k.p) ?? C.held
       if (down) fill = mix(fill, tint, 0.78 * (0.5 + 0.5 * (g.held.get(k.p) ?? 0.7)))
-      else if (auto) fill = mix(fill, C.R, 0.4)
+      else if (auto) fill = mix(fill, C[autoHand], 0.4)
       else if (ghost) fill = mix(fill, C.lamp, 0.35 + 0.3 * pulse)
       kb.roundRect(k.x + 1, top - 4, k.w - 2, kh + 4, 4).fill(fill)
       kb.roundRect(k.x + 1, top - 4, k.w - 2, kh + 4, 4).stroke({ width: 1, color: C.keyEdge })
@@ -397,7 +398,7 @@ export class Highway {
           const cy = top + kh * 0.45
           const r = Math.min(k.w * 0.28, 11)
           kb.moveTo(cx - r, cy - r).lineTo(cx + r, cy + r).moveTo(cx + r, cy - r).lineTo(cx - r, cy + r)
-          kb.stroke({ width: 3.5, color: C.bad, alpha: 1 - age / 0.4 })
+          kb.stroke({ width: 3.5, color: k.black ? C.bad : C.missOnKey, alpha: 1 - age / 0.4 })
         }
       }
     }

@@ -1672,11 +1672,36 @@ kbd {
   flex-wrap: wrap;
   font-weight: 650;
 }
-.counts i {
+/* the judgement glyphs (icons.ts jg): one shape per grade, so the colour is never the only cue */
+.jg {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 6px;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.4em;
+  vertical-align: -0.05em;
+  background: currentColor;
+  flex: none;
+}
+.jg[data-g='perfect'] {
+  color: var(--perfect);
+  clip-path: circle(50%);
+}
+.jg[data-g='great'] {
+  color: var(--great);
+  clip-path: circle(50%);
+  background: radial-gradient(circle, transparent 34%, currentColor 38%);
+}
+.jg[data-g='good'] {
+  color: var(--good);
+  clip-path: polygon(50% 6%, 96% 92%, 4% 92%);
+}
+.jg[data-g='late'] {
+  color: var(--late);
+  clip-path: polygon(14% 4%, 94% 50%, 14% 96%);
+}
+.jg[data-g='miss'] {
+  color: var(--bad);
+  clip-path: polygon(14% 0, 50% 36%, 86% 0, 100% 14%, 64% 50%, 100% 86%, 86% 100%, 50% 64%, 14% 100%, 0 86%, 36% 50%, 0 14%);
 }
 .hist {
   width: 100%;
@@ -2649,7 +2674,15 @@ dialog.sheet footer .btn {
   height: var(--h);
   min-height: 4px;
   border-radius: var(--r-1) var(--r-1) 0 0;
-  background: color-mix(in oklab, var(--bad) var(--m), var(--R));
+  background: color-mix(in oklab, var(--bad) var(--m), var(--good)); /* neutral to crimson: no hand hue in a judgement chart */
+}
+.hbar .jg {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--h) + 3px);
+  width: 12px;
+  height: 12px;
+  margin: 0 0 0 -6px;
 }
 .pstrip {
   display: flex;

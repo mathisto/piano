@@ -12,6 +12,7 @@ import * as store from '../store'
 import { DEFAULT_EDGES } from '../touch'
 import { $ } from '../ui'
 import { dayKey } from '../week'
+import { jg } from '../icons'
 import { current, dock, game, highway, reduced, run, setPlayed, staff } from './state'
 import { flash, updateBanner } from './banner'
 
@@ -308,7 +309,7 @@ export function popup(grade: Grade | null, off: number, p: number, noteId: numbe
   el.dataset.g = grade ?? (vel === 'ok' ? 'perfect' : 'good')
   const timing = grade === null || grade === 'perfect' || grade === 'miss' || grade === 'late' ? '' : off < 0 ? '‹ early' : 'late ›'
   const touch = vel ? TOUCH[vel] : ''
-  el.innerHTML = `${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
+  el.innerHTML = `${jg(el.dataset.g as Grade)}${grade ? WORDS[grade] : touch}<small>${[timing, grade ? touch : ''].filter(Boolean).join(' · ')}</small>`
   const x = Math.min(highway.W - 90, Math.max(90, highway.center(p)))
   el.style.left = `${x}px`
   el.style.top = `${highway.recY - 96}px`

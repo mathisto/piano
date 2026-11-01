@@ -5,6 +5,7 @@ import * as audio from '../audio'
 import { icon } from '../icons'
 import * as store from '../store'
 import { compareTakes, ghostOf, MAX_KEYS, newTake, type BarStat, type Take } from '../take'
+import { jg } from '../icons'
 import { $ } from '../ui'
 import { calibrating, current, drill, game, mem, resOpen, rt, say, staff } from './state'
 
@@ -189,8 +190,8 @@ function compareHtml(k: Take, last: Take): string {
   const w = c.bars.length * W
   const [na, la] = c.all
   const said = [
-    up.length ? `More right in ${list(up)}.` : '',
-    down.length ? `Fewer right in ${list(down)}.` : '',
+    up.length ? `${jg('great')}More right in ${list(up)}.` : '',
+    down.length ? `${jg('miss')}Fewer right in ${list(down)}.` : '',
     !up.length && !down.length ? 'Bar by bar, much as last time.' : '',
     na.off !== null && la.off !== null ? `On average ${ms(na.off)}; last time ${ms(la.off)}.` : '',
   ]

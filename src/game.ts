@@ -80,7 +80,7 @@ export class Game {
   pedal = false // sustain pedal is down
   pedals: PedalEv[] = [] // its changes this run, in song time
   held = new Map<number, number>() // pitches the player holds -> velocity
-  autoUntil = new Map<number, [number, number]>() // pitches the app is playing for you -> perf ms from, until
+  autoUntil = new Map<number, [number, number, 'R' | 'L']>() // pitches the app is playing for you -> perf ms from, until, and whose hand it is
   heat: number[] = []
   offs: number[] = []
   showNotes = false // reading drills hide the falling notes and key names unless asked
@@ -354,7 +354,7 @@ export class Game {
       const a = at(n.t, n.d)
       audio.noteOn(n.p, n.v, true, voiceOf(this.song, n), a) // Listen always sounds: the app is the one playing this hand
       const from = perf + a.after * 1000
-      this.autoUntil.set(n.p, [this.autoUntil.get(n.p)?.[0] ?? from, from + a.dur * 1000]) // the same key again while lit or due: lit from the first one on
+      this.autoUntil.set(n.p, [this.autoUntil.get(n.p)?.[0] ?? from, from + a.dur * 1000, n.h]) // the same key again while lit or due: lit from the first one on
       this.emit({ type: 'auto', note: n })
     }
     for (const ch = this.song.chords; ch && this.compI < ch.length && ch[this.compI].t < end; ) {
