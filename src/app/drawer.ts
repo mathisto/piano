@@ -125,6 +125,7 @@ async function openDrawer() {
     save()
     lens.clear()
   }, 'change')
+  if (native) void import('../native-reminder').then((m) => m.wireReminder(d))
   $('#sCredits', d).onclick = () => void openCredits()
   $('#sSetup', d).onclick = openSetup
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()

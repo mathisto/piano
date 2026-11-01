@@ -3,7 +3,7 @@
   display: flex;
   width: fit-content;
   margin: 6px auto 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
   color: var(--ink-2);
 }
 @container stage (max-height: 260px) {
@@ -34,11 +34,11 @@
   white-space: nowrap;
 }
 .takebar b {
-  font: 650 22px/1 var(--display);
+  font: 650 calc(22px * var(--ts))/1 var(--display);
 }
 .takebar small {
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: calc(13px * var(--ts));
 }
 
 /* the comparison makes the results card taller than a landscape iPad: the card scrolls instead of clipping */
@@ -77,7 +77,7 @@
 }
 .cmp-grid .cap {
   color: var(--ink-3);
-  font: 600 13px/1.2 var(--ui);
+  font: 600 calc(13px * var(--ts))/1.2 var(--ui);
 }
 .cmp-grid svg {
   display: block;
@@ -109,11 +109,11 @@
 .cmp-grid .cap small {
   display: block;
   margin-top: 4px;
-  font: 500 13px/1 var(--ui);
+  font: 500 calc(13px * var(--ts))/1 var(--ui);
 }
 .cmp-bars small {
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: calc(13px * var(--ts));
 }
 .cmp-bars {
   display: flex;

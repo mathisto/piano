@@ -2,7 +2,7 @@
 .streak {
   grid-column: 1 / -1;
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .wristnote {
   position: fixed;
@@ -29,13 +29,13 @@
   display: flex;
   align-items: center;
   color: var(--ink);
-  font-size: 18px;
+  font-size: calc(18px * var(--ts));
   font-weight: 650;
 }
 .lvl > summary span {
   margin-left: 12px;
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
   font-weight: 500;
 }
 .rqs-list {
@@ -53,19 +53,19 @@
 }
 .rqn b {
   display: block;
-  font-size: 18px;
+  font-size: calc(18px * var(--ts));
   font-weight: 650;
 }
 .rqn span {
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .rqs {
   display: flex;
   flex-direction: column;
   gap: 6px;
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .rq.solid .rqs {
   color: var(--ink);

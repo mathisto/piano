@@ -41,6 +41,7 @@ export interface Settings {
   oskNames?: boolean // a letter on every white key of the on-screen keys, not just the Cs
   comp: boolean // Lead sheet: the app plays the chords (a block chord on each half bar); only a lead sheet has chords, so it is no-op on other levels
   readAhead?: boolean // Read through: only the next two bars show once the music moves
+  remind?: number // the iPad app's practice reminder: minutes after midnight it comes at, unset = off (src/reminder.ts)
 }
 
 const DEFAULTS: Settings = {

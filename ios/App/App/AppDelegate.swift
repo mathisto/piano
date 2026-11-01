@@ -15,31 +15,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    /// The menu bar (and the list a held ⌘ shows). The page's own shortcuts are single keys (Space, Escape, B ...), which a menu
-    /// cannot take without taking them from its text fields and dialogs too, so these are ⌘ forms that hand the page the same key.
+    /// The menu bar (and the list a held ⌘ shows). A command hands the page the key it already handles (src/app/input.ts, which
+    /// src/menu.test.ts checks this list against), as a ⌘ form because a bare key cannot be a menu shortcut without being taken from
+    /// text fields and dialogs. The same keys work as they are on the web. HIG: the tabs are View items, and the app's own settings
+    /// sit beneath the system's "Piano Forte Settings…" (⌘, , checked in the simulator: it opens the app's page in iPadOS Settings).
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }
         let key = { (title: String, input: String, mods: UIKeyModifierFlags, page: String) in
             UIKeyCommand(title: title, action: #selector(PianoViewController.pageKey(_:)), input: input, modifierFlags: mods, propertyList: page)
         }
-        builder.insertChild(UIMenu(options: .displayInline, children: [key("Settings…", ",", .command, "settings")]), atEndOfMenu: .application)
+        let settings = key("In-App Settings…", ",", [.command, .alternate], ",")
+        if let system = builder.menu(for: .preferences) {
+            builder.replace(menu: .preferences, with: system.replacingChildren(system.children + [settings]))
+        } else {
+            builder.insertChild(UIMenu(options: .displayInline, children: [settings]), atEndOfMenu: .application)
+        }
         let tabs = ["Today", "Songs", "Read", "Scales", "Theory", "Technique", "Progress"]
-        let go = UIMenu(title: "Go", children: tabs.enumerated().map { i, t in key(t, "\(i + 1)", .command, "tab:" + t.lowercased()) })
         let practice = UIMenu(title: "Practice", children: [
             key("Play or Pause", "\r", .command, " "),
             key("Metronome", "b", .command, "b"),
             key("Slower", "[", .command, "["),
             key("Faster", "]", .command, "]"),
         ])
-        builder.insertSibling(go, afterMenu: .view)
-        builder.insertSibling(practice, afterMenu: go.identifier)
+        builder.insertSibling(practice, afterMenu: .view)
         builder.insertChild(UIMenu(options: .displayInline, children: [
             key("Zoom In", "=", .command, "="),
             key("Zoom Out", "-", .command, "-"),
             key("Next View", "v", [.command, .alternate], "v"),
             key("Note Names", "n", [.command, .alternate], "n"),
+            key("Hide or Show Controls", "m", [.command, .alternate], "m"),
         ]), atStartOfMenu: .view)
+        builder.insertChild(UIMenu(options: .displayInline, children: tabs.enumerated().map { i, t in key(t, "\(i + 1)", .command, "\(i + 1)") }), atStartOfMenu: .view)
         builder.insertChild(UIMenu(options: .displayInline, children: [key("Keyboard Shortcuts", "?", .command, "?")]), atStartOfMenu: .help)
     }
 
