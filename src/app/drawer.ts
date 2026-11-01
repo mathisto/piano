@@ -57,6 +57,10 @@ async function openDrawer() {
     settings.fx = Number(v) as 0 | 1
     save()
   })
+  radios('pulse', (v) => {
+    settings.pulse = v as typeof settings.pulse
+    save()
+  })
   radios('coach', (v) => {
     settings.coach = v as typeof settings.coach
     save()

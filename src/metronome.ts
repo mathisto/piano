@@ -1,7 +1,7 @@
 import { barQ, beatQ, type Bar } from './song'
 
-export type Metro = 'off' | 'beat' | 'eighths'
-export const METROS: Metro[] = ['off', 'beat', 'eighths']
+export type Metro = 'off' | 'beat' | 'eighths' | 'silent'
+export const METROS: Metro[] = ['off', 'beat', 'eighths', 'silent']
 export interface Tick {
   t: number // song seconds at 100% tempo
   kind: 'down' | 'beat' | 'sub'
