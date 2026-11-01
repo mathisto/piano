@@ -207,21 +207,28 @@ export class Staff {
     this.cursor.setAttribute('y2', String(dy + bottom + 12))
   }
 
-  private cfg(r: DOMRect): Cfg {
+  /** The room the staves have: the host less its margin of paper (style.css --pg, the same inset the svg takes). */
+  private box(): { width: number; height: number } {
+    const r = this.host.getBoundingClientRect()
+    const cs = getComputedStyle(this.host)
+    return { width: Math.max(0, r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)), height: Math.max(0, r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) }
+  }
+
+  private cfg(r: { width: number; height: number }): Cfg {
     const sheet = this.game.view === 'sheet'
     return { view: sheet ? 'sheet' : 'both', px: { w: r.width, h: sheet ? r.height : Math.min(r.height, MAX_H) }, zoom: settings.zoom }
   }
 
   /** The staff size at which the whole piece shows, between `lo` and `hi`. */
   fit(lo: number, hi: number): number {
-    return this.an ? fitZoom(this.an, this.cfg(this.host.getBoundingClientRect()), lo, hi) : settings.zoom
+    return this.an ? fitZoom(this.an, this.cfg(this.box()), lo, hi) : settings.zoom
   }
 
   private build(bar: number) {
     const { song, mode } = this.game
-    const r = this.host.getBoundingClientRect()
+    const r = this.box()
     this.dirty = false
-    if (!r.width || !r.height) return // hidden: the resize observer calls render() when it shows
+    if (r.width <= 0 || r.height <= 0) return // hidden: the resize observer calls render() when it shows
     const read = mode === 'read'
     const { hands, parts } = this.game
     const key = `${song.id}|${read}|${hands.R}|${hands.L}|${[...parts]}`
@@ -242,7 +249,7 @@ export class Staff {
     const svg = this.svg
     svg.replaceChildren()
     svg.setAttribute('viewBox', `0 0 ${L.w} ${L.h}`)
-    svg.style.height = this.game.view === 'sheet' ? '' : `min(100%, ${MAX_H}px)`
+    svg.style.height = this.game.view === 'sheet' ? '' : `min(calc(100% - 2 * var(--pgy)), ${MAX_H}px)`
     this.byId.clear()
     this.barEls = []
     this.all = []
@@ -519,18 +526,21 @@ export class Staff {
     p.head.classList.add(cls)
     if (cls === 'miss') {
       if (p.head.parentElement?.querySelector(`.miss-mark[data-id="${id}"]`)) return
-      const y = p.y + 12
-      const m = el('path', { class: 'miss-mark', 'data-id': id, d: `M${p.x - 4},${y + 5} L${p.x + 4},${y + 5} L${p.x},${y - 2} Z` }, p.head.parentElement!)
+      const y = p.y + 13
+      const m = el('path', { class: 'miss-mark', 'data-id': id, d: `M${p.x - 3.4},${y - 3.4} L${p.x + 3.4},${y + 3.4} M${p.x + 3.4},${y - 3.4} L${p.x - 3.4},${y + 3.4}` }, p.head.parentElement!)
       m.setAttribute('aria-hidden', 'true')
     }
   }
 
-  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour. */
+  /** A small shape under a note that was Great, Good or Late, so the grade outlives its colour: great ●, good ▲, late ▹ (outlined). Perfect has none: a clean note just goes quiet. Miss is a × (flag). */
   private shape(id: number, p: Placed, grade: string) {
     if (p.head.parentElement?.querySelector(`.gshape[data-id="${id}"]`)) return
     const { x } = p
     const y = p.y + 13
-    const d = grade !== 'great' ? `M${x},${y - 3} L${x + 3},${y} L${x},${y + 3} L${x - 3},${y} Z` : `M${x - 2.6},${y} a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0`
+    const d =
+      grade === 'great' ? `M${x - 2.8},${y} a2.8,2.8 0 1,0 5.6,0 a2.8,2.8 0 1,0 -5.6,0`
+      : grade === 'late' ? `M${x - 2.4},${y - 3.4} L${x + 3.2},${y} L${x - 2.4},${y + 3.4} Z`
+      : `M${x},${y - 3.4} L${x + 3.6},${y + 2.6} L${x - 3.6},${y + 2.6} Z`
     const m = el('path', { class: `gshape ${grade}`, 'data-id': id, d }, p.head.parentElement!)
     m.setAttribute('aria-hidden', 'true')
   }
@@ -561,7 +571,7 @@ export class Staff {
     if (!p) return
     if (cls === 'miss') return this.flag(noteId, p, 'miss')
     const h = p.head
-    h.classList.remove('hit-perfect', 'hit-great', 'hit-good', 'hit-ok')
+    h.classList.remove('hit-perfect', 'hit-great', 'hit-good', 'hit-late', 'hit-ok')
     void h.getBoundingClientRect()
     h.classList.add(cls)
     if (cls !== 'hit-perfect' && cls !== 'hit-ok') this.shape(noteId, p, cls.slice(4))
