@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 // The big library, batch: fetch, licence check, normalise here; analyse, dedupe, emit in pipeline.ts (bundled first).
-//   npm run library:build -- [--set current|mutopia|lieder|chopin] [--grades 1-4] [--limit N] [--out DIR] [--merge-with DIR]
+//   npm run library:build -- [--set current|mutopia|lieder|chopin|open|pdmx] [--grades 1-4] [--limit N] [--out DIR] [--merge-with DIR]
 // current: the pieces in scripts/library-sources.json (ids unchanged). mutopia: every solo keyboard piece on Mutopia.
 // lieder: every OpenScore Lieder song, its vocal line folded into the right hand when that stays playable, else piano-only.
 // chopin: the Chopin Institute's first editions (Humdrum **kern, CC BY 4.0), shipped as MusicXML; one edition a work.
+// open: scripts/library/open-sources.json, openly licensed scores outside the big projects: LilyPond in a GitHub repo whose files carry a licence header (the MIDI is made by
+// the lilypond binary, LILYPOND or PATH; cached in .cache/library/ly-midi, so a rerun needs none).
+// pdmx: scripts/library/pdmx-picks.json (pdmx-pick.mjs: study books and easy repertoire out of PDMX, the MuseScore.com scores their uploaders marked Public Domain or CC0),
+// read from --pdmx DIR (default .cache/library/pdmx), where x/mxl/... holds the files of Zenodo's mxl.tar.gz that the picks name (tar xzf mxl.tar.gz -T <the picks' paths>).
 // --merge-with: OUT also gets every piece of that (published) output, untouched, the new ones added after them; its pieces
 // count as pinned here, so dedupe never ships a new duplicate of one.
 // Resumable and polite: every request is cached in .cache/library/http (one request a second on a miss), so a rerun is offline
 // and its output byte-identical. Output goes to .cache/library/out (never public/); the per-piece outcome to .cache/library/report-<set>.json.
-import { readFileSync, writeFileSync } from 'node:fs'
-import { get, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, pieceLy, refusals, scoreParts, sha, unzip, zip } from './lib.mjs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { get, lilypondMidi, lyCandidates, movements, mutopiaMeta, openscoreMeta, PIANO, pieceLy, refusals, scoreParts, sha, unzip, zip } from './lib.mjs'
 import { mutopiaIndex, soloKeyboard } from './mutopia-index.mjs'
 
 const ROOT = new URL('../..', import.meta.url).pathname
@@ -319,6 +323,89 @@ async function chopinSet() {
   }
 }
 
+/** open-sources.json, `lilypond`: each file of a repo at a pinned commit, its own header's `license` read and compared with the entry's, then the MIDI LilyPond writes for it. */
+async function openSet() {
+  const { lilypond } = JSON.parse(readFileSync(`${ROOT}scripts/library/open-sources.json`, 'utf8'))
+  const hdr = (ly, k) => new RegExp(`^\\s*${k}\\s*=\\s*"([^"]*)"`, 'm').exec(ly)?.[1]
+  for (const g of lilypond) {
+    for (const f of g.files) {
+      const url = `https://raw.githubusercontent.com/${g.repo}/${g.ref}/${f.path.split('/').map(encodeURIComponent).join('/')}`
+      let ly, midi
+      try {
+        ly = (await get(url, HTTP)).toString()
+        if (hdr(ly, 'license') !== g.headerLicence) throw new Error(`header says license "${hdr(ly, 'license')}", the list says "${g.headerLicence}"`)
+        if (f.sha256 && f.sha256 !== sha(ly)) throw new Error('upstream changed (sha256 pin)')
+        midi = lilypondMidi(ly, `${CACHE}/ly-midi`)
+      } catch (e) {
+        refuse(f.id, e.message.includes('header') ? 'licence' : 'fetch', e.message)
+        continue
+      }
+      const edition = hdr(ly, 'source') ?? ''
+      const why = licenceCheck({ id: f.id, licence: g.licence, composer: g.composer, edition })
+      if (why.length) {
+        refuse(f.id, 'licence', why)
+        continue
+      }
+      inputs.push({
+        id: f.id,
+        title: `${g.book} No. ${f.n}`,
+        composer: g.composer,
+        opus: `${g.opus}, No. ${f.n}`,
+        source: 'github',
+        sourceUrl: `https://github.com/${g.repo}/blob/${g.ref}/${f.path.split('/').map(encodeURIComponent).join('/')}`,
+        licenceEvidence: url, // the header of the file itself
+        licence: g.licence,
+        licenceUrl: g.licenceUrl,
+        edition,
+        typesetter: hdr(ly, 'maintainer'),
+        ...(hdr(ly, 'style') && { style: hdr(ly, 'style') }),
+        format: 'midi',
+        bytes: new Uint8Array(midi),
+        upstreamSha: sha(ly),
+        ly,
+      })
+    }
+  }
+}
+
+/** pdmx-picks.json: each pick's MusicXML from the extracted PDMX tree, its licence the uploader's mark in PDMX.csv (CC0 or the Public Domain Mark), the composer and the
+ * title from the book table that picked it (the uploader's free text names neither). The edition names the score and its uploader and no year (refusals() reads years as dates). */
+async function pdmxSet() {
+  const { record, picks } = JSON.parse(readFileSync(`${ROOT}scripts/library/pdmx-picks.json`, 'utf8'))
+  const dir = arg('pdmx', `${CACHE}/pdmx`)
+  for (const p of picks) {
+    const f = `${dir}/x/${p.mxl}`
+    if (!existsSync(f)) {
+      refuse(p.id, 'fetch', `${p.mxl} is not in ${dir}/x`)
+      continue
+    }
+    const bytes = readFileSync(f)
+    const title = p.as ?? `${p.name ? `${p.name}, ` : `${p.book}, `}${p.opus} No. ${p.n}`
+    const edition = `MuseScore.com score ${p.score}${p.uploader ? `, typeset by ${p.uploader}` : ''}, from a public-domain edition; marked ${p.licence === 'CC0-1.0' ? 'CC0' : 'Public Domain'} by its uploader; collected in PDMX`
+    const why = licenceCheck({ id: p.id, licence: p.licence, composer: p.composer, edition })
+    if (why.length) {
+      refuse(p.id, 'licence', why)
+      continue
+    }
+    inputs.push({
+      id: p.id,
+      title,
+      composer: p.composer,
+      opus: p.as ? p.opus : `${p.opus}, No. ${p.n}`,
+      source: 'pdmx',
+      sourceUrl: `https://musescore.com/score/${p.score}`,
+      licenceEvidence: record,
+      licence: p.licence,
+      licenceUrl: p.licenceUrl,
+      edition,
+      ...(p.uploader && { typesetter: p.uploader }),
+      format: 'musicxml',
+      bytes: new Uint8Array(bytes),
+      upstreamSha: sha(bytes),
+    })
+  }
+}
+
 const t0 = Date.now()
 let level = {}
 if (SET === 'current') {
@@ -332,6 +419,8 @@ if (SET === 'current') {
   }
 } else if (SET === 'lieder') await liederSet()
 else if (SET === 'chopin') await chopinSet()
+else if (SET === 'open') await openSet()
+else if (SET === 'pdmx') await pdmxSet()
 else {
   const index = await mutopiaIndex(HTTP)
   const solo = index.filter((r) => soloKeyboard(r.instruments))
@@ -339,6 +428,21 @@ else {
   for (const r of index) if (!solo.includes(r)) refuse(`mutopia-${r.id}`, 'normalise', `not solo keyboard: ${r.instruments}`)
   for (const r of solo) await mutopia(r.id, pins.get(`mutopia-${r.id}`))
 }
+
+/** The published pieces of the composers this set brings, as pinned inputs: dedupe then drops a new typesetting of a published piece, the published one never moves
+ * (as chopinSet does for Chopin). Same surname and death year, as dedupe's composerKey. */
+function pinPublished() {
+  const surname = (c) => c.replace(/\(.*\)/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().split(/[\s.]+/).pop().replace(/[^a-z]/g, '')
+  const mine = new Set(inputs.map((x) => surname(x.composer) + /(\d{4})\D*$/.exec(x.composer)?.[1]))
+  const base = JSON.parse(readFileSync(`${MERGE}/catalog.json`, 'utf8'))
+  for (const p of base.pieces) {
+    const c = base.composers[p.composer]
+    if (!mine.has(surname(c.name) + c.died)) continue
+    const l = base.licences[p.licence]
+    inputs.push({ ...p, composer: `${c.name} (${c.born ?? ''}–${c.died})`, licence: l.id, licenceUrl: l.url, bytes: new Uint8Array(readFileSync(`${MERGE}/${p.file}`)), upstreamSha: p.sha256 })
+  }
+}
+if (MERGE && (SET === 'open' || SET === 'pdmx')) pinPublished()
 
 const overrides = JSON.parse(readFileSync(`${ROOT}scripts/library/overrides.json`, 'utf8'))
 const shipped = MERGE ? JSON.parse(readFileSync(`${MERGE}/catalog.json`, 'utf8')).pieces.map((p) => p.id) : []

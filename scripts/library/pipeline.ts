@@ -284,7 +284,7 @@ const jaccard = <T,>(a: Set<T>, b: Set<T>) => {
 }
 const idOrder = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true })
 const LIC_RANK = (l: string) => (/^(Public Domain|CC0)/.test(l) ? 0 : /-SA-/.test(l) ? 2 : 1)
-const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2, chopin: 3 }
+const SRC_RANK = { mutopia: 0, 'openscore-lieder': 1, pdmx: 2, chopin: 3, github: 4 }
 
 /** Same composer, and the same catalogue number or a similar title, and the same tune by fingerprint: keep a pinned one, else the best one. */
 export function dedupe(items: { e: Input; a: Analysis }[], pinned = new Set<string>()): { keep: typeof items; dropped: { id: string; dupOf: string }[] } {
@@ -381,7 +381,7 @@ const lname = (l: string) => l.replace(/^CC-/, 'CC ').replace(/-(\d+(\.\d+)?)$/,
 
 /** The kind and form fields of a piece: the style is a tag too (a Hanon exercise is tagged technique), so it counts before the tags are written. */
 function kindForm(e: Input, a: Analysis, s: Song) {
-  const kind = kindOf({ source: e.source, tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])], bars: s.bars.length, sec: s.end })
+  const kind = kindOf({ source: e.source, tags: [...a.tags, ...(e.style ? [fold(e.style)] : [])], bars: s.bars.length, sec: s.end, composer: e.composer })
   const form = formOf(e.title)
   return { ...(kind && { kind }), ...(form && { form }) }
 }
@@ -542,4 +542,35 @@ export function merge(base: string, out: string): string[] {
   writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
   writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
   return added.map((p) => p.id)
+}
+
+export type Titles = Record<string, string | { title: string; opus?: string }>
+
+/** A published catalogue with new titles (and opus strings) for the ids in `titles` (scripts/library/titles.json), and the fields that read a title or the
+ *  composer (`form`, `kind`) worked out again for every piece. Files, shas, ids, order and tables are untouched; `built` and LICENSES.md follow the titles.
+ *  Throws on an id the catalogue does not have, so a stale list cannot pass. */
+export function retitle(base: string, out: string, titles: Titles): string[] {
+  const cat: Catalog = JSON.parse(readFileSync(`${base}/catalog.json`, 'utf8'))
+  const ids = new Set(cat.pieces.map((p) => p.id))
+  const lost = Object.keys(titles).filter((id) => !ids.has(id))
+  if (lost.length) throw new Error(`titles for pieces the catalogue does not have: ${lost.join(' ')}`)
+  const changed: string[] = []
+  cat.pieces = cat.pieces.map((p) => {
+    const t = titles[p.id]
+    const { title, opus = p.opus } = typeof t === 'string' ? { title: t } : (t ?? { title: p.title })
+    const q: Record<string, unknown> = { ...p, title }
+    const set = (k: string, v: unknown) => (v === undefined ? delete q[k] : (q[k] = v))
+    set('opus', opus)
+    set('kind', kindOf({ source: p.source, tags: p.tags, bars: p.bars, sec: p.sec, composer: cat.composers[p.composer].name }))
+    set('form', formOf(title))
+    if (['title', 'opus', 'kind', 'form'].some((k) => q[k] !== (p as unknown as Record<string, unknown>)[k])) changed.push(p.id)
+    return q as unknown as Piece
+  })
+  cat.built = sha(JSON.stringify([cat.composers, cat.licences, cat.aliases ?? {}, cat.pieces, cat.incipits])).slice(0, 16)
+  mkdirSync(out, { recursive: true })
+  for (const d of ['p', 'i']) if (existsSync(`${base}/${d}`)) cpSync(`${base}/${d}`, `${out}/${d}`, { recursive: true })
+  if (existsSync(`${base}/features.json`)) cpSync(`${base}/features.json`, `${out}/features.json`)
+  writeFileSync(`${out}/catalog.json`, JSON.stringify(cat) + '\n')
+  writeFileSync(`${out}/LICENSES.md`, licencesMd(cat))
+  return changed
 }

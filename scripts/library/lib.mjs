@@ -1,7 +1,9 @@
 // Shared by scripts/fetch-library.mjs and scripts/library/build.mjs: polite fetch, Mutopia page reading, .mxl zip, OpenScore part surgery.
 // Plain Node (>= 22.2 for zlib.crc32), no dependencies.
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib'
 
 export const UA = 'piano-forte-library-fetch/0.1 (+https://pianoforte.mattkelly.io; themattkellyshow@gmail.com)'
@@ -286,4 +288,31 @@ export async function sourceOf(id, pickLy, http) {
   const lys = m.lys ? [...unzip(await get(m.lys, http))] : []
   const v = movements(await get(m.mids, http), m.mids.split('/').pop().slice(0, -'-mids.zip'.length))[k - 1]
   return { ly: pickLy(v.bytes, lyCandidates(lys, v.stem, ly)), midi: v.bytes }
+}
+
+// ---- LilyPond source from a repository: the MIDI is made here, with the lilypond binary (LILYPOND, else PATH) ----
+
+/** The MIDI LilyPond writes for a score (its own \\midi block), kept in `cache` as <sha256 of the source>-<lilypond version>.mid, so a rerun needs no binary and gives the
+ * same bytes. A score without a \\midi block, or a failed run, throws. */
+export function lilypondMidi(ly, cache, bin = process.env.LILYPOND || 'lilypond') {
+  const key = sha(ly)
+  const hit = cache && existsSync(cache) && readdirSync(cache).find((f) => f.startsWith(`${key}-`))
+  if (hit) return readFileSync(`${cache}/${hit}`)
+  const v = /LilyPond ([\d.]+)/.exec(spawnSync(bin, ['--version'], { encoding: 'utf8' }).stdout ?? '')?.[1]
+  if (!v) throw new Error(`no lilypond binary (${bin}), and no cached MIDI for this score`)
+  const dir = mkdtempSync(`${tmpdir()}/ly-`)
+  try {
+    writeFileSync(`${dir}/score.ly`, ly)
+    const r = spawnSync(bin, ['-o', `${dir}/out`, `${dir}/score.ly`], { encoding: 'utf8' })
+    const mid = readdirSync(dir).find((f) => /^out.*\.midi?$/.test(f))
+    if (r.status !== 0 || !mid) throw new Error(`lilypond failed: ${(r.stderr || '').split('\n').filter((l) => /error/i.test(l)).slice(0, 2).join(' ') || r.status}`)
+    const bytes = readFileSync(`${dir}/${mid}`)
+    if (cache) {
+      mkdirSync(cache, { recursive: true })
+      writeFileSync(`${cache}/${key}-${v}.mid`, bytes)
+    }
+    return bytes
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 }

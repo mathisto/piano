@@ -1,9 +1,9 @@
 // The big-library pipeline (scripts/library/): every gate fires on a fixture, licences are refused, and a rerun is byte-identical.
-import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import { movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, unzip, zip } from '../scripts/library/lib.mjs'
-import { analyse, dedupe, FEATURES, GATES, judge, lyPace, merge, reach, reanalysed, run, type Input } from '../scripts/library/pipeline'
+import { lilypondMidi, movements, openscoreMeta, PIANO, PUBLISHED_BY, refusals, scoreParts, sha, unzip, zip } from '../scripts/library/lib.mjs'
+import { analyse, dedupe, FEATURES, GATES, judge, lyPace, merge, reach, reanalysed, retitle, run, type Input } from '../scripts/library/pipeline'
 import { formOf, kindOf, periodOf } from '../scripts/library/kind'
 import type { Catalog, Piece } from './catalog-types'
 import { decode, incipit } from './incipit'
@@ -122,6 +122,17 @@ describe('the pace a Mutopia .ly names', () => {
       expect(a.tempo).toBeUndefined()
       expect(a.flags).toEqual([])
     }
+  })
+})
+
+describe('LilyPond source from a repository', () => {
+  it('the MIDI of a score is kept by the sha256 of its source, so a rerun needs no binary; no cache and no binary says so', () => {
+    const ly = '\\version "2.24.0" { c4 d e f }'
+    expect(() => lilypondMidi(ly, undefined, '/nonexistent/lilypond')).toThrow(/no lilypond binary/)
+    const cache = mkdtempSync(`${tmpdir()}/lib-ly-`)
+    writeFileSync(`${cache}/${sha(ly)}-2.26.0.mid`, 'MThd')
+    expect(lilypondMidi(ly, cache, '/nonexistent/lilypond').toString()).toBe('MThd')
+    expect(() => lilypondMidi(`${ly} `, cache, '/nonexistent/lilypond')).toThrow(/no lilypond binary/) // another source, another key
   })
 })
 
@@ -337,6 +348,30 @@ describe('catalogue fields: mode, a stated metre, kind, form, period, the grade 
     // through run(): the style of a Mutopia piece is a tag, and the length is the score's
     const { cat } = await built([input('study', xml({}), { title: 'Exercise 1', style: 'Technique' }), input('tune', xml({}), { title: 'Melody' }), input('short', xml({ bars: 8 }), { title: 'Scrap' })])
     expect(cat.pieces.map((p) => [p.id, p.kind])).toEqual([['short', 'fragment'], ['study', 'study'], ['tune', undefined]])
+  })
+
+  it('kind: a composer of teaching books is a study whatever the Mutopia style says; Burgmuller is repertoire', () => {
+    const k = (composer: string) => kindOf({ source: 'mutopia', tags: ['romantic'], bars: 40, sec: 90, composer })
+    expect([k('C. Czerny (1791–1857)'), k('F. Köhler (1820–1886)'), k('C. L. Hanon (1819–1900)'), k('J. F. F. Burgmüller (1806–1874)'), k('R. Schumann (1810–1856)')]).toEqual(['study', 'study', 'study', undefined, undefined])
+  })
+
+  it('retitle: new titles and opus for the listed ids, form and kind worked out again, nothing else moves, a stale id throws', async () => {
+    const { d, cat } = await built([input('a', xml({}), { title: 'Movement 1', composer: 'C. Czerny (1791–1857)', opus: 'junk' }), input('b', xml({ same: true }), { title: 'Melody' })])
+    expect([cat.pieces[0].form, cat.pieces[0].kind]).toEqual([undefined, 'study']) // run() applies the composer rule too
+    const out = mkdtempSync(`${tmpdir()}/lib-retitle-`)
+    const changed = retitle(d, out, { a: { title: 'Prelude in C major', opus: 'Op. 42' } })
+    const after = JSON.parse(readFileSync(`${out}/catalog.json`, 'utf8')) as Catalog
+    const [a, b] = after.pieces
+    expect([a.title, a.opus, a.form, a.kind]).toEqual(['Prelude in C major', 'Op. 42', 'prelude', 'study'])
+    expect(changed).toEqual(['a'])
+    expect({ ...b }).toEqual({ ...cat.pieces[1] }) // an unlisted piece stays as it was
+    expect([a.file, a.sha256]).toEqual([cat.pieces[0].file, cat.pieces[0].sha256])
+    expect(readdirSync(`${out}/p`)).toEqual(readdirSync(`${d}/p`))
+    expect(after.built).not.toBe(cat.built)
+    expect(readFileSync(`${out}/LICENSES.md`, 'utf8')).toContain('Prelude in C major')
+    expect(() => retitle(d, out, { nope: 'x' })).toThrow(/nope/)
+    expect(retitle(d, out, { a: 'Plain' })).toEqual(['a']) // a title alone keeps the piece's own opus
+    expect(JSON.parse(readFileSync(`${out}/catalog.json`, 'utf8')).pieces[0].opus).toBe('junk')
   })
 
   it('period comes from the birth year; form from the title', () => {
