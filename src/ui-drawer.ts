@@ -37,6 +37,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <div class="sgroup">
     ${row('Appearance', seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme), "Auto follows this device's light or dark setting.")}
     ${row('Effects', seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx)), 'A soft glow on the falling notes and keys as you play.')}
+    ${row('Pulse', seg('pulse', 'Pulse', [['off', 'Off'], ['staff', 'Staff'], ['edge', 'Edges'], ['lines', 'Beat lines']], settings.pulse), 'The metronome\'s beat, seen: a ball bouncing on the staff, a swell at the screen\'s edges, or the falling beat lines. Metronome Silent, in Practice, keeps it without the click.')}
   </div>
   ${
     native

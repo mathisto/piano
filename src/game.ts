@@ -413,7 +413,7 @@ export class Game {
   /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. */
   private metronome(from: number, end: number) {
     if ((this.mode === 'read' && !this.paced) || !this.running()) return
-    if (settings.metro !== 'off' || this.paced || this.calib) {
+    if (settings.metro === 'beat' || settings.metro === 'eighths' || this.paced || this.calib) { // Silent: the beat is seen (beatpulse.ts), not heard
       for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, !this.paced && settings.metro === 'eighths'))
         audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
     }

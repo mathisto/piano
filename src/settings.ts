@@ -1,6 +1,7 @@
 import { instrumentId } from './instruments'
 import type { Coach } from './even'
 import type { Metro } from './metronome'
+import type { Pulse } from './beatpulse'
 import type { Opts } from './technique'
 import type { PlanMin } from './plan'
 export type KeyTouch = 'Light' | 'Medium' | 'Heavy' | 'Fixed' | 'Unknown'
@@ -16,7 +17,8 @@ export interface Settings {
   instrument: string // an id from instruments.ts: grand piano (default), other sampled instruments, or the small built-in synth
   volume: number
   click: number // count-in and metronome click level, 0 = silent count-in
-  metro: Metro // practice metronome: off, on the beat, or with eighths between
+  metro: Metro // practice metronome: off, on the beat, with eighths between, or silent (the beat dots and the pulse only)
+  pulse: Pulse // the beat seen while the metronome runs: off, on the staff, at the screen's edges, or on the highway's beat lines
   names: boolean // note names on keys and notes
   fingers: boolean // finger numbers on the staff (scales); a pack item may turn them off for itself
   asWritten: boolean // aim for the dynamics a MIDI file carries, mapped onto your own soft and hard
@@ -54,6 +56,7 @@ const DEFAULTS: Settings = {
   volume: 0.7,
   click: 0.6,
   metro: 'off',
+  pulse: 'off',
   names: true,
   fingers: true,
   fade: true,

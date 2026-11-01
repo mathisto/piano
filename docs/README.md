@@ -90,6 +90,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/perf3.md`: 33 kB off the boot JS (`ui.ts` split into lazy views, results and sheets); the pedal coach uses the tuned chord match (`src/chords.ts`).
 - `changes/sheets.md`: e2e feature 22 (Credits, Set up and Options from Settings; slow and refused page and sheet chunks); a sheet whose code does not arrive says so instead of rejecting unhandled.
 - `changes/beatmark.md`: the paced run beat shows in a slim bar between the header and the staff, not in the dock.
+- `changes/beatpulse.md`: a silent visual pulse (Settings > Pulse: Staff, Edges or Beat lines, on trial) and a Silent metronome; the research behind it, captures and frame times; the FP-10 headphone click stops at a note (no MIDI out yet).
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
 - `changes/datafix.md`: import merges per record and backs up first, exports carry imported songs, read-modify-write saves queue (and lock across tabs), stale heat, the service worker on a 502 and across a deploy, no empty last bar, MusicXML UTF-16, character references, mid-measure divisions and ties, simplify keeps short notes, CSP.
 - `changes/perf4.md`: 19 kB off the boot JS: the ear and pulse decks and the trainers load with the Theory page or when a card is due (`src/theory-cards.ts` keeps the Path's decks); the Help text loads with the sheets.
