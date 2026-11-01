@@ -577,6 +577,7 @@ table.songs:not(.stages) td.acts {
 }
 .rowmenu .btn {
   justify-content: flex-start;
+  white-space: nowrap;
 }
 @media (max-width: 1000px) {
   table.songs col.acol {
@@ -1800,12 +1801,20 @@ input[type='number'] {
   width: 5.5rem;
 }
 .drawer .fine {
-  margin: -4px 0 0;
+  margin: -4px 0 0 calc(6.5rem + 12px); /* under the control it is about, not the label */
   font-size: 13px;
   color: var(--ink-3);
 }
 .drawer .foot {
-  margin-top: 8px;
+  margin: 8px 0 0;
+  display: flex;
+  gap: 24px;
+}
+.drawer hr {
+  width: 100%;
+  margin: 6px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 button.link {
   border: 0;
@@ -2301,6 +2310,22 @@ dialog.sheet .fine {
 dialog.sheet footer .grow {
   flex: 1;
 }
+dialog.sheet > header .pop {
+  margin-left: auto; /* a sheet's More sits beside its close */
+}
+dialog.sheet .plan .prow {
+  padding-inline: 0; /* Set up's rows line up with the sheet's title, not with Today's card inset */
+}
+.tksum {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+dialog.sheet .tksum .fine {
+  margin: 0;
+}
 
 /* one marker for every disclosure */
 .drawer summary,
@@ -2388,13 +2413,13 @@ dialog.sheet footer .grow {
   font: 600 13px/1.2 var(--ui);
 }
 .popmenu .presets,
-.zoomrow {
+.popmenu .opt {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.zoomrow .cap {
-  flex: 1;
+.popmenu .opt .cap {
+  flex: 1; /* Metronome and Staff: the caption at the left, the control at the right, as the hands' rows */
 }
 .popmenu .hand {
   display: grid;

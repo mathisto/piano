@@ -1,8 +1,4 @@
-/* the metronome: a button in the dock's Practice menu cycling off, beats, eighths; one dot per beat of the bar in the dock row */
-#metro[aria-pressed='true'] {
-  background: var(--line-2);
-  border-color: var(--ink-2);
-}
+/* the metronome: Off | Beats | Eighths in the dock's Practice menu; one dot per beat of the bar in the dock row */
 .beats {
   display: flex;
   gap: 6px;

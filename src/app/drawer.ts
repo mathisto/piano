@@ -2,7 +2,7 @@
 import * as audio from '../audio'
 import * as lib from '../catalog'
 import { creditBlock, libraryUrl } from '../credits'
-import { chooseInput, inputs, monitor } from '../midi'
+import { chooseInput, inputs } from '../midi'
 import { native, pairBluetooth } from '../native-midi'
 import { save, settings } from '../settings'
 import { STARTERS } from '../starters'
@@ -15,8 +15,6 @@ import { leave } from './play'
 import { startCalibration } from './calibration'
 import { startTouchCal } from './technique-ui'
 
-let monTimer = 0
-
 function openDrawer() {
   const d = $('#drawer')
   const open = d.querySelector('details')?.open
@@ -28,11 +26,6 @@ function openDrawer() {
   d.hidden = false
   document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
   if (!wasOpen) $('#drawerTitle', d).focus()
-  const mon = $('#sMon', d)
-  const tick = () => (mon.textContent = monitor.n ? `Last: ${monitor.text}` : '')
-  tick()
-  clearInterval(monTimer)
-  monTimer = window.setInterval(tick, 250)
   $('#settingsBtn').setAttribute('aria-expanded', 'true')
   const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => d.querySelector<HTMLInputElement>(id)?.addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
   const radios = (name: string, fn: (v: string) => void) => d.querySelectorAll<HTMLInputElement>(`input[name=${name}]`).forEach((r) => (r.onchange = () => fn(r.value)))
@@ -139,7 +132,7 @@ function openDrawer() {
     }
   }
   $('#sClear', d).onclick = async () => {
-    if (!confirm('Delete your songs, progress and settings from this browser?')) return
+    if (!confirm('Delete your songs, progress and settings from this device?')) return
     await store.clearAll()
     location.reload()
   }
@@ -149,7 +142,6 @@ export function closeDrawer() {
   const d = $('#drawer')
   if (d.hidden) return false
   d.hidden = true
-  clearInterval(monTimer)
   document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = false))
   $('#settingsBtn').focus()
   $('#settingsBtn').setAttribute('aria-expanded', 'false')

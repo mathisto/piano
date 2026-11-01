@@ -1,4 +1,3 @@
-import { noteName } from './spell'
 
 export interface MidiMsg {
   on: boolean
@@ -14,9 +13,6 @@ export interface Input {
 }
 
 type Handler = (m: MidiMsg) => void
-
-/** What the keyboard last sent, so the app can show that notes are arriving. */
-export const monitor = { n: 0, text: '' }
 
 let access: MIDIAccess | undefined
 let handler: Handler = () => {}
@@ -54,17 +50,11 @@ function msg(e: MIDIMessageEvent) {
   const now = performance.now()
   const ts = e.timeStamp > 0 && e.timeStamp <= now + 50 && now - e.timeStamp < 1500 ? e.timeStamp : now
   if (s === 0x90 && d[2] > 0) {
-    monitor.n++
-    monitor.text = `note on ${noteName(d[1])}, velocity ${d[2]}`
     handler({ on: true, p: d[1], v: d[2] / 127, ts })
   } else if (s === 0x80 || s === 0x90) {
-    monitor.n++
-    monitor.text = `note off ${noteName(d[1])}`
     handler({ on: false, p: d[1], v: 0, ts })
   } else if (s === 0xb0 || s === 0xe0 || s === 0xc0) {
-    monitor.n++
     if (s === 0xb0 && d[1] === 64 && pedal !== d[2] >= (pedal ? 40 : 64)) pedalHandler((pedal = !pedal), ts) // down from the middle of the travel, up only below 40: a foot resting near half way does not chatter
-    monitor.text = s === 0xb0 ? `controller ${d[1]} = ${d[2]}` : s === 0xc0 ? 'program change' : 'pitch bend'
   }
 }
 

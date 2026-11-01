@@ -1,14 +1,14 @@
 import './metronome.css'
 import type { Game, HandMode } from './game'
 import { icon } from './icons'
-import { beatAt, METROS } from './metronome'
+import { beatAt, METROS, type Metro } from './metronome'
 import { save, settings } from './settings'
 import type { Song } from './song'
 
 const HANDS: HandMode[] = ['play', 'listen', 'hide']
 
 const handSeg = (h: 'R' | 'L') => `
-  <div class="hand ${h}"><i class="sw"></i><span class="cap hlbl" style="font-weight:700">${h === 'R' ? 'Right' : 'Left'}</span>
+  <div class="hand ${h}"><i class="sw"></i><span class="cap">${h === 'R' ? 'Right' : 'Left'}</span>
     <div class="seg" role="radiogroup" aria-label="${h === 'R' ? 'Right' : 'Left'} hand">
       ${HANDS.map((m, i) => `<label><input type="radio" name="hand${h}" value="${m}"${i === 0 ? ' checked' : ''}><span>${m[0].toUpperCase() + m.slice(1)}</span></label>`).join('')}
     </div>
@@ -76,9 +76,11 @@ export class Dock {
             <label class="switch" data-modes="learn"><input type="checkbox" id="holdAdvance"><i></i>Hold to advance</label>
             <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
             <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
-            <button class="btn" id="metro" data-modes="perform learn" aria-pressed="false" title="Metronome: off, beats, beats and eighths (B)"></button>
+            <div class="opt" data-modes="perform learn"><span class="cap">Metronome</span>
+              <div class="seg" role="radiogroup" aria-label="Metronome">${METROS.map((m) => `<label><input type="radio" name="metro" value="${m}"><span>${m === 'off' ? 'Off' : m === 'beat' ? 'Beats' : 'Eighths'}</span></label>`).join('')}</div>
+            </div>
             <div class="hands" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
-            <div class="zoomrow" role="group" aria-label="Staff size"><span class="cap">Staff</span>
+            <div class="opt" role="group" aria-label="Staff size"><span class="cap">Staff</span>
               <button class="btn icon sm" data-zoom="out" aria-label="Smaller staff, more bars">${icon('minus')}</button>
               <button class="btn icon sm" data-zoom="fit" aria-label="Fit the whole piece" title="Fit the whole piece">${icon('page')}</button>
               <button class="btn icon sm" data-zoom="in" aria-label="Larger staff, fewer bars">${icon('plus')}</button>
@@ -113,7 +115,7 @@ export class Dock {
     q<HTMLInputElement>('#holdAdvance').onchange = (e) => (game.holdAdvance = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#hidePlayed').onchange = (e) => (game.hidePlayed = (e.target as HTMLInputElement).checked)
     q('#ladder').onclick = () => ((game.autoTempo = !game.autoTempo), this.sync())
-    q('#metro').onclick = () => this.cycleMetro()
+    host.querySelectorAll<HTMLInputElement>('input[name=metro]').forEach((r) => (r.onchange = () => this.setMetro(r.value as Metro)))
     this.syncMetro()
     q<HTMLInputElement>('#showNotes').onchange = (e) => (game.showNotes = (e.target as HTMLInputElement).checked)
     q<HTMLInputElement>('#showNames').onchange = (e) => (game.showNames = (e.target as HTMLInputElement).checked)
@@ -183,18 +185,19 @@ export class Dock {
     this.drawLoop()
   }
 
-  /** Off, on the beat, or with eighths between; remembered. */
+  /** Off, on the beat, or with eighths between; remembered. The B key steps through them. */
   cycleMetro() {
-    settings.metro = METROS[(METROS.indexOf(settings.metro) + 1) % METROS.length]
+    this.setMetro(METROS[(METROS.indexOf(settings.metro) + 1) % METROS.length])
+  }
+
+  private setMetro(m: Metro) {
+    settings.metro = m
     save()
     this.syncMetro()
   }
 
   private syncMetro() {
-    const on = settings.metro !== 'off'
-    const b = this.host.querySelector('#metro')!
-    b.setAttribute('aria-pressed', String(on))
-    b.textContent = `Metronome: ${settings.metro === 'beat' ? 'beats' : settings.metro}`
+    this.host.querySelector<HTMLInputElement>(`input[name=metro][value=${settings.metro}]`)!.checked = true
     this.beatKey = ''
     this.host.querySelector<HTMLElement>('#beats')!.replaceChildren()
     this.bar.replaceChildren()
