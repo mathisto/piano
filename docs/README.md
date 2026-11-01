@@ -105,5 +105,12 @@ Dated reports behind the decisions; read the ratings before relying on a claim.
 - `research/midi-import-audit.md`: why a fan MIDI rendered as clutter, and the importer bugs found.
 - `research/public-domain-sources.md`: free and open score sources, licences and the fetch plan.
 
+## Audits (`audit/`)
+
+- `audit/2026-11-01-ux.md`: continuity and professional UX audit of every surface (46 findings, P0 to P3), with what was fixed overnight.
+- `audit/2026-11-01-copy.md`: copy audit of every user-facing string (81 findings) and the glossary.
+- `audit/2026-11-01-copy-decisions.md`: the decisions taken on the copy audit's judgement calls.
+- `audit/2026-11-01-a11y.md`: accessibility audit (WCAG 2.2 AA, VoiceOver inferred from code, 25 findings).
+
 ## Art
 
