@@ -102,4 +102,4 @@ export function guideCard(g: Guide): string {
 
 /** Shown while no MIDI keyboard is connected, with the switch for the on-screen keys (app/osk-ui.ts); banner.ts hides it when one is and shows it again if it goes. */
 export const keyboardLine = (connected: boolean) =>
-  `<div class="kbline"${connected ? ' hidden' : ''}><span role="status"><b>No keyboard connected.</b> Play the on-screen keys, or the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? !connected) ? ' checked' : ''}><i></i>On-screen keys</label><button class="btn" data-connect>Connect keyboard</button></div>`
+  `<div class="kbline"${connected ? ' hidden' : ''}><span role="status"><b>No keyboard connected.</b> Play the on-screen keys, or the computer keys <kbd>A</kbd> to <kbd>;</kbd>.</span><span class="row-actions"><label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? !connected) ? ' checked' : ''}><i></i>On-screen keys</label><button class="btn" data-connect>Connect keyboard</button></span></div>`

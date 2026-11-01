@@ -103,6 +103,11 @@
 .kbline > span {
   flex: 1 1 28ch;
 }
+.kbline > .row-actions {
+  flex: none;
+  gap: 16px;
+  margin-left: auto; /* the switch and Connect wrap together, at the right */
+}
 .kbline b {
   color: var(--ink);
 }

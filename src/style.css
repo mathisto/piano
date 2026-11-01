@@ -618,9 +618,6 @@ table.songs td.thumb {
 .thumb .nt {
   fill: var(--ink);
 }
-.grade {
-  font: 800 italic 28px/1 var(--display);
-}
 .empty {
   color: var(--ink-3);
   padding: 18px 12px;
@@ -1953,7 +1950,7 @@ button.link {
     width: 60px !important; /* the Best figure keeps a narrow column; on equal shares it took a third of the row */
   }
   table.songs:not(.stages) col:first-child,
-  table.songs:not(.stages) th:first-child,
+  table.songs:has(td.thumb) th:first-child, /* the preview's head only: Progress's touch table keeps its Date */
   table.songs td.thumb {
     display: none;
   }
