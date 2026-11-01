@@ -10,10 +10,12 @@ import { $, keepFocus } from '../ui'
 import { type TheoryRunView, theoryView } from '../ui-views'
 import { dayKey } from '../week'
 import { median } from '../util'
-import { say } from './state'
+import { hooks, say } from './state'
 import { practised } from './stage'
 
-interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs'> {
+interface TheoryRun extends Omit<TheoryRunView, 'missed' | 'medianMs' | 'cont'> {
+  cont?: Awaited<ReturnType<typeof hooks.next>>
+  then?: (t: 'c' | 'a' | 'b') => void // the session's row in the log: what came next
   level: number
   at: number
   rts: number[]
@@ -118,9 +120,17 @@ function nextTheory() {
   t.step = 0
   t.answered = undefined
   t.at = performance.now()
-  if (t.i === t.cards.length) void store.markPlan(dayKey(), 'theory')
-  if (t.i === t.cards.length) void store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: untimed(t.trainer) || isPulse(t.trainer) ? undefined : median(t.rts) })
+  if (t.i === t.cards.length) return void end(t)
   promptTheory()
+  showTheory()
+  prompt()
+}
+
+/** The session is over: its row in the log and the plan's tick, then the results with Continue (the card waits for it, so its lamp does not jump). */
+async function end(t: TheoryRun) {
+  t.then = store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: untimed(t.trainer) || isPulse(t.trainer) ? undefined : median(t.rts) })
+  t.cont = await store.markPlan(dayKey(), 'theory').then(() => hooks.next()).catch(() => undefined)
+  if (theory !== t) return
   showTheory()
   prompt()
 }
@@ -139,8 +149,9 @@ $('#theory').addEventListener('click', (e) => {
     promptTheory()
     showTheory()
   } else if (b.id === 'thMenu') {
-    if (theory) stopEar(theory.ears)
+    if (theory) stopEar(theory.ears), theory.then?.('b')
     theory = undefined
     showTheory()
-  } else if (b.id === 'thAgain' && theory) void startTheory(theory.trainer)
+  } else if (b.id === 'thAgain' && theory) theory.then?.('a'), void startTheory(theory.trainer)
+  else if (b.id === 'thCont' && theory?.cont) theory.then?.('c'), void theory.cont.start()
 })

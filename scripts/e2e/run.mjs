@@ -859,6 +859,37 @@ const reviewFlow = () => fresh({
     await wait(page, async () => (await window.__e2e.idb('history:log')).at(-1).then === 'a')
     await leave(page, 'library')
   },
+  async "25 Continue: a clean run opens the plan's next row, its row says so; a finished plan still has a lamp"(page) {
+    await nav(page, 'today')
+    await page.click('#today .guide button[data-guide=hide]') // the first week's step would take the lamp (feature 12)
+    await wait(page, () => !document.querySelector('#today .guide'))
+    await openStarter(page, 'starter-five-finger')
+    await page.click('#go')
+    const r = await ev(page, () => window.__e2e.perform().then((r) => r.clean))
+    ok(r, 'the run was not clean')
+    await res(page, 'Results')
+    // the piece is ticked, so Continue names the plan's next row: the Technique exercise, the first of a 10 minute plan
+    const to = await text(page, '#res #nextTo')
+    ok(await ev(page, () => document.activeElement?.id === 'next') && /Exercise$/.test(to), `Continue: ${to}`)
+    await page.click('#res #next')
+    await wait(page, () => window.__piano.game.song.id.startsWith('tech:') && window.__piano.game.phase === 'ready' && document.querySelector('#res').hidden)
+    await wait(page, async () => (await window.__e2e.idb('history:log')).at(-1).then === 'c')
+    await page.click('#go')
+    await ev(page, () => window.__e2e.perform())
+    await res(page, 'Results')
+    await wait(page, async () => (await window.__e2e.idb('history:log')).at(-1)?.id?.startsWith('tech:'))
+    const h = (await ev(page, () => window.__e2e.idb('history:log'))).map((e) => e.by)
+    ok(h.at(-1) === 'plan' && h.at(-2) === 'own', `by: ${h.join()}`) // Continue offered the exercise; the piece was the player's own pick
+    await page.click('#toLib') // the way back is still the page the piece was opened from
+    await wait(page, () => document.querySelector('#library.on'))
+    // every row ticked: the plan is one line, and the lamp moves to what comes next
+    await ev(page, async () => { const d = new Date(); await window.__e2e.idb(`plan:${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, ['warm', 'read', 'piece', 'scale', 'theory', 'sight', 'run', 'fix', 'again', 'review', 'path']) })
+    await redraw(page, 'today')
+    await page.waitForSelector('#today .plan-done')
+    const lamps = await page.$$eval('#today .btn.primary', (b) => b.map((x) => [x.closest('.upnext') ? 'upnext' : 'other', x.dataset.by]))
+    ok(lamps.length === 1 && lamps[0][0] === 'upnext' && ['due', 'path', 'piece'].includes(lamps[0][1]), JSON.stringify(lamps))
+    await axe(page, 'Today, plan done', '#today')
+  },
 })
 
 const memFlow = () => fresh({

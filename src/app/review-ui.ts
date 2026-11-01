@@ -6,7 +6,7 @@ import { marksOf, markLine, rightOf, type Mark } from '../marks'
 import { passed } from '../scales'
 import { settings } from '../settings'
 import type { Song } from '../song'
-import { type HistoryEntry, edit, logHistory } from '../store'
+import { type HistoryEntry, logHistory } from '../store'
 import { goodRun } from '../syllabus'
 import { $ } from '../ui'
 import { game, say, staff, highway } from './state'
@@ -14,13 +14,12 @@ import { applyLayout, ZOOM } from './stage'
 
 const TAP = 30 // px from a mark's middle that still counts as a tap on it
 
-/** The run's row in the attempt log (HistoryEntry in store.ts). Returns what to call with 'a' (Again) or 'b' (Back) to say what the player did next. */
+/** The run's row in the attempt log (HistoryEntry in store.ts). Returns what to call with what the player did next. */
 export function logRun(r: Result, song: Song, kind: HistoryEntry['kind'], label: string, counted: boolean, partial: boolean) {
   const ts = Date.now()
   const n = r.offs.length
   const mean = r.offs.reduce((a, b) => a + b, 0) / n
-  void logHistory({ ts, kind, label, acc: r.first >= 0 ? r.first : r.acc, even: r.even?.inside, bias: r.timing?.bias, id: kind === 'song' ? `song:${song.id}` : song.id, notes: rightOf(r) / (r.total + game.judge.extra), ok: kind === 'scale' ? passed(r) : kind === 'tech' ? goodRun(r) : counted, as: r.mode === 'learn' || partial ? 1 : undefined, rate: r.rate, sp: r.first < 0 && n >= 8 ? Math.round(Math.sqrt(r.offs.reduce((a, o) => a + (o - mean) ** 2, 0) / n)) : undefined })
-  return (then: 'a' | 'b') => void edit<HistoryEntry[]>('history:log', [], (l) => l.map((e) => (e.ts === ts ? { ...e, then } : e)))
+  return logHistory({ ts, kind, label, acc: r.first >= 0 ? r.first : r.acc, even: r.even?.inside, bias: r.timing?.bias, id: kind === 'song' ? `song:${song.id}` : song.id, notes: rightOf(r) / (r.total + game.judge.extra), ok: kind === 'scale' ? passed(r) : kind === 'tech' ? goodRun(r) : counted, as: r.mode === 'learn' || partial ? 1 : undefined, rate: r.rate, sp: r.first < 0 && n >= 8 ? Math.round(Math.sqrt(r.offs.reduce((a, o) => a + (o - mean) ** 2, 0) / n)) : undefined })
 }
 
 export function review(res: HTMLElement, r: Result) {

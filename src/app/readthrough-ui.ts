@@ -11,7 +11,7 @@ import { $ } from '../ui'
 import { dayKey } from '../week'
 import { current, dock, game, hooks, resOpen, rt, say, setRt, staff } from './state'
 import { setZoom } from './stage'
-import { backName, fixBars, leave, openById } from './play'
+import { backName, leave, openAt, openById } from './play'
 
 const RT_LEVEL = ['Beginner', 'Beginner', 'Elementary', 'Intermediate', 'Intermediate', 'Intermediate'] // catalogue grade 1..5 to the three levels the picker knows
 export const rtPieces = (): RtPiece[] => [...STARTERS.map((s) => ({ id: s.spec.id, title: s.spec.title, level: s.level })), ...lib.catalog.pieces.filter((p) => lib.local(p.id)).map((p) => ({ id: `lib:${p.id}`, title: p.title, level: RT_LEVEL[Math.min(5, lib.gradeOf(p))] }))]
@@ -105,7 +105,7 @@ export async function rtDone(r: Result) {
   if (fix && worst)
     fix.onclick = () => {
       rtEnd()
-      void fixBars(c.song.id, worst.a, worst.b)
+      void openAt(c.song.id, { rate: 0.7, loop: [worst.a, worst.b] })
     }
   const nx = res.querySelector<HTMLButtonElement>('#rtNext')
   if (nx && next) nx.onclick = () => void readThrough(next.piece.id)
