@@ -84,6 +84,10 @@ textarea {
   -webkit-user-select: text;
   user-select: text;
 }
+a,
+img {
+  -webkit-user-drag: none; /* a long press on the iPad lifts a link or an image out to drag; the app's are not for dragging */
+}
 ::selection {
   background: var(--lamp);
   color: var(--lamp-ink);
