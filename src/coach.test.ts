@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { articulation, articulationReport, fixedAt, levelRuns, marksFor, melodyHand, seen, shapeReport, songLines, timing, voiceLine, voicing, type Press } from './coach'
+import { articulation, articulationReport, fixedAt, levelRuns, marksFor, melodyHand, seen, shapeReport, songLines, timing, voicing, type Press } from './coach'
+import { voiceLine } from './coach-lines'
 import { fromMusicXml } from './musicxml'
 import { touchPiece } from './score-fixtures'
 import { DEFAULT_EDGES } from './touch'

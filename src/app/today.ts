@@ -114,7 +114,7 @@ export async function showProgress() {
     const x = lib.piece(id)
     return x && { title: x.title, composer: lib.catalog.composers[x.composer]?.name ?? '' }
   })
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, ladder, next: nextOf(gp), stages, log, history, stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, ladder, next: nextOf(gp), stages, log, history: history.filter((e) => !e.as), stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()

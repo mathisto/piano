@@ -253,3 +253,50 @@ describe('an asymmetric window (the paced Sight Run)', () => {
     expect(at(85)).toMatchObject({ grade: 'perfect' }) // 85 of 250
   })
 })
+
+describe('wrong keys cost what a missed note costs', () => {
+  const song = () => [n(0, 1, 60), n(1, 2, 62), n(2, 3, 64), n(3, 4, 65)]
+  const played = (j: Judge) => [60, 62, 64, 65].forEach((p, i) => j.press(p, 1 + i))
+
+  it('a mashed run scores lower than a careful one, and every wrong key is kept with its time', () => {
+    const careful = mk(song(), { beat: 0.5 })
+    played(careful)
+    const mashed = mk(song(), { beat: 0.5 })
+    played(mashed)
+    mashed.press(61, 1.5)
+    mashed.press(63, 2.5)
+    expect(careful.accuracy).toBe(1)
+    expect(mashed.accuracy).toBeCloseTo(4 / 6)
+    expect(mashed.wrong).toBe(2) // clean is unchanged: it counts wrong keys, not their cost
+    expect(mashed.strays).toEqual([{ p: 61, t: 1.5 }, { p: 63, t: 2.5 }])
+  })
+
+  it('a key of the right pitch within a beat of its note is that note early or late, not a second slip', () => {
+    const j = mk([n(0, 1, 60)], { beat: 0.5 })
+    j.press(60, 0.6) // 400 ms early: outside the window, inside a beat
+    expect(j.strays).toHaveLength(1)
+    j.tick(Infinity) // the note is missed
+    expect(j.accuracy).toBe(0) // one miss; the early key did not add a second
+    const k = mk([n(0, 1, 60), n(1, 3, 62)], { beat: 0.5 })
+    k.press(60, 0.6) // early, and never struck again: a miss, charged once
+    k.press(62, 3)
+    k.tick(1.7)
+    expect(k.accuracy).toBe(0.5) // a miss and a hit; the early key added nothing
+    k.press(70, 3.5) // no note near it
+    expect(k.accuracy).toBeCloseTo(1 / 3)
+    const m = mk([n(0, 1, 60), n(1, 2, 62)], { beat: 0.5 })
+    m.press(60, 1)
+    m.press(60, 1.1) // a second strike of a note already struck is a wrong key
+    m.press(62, 2)
+    expect(m.accuracy).toBeCloseTo(2 / 3)
+  })
+
+  it('wait mode judges nothing, so a wrong key does not change its 100%', () => {
+    const j = mk([n(0, 1, 60)], { wait: true, beat: 0.5 })
+    j.press(70, 1)
+    expect(j.wrong).toBe(1)
+    expect(j.accuracy).toBe(1)
+    expect(j.press(60, 1)[0]).toMatchObject({ k: 'ok' })
+    expect(j.accuracy).toBe(1)
+  })
+})

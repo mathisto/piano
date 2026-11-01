@@ -86,7 +86,7 @@ export function buildSummary(d: SummaryData, titles: Record<string, string> = {}
     `- Current streak: ${plural(st.n, 'day')}${st.freezes ? `, ${plural(st.freezes, 'freeze')} banked` : ''}`,
   )
 
-  const h = d.history ?? []
+  const h = (d.history ?? []).filter((e) => !e.as) // Learn and assisted runs are logged, not charted
   section(
     'Accuracy by area',
     ...AREA.flatMap(([k, name]) => {

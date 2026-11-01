@@ -10,6 +10,10 @@ import { median } from '../util'
 import { drill, drillStats, game, hooks, resOpen, run, say, setDrill, setDrillStats, setRun, setRunSpec, staff, type RunCtx } from './state'
 import { leave, openSong } from './play'
 
+const cards: store.CardRow[] = [] // the cards answered this set, written to the log once the set ends
+const got = new Map<number, number[]>() // per card of the set: the pitches struck wrong, for the log
+const flush = () => (got.clear(), void store.logCards(cards.splice(0)))
+
 export async function saveRun(s: RunSpec) {
   setRunSpec(s)
   await store.saveRuns((r) => ({ ...r, last: s }))
@@ -198,8 +202,10 @@ export function drillOk(noteId: number, rt: number, clean: boolean) {
   a.clean = a.clean && clean
   a.rt = Math.max(a.rt, rt)
   if (--drill.left[i] > 0) return
-  record(drillStats, cardKey(drill.cards[i]), a.clean, a.rt)
-  drill.done++
+  const k = cardKey(drill.cards[i])
+  record(drillStats, k, a.clean, a.rt)
+  cards.push({ ts: Date.now(), k, y: a.clean ? 1 : 0, rt: Math.round(a.rt), got: got.get(i) })
+  if (++drill.done === drill.cards.length) flush() // a set written once it ends; a set left half done goes out with the next
   drill.streak = a.clean ? drill.streak + 1 : 0
   if (a.clean) drill.cleanN++
   drill.rts.push(a.rt)
@@ -239,4 +245,8 @@ export async function drillDone() {
 }
 
 Object.assign(hooks, { drillOk })
+game.on((e) => {
+  const i = e.type === 'wrong' && drill ? drill.noteCard[game.judge.nextPending()] : undefined
+  if (i !== undefined) got.set(i, [...(got.get(i) ?? []), (e as { p: number }).p])
+})
 game.on((e) => run?.spec.pace && (e.type === 'hit' || e.type === 'miss') && drillHud())

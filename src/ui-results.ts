@@ -4,11 +4,14 @@ import type { Next } from './pace'
 import { icon, jg } from './icons'
 import { noteName } from './spell'
 import { settings } from './settings'
-import { coachLines, marks as liveMarks, timingLine, type Timing } from './coach'
+import { marks as liveMarks, type Timing } from './coach'
+import { coachLines, timingLine } from './coach-lines'
+import { barList, markLine, rightOf, type Mark } from './marks'
+import type { Song } from './song'
 import type { Evenness } from './even'
 import { type RunSpec, type Tally } from './run'
 import { band, type TouchStats } from './touch'
-import { esc } from './util'
+import { esc, plural } from './util'
 
 // ---------- results ----------
 
@@ -27,7 +30,7 @@ function evenBlock(e: Evenness) {
   const word = { even: 'Even', nearly: 'Nearly even', uneven: 'Uneven' }[e.rating]
   return {
     chart: `<div><svg class="hist even" viewBox="0 0 396 74" role="img" aria-label="Loudness of each note against its neighbours: ${Math.round(e.inside * 100)} percent within plus or minus ${e.band}"><rect class="band" x="0" y="${36 - edge}" width="396" height="${edge * 2}"/><line class="mid" x1="0" x2="396" y1="36" y2="36"/>${bars}<text x="6" y="72">softer than its neighbours below, louder above</text></svg></div>`,
-    line: `<p class="line sub">Evenness: <b>${word}</b>, ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}</p>`,
+    line: `Evenness <b>${word.toLowerCase()}</b>: ${Math.round(e.inside * 100)}% of ${e.n} notes within ±${e.band}.${e.hint ? ` ${esc(e.hint)}` : ''}`,
   }
 }
 
@@ -43,52 +46,81 @@ function touchBlock(t: TouchStats, hands = true) {
     <div style="color:var(--ink-2)">Loudness: average <b>${Math.round(t.mean)}</b> of 127 (${band(t.mean, settings.edges)}), spread ±${Math.round(t.sd)}${hand}${where}.</div></div>`
 }
 
-/** `from`: the page the Back button returns to, named on it; a scale or exercise is a run, not a song. */
-export function results(r: Result, next: Next | null, note = '', from = 'Songs') {
+/** The bars of the marks of these kinds, in brackets for a line: " (bars 7 and 12)"; nothing when there are none. */
+const at = (ms: Mark[], ...kinds: Mark['kind'][]) => {
+  const bars = [...new Set(ms.filter((m) => kinds.includes(m.kind)).map((m) => m.bar + 1))]
+  return bars.length && bars.length < 4 ? ` (${barList(bars)})` : ''
+}
+
+/** One line of the card: what was measured, in plain counts, and whether it decides that the run counts. */
+const measure = (name: string, text: string, status = '') => `<div><dt>${name}</dt><dd>${text}</dd><dd class="cnt">${status}</dd></div>`
+
+/** The song card. `from`: the page the Back button returns to, named on it. `ctx`: the piece and the marks the run left on its score, for the bars and the Mark list. */
+export function results(r: Result, next: Next | null, note = '', from = 'Songs', ctx?: { song: Song; marks: Mark[] }) {
+  const ms = ctx?.marks ?? []
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
   const peak = Math.max(1, ...bins)
   const mean = r.offs.length ? r.offs.reduce((a, b) => a + b, 0) / r.offs.length : 0
-  const lean = r.timing ? timingLine(r.timing) : Math.abs(mean) < 8 ? 'On the beat on average.' : mean < 0 ? `On average about ${Math.round(-mean)} ms early.` : `On average about ${Math.round(mean)} ms late.`
+  const bias = r.timing ? r.timing.bias : mean
+  const lean = `${Math.abs(bias) < 8 ? 'on the beat' : `about ${Math.round(Math.abs(bias))} ms ${bias > 0 ? 'late' : 'early'}`} on average${r.timing ? `, steady within ±${Math.round(r.timing.spread)} ms` : ''}`
   const hist = bins
     .map((n, i) => `<rect x="${i * 30 + 6}" y="${60 - (n / peak) * 56}" width="24" height="${(n / peak) * 56 + 0.5}" rx="2"/>`)
     .join('')
   const perform = r.mode === 'perform'
+  const waited = r.first >= 0 // Learn, waiting: every note is played in the end, so accuracy is always 100% and says nothing; what shows is how many came right first
+  const id = ctx?.song.id ?? ''
+  const right = rightOf(r)
   const even = r.even ? evenBlock(r.even) : null
-  // the sentences stay in view; the charts behind them, and the touch figures, fold under More
+  // The figure leads with a count; the percentage is for Details and the Over time chart
+  const accuracy = waited ? `Right first time <b>${r.first === 1 ? 100 : Math.min(99, Math.round(r.first * 100))}%</b>` : `Accuracy <b>${Math.round(r.acc * 100)}%</b>`
   const more =
+    `<p class="line">${accuracy}${perform ? ` · most in a row <b>${r.maxCombo}</b>` : ''}</p>` +
     (perform
       ? `<div><div class="counts"><span>${jg('perfect')}Perfect ${r.counts.perfect}</span><span>${jg('great')}Great ${r.counts.great}</span><span>${jg('good')}Good ${r.counts.good}</span>${r.counts.late ? `<span>${jg('late')}Late ${r.counts.late}</span>` : ''}<span>${jg('miss')}Miss ${r.counts.miss}</span></div>
       <svg class="hist" viewBox="0 0 396 82" role="img" aria-label="Timing: ${lean}">${hist}<line class="mid" x1="198" x2="198" y1="0" y2="62"/><text x="198" y="80" text-anchor="middle">on the beat</text><text x="6" y="80">early</text><text x="390" y="80" text-anchor="end">late</text></svg></div>`
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
     (even?.chart ?? '')
-  // One fact once: the figure the card leads with is the hero, and the line carries what the hero does not (the misses, the wrong keys, the run)
-  const waited = r.first >= 0 // Learn, waiting: every note is played in the end, so accuracy is always 100% and says nothing; what shows is how many came right first
-  const nw = (html: string) => `<span class="nw">${html}</span>`
-  const facts = [
-    !waited && nw(`<b>${r.counts.miss}</b> missed`),
-    nw(`<b>${r.wrong}</b> wrong`),
-    perform && nw(`most in a row <b>${r.maxCombo}</b>`),
-    r.dyn === 'even' && r.touch.n >= 4 && nw(`spread <b>±${Math.round(r.touch.sd)}</b>`),
-    r.touchPct >= 0 && nw(`touch in range <b>${Math.round(r.touchPct * 100)}%</b>`),
-    perform && r.holds >= 0 && nw(`held <b>${Math.round(r.holds * 100)}%</b>`),
+  // One line for each thing measured, each saying whether it decides that the run counts. What counts follows the rules the app has today: notes, and timing in Perform; the exercises add touch.
+  const hits = r.counts.perfect + r.counts.great + r.counts.good + r.counts.late
+  const touch = [
+    even?.line,
+    r.dyn === 'even' && r.touch.n >= 4 && `Spread <b>±${Math.round(r.touch.sd)}</b>.`,
+    r.touchPct >= 0 && `<b>${Math.round(r.touchPct * 100)}%</b> of notes in range.`,
   ].filter(Boolean)
+  const lines = [
+    measure('Notes', [`<b>${right}</b> of ${r.total} right${waited ? ' first time' : ''}`, r.wrong > 0 && `${plural(r.wrong, 'wrong key')}${at(ms, 'wrong')}`, !waited && r.counts.miss > 0 && `${r.counts.miss} missed${at(ms, 'miss')}`].filter(Boolean).join(' · '), 'counts'),
+    waited ? measure('Time', 'The song waited, so time is not measured.') : hits ? measure('Time', `<b>${r.counts.perfect + r.counts.great}</b> of ${hits} on the beat · ${lean}`, perform ? 'counts' : 'not counted yet') : '',
+    r.holds >= 0 ? measure('Holds', `<b>${Math.round(r.holds * 100)}%</b> released on time`, 'not counted yet') : '',
+    touch.length ? measure('Touch', touch.join(' '), (id.startsWith('tech:') && r.touchPct >= 0) || (id.startsWith('scale:') && r.even) ? 'counts' : 'not counted yet') : '',
+  ].join('')
+  const slips = ms.filter((m) => m.kind === 'wrong' || m.kind === 'miss')
+  const head = r.clean
+    ? `Clean${waited ? ', with the song waiting' : ''}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}.`
+    : `Not clean yet${slips.length ? `: ${plural(slips.length, 'slip')} in ${barList([...new Set(slips.map((m) => m.bar + 1))])}` : ''}.`
+  const review = ms.length
+    ? `<button class="btn" id="review" aria-expanded="false">Review on the score</button><details class="all marklist"><summary>Mark list</summary><ol>${ms.map((m, i) => `<li><button class="lnk" data-m="${i}">${esc(markLine(m, ctx!.song))}</button></li>`).join('')}</ol></details>`
+    : ''
+  const reviewbar = ms.length
+    ? `<div class="reviewbar"><button class="btn" id="unfold">Results</button><button class="btn icon ghost" id="markPrev" aria-label="Previous mark">${icon('back')}</button><span id="markAt" aria-live="polite"></span><button class="btn icon ghost" id="markNext" aria-label="Next mark">${icon('back')}</button>
+    ${perform ? `<label class="switch"><input type="checkbox" id="allTiming"><i></i>Show all timing</label>` : ''}
+    <p class="legend">${jg('miss')}missed · dashed head: a wrong key, at the pitch you played · ${jg('good')}${jg('late')}early or late: left of its note is early, right is late</p></div>`
+    : ''
   return `
-  <div class="results"><div class="card song-res" role="region" aria-label="Results">
-    <div class="big-grade">${waited ? (r.first === 1 ? 100 : Math.min(99, Math.round(r.first * 100))) : Math.round(r.acc * 100)}%<span class="hcap">${waited ? 'first time right' : 'accuracy'}</span></div>
+  <div class="results on-stage"><div class="card song-res" role="region" aria-label="Results">
+    <h2>${head}</h2>
+    <div class="big-grade"><b>${right} of ${r.total}</b><span class="hcap">${waited ? 'right first time' : 'notes right'}</span></div>
     <div class="stats">
-    <h2>${perform ? (from === 'Songs' ? 'Piece complete' : 'Run complete') : r.clean ? 'Clean' : 'Not clean yet'}${r.rate < 1 ? ` at ${Math.round(r.rate * 100)}% tempo` : ''}</h2>
-    <p class="line">${facts.join(' · ')}</p>
     ${note ? `<p class="line">${note}</p>` : ''}
-    ${perform ? `<p class="line sub">${lean}</p>` : ''}
-    ${even?.line ?? ''}
+    <dl class="measures">${lines}</dl>
     ${coachLines(r, liveMarks === 'none' && !!r.even)}
-    ${more ? `<details class="all more"><summary>Details</summary>${more}</details>` : ''}
+    <div class="reviewrow">${review}<details class="all more"><summary>Details</summary>${more}</details></div>
+    ${reviewbar}
     </div>
     <div class="row">
       ${next ? `<button class="btn primary" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
-      <button class="btn${next ? '' : ' primary'}" id="again">${icon('restart')}Again</button>
+      <button class="btn icon${next ? '' : ' primary'}" id="again" aria-label="Again" title="Again">${icon('restart')}</button>
       <div class="pop"><button class="btn icon" data-more aria-label="More" aria-expanded="false" aria-controls="resMenu">${icon('more')}</button><div class="popmenu" id="resMenu" hidden></div></div>
       <button class="btn ghost" id="toLib">Back to ${from}</button>
     </div>

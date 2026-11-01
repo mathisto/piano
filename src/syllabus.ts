@@ -61,9 +61,12 @@ const GOOD_ACC = 0.85
 const GOOD_TOUCH = 0.7 // when a run asked for velocity targets
 const SOLID = 2 // good runs in a row
 
+/** A run that counts. `acc` charges a wrong key as a miss (judge.ts), so a run that mashed the keys cannot pass on the notes it did hit. */
+export const goodRun = (r: { acc: number; touchPct: number }) => r.acc >= GOOD_ACC && (r.touchPct < 0 || r.touchPct >= GOOD_TOUCH)
+
 export function applyRun(stats: TechStats, id: string, r: { acc: number; touchPct: number }, day: number): TechStats {
   const s = stats[id] ?? { runs: 0, streak: 0, box: 0, best: 0 }
-  const good = r.acc >= GOOD_ACC && (r.touchPct < 0 || r.touchPct >= GOOD_TOUCH)
+  const good = goodRun(r)
   const box = Math.min(INTERVALS.length - 1, Math.max(0, s.box + (good ? 1 : -1)))
   stats[id] = { runs: s.runs + 1, streak: good ? s.streak + 1 : 0, box, due: day + INTERVALS[box], best: Math.max(s.best, r.acc) }
   return stats

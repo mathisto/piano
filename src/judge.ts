@@ -50,6 +50,8 @@ export class Judge {
   declare combo: number
   declare maxCombo: number
   declare wrong: number
+  declare strays: { p: number; t: number }[] // every wrong key: its pitch and song time, kept until the next restart so the staff can mark it
+  declare extra: number // wrong keys that cost accuracy as a miss does: all but a key of a note's own pitch within a beat of it
   declare total: number
   declare judged: number
   declare weightSum: number
@@ -80,14 +82,15 @@ export class Judge {
       this.st[i] = ok ? PENDING : OFF
       if (ok) this.total++
     })
-    this.combo = this.maxCombo = this.wrong = this.judged = this.weightSum = 0
+    this.combo = this.maxCombo = this.wrong = this.extra = this.judged = this.weightSum = 0
+    this.strays = []
     this.counts = { perfect: 0, great: 0, good: 0, late: 0, miss: 0 }
     this.first = 0
     this.advance()
   }
 
   get accuracy() {
-    return this.judged ? this.weightSum / this.judged : 1
+    return this.judged ? this.weightSum / (this.judged + this.extra) : 1
   }
 
   /** Velocities of the notes struck so far, for the touch statistics. */
@@ -155,7 +158,7 @@ export class Judge {
         bestD = rank
       }
     }
-    if (best < 0) return this.stray(p)
+    if (best < 0) return this.stray(p, t)
 
     this.st[best] = HIT
     this.vel[best] = vel ? Math.max(1, Math.round(vel * 127)) : 0
@@ -203,8 +206,12 @@ export class Judge {
     return [{ k: 'hold', i, grade }]
   }
 
-  private stray(p: number): Ev[] {
+  /** A wrong key counts against accuracy like a missed note, unless it is the pitch of a note not yet struck within a beat of it: that is the note early or late, and it is charged as a miss or a late hit. */
+  private stray(p: number, t: number): Ev[] {
     this.wrong++
+    this.strays.push({ p, t })
+    const g = this.win().grace
+    if (!this.notes.some((n, i) => n.p === p && Math.abs(n.t - t) <= g && (this.st[i] === PENDING || this.st[i] === MISSED))) this.extra++
     if (this.cfg.strict) this.combo = 0
     return [{ k: 'wrong', p }]
   }
