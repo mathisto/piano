@@ -267,17 +267,17 @@ table.songs caption,
   border: 2px solid var(--ink-3); /* outlined = no keyboard: a normal state, not a fault */
 }
 .chip.ok .dot {
-  background: var(--great);
-  border-color: var(--great);
+  background: var(--accent); /* connected is a state, not a grade: Accent */
+  border-color: var(--accent);
 }
 .chip.live {
-  border-color: var(--great);
+  border-color: var(--accent);
   color: var(--ink);
 }
 .chip.live .dot {
-  background: var(--great);
-  border-color: var(--great);
-  box-shadow: 0 0 0 4px var(--great-ring);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .btn {
@@ -1079,15 +1079,15 @@ body.reading .hud small {
 }
 #staff .dyn text {
   fill: var(--paper-ink-2);
-  font: italic 700 20px Georgia, 'Times New Roman', serif;
+  font: italic 600 22px var(--display); /* engravers set dynamic words in italic; Newsreader's x-height is small, hence 22 */
 }
 #staff .dyn text.smufl {
   font: 40px 'Bravura';
   fill: var(--paper-ink-2);
 }
 #staff .dyn text.wd {
-  font-size: 15px;
-  font-weight: 400;
+  font-size: 17px;
+  font-weight: 500;
 }
 #staff .dyn path {
   fill: none;
@@ -1098,7 +1098,8 @@ body.reading .hud small {
 }
 #staff .barno {
   fill: var(--paper-ink-2);
-  font: 700 14px var(--ui);
+  font: 600 15px var(--display);
+  font-variant-numeric: tabular-nums; /* the font shorthand resets it */
 }
 #staff .ledger {
   stroke: var(--paper-ink);
@@ -1129,7 +1130,7 @@ body.reading .hud small {
 }
 #staff .ott {
   fill: var(--paper-ink-2);
-  font: italic 400 15px Georgia, 'Times New Roman', serif;
+  font: italic 500 17px var(--display);
 }
 #staff .ottl {
   fill: none;
@@ -1179,6 +1180,10 @@ body.reading .hud small {
 }
 #staff .beam {
   fill: var(--paper-ink);
+}
+#staff .beam.past {
+  fill: var(--paper-played); /* settles with its last note, as the stems do */
+  transition: fill 0.3s 0.9s;
 }
 #staff .head.await {
   fill: var(--paper-awaited);
@@ -1338,7 +1343,7 @@ body.reading .hud small {
 }
 /* the grade, as a word on the staff, for staff-only view */
 #staff .gr {
-  font: 650 19px var(--display);
+  font: 600 21px var(--display);
   text-anchor: middle;
   paint-order: stroke;
   stroke: var(--paper);
@@ -2279,6 +2284,14 @@ body.zen .bar {
 .pwho span {
   color: var(--ink-3);
   font-size: 15px;
+}
+/* a piece's name inside a row or a sentence: the music face, as in the Songs rows */
+.pwho .pn,
+.rqn .pn {
+  color: inherit;
+  font-family: var(--display);
+  font-size: 1.1em;
+  font-weight: 560;
 }
 .prow .mrow {
   width: 260px;
