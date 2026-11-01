@@ -36,7 +36,7 @@ it('says each mark in a sentence and the run in another', () => {
   j.press(b.p, b.t + 0.3) // late
   j.tick(Infinity)
   const ms = marksOf(j, song)
-  expect(markLine(ms.find((m) => m.kind === 'wrong')!, song)).toBe('Bar 1, beat 1, right hand. Played C♯4 where D4 is written, about 0.4 s early.')
+  expect(markLine(ms.find((m) => m.kind === 'wrong')!, song)).toBe('Bar 1, beat 1, right hand. Played C♯4 where D4 is written, about 380 ms early.')
   expect(markLine(ms.find((m) => m.kind === 'late')!, song)).toMatch(/ was \d+ ms late\.$/)
   expect(summary(ms)).toMatch(/^1 wrong key in bar 1, \d+ missed notes in \d+ bars, 1 note late in bar 1\.$/)
   expect(summary([])).toBe('No marks on the score.')

@@ -22,7 +22,7 @@ it('a Perform run leads with a count, then a line for each thing measured, each 
   const html = results(r({ mode: 'perform', acc: 0.94, counts: { perfect: 30, great: 5, good: 0, late: 0, miss: 5 }, total: 40, wrong: 2, maxCombo: 69, holds: 0.97, timing: { bias: 18, spread: 24 } as never }), null)
   expect(html).toContain('<b>35 of 40</b><span class="hcap">notes right</span>')
   const t = flat(html)
-  expect(t).toContain('Notes 35 of 40 right · 2 wrong keys · 5 missed counts')
+  expect(t).toContain('Notes 2 wrong keys · 5 missed counts') // the figure says how many were right
   expect(t).toContain('Time 35 of 35 on the beat · about 18 ms late on average, steady within ±24 ms counts')
   expect(t).toContain('Holds 97% released on time not counted yet')
   expect(t).toContain('Accuracy 94% · most in a row 69') // the percentage lives in Details
@@ -44,6 +44,19 @@ it('the headline says where the slips were, and the lines name the bars', () => 
   expect(html).toMatch(/data-m="0"[^>]*>Bar 1, beat 1, right hand\. /)
   expect(html).toContain('id="again" aria-label="Again"') // Again is the restart icon
   expect(html).toContain('id="toLib">Back to Songs')
+})
+
+it('says what went right, and why the lamp loops the bars it does', () => {
+  const song = { id: 'lib:x', notes: [], bars: Array(6).fill({}), spb: 1, fifths: 0 } as never
+  const m = (bar: number, kind: 'wrong' | 'miss') => ({ kind, t: bar, bar, beat: 1, hand: 'R', p: 64, written: kind === 'wrong' ? 65 : undefined, ms: 0 }) as const
+  const marks = [m(2, 'miss'), m(3, 'wrong'), m(3, 'miss')]
+  const html = results(r({ mode: 'perform', wrong: 1, counts: { perfect: 30, great: 0, good: 0, late: 0, miss: 2 }, timing: { bias: 40, spread: 20 } as never }), { kind: 'loop', rate: 0.7, label: 'Loop bars 3 to 4 at 70%' }, '', 'Songs', { song, marks, worst: { a: 2, b: 3 } })
+  const t = flat(html)
+  expect(t).toContain('Bars 1 to 2 and 5 to 6 had no slips.')
+  expect(t).toContain('Bars 3 and 4 had all 3 slips. Bar 4, beat 1, right hand. Played E4 where F4 is written.')
+  expect(html.match(/id="next"/g)).toHaveLength(1) // one action, one place: the footer's lamp
+  expect(t).toContain('Most notes came about 40 ms late. If they felt on the beat, calibrate Delay in Set up.')
+  expect(flat(results(r({ mode: 'perform', clean: true, wrong: 0, counts: { perfect: 40, great: 0, good: 0, late: 0, miss: 0 } }), null, '', 'Songs', { song, marks: [] }))).not.toContain('had no slips') // a clean run says Clean
 })
 
 it('a clean run with nothing to review offers neither Review nor the Mark list', () => {

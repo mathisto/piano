@@ -46,6 +46,7 @@ export function nextStep(o: { clean: boolean; wait: boolean; rate: number; worst
     const up = LADDER.find((r) => r > o.rate + 1e-6)
     return up ? { kind: 'faster', rate: up, label: `Try ${Math.round(up * 100)}% tempo` } : null
   }
-  if (o.worst) return { kind: 'loop', rate: Math.min(o.rate, 0.7), label: `Loop bars ${o.worst.a + 1} to ${o.worst.b + 1} slowly` }
+  const rate = Math.min(o.rate, 0.7)
+  if (o.worst) return { kind: 'loop', rate, label: `Loop bars ${o.worst.a + 1} to ${o.worst.b + 1} at ${Math.round(rate * 100)}%` }
   return null
 }

@@ -10,7 +10,7 @@ import { type HistoryEntry, edit, logHistory } from '../store'
 import { goodRun } from '../syllabus'
 import { $ } from '../ui'
 import { game, say, staff, highway } from './state'
-import { applyLayout, setZoom, ZOOM } from './stage'
+import { applyLayout, ZOOM } from './stage'
 
 const TAP = 30 // px from a mark's middle that still counts as a tap on it
 
@@ -29,40 +29,51 @@ export function review(res: HTMLElement, r: Result) {
   const host = $('#staff')
   const play = $('#play')
   const marks = marksOf(game.judge, game.song)
+  const slip = marks.find((m) => m.kind === 'wrong' || m.kind === 'miss') ?? marks[0]
   let at = -1
   let zoom = 0
   let ac: AbortController | undefined
   let ring: HTMLElement
-  let pop: HTMLElement
+  const folded = () => root.classList.contains('folded')
   const elOf = (m: Mark) => host.querySelector<SVGGraphicsElement>(m.s !== undefined ? `.stray[data-s="${m.s}"]` : `:is(.gshape, .miss-mark)[data-id="${m.id}"]`)
-  const hide = () => (ring.hidden = pop.hidden = true)
+  const hide = () => (ring.hidden = true)
 
-  /** Say mark `i`: ring it on the paper and put its sentence beside it. */
-  const show = (i: number) => {
-    at = i
-    const m = marks[i]
-    staff.reveal(m.bar)
-    $('#markAt', res).textContent = `Mark ${i + 1} of ${marks.length}`
-    for (const b of res.querySelectorAll<HTMLElement>('.marklist button')) b.toggleAttribute('aria-current', b.dataset.m === String(i))
-    const e = elOf(m)
+  /** Ring mark `at` on the paper; its sentence is the review bar's, or the Mark list's current row: words never go over the music. */
+  const place = () => {
+    const e = at >= 0 && elOf(marks[at])
     if (!e) return hide()
     const h = host.getBoundingClientRect()
-    const r = e.getBoundingClientRect()
-    const [x, y] = [r.left + r.width / 2 - h.left, r.top + r.height / 2 - h.top]
-    Object.assign(ring.style, { left: `${x}px`, top: `${y}px` })
-    pop.textContent = markLine(m, game.song)
-    pop.style.left = `${Math.max(8, Math.min(h.width - 276, x - 130))}px` // the words sit at the foot of the paper, clear of the music; the ring says which mark
-    ring.hidden = pop.hidden = false
+    const b = e.getBoundingClientRect()
+    Object.assign(ring.style, { left: `${b.left + b.width / 2 - h.left}px`, top: `${b.top + b.height / 2 - h.top}px` })
+    ring.hidden = false
+  }
+  const show = (i: number) => {
+    at = i
+    staff.reveal(marks[i].bar)
+    $('#markAt', res).textContent = `${i + 1} of ${marks.length}`
+    $('#markSay', res).textContent = markLine(marks[i], game.song)
+    for (const b of res.querySelectorAll<HTMLElement>('.marklist button')) b.toggleAttribute('aria-current', b.dataset.m === String(i))
+    place()
   }
 
+  /** Two layouts while the card is up: both panes, the card over the falling notes; folded, the paper alone with the bar over a strip of keys. */
+  const view = (v: 'both' | 'sheet') => {
+    game.reviewing = v
+    applyLayout()
+    highway.layout()
+  }
   const fold = (on: boolean) => {
     hide()
     root.classList.toggle('folded', on)
     $('#review', res).setAttribute('aria-expanded', String(on))
+    view(on ? 'sheet' : 'both')
     if (on) {
       zoom = settings.zoom
-      setZoom(staff.fit(ZOOM.min, 1)) // the dock's Fit: every mark of a short piece at once
-    } else if (zoom) setZoom(zoom)
+      game.seek(game.song.bars[0].t0) // from bar 1: the whole of a short piece at once, the start of a long one
+      settings.zoom = staff.fit(ZOOM.min, 1) // the dock's Fit, for the review only: not saved, put back on Results
+    } else settings.zoom = zoom
+    staff.render()
+    if (on && slip) show(at >= 0 ? at : marks.indexOf(slip))
     $(on ? '#unfold' : '#review', res).focus()
   }
 
@@ -73,6 +84,7 @@ export function review(res: HTMLElement, r: Result) {
     $('#markPrev', res).onclick = () => step(-1)
     $('#markNext', res).onclick = () => step(1)
     res.querySelector<HTMLInputElement>('#allTiming')?.addEventListener('change', (e) => play.classList.toggle('alltiming', (e.target as HTMLInputElement).checked))
+    for (const d of res.querySelectorAll('.reviewrow details')) d.addEventListener('toggle', () => (d as HTMLDetailsElement).open && d.scrollIntoView({ block: 'nearest' })) // an opened list is not left under the footer
     $('.marklist', res).addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('button[data-m]')
       if (b) show(Number(b.dataset.m))
@@ -84,16 +96,14 @@ export function review(res: HTMLElement, r: Result) {
     if (ac) return
     ac = new AbortController()
     const on = { signal: ac.signal }
-    if (settings.view !== 'both') {
-      // the card covers the falling notes: in the staff-only view they are a strip, in the falling-only view there is no paper. Both, until the card goes.
-      game.reviewing = true
-      applyLayout()
-      highway.layout()
-    }
+    view('both') // the card covers the falling notes: in the staff-only view they are a strip, in the falling-only view there is no paper
+    if (slip) staff.reveal(slip.bar) // the paper opens on the first slip, not on the last bar played
     staff.render() // the marks of the run are drawn from the judge
     ring = Object.assign(document.createElement('div'), { className: 'selring', hidden: true })
-    pop = Object.assign(document.createElement('div'), { className: 'markpop', hidden: true })
-    host.append(ring, pop)
+    host.append(ring)
+    const ro = new ResizeObserver(() => !ring.hidden && place()) // a turn of the iPad moves the music under the ring
+    ro.observe(host)
+    ac.signal.addEventListener('abort', () => ro.disconnect())
     host.addEventListener(
       'click',
       (e) => {
@@ -104,17 +114,21 @@ export function review(res: HTMLElement, r: Result) {
           const d = r ? Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) : Infinity
           if (d < best) [best, hit] = [d, i]
         })
-        if (hit >= 0) show(hit)
-        else hide()
+        if (hit < 0) return hide()
+        if (!folded()) fold(true) // a tap on a mark is a way into Review
+        show(hit)
       },
       on,
     )
     document.addEventListener(
       'keydown',
       (e) => {
-        if (e.key !== 'Escape' || pop.hidden) return
-        e.preventDefault() // the first Escape closes the words, as it closes a pop-up
-        hide()
+        const t = e.target as HTMLElement
+        if (e.defaultPrevented || (/INPUT|SELECT|TEXTAREA/.test(t.tagName) && !/checkbox|radio/.test((t as HTMLInputElement).type)) || t.id === 'split') return // a switch in the bar is not typing
+        if (e.key === 'Escape' && (!ring.hidden || folded())) ring.hidden ? fold(false) : hide() // the ring first, then back to the card, as a pop-up closes before the page
+        else if (folded() && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) step(e.key === 'ArrowLeft' ? -1 : 1)
+        else return
+        e.preventDefault()
       },
       on,
     )
@@ -124,15 +138,12 @@ export function review(res: HTMLElement, r: Result) {
     ac.abort()
     ac = undefined
     ring.remove()
-    pop.remove()
     play.classList.remove('alltiming')
-    if (root.classList.contains('folded')) fold(false)
-    if (game.reviewing) {
-      game.reviewing = false
-      applyLayout()
-      highway.layout()
-      staff.render()
-    }
+    if (folded()) fold(false)
+    game.reviewing = false
+    applyLayout()
+    highway.layout()
+    staff.render()
   }
   arm()
   const watch = new MutationObserver(() => {

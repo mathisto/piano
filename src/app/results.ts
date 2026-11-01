@@ -88,7 +88,7 @@ async function onDone(r: Result) {
   if (lv) note = `Notes shown: ${LEVELS[lv]}, not the whole piece, so this run does not count toward Ready. ${note}`
   const [ui, { marksOf }] = await Promise.all([import('../ui-results'), import('../marks')])
   if (current !== c) return // left during the saves above: the run is recorded, the card is not wanted
-  res.innerHTML = ui.results(r, next, note, backName(), { song: game.song, marks: marksOf(game.judge, game.song) })
+  res.innerHTML = ui.results(r, next, note, backName(), { song: game.song, marks: marksOf(game.judge, game.song), worst })
   if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" id="memTry">Try it from memory</button>')
   res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => void memorise(c.song.id, 1))
   void import('./take-ui').then((t) => t.takeCard(res)).finally(() => soloMenu(res)) // Listen back and Compare with last time (loaded with the stage)

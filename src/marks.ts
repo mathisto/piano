@@ -1,4 +1,4 @@
-// What a run leaves on the score: wrong keys, missed notes, notes early or late. One list feeds the paper, the tap popover,
+// What a run leaves on the score: wrong keys, missed notes, notes early or late. One list feeds the paper, the review bar,
 // the Mark list and the paper's summary sentence, so they cannot disagree. Pure: lazy with the results, never at boot.
 import type { Judge } from './judge'
 import { beatAt } from './metronome'
@@ -52,7 +52,7 @@ export function markLine(m: Mark, song: Song): string {
   if (m.kind !== 'wrong') return `${at} ${name} was ${Math.round(Math.abs(m.ms))} ms ${m.kind}.`
   if (m.written === undefined) return `${at} Played ${name}, which is not written here.`
   if (m.written === m.p) return `${at} ${name} struck again.`
-  const off = Math.abs(m.ms) >= 100 ? `, about ${(Math.abs(m.ms) / 1000).toFixed(1)} s ${m.ms < 0 ? 'early' : 'late'}` : ''
+  const off = Math.abs(m.ms) >= 100 ? `, about ${Math.round(Math.abs(m.ms) / 10) * 10} ms ${m.ms < 0 ? 'early' : 'late'}` : '' // ms, as the early and late notes say it
   return `${at} Played ${name} where ${noteName(m.written, song.fifths)} is written${off}.`
 }
 

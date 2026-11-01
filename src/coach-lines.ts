@@ -28,7 +28,7 @@ export function coachLines(r: { timing: Timing | null; artic: Artic | null; voic
   if (r.pedal) out.push(r.pedal)
   if (test) out.push('A test run: no touch marks while you played.')
   if (r.artic) out.push(articLine(r.artic))
-  if (r.voice) out.push(voiceLine(r.voice))
+  if (r.voice && r.fixed === undefined) out.push(voiceLine(r.voice)) // every note equally loud: no voicing to speak of
   if (r.fixed !== undefined)
     out.push(settings.keyTouch === 'Fixed' ? `Key touch is Fixed: every note came in at ${r.fixed}, so evenness cannot be measured.` : `Every note came in equally loud (${r.fixed}). If your keyboard's key touch is set to Fixed, evenness cannot be measured.`)
   return out.length ? `<div class="coachlines">${out.map((l) => `<p>${l}</p>`).join('')}</div>` : ''
