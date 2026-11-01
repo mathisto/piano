@@ -240,7 +240,9 @@ export function onPhase() {
     const levels = shows ? `<div class="shows"><span class="cap">Notes shown</span><div class="seg" role="radiogroup" aria-label="Notes shown">${([0, 1, 2, 3, 4] as const).filter((l) => l < 4 || canLead(current!.base)).map((l) => `<label><input type="radio" name="level" value="${l}"${current!.level === l ? ' checked' : ''}><span>${LEVELS[l]}</span></label>`).join('')}</div></div>${current.level === 4 ? `<div class="chords"><label class="switch ghostsw" title="A block chord with its bass on each half bar, at the tempo"><input type="checkbox" id="compOn"${settings.comp ? ' checked' : ''}><i></i>App plays the chords</label><span class="hint">Chords from the harmony of the piece, not the composer's marks.</span></div>` : ''}` : ''
     const st = STARTERS.find((x) => x.spec.id === current!.base.id)
     covers?.keep(current.base.id, current.base)
-    const coverHtml = covers?.coverHtml(current.base.id, 'card', st ? { by: st.by, fifths: st.spec.fifths, meter: (st.spec.sig ?? [4, 4]).join('/') } : lp ? covers.pieceMeta(lib.catalog.composers[lp.composer]?.name, lp.opus, lp.bars ? lp : undefined) : { by: 'Your file' }) ?? '' // loaded with the stage, before any card shows
+    // the cover is the card's title block (the title stays in the page for the screen reader): the 600pt density where the stage is tall, the 300pt one beside the choices where it is short
+    const meta = covers && (lp ? covers.pieceMeta(lp, lib.catalog.composers[lp.composer]?.name) : st ? covers.starterMeta(st) : covers.metaOf.get(current.base.id) ?? covers.fileMeta('midi', current.song.title))
+    const coverHtml = covers && meta ? covers.coverHtml(current.base.id, 'start', meta) + covers.coverHtml(current.base.id, 'card', meta) : '' // loaded with the stage, before any card shows
     const html = mem
       ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
       : rt
@@ -249,7 +251,7 @@ export function onPhase() {
       ? `<b>${esc(drill.title)}</b>${drill.run?.spec.pace ? `<span class="hint">${paceHint({ bpm: drill.run.spec.pace, every: drill.run.spec.every })}</span>` : ''}<span class="hint">${go}</span>`
       : calibrating
         ? `<b>Play middle C on every beat</b><span class="hint">${go}</span>`
-        : `${coverHtml}<b>${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
+        : `${coverHtml}<b class="ttl">${esc(current.song.title)}</b>${current.credit ? `<span class="hint">${esc(current.credit)}</span>` : ''}${sheet}${chooserHtml(current.song, game.hands, game.parts, esc)}${levels}${legend}${report}`
     keepFocus(r, () => (r.innerHTML = html)) // a choice on the card redraws it: focus stays on that choice
     covers?.drawCovers(r)
     r.querySelectorAll<HTMLInputElement>('input[name=level]').forEach((x) => (x.onchange = async () => {

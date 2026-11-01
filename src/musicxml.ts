@@ -232,6 +232,7 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
   const tempos: { pi: number; m: number; q: number; bpm: number }[] = [] // <sound tempo> and <metronome>
   const worded: { pi: number; m: number; q: number; text: string }[] = [] // Allegro, Andante ...: only when no part gives a number
   const keyM: (number | undefined)[] = [] // key signature stated in each measure
+  let mode0: string | undefined // the <mode> of the first measure's key, when the score writes one
   const flags: string[] = []
   const W: { a: number; b: number; up: boolean; m0: number; v0: number }[] = [] // hairpins, in part quarters
   let marked = false // the score writes any dynamics
@@ -273,6 +274,7 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
           staves = num(e, 'staves') ?? staves
           const k = num(kid(e, 'key'), 'fifths')
           if (k !== undefined) keyM[m] ??= k
+          if (pi === 0 && m === 0) mode0 ??= kid(kid(e, 'key'), 'mode')?.t.trim()
           const t = kid(e, 'time')
           if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
         } else if (e.n === 'note') {
@@ -437,6 +439,7 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
   else if (estimated) flags.push('tempo-estimated')
   let kc = keyM.find((k) => k !== undefined)
   const keyOf = Array.from({ length: kids(parts[0], 'measure').length }, (_, m) => (kc = keyM[m] ?? kc))
+  const timed = sig[0] !== undefined // before the fill below: the score writes a time signature
   for (let m = 1; m < keyOf.length; m++) sig[m] ??= sig[m - 1] // so a jump back lands in the right meter too
 
   const order = playOrder(parts, flags)
@@ -536,5 +539,7 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
     }
     if (by.size) song.marks = [...by.values()].sort((a, b) => a.t - b.t)
   }
+  const mode = mode0 === 'major' || mode0 === 'minor' ? mode0 : undefined
+  if (mode || timed) song.stated = { ...(mode && { mode }), ...(timed && { meter: true as const }) }
   return song
 }

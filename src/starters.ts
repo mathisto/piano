@@ -19,6 +19,7 @@ export const STARTERS: Starter[] = [
       title: 'Five-finger warm-up',
       bpm: 72,
       fifths: 0,
+      mode: 'major',
       rh: 'C4:1 D4:1 E4:1 F4:1 G4:1 F4:1 E4:1 D4:1 C4:4 R:8',
       lh: 'R:8 C3:1 D3:1 E3:1 F3:1 G3:1 F3:1 E3:1 D3:1 C3:4',
     },
@@ -31,6 +32,7 @@ export const STARTERS: Starter[] = [
       title: 'Twinkle, Twinkle, Little Star',
       bpm: 84,
       fifths: 0,
+      mode: 'major',
       rh:
         'C4:1 C4:1 G4:1 G4:1 A4:1 A4:1 G4:2 F4:1 F4:1 E4:1 E4:1 D4:1 D4:1 C4:2 ' +
         'G4:1 G4:1 F4:1 F4:1 E4:1 E4:1 D4:2 G4:1 G4:1 F4:1 F4:1 E4:1 E4:1 D4:2 ' +
@@ -49,6 +51,7 @@ export const STARTERS: Starter[] = [
       title: 'Ode to Joy',
       bpm: 100,
       fifths: 0,
+      mode: 'major',
       rh:
         'E4:1 E4:1 F4:1 G4:1 G4:1 F4:1 E4:1 D4:1 C4:1 C4:1 D4:1 E4:1 E4:1.5 D4:.5 D4:2 ' +
         'E4:1 E4:1 F4:1 G4:1 G4:1 F4:1 E4:1 D4:1 C4:1 C4:1 D4:1 E4:1 D4:1.5 C4:.5 C4:2 ' +
@@ -68,6 +71,7 @@ export const STARTERS: Starter[] = [
       bpm: 112,
       sig: [3, 4],
       fifths: 1,
+      mode: 'major',
       rh:
         'D5:1 G4:.5 A4:.5 B4:.5 C5:.5 D5:1 G4:1 G4:1 E5:1 C5:.5 D5:.5 E5:.5 F#5:.5 G5:1 G4:1 G4:1 ' +
         'C5:1 D5:.5 C5:.5 B4:.5 A4:.5 B4:1 C5:.5 B4:.5 A4:.5 G4:.5 F#4:1 G4:.5 A4:.5 B4:.5 G4:.5 A4:3',
@@ -82,6 +86,7 @@ export const STARTERS: Starter[] = [
       title: 'Arpeggio study in C',
       bpm: 60,
       fifths: 0,
+      mode: 'major',
       rh:
         [
           arp('C4', 'E4', 'G4', 'C5', 'E5'),
@@ -105,6 +110,7 @@ export const STARTERS: Starter[] = [
       bpm: 96,
       sig: [3, 4],
       fifths: 0,
+      mode: 'minor',
       rh:
         'R:2 A4:1 C5:2 D5:1 E5:1.5 F5:.5 E5:1 D5:2 B4:1 G4:1.5 A4:.5 B4:1 C5:2 A4:1 A4:1.5 G#4:.5 A4:1 B4:2 G#4:1 ' +
         'E4:2 A4:1 C5:2 D5:1 E5:1.5 F5:.5 E5:1 D5:2 B4:1 G4:1.5 A4:.5 B4:1 C5:1.5 B4:.5 A4:1 G#4:1.5 F#4:.5 G#4:1 A4:3',
@@ -121,6 +127,7 @@ export const STARTERS: Starter[] = [
       title: 'Canon in D',
       bpm: 72,
       fifths: 2,
+      mode: 'major',
       rh:
         'F#5:2 E5:2 D5:2 C#5:2 B4:2 A4:2 B4:2 C#5:2 ' +
         [
@@ -147,6 +154,7 @@ export const STARTERS: Starter[] = [
       bpm: 80,
       sig: [3, 8],
       fifths: 0,
+      mode: 'minor',
       rh:
         'R:1 E5:.25 D#5:.25 ' +
         'E5:.25 D#5:.25 E5:.25 B4:.25 D5:.25 C5:.25 A4:.5 R:.25 C4:.25 E4:.25 A4:.25 B4:.5 R:.25 E4:.25 G#4:.25 B4:.25 ' +

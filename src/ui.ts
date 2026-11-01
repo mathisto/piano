@@ -106,7 +106,7 @@ export interface Row {
   tracks?: boolean // a multi-track MIDI file whose tracks can be chosen
 }
 
-export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>): Row[] {
+export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, Progress>, meta: (s: Starter) => CoverMeta): Row[] {
   return starts.map((s, i) => ({
     id: s.spec.id,
     title: s.spec.title,
@@ -115,11 +115,11 @@ export function starterRows(starts: Starter[], songs: Song[], prog: Map<string, 
     len: songs[i].end,
     prog: prog.get(s.spec.id),
     user: false,
-    cover: { by: s.by, fifths: s.spec.fifths, meter: (s.spec.sig ?? [4, 4]).join('/') },
+    cover: meta(s),
   }))
 }
 
-export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>): Row[] {
+export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>, meta: (s: Stored) => CoverMeta): Row[] {
   return stored.map((s) => ({
     id: s.id,
     title: s.title,
@@ -129,7 +129,7 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
     len: lens.get(s.id)?.len ?? 0,
     prog: prog.get(s.id),
     user: true,
-    cover: { by: s.kind === 'xml' ? 'MusicXML' : 'MIDI' }, // a file has no composer to name; the score gives its key and metre when its cover is drawn
+    cover: meta(s),
   }))
 }
 

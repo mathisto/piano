@@ -12,7 +12,7 @@ import { chunkFailed, current, hooks, sheets, starters } from './state'
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
 export async function libraryData() {
-  const [stored, prog, { keep, pieceMeta }] = await Promise.all([store.listSongs(), store.allProgress(), cover()])
+  const [stored, prog, { keep, pieceMeta, starterMeta, fileMeta, metaOf }] = await Promise.all([store.listSongs(), store.allProgress(), cover()])
   for (const s of stored) {
     if (!lens.has(s.id)) {
       try {
@@ -31,12 +31,13 @@ export async function libraryData() {
     }
   }
   starters.forEach((song) => keep(song.id, song))
-  const starts = starterRows(STARTERS, starters, prog)
-  const mine = userRows(stored, prog, lens)
+  const starts = starterRows(STARTERS, starters, prog, starterMeta)
+  const mine = userRows(stored, prog, lens, (s) => fileMeta(s.kind, s.title, s.added))
+  for (const r of mine) metaOf.set(r.id, r.cover)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
   const libRows: Row[] = [...prog.keys()].flatMap((k) => {
     const p = k.startsWith('lib:') && lib.piece(k.slice(4))
-    return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, cover: pieceMeta(lib.catalog.composers[p.composer]?.name, p.opus, p.bars ? p : undefined) }] : []
+    return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, cover: pieceMeta(p, lib.catalog.composers[p.composer]?.name) }] : []
   })
   const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
   return { starts, mine, last, all: [...starts, ...mine, ...libRows] }

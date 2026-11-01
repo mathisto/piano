@@ -719,22 +719,13 @@ table.songs:not(.stages) td.acts {
   }
 }
 table.songs:not(.stages) col:first-child {
-  width: 156px;
+  width: 68px; /* the 56pt list cover and the cell's 12px */
 }
 table.songs td.thumb {
-  width: 140px;
+  width: 56px;
   white-space: nowrap; /* held while a library cover is drawn, so the rows do not jump */
   padding-right: 0;
   line-height: 0;
-}
-/* a mid-width window crops the cover to its first bars (cover.css), so the title has room */
-@media (max-width: 1000px) {
-  table.songs:not(.stages) col:first-child {
-    width: 94px;
-  }
-  table.songs td.thumb {
-    width: 78px;
-  }
 }
 .thumb > svg {
   width: 140px;

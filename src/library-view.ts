@@ -26,7 +26,7 @@ let load: (p: Piece) => Promise<Song>
 function row(p: Piece, prog: Map<string, Progress>) {
   const best = prog.get(`lib:${p.id}`)?.best
   const len = p.sec || meta.get(p.id)
-  const cover = coverHtml(`lib:${p.id}`, 'row', pieceMeta(catalog.composers[p.composer]?.name, p.opus, p.bars ? p : undefined), !local(p.id))
+  const cover = coverHtml(`lib:${p.id}`, 'thumb', pieceMeta(p, catalog.composers[p.composer]?.name), !local(p.id))
   return `<tr class="open" data-lib="${esc(p.id)}"><td class="thumb">${cover}</td><td class="name">${esc(p.title)}${(prog.get(`lib:${p.id}`)?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(prog.get(`lib:${p.id}`))}<small><span>${esc(catalog.composers[p.composer]?.name ?? '')}</span> · <span>Level ${gradeOf(p)}</span> · <span>${esc(licenceName(catalog.licences[p.licence]?.id ?? ''))}</span> <span class="len">${len ? `· ${mmss(len)}` : ''}</span></small></td><td class="num">${best ? `<b>${Math.round(best.acc * 100)}%</b>` : ''}</td><td class="acts"><div class="row-actions">
     <button class="btn ghost" data-libplay="${esc(p.id)}" data-mode="learn" aria-label="Learn ${esc(p.title)}">Learn</button>
     ${rowMenu(p.title, `<button class="btn ghost" role="menuitem" data-libplay="${esc(p.id)}" data-mode="perform">Perform</button>
@@ -182,7 +182,7 @@ function table(caption: string, rows: Row[], empty: string) {
     ? rows
         .map(
           (r) => `<tr class="open" data-open="${esc(r.id)}">
-        <td class="thumb">${coverHtml(r.id, 'row', r.cover)}</td>
+        <td class="thumb">${coverHtml(r.id, 'thumb', r.cover)}</td>
         <td class="name">${esc(r.title)}${(r.prog?.days?.length ?? 0) >= 2 ? ' <span class="tag">Ready</span>' : ''}${memTag(r.prog)}<small>${esc(r.sub)}${r.len ? ` · ${mmss(r.len)}` : ''}</small></td>
         ${best ? `<td class="num">${r.prog?.best ? `<b>${Math.round(r.prog.best.acc * 100)}%</b>` : '—'}</td>` : ''}
         <td class="acts"><div class="row-actions">
