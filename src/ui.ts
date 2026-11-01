@@ -178,6 +178,7 @@ export interface TodayData {
   fix?: { id: string; title: string; a: number; b: number } // the worst bars of the piece played last
   review?: { name: string; id: string; line: string; due: number } // a second reading stage, for the longest plan
   sight?: { id: string; title: string; sub: string; cover?: string } // a new, easy piece to read through without stopping
+  run: string // the Sight run on offer, in words: the last one set up, at its tempo
   week: { days: { key: string; label: string; played: boolean; today: boolean }[]; minutes: number }
   goal: number
   planMin: PlanMin

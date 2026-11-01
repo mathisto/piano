@@ -64,7 +64,7 @@ async function showSection(name: Section, err = '') {
     else if (name === 'songs') await showLibrary(err)
     else if (name === 'read') await showRead()
     else if (name === 'scales') await showScales()
-    else if (name === 'theory') (await theory()).showTheory()
+    else if (name === 'theory') await (await theory()).showTheory()
     else if (name === 'technique') await showTechnique()
     else await showProgress()
   } catch (e) {

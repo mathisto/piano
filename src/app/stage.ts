@@ -6,7 +6,7 @@ import { judged, live, tolerance } from '../even'
 import { breakToast } from '../habit-ui'
 import type { Grade, VelGrade } from '../judge'
 import { restTracker } from '../rest'
-import { save, settings } from '../settings'
+import { save, settings, touchCoach } from '../settings'
 import { barAt, type Hand, type Note } from '../song'
 import * as store from '../store'
 import { DEFAULT_EDGES } from '../touch'
@@ -286,10 +286,11 @@ export function fixChain(clean: boolean) {
 export const felt: Record<Hand, { v: number[]; t: number }> = { R: { v: [], t: -1 }, L: { v: [], t: -1 } }
 export function feel(n: Note, v: number) {
   const f = felt[n.h]
-  if (settings.coach === 'off' || !v || game.mode === 'read' || !judged(game.song.id, game.song.dyn) || Math.abs(n.t - f.t) < 0.03) return // a chord is one moment
+  const c = touchCoach()
+  if (c === 'off' || !v || game.mode === 'read' || !judged(game.song.id, game.song.dyn) || Math.abs(n.t - f.t) < 0.03) return // a chord is one moment
   f.t = n.t
   const d = live(f.v, v)
-  if (d !== null && coach.marks !== 'none' && Math.abs(d) > tolerance(settings.edges ?? DEFAULT_EDGES, settings.coach)) staff.dev(n.id, d)
+  if (d !== null && coach.marks !== 'none' && Math.abs(d) > tolerance(settings.edges ?? DEFAULT_EDGES, c)) staff.dev(n.id, d)
   f.v.push(v)
 }
 

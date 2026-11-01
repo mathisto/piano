@@ -287,6 +287,7 @@ export interface HistoryEntry {
   id?: string // what was practised, stable where the label is for display: song:<id>, scale:<card>@<bpm>, tech:<recipe>
   notes?: number // the Notes line, 0..1: notes right over the written notes and the wrong keys that cost; waiting, right first time
   ok?: boolean // the run counted: what the card for its kind asks of a run
+  lv?: number // the Path level it was played at, the standard it was judged by (song, scale and technique rows)
   as?: 1 // assisted (the song waited, a part only, fewer notes shown): the charts skip it
   rate?: number // tempo, 1 = as written
   sp?: number // timing spread: the standard deviation of the hit offsets in ms around their own mean; absent when the song waited or fewer than 8 notes were timed

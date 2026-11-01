@@ -64,7 +64,7 @@ async function onDone(r: Result) {
   )
   c.heat = prog.heat
   const marked = store.markPlan(dayKey(), c.song.id.startsWith('scale:') ? 'scale' : c.song.id.startsWith('tech:') ? 'warm' : game.loop ? 'fix' : 'piece')
-  if (c.song.id.startsWith('tech:') && r.mode === 'perform') void store.saveTech((ts) => applyRun(ts, c.song.id, { acc: r.acc, touchPct: r.touchPct }, dayNum()))
+  if (c.song.id.startsWith('tech:') && r.mode === 'perform') void store.saveTech((ts) => applyRun(ts, c.song.id, r, dayNum(), settings.lv))
   if (current === c) dock.setSong(c.song, prog.heat)
   if (r.touch.n >= 4) {
     const { n, mean, sd, hands, bands } = r.touch
@@ -77,7 +77,7 @@ async function onDone(r: Result) {
   let note = ''
   const sc = parseId(c.song.id)
   if (sc && r.mode === 'perform') {
-    const ok = passed(r)
+    const ok = passed(r, settings.lv)
     let before = 0
     const stats = await store.saveScales((st) => {
       before = st[`${sc.card.form}:${sc.card.tonic}:${sc.card.hands}:${sc.card.oct}`]?.best ?? 0

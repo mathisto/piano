@@ -4,7 +4,7 @@ import type { Dock } from '../dock'
 import { STAGES, type Card, type Stage, type Stats } from '../drill'
 import { Game, type Result } from '../game'
 import type { Highway } from '../highway'
-import type { By, Snap, Unit } from '../next'
+import type { By, Lit, Snap, Strand, Unit } from '../next'
 import { DEFAULT_RUN, type RunSpec, type Tally } from '../run'
 import type { Level } from '../levels'
 import { fromSpec, type Song } from '../song'
@@ -97,6 +97,7 @@ export const hooks = {} as {
   drillOk(noteId: number, rt: number, clean: boolean): void
   onDone(r: Result): Promise<void>
   next(after?: Snap['after']): Promise<Unit & { by: By; start(): Promise<void> }> // Continue (app/today.ts): what comes next, and how to start it
+  lamp(strand: Strand): Promise<((el: HTMLElement, own?: (u?: Unit & { by: By }) => Lit | undefined) => void) | undefined> // a page head's Start (app/today.ts)
   // for the packs (app/pack-ui.ts), which load late: imported, they would split the boot chunk (src/bundle.test.ts)
   openById: typeof import('./play').openById
   openSong: typeof import('./play').openSong

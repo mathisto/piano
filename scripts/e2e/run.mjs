@@ -55,7 +55,8 @@ const INIT = `
     // Perform: once the count-in starts, every note is pressed on its beat by the game's own clock; skip lists note indices left out
     // pedal: [{ t, down }] sent as CC64 through the MIDI parser at song second t
     // stray: [{ i, p }] a wrong key p struck 180 ms after note i
-    perform({ skip = [], loud = -1, pedal = [], stray = [] } = {}) {
+    // uneven: every other note loud, the rest soft, an uneven touch
+    perform({ skip = [], loud = -1, pedal = [], stray = [], uneven = false } = {}) {
       return new Promise((res) => {
         const g = P().game, sk = new Set(skip)
         window.__last = undefined
@@ -78,7 +79,7 @@ const INIT = `
             }
             g.song.notes.forEach((n, i) => {
               if (sk.has(i) || g.modeOf(n) !== 'play') return // the app plays the rest (Listen, or the part it accompanies)
-              todo.push({ t: n.t, go: (ts) => P().key(n.p, i === loud ? 0.9 : 0.55 + (i % 3) * 0.006, ts) }, { t: n.t + n.d * 0.97, go: (ts) => P().up(n.p, ts) })
+              todo.push({ t: n.t, go: (ts) => P().key(n.p, i === loud || (uneven && i % 2) ? 0.9 : uneven ? 0.3 : 0.55 + (i % 3) * 0.006, ts) }, { t: n.t + n.d * 0.97, go: (ts) => P().up(n.p, ts) })
             })
           }
           if (started && (g.phase === 'countin' || g.phase === 'playing' || g.phase === 'waiting')) {
@@ -253,7 +254,7 @@ async function mainFlow() {
 
   await feature('1 Read: a stage set, then Another set', page, async () => {
     await nav(page, 'read')
-    await page.click('#read button[data-stage].primary')
+    await page.click('#readStart') // the head's Start: the next stage
     await ready(page)
     const n = await ev(page, () => window.__piano.game.song.notes.length)
     ok(n >= 10, `a drill of ${n} notes`)
@@ -339,7 +340,7 @@ async function mainFlow() {
 
   await feature('3 Scales: stage run, Choose a scale, Quiz', page, async () => {
     await nav(page, 'scales')
-    await page.click('#scales button[data-sstage].primary')
+    await page.click('#scalesStart') // the head's Start: the Path's first scale stage
     await ready(page)
     const id = await ev(page, () => window.__piano.game.song.id)
     ok(/^scale:/.test(id), id)
@@ -723,8 +724,8 @@ const packsFlow = () => fresh({
     const s = await ev(page, () => ({ id: window.__piano.game.song.id, mode: window.__piano.game.mode, rate: window.__piano.game.rate }))
     ok(s.id === 'lib:mutopia-2037-1' && s.mode === 'learn' && s.rate === 0.6, JSON.stringify(s))
     await leave(page, 'technique')
-    await page.waitForSelector('#technique .packs button.primary[data-pk-go=hanon-warmup]')
-    ok(!(await page.$('#tStart.primary')), 'two lamps on Technique')
+    await wait(page, () => /Hanon warm-up/.test(document.querySelector('#techniqueStartTo')?.textContent)) // the pack in hand holds the head's Start, the one lamp
+    ok((await page.$$('#technique .btn.primary')).length === 1, 'two lamps on Technique')
     await page.click('#technique [data-pk-list=hanon-warmup]')
     await page.waitForSelector('dialog#pack[open] li')
     ok((await page.$$('dialog#pack li')).length === 20, 'the Hanon list is not 20 long')
@@ -852,6 +853,43 @@ const shellFlow = () => fresh({
     await ev(page, () => window.__e2e.perform())
     await wait(page, () => document.querySelector('#read.on'))
     await page.waitForTimeout(500)
+  },
+})
+
+const pathFlow = () => fresh({
+  async '26 Practice path 3: each page head\'s Start opens something, one lamp a page; a level-1 player\'s uneven scale counts'(page) {
+    for (const [tab, run, back, opened] of [
+      ['songs', '', 'library', () => !!document.querySelector('#play.on') && window.__piano.game.song],
+      ['read', 'stages', 'read', () => !!document.querySelector('#play.on') && window.__piano.game.mode === 'read'],
+      ['read', 'run', 'read', () => !!document.querySelector('#play.on') && window.__piano.game.mode === 'read'],
+      ['scales', '', 'scales', () => !!document.querySelector('#play.on') && window.__piano.game.song.id.startsWith('scale:')],
+      ['technique', '', 'technique', () => !!document.querySelector('#play.on') && window.__piano.game.song.id.startsWith('tech:')],
+      ['theory', '', 'theory', () => !!window.__piano.theory()],
+    ]) {
+      await nav(page, tab)
+      if (run) await page.click(`label:has(input[name=readTab][value=${run}])`)
+      await wait(page, ([b, run]) => document.querySelector(`#${b}StartTo`) && (run !== 'run') !== document.querySelector(`#${b}StartTo`).textContent.startsWith('Sight run'), [back, run]) // on Sight run, the run set up
+      const lamps = await page.$$eval(`#${back} .btn.primary`, (b) => b.map((x) => x.id))
+      ok(lamps.join() === `${back}Start`, `${tab} ${run}: lamps ${lamps.join()}`)
+      ok((await text(page, `#${back}StartTo`)).includes(' · '), `${tab} ${run}: no reason line`)
+      await page.click(`#${back}Start`)
+      await wait(page, opened)
+      if (tab === 'theory') await page.click('#thMenu')
+      else await leave(page, back)
+    }
+    // level 1 (a new player): Auto is Easy and gentle, and an uneven scale is shown, not counted (decision 5)
+    ok(await ev(page, () => JSON.parse(localStorage.getItem('piano.settings')).lv === 1), 'not level 1')
+    await nav(page, 'scales')
+    await page.click('#scalesStart')
+    await ready(page)
+    await page.click('#go')
+    const r = await ev(page, () => window.__e2e.perform({ uneven: true }).then((r) => ({ clean: r.clean, even: r.even?.rating, holds: r.holds })))
+    ok(r.clean && r.even === 'uneven' && r.holds < 0, `run ${JSON.stringify(r)}`) // Easy grades no holds
+    const card = await res(page, 'Results')
+    const words = (await card.textContent()).replace(/\s+/g, ' ')
+    ok(/A clean run at \d+ bpm: 1 of 3 in a row/.test(words), `the uneven run did not count: ${words.slice(0, 300)}`)
+    ok(/Evenness uneven.*not counted yet/.test(words), `the Touch line: ${words.slice(0, 400)}`)
+    await page.click('#toLib')
   },
 })
 
@@ -1006,7 +1044,7 @@ const reviewFlow = () => fresh({
     await res(page, 'Results')
     // the piece is ticked, so Continue names the plan's next row: the Technique exercise, the first of a 10 minute plan
     const to = await text(page, '#res #nextTo')
-    ok(await ev(page, () => document.activeElement?.id === 'next') && /Exercise$/.test(to), `Continue: ${to}`)
+    ok(await ev(page, () => document.activeElement?.id === 'next') && /Exercise, next in the syllabus$/.test(to), `Continue: ${to}`)
     await page.click('#res #next')
     await wait(page, () => window.__piano.game.song.id.startsWith('tech:') && window.__piano.game.phase === 'ready' && document.querySelector('#res').hidden)
     await wait(page, async () => (await window.__e2e.idb('history:log')).at(-1).then === 'c')
@@ -1313,7 +1351,7 @@ const sheetsFlow = async () => {
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
   mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
-  lane(songsFlow, packsFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
+  lane(songsFlow, packsFlow, pathFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
 ])

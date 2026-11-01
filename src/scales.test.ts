@@ -107,11 +107,17 @@ describe('the curriculum', () => {
     expect(nextCard(STAGES[0], st)).toEqual(cardsOf(STAGES[0])[1])
     expect(mastery(STAGES[0], st).done).toBe(1)
   })
-  it('a run counts when clean, in time and not uneven', () => {
-    expect(passed({ clean: true, acc: 0.95, even: null })).toBe(true)
-    expect(passed({ clean: true, acc: 0.95, even: { rating: 'uneven' } })).toBe(false)
-    expect(passed({ clean: true, acc: 0.6, even: null })).toBe(false)
-    expect(passed({ clean: false, acc: 0.99, even: null })).toBe(false)
+  it('a run counts when clean, in time and, from Path level 2, not uneven (decision 5)', () => {
+    const uneven = { clean: true, acc: 0.95, even: { rating: 'uneven' } }
+    for (const lv of [1, 2, 5]) {
+      expect(passed({ clean: true, acc: 0.95, even: null }, lv)).toBe(true)
+      expect(passed({ clean: true, acc: 0.6, even: null }, lv)).toBe(false)
+      expect(passed({ clean: false, acc: 0.99, even: null }, lv)).toBe(false)
+      expect(passed({ clean: true, acc: 0.95, even: { rating: 'nearly' } }, lv)).toBe(true)
+    }
+    expect(passed(uneven, 1)).toBe(true) // shown, not counted
+    expect(passed(uneven, 2)).toBe(false)
+    expect(passed(uneven, 5)).toBe(false)
   })
 })
 

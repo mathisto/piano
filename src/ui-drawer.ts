@@ -5,8 +5,12 @@ import type { Input } from './midi'
 import { icon } from './icons'
 import { noteName } from './spell'
 import { native } from './native-midi'
-import { settings } from './settings'
+import { settings, strictness, touchCoach } from './settings'
 import { KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
+
+const TIMING: [string, string][] = [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']]
+const TOUCH: [string, string][] = [['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']]
+const name = (opts: [string, string][], v: string) => opts.find(([k]) => k === v)?.[1] ?? v
 
 export function drawer(el: HTMLElement, inputs: Input[]) {
   const seg = (name: string, label: string, opts: [string, string][], cur: string) =>
@@ -18,8 +22,8 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <div class="dhead"><h2 id="drawerTitle" tabindex="-1">Settings</h2><button class="btn icon ghost" id="sClose" aria-label="Close settings">${icon('x')}</button></div>
   <h3 class="sgh">Playing</h3>
   <div class="sgroup">
-    ${row('Timing', seg('strict', 'Timing', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict), 'How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less. In Perform, Standard and Strict also check how long you hold each note; Easy does not.')}
-    ${row('Touch feedback', seg('coach', 'Touch feedback', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']], settings.coach), 'Watches how loud each note is: marks notes much louder or softer than the ones around them, and adds evenness, dynamics and pedal lines to results. Gentle flags only big differences; Strict small ones too.')}
+    ${row('Timing', seg('strict', 'Timing', [['auto', 'Auto'], ...TIMING], settings.strict), `<b>Auto: ${name(TIMING, strictness(settings.lv))}, from your level ${settings.lv}.</b> How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less. In Perform, Standard and Strict also check how long you hold each note; Easy does not.`)}
+    ${row('Touch feedback', seg('coach', 'Touch feedback', [['auto', 'Auto'], ['off', 'Off'], ...TOUCH], settings.coach), `<b>Auto: ${name(TOUCH, touchCoach(settings.lv))}, from your level ${settings.lv}.</b> Watches how loud each note is: marks notes much louder or softer than the ones around them, and adds evenness, dynamics and pedal lines to results. Gentle flags only big differences; Strict small ones too.`)}
     ${row('Delay', `<div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal"${inputs.length ? '' : ' disabled'}>Calibrate</button></div>`, `Makes up for the time your keyboard and speakers take, so notes are judged when you really played them. Calibrate measures it${inputs.length ? '.' : ', and needs a keyboard: connect one first.'}${outputLatency() > 0.08 ? ` This device's sound arrives about ${Math.round(outputLatency() * 1000)} ms late, as Bluetooth audio does; wired headphones or the built-in speakers are on time.` : ''}`)}
   </div>
   <h3 class="sgh">Sound</h3>

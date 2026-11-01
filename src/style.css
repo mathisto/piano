@@ -623,6 +623,22 @@ input[type='range']::-moz-range-thumb {
   margin: 0;
   color: var(--ink-2);
 }
+/* a page's Start (next.ts lamp): the one lamp, under the title, with what it starts and why beside it */
+.hstart {
+  order: 4;
+  flex-basis: 100%;
+  margin-top: 4px; /* a step clear of the title or the lede above it */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.hstart .dest {
+  flex-basis: auto; /* not the head's lede */
+  margin: 0;
+  color: var(--ink-2);
+  font-size: calc(17px * var(--ts));
+}
 .head-actions .seg {
   flex-wrap: wrap; /* a page's segmented control wider than the column wraps instead of cutting off its last choice (45 min at 200% zoom) */
   max-width: 100%;
@@ -2418,6 +2434,15 @@ input[type='number'] {
 .sgroup .seg span {
   padding: 0 9px; /* four choices fit beside the name in a 440px drawer */
 }
+/* five choices (Touch feedback with Auto), or any choice on a phone, go under the name across the row */
+.sgroup > .srow:has(> .seg > :nth-child(5)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 480px) {
+  .sgroup > .srow:has(> .seg) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .sgroup > .switch {
   padding: 6px 0;
 }
@@ -2775,7 +2800,8 @@ body.zen .bar {
 }
 /* a piece's name inside a row or a sentence: the music face, as in the Songs rows */
 .pwho .pn,
-.rqn .pn {
+.rqn .pn,
+.dest .pn {
   color: inherit;
   font-family: var(--display);
   font-size: 1.1em;

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { showSetup } from './settings'
+import { settings, showSetup, strictness, touchCoach } from './settings'
 
 const base = { seen: false, saved: false, automated: false, forced: false }
 it('Set up shows on a true first launch only', () => {
@@ -18,5 +18,30 @@ it('saved settings of the wrong kind fall back to their defaults, the rest are k
   const { settings } = await import('./settings')
   expect(settings).not.toHaveProperty('zpos') // the staff size buttons moved into the dock's menu
   expect(settings).toMatchObject({ zoom: 1, pane: 0.4, planMin: 10, view: 'sheet', volume: 0.3 })
+  vi.unstubAllGlobals()
+})
+
+it('Auto follows the Path level: Easy windows and gentle touch at 1, tighter touch at 4, Strict at 5; a value picked by hand stays', () => {
+  expect(settings).toMatchObject({ strict: 'auto', coach: 'auto' }) // the default
+  expect([1, 2, 3, 4, 5].map((lv) => strictness(lv))).toEqual(['easy', 'standard', 'standard', 'standard', 'strict'])
+  expect([1, 2, 3, 4, 5].map((lv) => touchCoach(lv))).toEqual(['gentle', 'gentle', 'gentle', 'steady', 'strict'])
+  expect([0, 9].map((lv) => strictness(lv))).toEqual(['easy', 'strict']) // kept inside 1 to 5
+  settings.lv = 5
+  expect(strictness()).toBe('strict') // the level last worked out
+  Object.assign(settings, { strict: 'easy', coach: 'off' })
+  expect([strictness(5), touchCoach(5)]).toEqual(['easy', 'off'])
+  Object.assign(settings, { strict: 'auto', coach: 'auto', lv: 1 })
+})
+
+it('a profile saved before Auto moves its untouched Standard and Gentle to Auto, once; a hand-picked value stays', async () => {
+  const { vi } = await import('vitest')
+  const load = async (saved: object) => {
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify(saved), setItem: () => {} })
+    vi.resetModules()
+    return (await import('./settings')).settings
+  }
+  expect(await load({ strict: 'standard', coach: 'gentle' })).toMatchObject({ strict: 'auto', coach: 'auto', ver: 2 })
+  expect(await load({ strict: 'strict', coach: 'steady' })).toMatchObject({ strict: 'strict', coach: 'steady' })
+  expect(await load({ strict: 'standard', coach: 'gentle', ver: 2 })).toMatchObject({ strict: 'standard', coach: 'gentle' }) // picked again after the move
   vi.unstubAllGlobals()
 })

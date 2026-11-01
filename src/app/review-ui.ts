@@ -19,7 +19,7 @@ export function logRun(r: Result, song: Song, kind: HistoryEntry['kind'], label:
   const ts = Date.now()
   const n = r.offs.length
   const mean = r.offs.reduce((a, b) => a + b, 0) / n
-  return logHistory({ ts, kind, label, acc: r.first >= 0 ? r.first : r.acc, even: r.even?.inside, bias: r.timing?.bias, id: kind === 'song' ? `song:${song.id}` : song.id, notes: rightOf(r) / (r.total + game.judge.extra), ok: kind === 'scale' ? passed(r) : kind === 'tech' ? goodRun(r) : counted, as: r.mode === 'learn' || partial ? 1 : undefined, rate: r.rate, sp: r.first < 0 && n >= 8 ? Math.round(Math.sqrt(r.offs.reduce((a, o) => a + (o - mean) ** 2, 0) / n)) : undefined })
+  return logHistory({ ts, kind, label, acc: r.first >= 0 ? r.first : r.acc, even: r.even?.inside, bias: r.timing?.bias, id: kind === 'song' ? `song:${song.id}` : song.id, notes: rightOf(r) / (r.total + game.judge.extra), ok: kind === 'scale' ? passed(r, settings.lv) : kind === 'tech' ? goodRun(r, settings.lv) : counted, lv: settings.lv, as: r.mode === 'learn' || partial ? 1 : undefined, rate: r.rate, sp: r.first < 0 && n >= 8 ? Math.round(Math.sqrt(r.offs.reduce((a, o) => a + (o - mean) ** 2, 0) / n)) : undefined })
 }
 
 export function review(res: HTMLElement, r: Result) {
