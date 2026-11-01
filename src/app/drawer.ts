@@ -3,12 +3,13 @@ import * as audio from '../audio'
 import * as lib from '../catalog'
 import { creditBlock, libraryUrl } from '../credits'
 import { chooseInput, inputs } from '../midi'
-import { native, pairBluetooth } from '../native-midi'
+import { native } from '../native-midi'
 import { save, settings } from '../settings'
 import { applyTheme } from '../theme'
 import { STARTERS } from '../starters'
 import * as store from '../store'
-import { $, drawer, keepFocus } from '../ui'
+import { $, keepFocus } from '../ui'
+import { esc } from '../util'
 import { current, game, highway, hooks, say, sheets } from './state'
 import { connectMidi, midiLine, midiState, PAIR, updateChip } from './banner'
 import { lens, shareFile } from './library'
@@ -16,11 +17,12 @@ import { leave } from './play'
 import { startCalibration } from './calibration'
 import { startTouchCal } from './technique-ui'
 
-function openDrawer() {
+async function openDrawer() {
   const d = $('#drawer')
+  const { drawer } = await import('../ui-drawer')
   const open = d.querySelector('details')?.open
   keepFocus(d, () => {
-    drawer(d, inputs(), PAIR)
+    drawer(d, inputs())
     if (open) d.querySelector('details')!.open = true
   })
   const wasOpen = !d.hidden
@@ -30,12 +32,6 @@ function openDrawer() {
   $('#settingsBtn').setAttribute('aria-expanded', 'true')
   const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => d.querySelector<HTMLInputElement>(id)?.addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
   const radios = (name: string, fn: (v: string) => void) => d.querySelectorAll<HTMLInputElement>(`input[name=${name}]`).forEach((r) => (r.onchange = () => fn(r.value)))
-  on('#sDevice', (el) => {
-    settings.device = el.value
-    chooseInput(el.value)
-    save()
-    updateChip()
-  }, 'change')
   on('#sOffset', (el) => {
     settings.offset = Math.max(-300, Math.min(300, Number(el.value) || 0))
     save()
@@ -172,7 +168,29 @@ document.addEventListener('pointerdown', (e) => {
   if (!$('#drawer').hidden && !(e.target as HTMLElement).closest('#drawer, #settingsBtn, #dev, dialog')) closeDrawer()
 }, true)
 $('#settingsBtn').onclick = () => ($('#drawer').hidden ? openDrawer() : closeDrawer())
-$('#dev').onclick = () => (native && !inputs().length ? pairBluetooth() : midiState === 'ok' ? openDrawer() : void connectMidi()) // the app with no keyboard: pair one
+// The keyboard chip is the one place to see and connect keyboards: a small panel under it (the shared More menu
+// opens it; this fills it first): what is connected, a choice when there are several, pairing over Bluetooth on the iPad
+$('#dev').addEventListener('click', () => {
+  const ins = inputs()
+  $('#kbMenu').innerHTML = `<p class="kbstate">${ins.length ? `${ins.length > 1 ? 'Keyboards' : 'Connected'}` : 'No keyboard connected'}</p>${
+    ins.length > 1
+      ? `<select id="sDevice" aria-label="Keyboard"><option value="">All</option>${ins.map((i) => `<option value="${esc(i.id)}"${i.id === settings.device ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select>`
+      : ins.length ? `<p class="kbname">${esc(ins[0].name)}</p>` : ''
+  }${native ? '<button class="btn ghost" role="menuitem" data-pair>Pair a Bluetooth keyboard</button>' : midiState === 'ok' ? '' : '<button class="btn ghost" role="menuitem" data-connect>Connect</button>'}<p class="kbnote">A USB keyboard connects by itself when it is plugged in and switched on.</p>`
+  $<HTMLSelectElement>('#kbMenu').querySelector('select')?.addEventListener('change', (e) => {
+    settings.device = (e.target as HTMLSelectElement).value
+    chooseInput(settings.device)
+    save()
+    updateChip()
+  })
+})
+// elsewhere a Connect button only points here
+document.addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('[data-kb]')) return
+  document.querySelectorAll('dialog[open]').forEach((x) => (x as HTMLDialogElement).close())
+  closeDrawer()
+  setTimeout(() => $('#dev').click())
+})
 
 /** Credits name the pieces you have played or saved; the full list is LICENSES.md, in the app and in the corpus. */
 async function openCredits() {

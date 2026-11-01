@@ -1997,11 +1997,61 @@ input[type='number'] {
   display: flex;
   gap: 24px;
 }
-.drawer hr {
-  width: 100%;
-  margin: 6px 0;
-  border: 0;
-  border-top: 1px solid var(--line);
+/* Settings in groups, as iOS Settings: a quiet heading, then the rows on one raised surface split by hairlines; each row says what it does */
+.sgh {
+  margin: 18px 0 6px 2px;
+  font: 600 13px/1.2 var(--ui);
+  color: var(--ink-3);
+}
+.sgroup {
+  display: grid;
+  background: var(--panel-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  padding: 2px 14px;
+}
+.sgroup > * + * {
+  border-top: 1px solid var(--line-2);
+}
+.sgroup > .srow {
+  padding: 10px 0;
+  grid-template-columns: 6rem minmax(0, 1fr);
+}
+.sgroup .seg span {
+  padding: 0 9px; /* four choices fit beside the name in a 440px drawer */
+}
+.sgroup > .switch {
+  padding: 6px 0;
+}
+.srow .note {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+/* the keyboard chip's panel: what is connected and how to connect */
+.popmenu.kbmenu {
+  top: calc(100% + 8px); /* the chip is in the top bar: the panel drops below it */
+  bottom: auto;
+  width: 280px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+.kbmenu p {
+  margin: 0;
+}
+.kbstate {
+  font: 600 13px/1.2 var(--ui);
+  color: var(--ink-3);
+}
+.kbname {
+  font-weight: 650;
+}
+.kbnote {
+  font-size: 13px;
+  color: var(--ink-3);
 }
 button.link {
   border: 0;
