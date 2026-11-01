@@ -44,7 +44,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var started = false
     private var connected = Set<Int32>() // unique ids of the sources we are connected to
     private var sources: [[String: Any]] = []
-    private(set) var playing = false // a run plays or counts in (setPlaying)
+    private(set) var playing = false // a run counts in, plays or waits (setPlaying)
     private var lastKey = -Double.infinity // uptime ms of the last message from a keyboard
 
     /// A MIDI or MusicXML file opened from Files, Mail or AirDrop ("Open in Piano Forte"). Capacitor posts it, on a cold start
