@@ -30,5 +30,15 @@ Everything below was built and checked in headless Chrome only. Each line says w
 ## Content Security Policy (`docs/changes/datafix.md`)
 12. Launch the iPad app from Xcode with the console open: Today shows, the Songs list fills from the corpus, a piece opens and plays, and the console has no line saying "Refused" or "Content Security Policy".
 
+## iPad shell (`docs/changes/ipad-native.md`, 3 min)
+13. Set Auto-Lock to 2 minutes. Theory, any trainer: keep answering on the FP-10 without touching the screen for 4 minutes. The screen stays lit. Stop playing: it dims about 4 minutes later (two minutes of grace, then Auto-Lock).
+14. Start a run. Swipe up from the bottom edge once: the home indicator appears and the run keeps going; a second swipe goes home. Swipe down from the top once: nothing opens. Back in the menus, one swipe goes home.
+15. During a run the home indicator fades after a few seconds.
+16. A run with Sound on and headphones in: pull the headphones out. The run pauses. Start a run and say "Hey Siri" (or let a Clock timer go off): the run pauses. Afterwards Play again sounds.
+17. Listen back to a take, go to the Home Screen, come back: Listen back has stopped, with no burst of notes.
+18. Long press on a link in Credits: no web page preview, nothing lifts out to drag.
+19. Cold launch: a plain dark screen, no white flash, then Today.
+20. Windowed mode (Stage Manager or windowed apps): do the window controls at the top left cover the PF mark? Turn on Low Power Mode and play a run: the falling notes are expected to look less smooth (WebKit runs animation at 30 fps there).
+
 ## Report
 Tell me line numbers that were wrong, plus anything that looked cramped or sounded odd. Nothing else needs doing.
