@@ -26,7 +26,7 @@ Open, free, no-account, in-browser. Combines what is split across other tools: S
 
 - Keyboard: Roland FP-10 over USB (Bluetooth MIDI works but adds latency). Keyboard's own speakers are the default sound; browser piano is an opt-in toggle, default off.
 - No lit keys, no hardware lighting. "Lighting" means on-screen visual effects only.
-- iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app is dark-only by decision (Apple allows it for immersive apps). The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
+- iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app has a dark mode (Nocturne, the default) and a light one (Matinée) since the Urtext direction. The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
 - Audio and display latency are real; a one-time calibration sets a user offset. Screen mirroring to an iPad adds display lag.
 - Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 2,241 pieces (748 from Mutopia, 1,299 OpenScore Lieder, 194 Chopin first editions), graded 1 to 5, is served at pianoforte.mattkelly.io/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
 
@@ -50,7 +50,7 @@ Open, free, no-account, in-browser. Combines what is split across other tools: S
 
 ## Brand Commitments
 
-- Visual direction is the neon cabinet at night (user-pinned): the dark room, lit lanes and the amber lamp stay. The arcade scoring went in October 2026: no points, ranks, lives, combos or fireworks.
+- Visual direction is Urtext (user-pinned 2026-11-01, replacing the neon cabinet): an engraving house's dark ink on warm paper with a concert grand's precision and native iPadOS; Nocturne (dark) and Matinée (light) modes; one brass lamp for "play this, now"; Newsreader for what is announced and the names of music, the system font for the rest (`docs/research/urtext.md`). The arcade scoring went in October 2026: no points, ranks, lives, combos or fireworks.
 - Sheet music must stay clearly readable. The staff is the learning objective; effects must never fight it.
 - Binding anti-goals: not a kids' game, not a sterile music app, effects never obscure notation, no strobing or excess flash.
 

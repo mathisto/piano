@@ -97,6 +97,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 
 Dated reports behind the decisions; read the ratings before relying on a claim.
 
+- `research/urtext.md`: the Urtext design direction (1 Nov 2026): what was taken from the brief, what was corrected, the Matinée tokens and the rollout order.
 - `research/learning-science.md`: what the evidence says about piano practice.
 - `research/products-and-ux.md`: practice products, rhythm-game design, settings and progression UX.
 - `research/ui-critique.md`: the independent UI critique of 19 Oct 2026, before the overhaul.

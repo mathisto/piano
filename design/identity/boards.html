@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Forte identity boards</title>
+<style>
+  @font-face { font-family: Newsreader; src: url('./fonts/Newsreader-Variable.ttf') format('truetype'); font-weight: 200 800; font-style: normal; }
+  @font-face { font-family: Bravura; src: url('../../src/assets/bravura.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+  :root {
+    --nocturne:#0C0E12; --panel-dark:#13161C; --ink-dark:#F4F2ED; --paper-dim:#EFECE4;
+    --matinee:#F3EFE6; --panel-light:#FAF7F0; --ink:#161513; --ink-light:#181715; --paper:#FBF8F1;
+    --amber-dark:#FFC83D; --amber-light:#F5B316; --blue-dark:#78A9FF; --blue-light:#0058D0;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:#08090c; color:var(--ink-dark); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; }
+  .board { width:1600px; height:1200px; overflow:hidden; position:relative; padding:72px 80px; background:var(--nocturne); page-break-after:always; }
+  .board.light { background:var(--matinee); color:var(--ink-light); }
+  .eyebrow { font-size:14px; line-height:1; letter-spacing:.16em; text-transform:uppercase; font-weight:650; opacity:.66; }
+  h1 { margin:14px 0 8px; font:540 58px/1.04 Newsreader,serif; letter-spacing:-.022em; }
+  .lede { margin:0; font-size:18px; line-height:1.5; color:#A9ADB7; max-width:920px; }
+  .light .lede { color:#5E5B55; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:28px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+  .icon-card { margin-top:54px; }
+  .icon-square { aspect-ratio:1; width:100%; position:relative; overflow:hidden; }
+  .icon-square svg, .mark svg { width:100%; height:100%; display:block; }
+  .icon-label { margin-top:16px; display:flex; justify-content:space-between; align-items:baseline; font-size:14px; }
+  .icon-label b { font-size:17px; font-weight:600; }
+  .icon-label span { color:#8E929C; }
+  .light .icon-label span { color:#74716A; }
+  .small-note { font-size:13px; line-height:1.45; color:#8E929C; }
+  .light .small-note { color:#74716A; }
+  .layer-row { display:grid; grid-template-columns:1.5fr 1fr 1fr; gap:28px; margin-top:42px; align-items:start; }
+  .panel { background:var(--panel-dark); padding:24px; }
+  .light .panel { background:var(--panel-light); }
+  .panel-title { font-size:13px; letter-spacing:.13em; text-transform:uppercase; opacity:.58; margin-bottom:18px; }
+  .layer-pair { display:flex; align-items:center; gap:18px; }
+  .layer-chip { width:124px; height:124px; border:1px solid rgba(244,242,237,.14); display:grid; place-items:center; position:relative; background:var(--paper); }
+  .layer-chip.fg { background:repeating-conic-gradient(rgba(244,242,237,.08) 0 25%, transparent 0 50%) 0 0/20px 20px; }
+  .layer-chip svg { width:100%; height:100%; }
+  .plus { font:300 32px/1 Newsreader; opacity:.45; }
+  .size-tests { display:flex; align-items:end; gap:24px; min-height:124px; }
+  .size-test { display:grid; gap:8px; justify-items:center; color:#8E929C; font-size:11px; }
+  .size-test .sq { background:var(--paper); }
+  .mark-area { margin-top:46px; display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+  .mark-surface { height:280px; padding:28px; display:flex; flex-direction:column; justify-content:space-between; }
+  .mark-surface.nocturne { background:var(--nocturne); border:1px solid #2A2E37; }
+  .mark-surface.matinee { background:var(--matinee); color:var(--ink); }
+  .mark-surface.paper { background:var(--paper); color:var(--ink); }
+  .mark { width:112px; height:112px; color:currentColor; }
+  .lockup { display:flex; gap:22px; align-items:center; }
+  .lockup .mark { width:60px; height:60px; }
+  .wordmark { font:540 48px/1 Newsreader,serif; letter-spacing:-.012em; white-space:nowrap; }
+  .spec-line { margin-top:34px; display:grid; grid-template-columns:1.15fr 1fr; gap:28px; }
+  .spec-box { padding:24px 26px; background:var(--panel-dark); min-height:220px; }
+  .light .spec-box { background:var(--panel-light); }
+  .spec-box p { margin:0 0 10px; line-height:1.45; color:#B5B7BE; font-size:15px; }
+  .light .spec-box p { color:#54514C; }
+  .favicon-row { display:flex; gap:30px; align-items:flex-end; padding-top:8px; }
+  .fav-wrap { display:grid; gap:9px; justify-items:center; color:#8E929C; font-size:11px; }
+  .fav { background:var(--paper); display:block; }
+  .fav svg { width:100%; height:100%; display:block; }
+  .cover-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:38px; }
+  .cover { position:relative; background:var(--paper); color:var(--ink); aspect-ratio:3/2; overflow:hidden; padding:28px 30px 22px; box-shadow:0 18px 42px rgba(0,0,0,.18); }
+  .light .cover { box-shadow:0 12px 28px rgba(80,64,32,.09); }
+  .cover-meta { display:flex; justify-content:space-between; gap:12px; font-size:9px; line-height:1; font-weight:650; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; }
+  .cover-rule { height:1px; background:rgba(22,21,19,.42); margin:10px 0 12px; }
+  .cover-title { font:560 25px/1.02 Newsreader,serif; letter-spacing:-.018em; max-width:92%; }
+  .cover-title.long { font-size:22px; line-height:1.02; }
+  .cover-sub { font:410 11px/1.2 Newsreader,serif; margin-top:5px; color:#4C4842; }
+  .score { position:absolute; left:28px; right:28px; bottom:30px; height:104px; }
+  .score.triple { height:126px; bottom:19px; }
+  .difficulty { position:absolute; left:30px; bottom:15px; display:flex; gap:3px; }
+  .difficulty i { display:block; width:13px; height:1px; background:rgba(22,21,19,.18); }
+  .difficulty i.on { background:rgba(22,21,19,.68); }
+  .mode-caption { position:absolute; right:80px; top:86px; text-align:right; }
+  .mode-caption strong { display:block; font:520 28px/1 Newsreader; }
+  .mode-caption span { font-size:12px; letter-spacing:.12em; text-transform:uppercase; opacity:.55; }
+  .responsive-stage { margin-top:46px; height:820px; position:relative; }
+  .responsive-stage .cover.large { width:600px; height:400px; aspect-ratio:auto; position:absolute; left:0; top:0; padding:38px 42px 28px; }
+  .responsive-stage .cover.large .cover-meta { font-size:11px; }
+  .responsive-stage .cover.large .cover-rule { margin:13px 0 18px; }
+  .responsive-stage .cover.large .cover-title { font-size:42px; }
+  .responsive-stage .cover.large .cover-sub { font-size:16px; }
+  .responsive-stage .cover.large .score { left:42px; right:42px; height:158px; bottom:42px; }
+  .responsive-stage .cover.medium { width:300px; height:200px; aspect-ratio:auto; position:absolute; left:680px; top:0; padding:18px 20px 14px; }
+  .responsive-stage .cover.medium .cover-meta { font-size:6px; }
+  .responsive-stage .cover.medium .cover-rule { margin:7px 0 8px; }
+  .responsive-stage .cover.medium .cover-title { font-size:17px; }
+  .responsive-stage .cover.medium .cover-sub { font-size:8px; }
+  .responsive-stage .cover.medium .score { left:18px; right:18px; bottom:20px; height:68px; }
+  .thumb-real { width:56px; height:42px; background:var(--paper); color:var(--ink); position:absolute; left:1060px; top:0; overflow:hidden; border:1px solid rgba(22,21,19,.12); }
+  .thumb-real .micro-staff { position:absolute; left:4px; right:4px; top:13px; height:18px; }
+  .thumb-real:before { content:"BACH"; position:absolute; left:4px; top:4px; font-size:3px; font-weight:700; letter-spacing:.1em; }
+  .thumb-zoom { width:280px; height:210px; background:var(--paper); color:var(--ink); position:absolute; left:1060px; top:92px; overflow:hidden; padding:20px; }
+  .thumb-zoom .micro-staff { position:absolute; left:20px; right:20px; top:70px; height:90px; }
+  .thumb-zoom:before { content:"BACH"; position:absolute; left:20px; top:20px; font-size:15px; font-weight:700; letter-spacing:.1em; }
+  .scale-label { position:absolute; font-size:13px; letter-spacing:.1em; text-transform:uppercase; opacity:.55; }
+  .rules { position:absolute; left:680px; top:360px; width:660px; display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .rule-card { padding:20px 22px; background:var(--panel-dark); min-height:158px; }
+  .light .rule-card { background:var(--panel-light); }
+  .rule-card b { font-size:13px; letter-spacing:.1em; text-transform:uppercase; }
+  .rule-card p { margin:10px 0 0; font-size:14px; line-height:1.45; color:#B4B7C0; }
+  .light .rule-card p { color:#55514A; }
+  .empty-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:48px; }
+  .empty-card { min-height:386px; display:grid; grid-template-columns:180px 1fr; align-items:center; gap:34px; padding:48px; }
+  .empty-card.dark { background:var(--panel-dark); }
+  .empty-card.light { background:var(--panel-light); color:var(--ink); }
+  .empty-paper { width:180px; height:220px; background:var(--paper); color:var(--ink); display:grid; place-items:center; }
+  .empty-paper svg { width:130px; height:130px; }
+  .empty-copy h2 { margin:0 0 8px; font:540 31px/1.05 Newsreader; letter-spacing:-.018em; }
+  .empty-copy p { margin:0; color:#A8ABB4; font-size:16px; line-height:1.45; }
+  .empty-card.light .empty-copy p { color:#64605A; }
+  .identity-layout { display:grid; grid-template-columns:640px 1fr; gap:54px; margin-top:44px; }
+  .identity-icons { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  .identity-icons .icon-label { display:block; text-align:center; font-size:12px; }
+  .identity-lockup { margin-top:32px; height:130px; background:var(--panel-dark); display:flex; align-items:center; padding:0 34px; }
+  .identity-palette { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:24px; }
+  .chip { height:78px; padding:12px; display:flex; align-items:end; font-size:10px; letter-spacing:.06em; }
+  .identity-covers { display:grid; gap:22px; }
+  .identity-covers .cover { width:660px; justify-self:end; box-shadow:none; }
+  .footer-note { position:absolute; bottom:36px; left:80px; right:80px; display:flex; justify-content:space-between; font-size:11px; letter-spacing:.08em; text-transform:uppercase; opacity:.44; }
+</style>
+</head>
+<body>
+
+<section class="board" id="icon-system">
+  <div class="eyebrow">Piano Forte · Urtext identity</div>
+  <h1>The Pause / Lid</h1>
+  <p class="lede">A fermata reduced to two engraved masses. The upper arc carries the physical authority of a concert-grand lid; the dot is the player’s single, deliberate action.</p>
+  <div class="mode-caption"><strong>App icon</strong><span>Four appearances · no baked mask</span></div>
+  <div class="grid4 icon-card" id="icon-grid"></div>
+  <div class="layer-row">
+    <div class="panel">
+      <div class="panel-title">Icon Composer layers</div>
+      <div class="layer-pair">
+        <div class="layer-chip" id="bg-layer"></div><div class="plus">+</div><div class="layer-chip fg" id="fg-layer"></div>
+        <div class="small-note">Background is a full 1024 square.<br>Foreground is one transparent layer.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Legibility tests</div>
+      <div class="size-tests" id="size-tests"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Core geometry</div>
+      <div class="small-note">1024-unit grid<br>Safe inset 160<br>Arc apex y=270<br>Arc baseline y=612<br>Dot Ø152 at (512, 638)<br>Minimum gap: 94 units</div>
+    </div>
+  </div>
+  <div class="footer-note"><span>Flat fills only · no shadows · no gradients</span><span>Read at 29 px from 60–90 cm</span></div>
+</section>
+
+<section class="board" id="mark-wordmark">
+  <div class="eyebrow">Mark, wordmark & web icons</div>
+  <h1>One symbol, one quiet voice</h1>
+  <p class="lede">The mark is the foreground icon geometry without its square. It remains one colour at 24–32 px and becomes the lead-in to the Newsreader wordmark.</p>
+  <div class="mark-area" id="mark-surfaces"></div>
+  <div class="spec-line">
+    <div class="spec-box">
+      <div class="panel-title">Wordmark specification</div>
+      <p><b>Newsreader variable</b> · optical size 60 · weight 540 · tracking −0.012em.</p>
+      <p>Cap height aligns to 54% of the mark box. Gap is 0.36× mark width. Use title case; never all caps or italic.</p>
+      <p>At widths below 132 px, drop the wordmark and keep the symbol.</p>
+    </div>
+    <div class="spec-box">
+      <div class="panel-title">Favicon & web icon</div>
+      <div class="favicon-row" id="favicons"></div>
+    </div>
+  </div>
+  <div class="footer-note"><span>Symbol colour follows the surface ink token</span><span>24 px minimum top-bar size</span></div>
+</section>
+
+<section class="board" id="covers-dark">
+  <div class="eyebrow">Library cover system</div>
+  <h1>Every piece opens with its own evidence</h1>
+  <p class="lede">No illustration and no decorative colour. The incipit is the image; metadata provides the edition logic.</p>
+  <div class="mode-caption"><strong>Nocturne</strong><span>#0C0E12 shell · #FBF8F1 paper</span></div>
+  <div class="cover-grid" data-mode="dark"></div>
+  <div class="footer-note"><span>Six generated states · same paper in both modes</span><span>Difficulty is an ink-only five-segment rule</span></div>
+</section>
+
+<section class="board light" id="covers-light">
+  <div class="eyebrow">Library cover system</div>
+  <h1>Every piece opens with its own evidence</h1>
+  <p class="lede">The cover itself does not change by mode. Only the surrounding shelf changes, preserving the score as a stable object.</p>
+  <div class="mode-caption"><strong>Matinée</strong><span>#F3EFE6 shell · #FBF8F1 paper</span></div>
+  <div class="cover-grid" data-mode="light"></div>
+  <div class="footer-note"><span>Six generated states · same paper in both modes</span><span>No era colour, no amber, no blue</span></div>
+</section>
+
+<section class="board" id="cover-rules">
+  <div class="eyebrow">Responsive cover anatomy</div>
+  <h1>One grid, three densities</h1>
+  <p class="lede">Typography and metadata collapse before notation becomes illegible. The list thumbnail is a recognition mark, not a miniature page.</p>
+  <div class="responsive-stage" id="responsive-stage">
+    <div class="scale-label" style="left:0;top:414px">600 × 400 pt · start card</div>
+    <div class="scale-label" style="left:680px;top:214px">300 × 200 pt · card</div>
+    <div class="scale-label" style="left:1060px;top:48px">56 × 42 pt · actual size</div>
+    <div class="scale-label" style="left:1060px;top:312px">4× inspection only</div>
+    <div class="rules">
+      <div class="rule-card"><b>Margins & grid</b><p>7% horizontal margin. Header sits at 7% from top; title block uses 24%; incipit receives the remaining 52–57%.</p></div>
+      <div class="rule-card"><b>Grand / single staff</b><p>Grand staff is default. Solo line gets 1.45× staff size and vertical centering. Voice + piano keeps three staves at 600; card shows voice plus reduced grand staff.</p></div>
+      <div class="rule-card"><b>Long & dense</b><p>Title: two lines maximum, then collection moves to metadata. Fit fewer complete beats before shrinking. Minimum staff space: 8 pt large, 5 pt card.</p></div>
+      <div class="rule-card"><b>Colour & difficulty</b><p>No semantic colour. Five 1 pt ink segments encode level; active segments use 68% ink, inactive 18%. This preserves amber and blue meanings.</p></div>
+    </div>
+  </div>
+  <div class="footer-note"><span>Crop only at a barline or beat boundary</span><span>Never horizontally squash notation</span></div>
+</section>
+
+<section class="board" id="empty-states">
+  <div class="eyebrow">Empty-state language</div>
+  <h1>Two graphics that earn their place</h1>
+  <p class="lede">Each is a functional engraved diagram on paper: a connection state and a truly empty score. No mascot, scene, or explanatory ornament.</p>
+  <div class="empty-grid" id="empty-grid"></div>
+  <div class="footer-note"><span>Use at 120–180 px · one colour</span><span>Motion, if used: one 180 ms opacity change only</span></div>
+</section>
+
+<section class="board" id="identity-sheet">
+  <div class="eyebrow">Piano Forte · final identity sheet</div>
+  <h1>Urtext, made playable</h1>
+  <div class="identity-layout">
+    <div>
+      <div class="identity-icons" id="identity-icons"></div>
+      <div class="identity-lockup" id="identity-lockup"></div>
+      <div class="identity-palette">
+        <div class="chip" style="background:#0C0E12;border:1px solid #282C35">Nocturne<br>#0C0E12</div>
+        <div class="chip" style="background:#FBF8F1;color:#161513">Paper<br>#FBF8F1</div>
+        <div class="chip" style="background:#161513;border:1px solid #31302E">Score ink<br>#161513</div>
+        <div class="chip" style="background:#78A9FF;color:#0C0E12">Slate blue<br>#78A9FF</div>
+      </div>
+      <div class="spec-box" style="margin-top:24px;min-height:170px">
+        <div class="panel-title">Identity rule</div>
+        <p>Paper and ink define the brand. Blue remains interaction. Amber remains only “play this, now.” The identity never borrows either signal for decoration.</p>
+      </div>
+    </div>
+    <div class="identity-covers" id="identity-covers"></div>
+  </div>
+  <div class="footer-note"><span>Newsreader · Bravura · system sans</span><span>Version 1 · 1 November 2026</span></div>
+</section>
+
+<script>
+const C={paper:'#FBF8F1',ink:'#161513',night:'#0C0E12',panel:'#13161C',cream:'#EFECE4',white:'#F4F2ED',blue:'#78A9FF'};
+
+function markSvg(color=C.ink, bg='none', transparent=false){
+  return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    ${bg!=='none'?`<rect width="1024" height="1024" fill="${bg}"/>`:''}
+    <path fill="${color}" d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/>
+    <circle cx="512" cy="638" r="76" fill="${color}"/>
+  </svg>`;
+}
+
+function iconSvg(kind){
+  if(kind==='default') return markSvg(C.ink,C.paper);
+  if(kind==='dark') return markSvg(C.cream,C.panel);
+  if(kind==='clear') return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect width="1024" height="1024" fill="#20242C"/><rect x="18" y="18" width="988" height="988" fill="#EFECE4" fill-opacity=".13" stroke="#F4F2ED" stroke-opacity=".24" stroke-width="12"/>${markSvg(C.white).match(/<path[\s\S]*<\/svg>/)[0].replace('</svg>','')}</svg>`;
+  if(kind==='tinted') return markSvg(C.blue,'#15233A');
+}
+
+const appearance=[['default','Default'],['dark','Dark'],['clear','Clear'],['tinted','Tinted']];
+function renderIconRow(target){
+  target.innerHTML=appearance.map(([k,label])=>`<div><div class="icon-square">${iconSvg(k)}</div><div class="icon-label"><b>${label}</b><span>1024</span></div></div>`).join('');
+}
+renderIconRow(document.querySelector('#icon-grid'));
+document.querySelector('#bg-layer').innerHTML=`<svg viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="${C.paper}"/></svg>`;
+document.querySelector('#fg-layer').innerHTML=markSvg(C.ink);
+document.querySelector('#size-tests').innerHTML=[29,40,60,120].map(s=>`<div class="size-test"><div class="sq" style="width:${s}px;height:${s}px">${markSvg(C.ink,C.paper)}</div><span>${s}px</span></div>`).join('');
+
+const surfaces=[
+  ['nocturne','Nocturne',C.white],['matinee','Matinée',C.ink],['paper','Score paper',C.ink]
+];
+document.querySelector('#mark-surfaces').innerHTML=surfaces.map(([cls,label,col])=>`<div class="mark-surface ${cls}"><div class="panel-title">${label}</div><div class="lockup"><div class="mark">${markSvg(col)}</div><div class="wordmark">Piano Forte</div></div><div class="small-note">One colour · 24–32 px mark</div></div>`).join('');
+document.querySelector('#favicons').innerHTML=[16,32,180].map(s=>`<div class="fav-wrap"><div class="fav" style="width:${s}px;height:${s}px">${markSvg(C.ink,C.paper)}</div><span>${s}</span></div>`).join('')+`<div class="fav-wrap"><div class="fav" style="width:132px;height:132px">${markSvg(C.ink,C.paper)}</div><span>512 maskable · preview</span></div>`;
+
+function staffLines(y,w=100){return [0,1,2,3,4].map(i=>`<line x1="0" x2="${w}" y1="${y+i*8}" y2="${y+i*8}"/>`).join('')}
+function noteShape(x,y,up=true,chord=[]){
+  const all=[y,...chord]; const anchor=up?Math.min(...all):Math.max(...all); const xstem=up?x+3.1:x-3.1;
+  return all.map(v=>`<ellipse cx="${x}" cy="${v}" rx="3.8" ry="2.8" transform="rotate(-18 ${x} ${v})" fill="#161513"/>`).join('')+`<line x1="${xstem}" x2="${xstem}" y1="${anchor}" y2="${up?anchor-22:anchor+22}"/>`;
+}
+function beam(xs,ys,top=true){ const x1=xs[0]+3.1,x2=xs[xs.length-1]+3.1; const y1=(top?Math.min(...ys)-22:Math.max(...ys)+22); return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1+2}" stroke-width="3"/>`; }
+function musicSvg(kind, triple=false){
+  const H=triple?126:104, W=380, scaleY=triple?1:1;
+  const defs=`<style>.s{stroke:#161513;stroke-width:.75;vector-effect:non-scaling-stroke}.n{stroke:#161513;stroke-width:1.15;vector-effect:non-scaling-stroke}.b{font-family:Bravura;font-size:37px;fill:#161513}</style>`;
+  let staves=triple?[4,47,90]:[8,64];
+  let s=staves.map(y=>`<g class="s">${staffLines(y,W)}</g>`).join('');
+  s+=`<text class="b" x="5" y="${staves[0]+31}">\uE050</text>`;
+  if(triple){s+=`<text class="b" x="5" y="${staves[1]+31}">\uE050</text><text class="b" x="7" y="${staves[2]+29}">\uE062</text>`}
+  else{s+=`<text class="b" x="7" y="${staves[1]+29}">\uE062</text>`}
+  const baseX=48;
+  const bars=`<g class="n"><line x1="204" x2="204" y1="${staves[0]}" y2="${staves[0]+32}"/><line x1="204" x2="204" y1="${staves[staves.length-1]}" y2="${staves[staves.length-1]+32}"/><line x1="378" x2="378" y1="${staves[0]}" y2="${staves[0]+32}"/><line x1="378" x2="378" y1="${staves[staves.length-1]}" y2="${staves[staves.length-1]+32}"/></g>`;
+  let n='';
+  const seq=(arr,staff=0)=>arr.map((v,i)=>noteShape(baseX+i*19,staves[staff]+v,true)).join('');
+  if(kind==='bach'){
+    n+=seq([28,20,12,4,12,20,28,20, 24,16,8,0,8,16,24,16]);
+    n+=seq([20,12,4,-4,4,12,20,12, 24,16,8,0,8,16,24,16],1);
+  } else if(kind==='chopin'){
+    n+=seq([16,8,12,4,0,8,4,12, 8,0,-4,4,8,12,4,8]);
+    [55,94,133,172,230,269,308,347].forEach((x,i)=>n+=noteShape(x,staves[1]+24,false,[staves[1]+16,staves[1]+8].map(v=>v)));
+  } else if(kind==='schubert'){
+    n+=seq([24,20,16,12,16,8,12,20, 16,12,8,4,8,12,16,20],0);
+    n+=seq([20,12,16,8,12,4,8,16, 12,8,4,0,4,8,12,16],1);
+    [55,94,133,172,230,269,308,347].forEach((x,i)=>n+=noteShape(x,staves[2]+24,false,[staves[2]+16]));
+    n+=`<text x="52" y="45" font-family="Newsreader" font-size="5.4" fill="#161513">Das Wan-dern ist des Mül-lers Lust</text>`;
+  } else if(kind==='satie'){
+    [55,113,171,229,287,345].forEach((x,i)=>n+=noteShape(x,staves[0]+[16,8,12,4,12,8][i],true));
+    [55,113,171,229,287,345].forEach((x,i)=>n+=noteShape(x,staves[1]+22,false,[staves[1]+14,staves[1]+6].map(v=>v)));
+  } else if(kind==='clementi'){
+    n+=seq([24,20,16,12,8,4,0,-4, 4,8,12,16,12,8,4,0]);
+    n+=seq([24,16,20,12,16,8,12,4, 8,12,16,20,16,12,8,4],1);
+  } else {
+    n+=seq([24,8,20,4,16,12,0,20, 8,24,4,16,12,0,20,8]);
+    n+=seq([20,4,16,8,24,12,0,16, 4,20,8,24,12,0,16,4],1);
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${defs}${s}<g class="n">${n}</g>${bars}</svg>`;
+}
+
+const pieces=[
+ {kind:'bach',meta:'J. S. Bach · BWV 846',right:'C major · 4/4',title:'Prelude in C major',sub:'The Well-Tempered Clavier, Book I',level:3},
+ {kind:'chopin',meta:'Frédéric Chopin · Op. 9 No. 2',right:'E♭ major · 12/8',title:'Nocturne',sub:'Larghetto',level:5},
+ {kind:'schubert',meta:'Franz Schubert · D 795 No. 1',right:'B♭ major · 2/4',title:'Das Wandern',sub:'Die schöne Müllerin · voice and piano',level:4,triple:true},
+ {kind:'satie',meta:'Erik Satie',right:'D major · 3/4',title:'Gymnopédie No. 1',sub:'Lent et douloureux',level:2},
+ {kind:'clementi',meta:'Muzio Clementi · Op. 36 No. 1',right:'C major · 4/4',title:'Sonatina',sub:'Allegro',level:2},
+ {kind:'midi',meta:'Local import · MIDI',right:'Key — · metre —',title:'Untitled MIDI',sub:'Imported 1 November 2026',level:1}
+];
+function difficulty(n){return `<div class="difficulty">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>`}
+function coverHTML(p, extra=''){
+ return `<article class="cover ${extra}"><div class="cover-meta"><span>${p.meta}</span><span>${p.right}</span></div><div class="cover-rule"></div><div class="cover-title ${p.title.length>24?'long':''}">${p.title}</div><div class="cover-sub">${p.sub}</div><div class="score ${p.triple?'triple':''}">${musicSvg(p.kind,p.triple)}</div>${difficulty(p.level)}</article>`;
+}
+document.querySelectorAll('.cover-grid').forEach(g=>g.innerHTML=pieces.map(p=>coverHTML(p)).join(''));
+
+document.querySelector('#responsive-stage').insertAdjacentHTML('afterbegin',coverHTML(pieces[0],'large')+coverHTML(pieces[0],'medium')+`<div class="thumb-real"><div class="micro-staff">${musicSvg('bach')}</div></div><div class="thumb-zoom"><div class="micro-staff">${musicSvg('bach')}</div></div>`);
+
+function connectionSvg(){return `<svg viewBox="0 0 160 160"><g fill="none" stroke="#161513" stroke-width="7" stroke-linecap="square"><path d="M26 52h44v56H26zM90 52h44v56H90z"/><path d="M70 80h20" stroke-dasharray="6 9"/></g><circle cx="80" cy="80" r="7" fill="#161513"/></svg>`}
+function emptyScoreSvg(){return `<svg viewBox="0 0 160 160"><g stroke="#161513" fill="none" stroke-width="3"><path d="M24 52h112M24 66h112M24 80h112M24 94h112M24 108h112"/><path d="M24 48v64M136 48v64" stroke-width="6"/></g><circle cx="80" cy="80" r="8" fill="#161513" fill-opacity=".18"/></svg>`}
+const empties=[
+ ['No keyboard connected','Connect the digital piano by USB or Bluetooth MIDI. Practice remains available without it.',connectionSvg()],
+ ['No music here yet','Import MusicXML or MIDI, or begin with the public-domain library.',emptyScoreSvg()]
+];
+document.querySelector('#empty-grid').innerHTML=empties.flatMap(([t,p,svg])=>['dark','light'].map(mode=>`<div class="empty-card ${mode}"><div class="empty-paper">${svg}</div><div class="empty-copy"><h2>${t}</h2><p>${p}</p></div></div>`)).join('');
+
+document.querySelector('#identity-icons').innerHTML=appearance.map(([k,label])=>`<div><div class="icon-square">${iconSvg(k)}</div><div class="icon-label">${label}</div></div>`).join('');
+document.querySelector('#identity-lockup').innerHTML=`<div class="lockup"><div class="mark">${markSvg(C.white)}</div><div class="wordmark">Piano Forte</div></div>`;
+document.querySelector('#identity-covers').innerHTML=coverHTML(pieces[0])+coverHTML(pieces[2]);
+</script>
+</body>
+</html>
