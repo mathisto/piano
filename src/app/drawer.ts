@@ -19,17 +19,24 @@ import { startTouchCal } from './technique-ui'
 
 async function openDrawer() {
   const d = $('#drawer')
-  const { drawer } = await import('../ui-drawer')
+  const wasOpen = !d.hidden
+  d.hidden = false // open on the tap, before its markup arrives: a second tap closes it rather than opening it twice
+  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
+  $('#settingsBtn').setAttribute('aria-expanded', 'true')
+  let drawer: typeof import('../ui-drawer').drawer
+  try {
+    ;({ drawer } = await import('../ui-drawer'))
+  } catch {
+    d.innerHTML = '<h2 id="drawerTitle" tabindex="-1">Settings</h2><p>Settings could not load. Check the connection, then reload the page.</p>'
+    return
+  }
+  if (d.hidden) return // closed again while it loaded
   const open = d.querySelector('details')?.open
   keepFocus(d, () => {
     drawer(d, inputs())
     if (open) d.querySelector('details')!.open = true
   })
-  const wasOpen = !d.hidden
-  d.hidden = false
-  document.querySelectorAll<HTMLElement>('#main > section').forEach((s) => (s.inert = true)) // the drawer holds focus; the keyboard still plays; the main landmark stays
   if (!wasOpen) $('#drawerTitle', d).focus()
-  $('#settingsBtn').setAttribute('aria-expanded', 'true')
   const on = (id: string, fn: (el: HTMLInputElement) => void, ev = 'input') => d.querySelector<HTMLInputElement>(id)?.addEventListener(ev, (e) => fn(e.target as HTMLInputElement))
   const radios = (name: string, fn: (v: string) => void) => d.querySelectorAll<HTMLInputElement>(`input[name=${name}]`).forEach((r) => (r.onchange = () => fn(r.value)))
   on('#sOffset', (el) => {
