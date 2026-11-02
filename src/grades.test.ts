@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { REQS, nextOf, path, type Ctx } from './grades'
+import { REQS, nextOf, path, standardLevel, type Ctx, type Level } from './grades'
 import { STAGES as DRILL, cards, cardKey, record as rec, type Stats } from './drill'
 import { STAGES as SCALES, cardsOf, cardKey as skey } from './scales'
 import { chordCards } from './theory-cards'
@@ -37,6 +37,21 @@ describe('grade path', () => {
     for (const s of DRILL.filter((x) => ['t-land', 't-five', 'b-land', 'b-five'].includes(x.id))) for (const k of cards(s)) for (let i = 0; i < 12; i++) rec(st, cardKey(k), true, 1000)
     c.drill = st
     expect(path(c)[0].rows.find((r) => r.name.startsWith('Reading'))!.state).toBe('solid')
+  })
+
+  it('sets Auto from the lower of the reading frontier and repertoire ceiling', () => {
+    const levels = (reading: number): Level[] =>
+      [1, 2, 3, 4, 5].map((level) => ({
+        level,
+        rows: [{ level, name: `Read ${level}`, detail: '', start: { kind: 'read', id: 'x' }, state: level < reading ? 'solid' : 'new', pct: 0 }],
+        solid: level < reading ? 1 : 0,
+        total: 1,
+        coming: 0,
+      }))
+    expect(standardLevel(levels(4), [1, 2, 3])).toBe(1) // fewer than three Ready together: song level 1
+    expect(standardLevel(levels(4), [3, 3, 3])).toBe(3)
+    expect(standardLevel(levels(2), [4, 4, 4])).toBe(2)
+    expect(standardLevel(levels(5), [5, 5, 5])).toBe(5)
   })
 
   it('theory counts cards answered twice, mostly first try', () => {

@@ -1,7 +1,7 @@
 // Today and Progress: the plan for the day, the Path, and starting whatever they name.
 import * as lib from '../catalog'
 import { dayNum } from '../drill'
-import { type Ctx, type Level, nextOf, path as gradePath, type Start } from '../grades'
+import { type Ctx, type Level, nextOf, path as gradePath, standardLevel, type Start } from '../grades'
 import { planOf, type PlanMin, theoryDue } from '../plan'
 import type { Snap, Unit } from '../next'
 import { pickPiece } from '../readthrough'
@@ -35,7 +35,7 @@ async function snapshot() {
   const worst = last.prog?.heat.length ? worstBars(last.prog.heat, last.bars) : null
   const second = rows.find((r) => r.due && !r.next) // a second stage with cards due, for the longest plan
   const ctx = await pathCtx(ts)
-  const gp = levelOf(gradePath(ctx))
+  const gp = levelOf(gradePath(ctx), readyLevels(all))
   const nx = nextOf(gp)
   const sst = nextScaleStage(ctx.scales)
   const td = await theoryDue(ctx.theory).catch(() => undefined) // the Theory code did not load: Today without its Theory row
@@ -140,9 +140,16 @@ const begin = (u: Unit & { by: string }) => {
   launch(u.go ?? {})
 }
 
-/** The level the standard follows (Auto, settings.ts): the level of the Path's next requirement, 5 past the last. Kept, so a run at boot is judged without every store. */
-function levelOf(p: Level[]) {
-  const lv = nextOf(p)?.level ?? 5
+/** Ready repertoire levels for Auto: real pieces and starters only, not studies, accompaniments or local files without a level. */
+const readyLevels = (rows: Awaited<ReturnType<typeof libraryData>>['all']) =>
+  rows.flatMap((r) => {
+    const p = r.id.startsWith('lib:') ? lib.piece(r.id.slice(4)) : undefined
+    return (r.prog?.days?.length ?? 0) >= 2 && r.cover.level && !p?.kind ? [r.cover.level] : []
+  })
+
+/** The level Auto follows: the lower of the reading frontier and the repertoire ceiling. Cached so a run at boot needs no store reads. */
+function levelOf(p: Level[], ready: number[]) {
+  const lv = standardLevel(p, ready)
   if (lv !== settings.lv) {
     settings.lv = lv
     save()
@@ -183,9 +190,9 @@ const GUIDE_GO: Record<Go, () => void | Promise<void>> = {
 
 export async function showProgress() {
   guideDid('progress')
-  const [stages, days, log, ts, history] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory()])
+  const [stages, days, log, ts, history, { all }] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory(), libraryData()])
   const today = dayNum()
-  const gp = levelOf(gradePath(await pathCtx(ts)))
+  const gp = levelOf(gradePath(await pathCtx(ts)), readyLevels(all))
   const [{ ladderState }, { LADDER }, { progressView }] = await Promise.all([import('../ladder'), import('../ladder-data'), import('../ui-views')])
   const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
     const x = lib.piece(id)

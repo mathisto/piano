@@ -27,10 +27,10 @@ export interface Settings {
   goal: number // minutes of practice a week the player is aiming at
   tech: Opts // the last Technique exercise chosen
   edges?: { soft: number; hard: number } // calibrated velocity bands (0..127); default bands when unset
-  coach: Coach | 'auto' // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands; Auto follows the Path level
+  coach: Coach | 'auto' // how closely touch evenness is judged: off, or a tolerance of about 12, 8 or 5 on the default bands; Auto follows the lower Songs/Read level
   marks: boolean // always show the live evenness marks: no fading once the touch is even, no quiet test runs
   keyTouch: KeyTouch // the keyboard's own key touch setting, logged with each touch entry; Fixed makes evenness unmeasurable
-  strict: Strict | 'auto' // timing windows and key-length grading together (Perform only); Auto follows the Path level
+  strict: Strict | 'auto' // timing windows and key-length grading together (Perform only); Auto follows the lower Songs/Read level
   lv: number // the Path level, 1 to 5, as last worked out (app/today.ts): the standard Auto follows and a run is judged at
   ver: number // 2: the saved Timing and Touch feedback were moved to Auto once (practice path phase 3)
   shortcuts: boolean // the single-key shortcuts (N, M, V, B, ?, [ ], - +) and the computer-key piano; off for voice control and switch users (WCAG 2.1.4)
@@ -124,7 +124,7 @@ export function save() {
   }
 }
 
-/** What Auto means at Path levels 1 to 5 (docs/research/practice-path.md 3.2): Easy windows and no hold grading at level 1, Strict at 5;
+/** What Auto means at player levels 1 to 5 (docs/research/practice-path.md 3.2): Easy windows and no hold grading at level 1, Strict at 5;
  *  touch is measured gently from the start (its evenness counts from level 2, scales.ts) and judged closer at 4 and 5. */
 export const AUTO = { strict: ['easy', 'standard', 'standard', 'standard', 'strict'], coach: ['gentle', 'gentle', 'gentle', 'steady', 'strict'] } as const
 const auto = <K extends keyof typeof AUTO>(k: K, lv = settings.lv): (typeof AUTO)[K][number] => AUTO[k][Math.min(5, Math.max(1, lv)) - 1]

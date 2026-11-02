@@ -879,6 +879,10 @@ const pathFlow = () => fresh({
     }
     // level 1 (a new player): Auto is Easy and gentle, and an uneven scale is shown, not counted (decision 5)
     ok(await ev(page, () => JSON.parse(localStorage.getItem('piano.settings')).lv === 1), 'not level 1')
+    await page.click('#settingsBtn')
+    await wait(page, () => document.querySelector('#drawer:not([hidden]) #sClose'))
+    ok((await text(page, '#drawer')).replace(/\s+/g, ' ').includes('from the lower of your Songs and Read levels (1)'), 'Settings did not name the two Auto signals')
+    await page.click('#sClose')
     await nav(page, 'scales')
     await page.click('#scalesStart')
     await ready(page)
