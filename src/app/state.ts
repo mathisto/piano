@@ -92,8 +92,9 @@ export const hooks = {} as {
   closeDrawer(): boolean
   rtEnd(): void
   rtPhase(): void
-  memEnd(): void
-  memStage(stage: number): void
+  memEnd?(): void
+  memStage?(stage: number): void
+  memCard?(go: string): string
   drillOk(noteId: number, rt: number, clean: boolean): void
   onDone(r: Result): Promise<void>
   next(after?: Snap['after']): Promise<Unit & { by: By; start(): Promise<void> }> // Continue (app/today.ts): what comes next, and how to start it

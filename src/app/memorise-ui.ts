@@ -1,6 +1,6 @@
 // Memorise: Learn with the score fading by bars, stage by stage.
 import type { Result } from '../game'
-import { afterPass, barHtml, hidden, passCard, type PassReport, startStage, TOP, verdict } from '../memory'
+import { afterPass, barHtml, facts, hidden, passCard, type PassReport, startCard, startStage, TOP, verdict } from '../memory'
 import { barAt } from '../song'
 import * as store from '../store'
 import { $ } from '../ui'
@@ -47,6 +47,8 @@ function memStage(stage: number) {
   memShow()
   onPhase()
 }
+
+const memCard = (go: string) => startCard({ title: current!.song.title, stage: mem!.stage, facts: facts(current!.song), go })
 
 /** Show the bar you are on for two seconds; the pass reports it. */
 function memPeek() {
@@ -100,4 +102,4 @@ export async function memDone(r: Result) {
   $('#memAgain', res).focus()
 }
 
-Object.assign(hooks, { memEnd, memStage })
+Object.assign(hooks, { memEnd, memStage, memCard })

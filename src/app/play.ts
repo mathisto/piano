@@ -5,7 +5,6 @@ import * as lib from '../catalog'
 import * as coach from '../coach'
 import { creditLine } from '../credits'
 import type { GameEvent, Mode } from '../game'
-import { facts, startCard } from '../memory'
 import { setPlaying } from '../native-midi'
 import { knownPitches } from '../quiet'
 import { paceHint } from '../paced'
@@ -72,7 +71,7 @@ export function endFeatures() {
   setDrill(undefined)
   setRun(undefined)
   hooks.rtEnd()
-  hooks.memEnd()
+  hooks.memEnd?.()
   setCalibrating(false) // the offset override ends with it; settings.offset was never touched
 }
 
@@ -256,7 +255,7 @@ export function onPhase() {
     const meta = covers && (lp ? covers.pieceMeta(lp, lib.catalog.composers[lp.composer]?.name) : st ? covers.starterMeta(st) : covers.metaOf.get(current.base.id) ?? (/^(tech|scale):/.test(current.base.id) ? covers.exerciseMeta(current.base.id, current.song) : covers.fileMeta('midi', current.song.title)))
     const coverHtml = covers && meta ? covers.coverHtml(current.base.id, 'start', meta) + covers.coverHtml(current.base.id, 'card', meta) : '' // loaded with the stage, before any card shows
     const html = mem
-      ? startCard({ title: current.song.title, stage: mem.stage, facts: facts(current.song), go })
+      ? hooks.memCard!(go)
       : rt
       ? lookCard({ title: current.song.title, left: rt.left, rate: rt.rate, ahead: !!settings.readAhead, why: rt.why, credit: current.credit })
       : drill
@@ -289,7 +288,7 @@ export function onPhase() {
       onPhase()
     }))
     r.querySelectorAll<HTMLInputElement>('input[name=modeSheet]').forEach((x) => (x.onchange = () => chooseMode(x.value as Mode)))
-    r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => hooks.memStage(Number(x.value))))
+    r.querySelectorAll<HTMLInputElement>('input[name=memStage]').forEach((x) => (x.onchange = () => hooks.memStage?.(Number(x.value))))
   }
   if (rt) hooks.rtPhase()
   wake(true)

@@ -15,8 +15,8 @@ import { dayKey } from '../week'
 import { calibrating, current, dock, drill, game, hooks, mem, resOpen, rt, say } from './state'
 import { syncMode } from './stage'
 import { backName, leave, onPhase } from './play'
+import { memorise } from './lazy'
 import { rtDone } from './readthrough-ui'
-import { memDone, memorise } from './memorise-ui'
 import { drillDone } from './drill'
 import { calibrated } from './calibration'
 
@@ -33,7 +33,7 @@ async function onDone(r: Result) {
   if (drill) return drillDone()
   if (calibrating) return calibrated(r)
   if (rt) return rtDone(r)
-  if (mem) return memDone(r)
+  if (mem) return (await memorise()).memDone(r)
   if (game.hands.R === 'listen' && game.hands.L === 'listen') {
     // a listen: nothing was played, so nothing to save or score. Back to the start card with the hands yours again
     game.accomp({ R: 'play', L: 'play' }, [])
@@ -102,7 +102,7 @@ async function onDone(r: Result) {
   const step = cont?.by === 'fix' ? null : next // the pace step, or the loop when Continue moved on, waits in More
   res.innerHTML = ui.results(r, cont, note, backName(), { song: game.song, marks, worst, step })
   if (r.mode === 'learn' && r.clean && !game.loop) $('#resMenu', res).insertAdjacentHTML('beforeend', '<button class="btn ghost" id="memTry">Try it from memory</button>')
-  res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => (then('o'), void memorise(c.song.id, 1)))
+  res.querySelector<HTMLButtonElement>('#memTry')?.addEventListener('click', () => (then('o'), void memorise().then((m) => m.memorise(c.song.id, 1))))
   void import('./take-ui').then((t) => t.takeCard(res)).finally(() => soloMenu(res)) // Listen back and Compare with last time (loaded with the stage)
   resOpen(true)
   rv.review(res, r) // the paper keeps the run's marks; this wires the Review button and the Mark list

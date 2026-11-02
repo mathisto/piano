@@ -22,9 +22,8 @@ import { endFeatures, leave, openAt, openById, openSong } from './play'
 import { readThrough, rtPieces } from './readthrough-ui'
 import { startDrill, startRun } from './drill'
 import { stageRows } from './read'
-import { cover, theory } from './lazy'
+import { cover, memorise, theory } from './lazy'
 import { startScale } from './scales-ui'
-import { memorise } from './memorise-ui'
 
 /** What Today gathers: every row it can offer, the plan, the first week's step and what the Path asks next. Today draws it; Continue reads it (next.ts). */
 async function snapshot() {
@@ -178,7 +177,7 @@ const GUIDE_GO: Record<Go, () => void | Promise<void>> = {
   theory: () => startReq({ kind: 'theory', trainer: 'chords', level: 1 }),
   sight: () => readThrough(),
   tech: () => startReq({ kind: 'tech', id: SYLLABUS[0].id }),
-  mem: () => memorise('starter-twinkle'),
+  mem: () => memorise().then((m) => m.memorise('starter-twinkle')),
   progress: () => hooks.showSection('progress'),
 }
 

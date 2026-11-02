@@ -30,11 +30,10 @@ import { flushPractice, setView, view } from './app/stage'
 import { openTracks, showLibrary } from './app/library'
 import { endFeatures, leave, listenTo, openById, openLibrary, openSong, stageCode } from './app/play'
 import { readThrough } from './app/readthrough-ui'
-import { memorise } from './app/memorise-ui'
 import { runFinish, startDrill } from './app/drill'
 import { showRead } from './app/read'
 import './app/results' // nothing names it: it registers hooks.onDone
-import { theory, theoryUi } from './app/lazy'
+import { memorise, theory, theoryUi } from './app/lazy'
 import { showScales } from './app/scales-ui'
 import { showTechnique } from './app/technique-ui'
 import { showProgress, showToday } from './app/today'
@@ -138,7 +137,7 @@ $('#library').addEventListener('click', async (e) => {
   if (b?.dataset.listen) return void listenTo(b.dataset.listen)
   if (!b && lib) return void openLibrary(lib.dataset.lib!, 'learn')
   if (b?.dataset.rt) return void readThrough(b.dataset.rt)
-  if (b?.dataset.mem) return void memorise(b.dataset.mem)
+  if (b?.dataset.mem) return void memorise().then((m) => m.memorise(b.dataset.mem!))
   if (b?.dataset.libplay) return void openLibrary(b.dataset.libplay, b.dataset.mode as Mode)
   if (!b && row) return void openById(row.dataset.open!, 'learn') // the whole row opens Learn
   if (!b) return
@@ -188,7 +187,7 @@ void (async () => {
 })()
 
 if (import.meta.env.DEV) {
-  ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number, ts = performance.now()) => fromKeyboard({ on: true, p, v, ts }), up: (p: number, ts = performance.now()) => fromKeyboard({ on: false, p, v: 0, ts }), cc: (n: number, v: number) => feed([0xb0, n, v]), pedal: (down: boolean) => feed([0xb0, 64, down ? 127 : 0]), icon, open: (i: number, m: Mode) => openSong(starters[i], m), memorise, mem: () => mem, drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
+  ;(window as unknown as Record<string, unknown>).__piano = { catalog: async (n: number) => { lib.use((await import('./catalog-fixture')).synthetic(n)); await showSection('songs') }, game, key: (p: number, v: number, ts = performance.now()) => fromKeyboard({ on: true, p, v, ts }), up: (p: number, ts = performance.now()) => fromKeyboard({ on: false, p, v: 0, ts }), cc: (n: number, v: number) => feed([0xb0, n, v]), pedal: (down: boolean) => feed([0xb0, 64, down ? 127 : 0]), icon, open: (i: number, m: Mode) => openSong(starters[i], m), memorise: (id: string) => memorise().then((m) => m.memorise(id)), mem: () => mem, drill: (id: string) => startDrill(stageById(id)!), keyXY: (p: number) => { const r = highway.app.canvas.getBoundingClientRect(); return { x: r.left + highway.center(p), y: r.top + highway.recY + 40 } }, setView, stats: () => drillStats, solidUpTo: async (n: number) => { const st: Stats = {}; for (const stage of STAGES.slice(0, n)) for (const c of cards(stage)) for (let i = 0; i < 12; i++) record(st, cardKey(c), true, 1200); await store.saveDrill(st); await showSection('read') } }
   Object.assign((window as unknown as { __piano: object }).__piano, { theory: () => theoryUi?.currentTheory() }) // e2e: the Theory session in progress, to answer its cards
 }
 
