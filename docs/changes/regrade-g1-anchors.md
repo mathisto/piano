@@ -19,6 +19,8 @@ Branch `codex/regrade-g1`. This is the owner-review gate at the start of G1; it 
 
 - `node scripts/library/anchors.mjs .cache/library/out-src1/catalog.json`: all 80 identities matched the 2,347-piece live build.
 - `src/anchors.test.ts` keeps the committed table valid in the unit suite.
+- Typecheck passed; the full unit suite passed 1,033 tests with 4 skipped. The unchanged boot bundle stayed under the unchanged 223,000-byte cap.
+- Full e2e passed 45 of 47 in 422 seconds. The Songs contrast audit and the known load-sensitive Lied row then each passed alone (1.9 and 55.7 seconds), so all 47 features are verified with two recorded retries.
 
 ## Still gated
 
