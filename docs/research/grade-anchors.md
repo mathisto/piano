@@ -1,8 +1,8 @@
 # G1 difficulty anchors — owner review
 
-**TL;DR:** 100 complete piano pieces in the live catalogue are matched to their published Henle difficulty. Seven also appear in the current ABRSM practical syllabus. This is approved training data only: it changes no catalogue level.
+**TL;DR:** 153 complete piano pieces in the live catalogue are matched to their published Henle difficulty. Seven also appear in the current ABRSM practical syllabus. The first 100 are owner-approved; the 53-piece research expansion changes no catalogue level.
 
-**Status:** the original 80 and the 20-piece expansion were approved 2 November 2026. The fitted re-grade remains blocked by its release gate.
+**Status:** the first 100 were approved 2 November 2026. A further 53 exact matches were added the same day to test whether collection diversity fixed grouped holdout; it did not. The fitted re-grade remains blocked by its release gate.
 
 ## What to review
 
@@ -12,7 +12,7 @@ The later five-fold holdout must group rows by collection/work (for example, all
 
 ## Coverage
 
-Henle distribution — 1: 2 · 2: 6 · 3: 14 · 4: 33 · 5: 13 · 6: 13 · 7: 8 · 8: 8 · 9: 3.
+Henle distribution — 1: 3 · 2: 9 · 3: 14 · 4: 37 · 5: 28 · 6: 31 · 7: 14 · 8: 14 · 9: 3.
 
 The deliberate concentration at levels 3–4 supplies the learning path’s busy range. Chopin ballades, etudes, nocturnes and preludes supply independent upper-range anchors. No fragment, study-lane item or accompaniment is included.
 
@@ -39,6 +39,16 @@ The deliberate concentration at levels 3–4 supplies the learning path’s busy
 - Henle · Grieg Lyric Pieces op. 54: https://www.henle.de/us/Lyric-Pieces-Volume-V-op.-54/HN-681
 - Henle · Satie Gymnopédies: https://www.henle.de/us/Gymnopedies/HN-1072
 - Henle · Rachmaninoff Prelude op. 3 no. 2: https://www.henle.de/us/Prelude-c-sharp-minor-op.-3-no.-2/HN-1211
+- Henle · Well-Tempered Clavier I: https://www.henle.de/en/The-Well-Tempered-Clavier-Part-I-BWV-846-869/HN-9014
+- Henle · Satie Gnossiennes: https://www.henle.de/en/Gnossiennes/HN-1073
+- Henle · Chopin Waltzes: https://www.henle.de/Waltzes/HN-131
+- Henle · Chopin Mazurkas: https://www.henle.de/de/Mazurken/HN-264
+- Henle · Chopin Polonaises: https://www.henle.de/us/Polonaises/HN-218
+- Henle · Chopin Scherzi: https://www.henle.de/en/Scherzi/HN-887
+- Henle · Brahms Waltzes op. 39: https://www.henle.de/en/Waltzes-op.-39/HN-1286
+- Henle · Tchaikovsky Seasons: https://www.henle.de/The-Seasons-op.-37bis/HN-616
+- Henle · Mozart at the Piano: https://www.henle.de/en/Am-Klavier-15-bekannte-Originalstuecke/HN-1800
+- Henle · Chopin Piano Pieces: https://www.henle.de/en/Piano-Pieces/HN-319
 - ABRSM Piano Practical Grades 2025–26: https://www.abrsm.org/sites/default/files/2024-06/Piano%202025%20%26%202026%20Prac%20syllabus%2020240524_access.pdf
 
 ABRSM page numbers below are PDF page numbers. A blank ABRSM cell means no current ABRSM placement was used; Henle remains the anchor.
@@ -157,4 +167,21 @@ These rows add eleven works or collections not represented in the original set. 
 
 ## Model gate
 
-The planned non-negative ordinal fit was evaluated with five collection-grouped folds. On the original 80 anchors its best run reached Spearman 0.875 and 77.5% within one Henle level. On the broader 100 anchors, the same approach fell to 0.789 and 74.0%. Both miss the release gate of Spearman 0.9 and 85% within one level. The broader result shows the 80-row estimate was optimistic; no fitted level or `gradeOverride` ships from this experiment.
+The planned non-negative ordinal fit was evaluated with five collection-grouped folds. On the original 80 anchors its best run reached Spearman 0.875 and 77.5% within one Henle level. On 100 anchors it fell to 0.789 and 74.0%; on 153 anchors across 32 independent work/source groups it reached 0.785 and 66.7%. A random forest reached 0.774 and 67.3%; nearest neighbours reached 0.762 and 57.5%. All miss the fixed release gate of Spearman 0.9 and 85% within one level. No fitted level, model code or `gradeOverride` ships from these experiments.
+
+## 53-piece research expansion
+
+Every row is recorded in `scripts/library/anchors.json` with its exact live-catalogue identity and official source title. This summary shows why the additions were chosen.
+
+| Independent source group | Rows | Henle range |
+|---|---:|---:|
+| Bach, Well-Tempered Clavier I | 10 | 1, 4–6 |
+| Satie, Gnossiennes | 3 | 2 |
+| Chopin, Waltzes | 10 | 4–7 |
+| Chopin, Mazurkas op. 6 and 7 | 8 | 5 |
+| Chopin, Polonaises | 7 | 5–8 |
+| Chopin, Scherzi | 3 | 7–8 |
+| Brahms, Waltzes op. 39 | 2 | 6 |
+| Tchaikovsky, The Seasons | 3 | 5–6 |
+| Mozart, Sonata K. 545 movements 1 and 3 | 2 | 4 |
+| Chopin, Piano Pieces | 5 | 7–8 |
