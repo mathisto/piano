@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: G1's 80-piece difficulty anchor review is merged on `main`; this release is live and in TestFlight build 535. No catalogue grade changed. Local `main`, GitHub and the live `version.txt` matched at deploy.
+- Current state: G1's approved difficulty table has 100 exact live-catalogue matches; this release is live and in TestFlight build 538. Grouped holdout proved the planned fit misses its release gate, so no catalogue grade changed. Local `main`, GitHub and the live `version.txt` matched at deploy.
 
 ## 1. Read these first, in this order
 
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 535)
+## 4. What this session shipped (all live, TestFlight build 538)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -81,6 +81,7 @@ In order. Each line points to its change note in `docs/changes/`.
 13. Per-strand Auto standard (`per-strand-standard.md`): Auto uses the lower of the Read frontier and the Songs repertoire ceiling (three Ready pieces at one level). Theory, Scales and Technique no longer hold the standard down; phase 5 still replaces this interim rule with Elo per strand.
 14. Practice path phase 4 (`practice-path-4.md`): low-session drop-back, plateau task changes, the furthest-behind learning strand, Progress's shrunk reading error map and Stuck panel, and repeated bar timing across the three takes the app keeps. The impossible “4 of 5” plan sample was corrected to truthful `2 of 3` / `all 3` wording.
 15. G1 anchor review (`regrade-g1-anchors.md`): 80 complete live-catalogue pieces matched to published Henle 1–9 levels; seven current ABRSM placements; exact identity validation; the two Anna Magdalena BWV numbers checked; grouped holdout required to prevent collection leakage. This changes no grade and waits for owner approval.
+16. G1 anchor expansion (`regrade-g1-anchor-expansion.md`): after owner approval, 20 exact matches from eleven additional works or collections brought the table to 100. Grouped holdout fell to Spearman 0.789 and 74.0% within one Henle level, below the unchanged 0.9 / 85% release gate. No fitted grade or experimental feature code shipped.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -119,7 +120,7 @@ Do each as its own branch, with its tests, its `docs/changes/` note (listed in `
 2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
 3. **Done:** Auto from the lower of the Songs repertoire ceiling and the Read frontier, ignoring Theory, Scales and Technique until phase 5; TestFlight 529.
 4. **Done:** practice path phase 4: low-session drop-back, plateau task changes, the furthest-behind learning strand, reading error map, Stuck evidence, and timing patterns across the three kept takes; TestFlight 532.
-5. Re-grade, G1 (`library-and-profile.md` section 4 and 7): the first branch built the 80-piece source-backed anchor table in `docs/research/grade-anchors.md`; it is live in TestFlight 535, waits for owner review and changes no grade. After approval: new difficulty features, an ordinal monotone fit to an internal 0–9 `lvl`, shown as Level 1 to 5 with fixed cut points; Lieder graded on the piano part; `gradeOverride` on anchors. Then G2 + S2: skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
+5. Re-grade, G1 (`library-and-profile.md` section 4 and 7): the approved source-backed anchor table now has 100 exact catalogue matches and is live in TestFlight 538. The planned ordinal monotone fit failed grouped holdout at Spearman 0.789 and 74.0% within one Henle level, below the unchanged 0.9 / 85% release gate; no grade changed and the rejected feature/model experiment is preserved only in local stash `WIP rejected G1 model experiment`. Next, design a better-specified model or broaden the verified corpus, then repeat grouped holdout before Lieder piano-part grading or `gradeOverride`. After G1 passes: G2 + S2 adds skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
 6. Horizon items (`horizon.md` section 6), roughly in this order:
    - T1 trap fixes: own-file import findable on first run; `REPORT_TO` for Report a problem; skip damaged records instead of forcing Clear all data.
    - K2 rest: the public `packs/` folder with CI validation and an index; packs made of generated exercises; universal links so a pack link opens the iPad app.

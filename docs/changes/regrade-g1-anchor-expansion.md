@@ -19,6 +19,8 @@ Branch `codex/regrade-g1-anchor-expansion`. This widens the approved source-back
 
 - `node scripts/library/anchors.mjs .cache/library/out-src1/catalog.json`: all 100 identities match the 2,347-piece live catalogue.
 - `npx vitest run src/anchors.test.ts`: the committed table passes its validation.
+- Typecheck passed; the full unit suite passed 1,033 tests with 4 skipped. The boot bundle stayed under the unchanged 223,000-byte cap.
+- Full e2e passed all 47 features in 423 seconds without a retry.
 
 ## Next
 
