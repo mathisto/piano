@@ -1,0 +1,27 @@
+{
+ "pf": 1,
+ "id": "czerny-op599",
+ "title": "Czerny: Practical Method, Op. 599",
+ "by": "Piano Forte",
+ "about": "Short beginner exercises in book order. Note names are off, so you read the staff.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  {"piece": "ly-czerny-op599-1", "title": "No. 1", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-2", "title": "No. 2", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-3", "title": "No. 3", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-4", "title": "No. 4", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-5", "title": "No. 5", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-6", "title": "No. 6", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-7", "title": "No. 7", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-8", "title": "No. 8", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-9", "title": "No. 9", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-10", "title": "No. 10", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-11", "title": "No. 11", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-12", "title": "No. 12", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-13", "title": "No. 13", "view": {"names": false}},
+  {"piece": "ly-czerny-op599-14", "title": "No. 14", "view": {"names": false}},
+  {"piece": "pdmx-6080531", "title": "No. 63", "view": {"names": false}},
+  {"piece": "pdmx-5612128", "title": "No. 69", "view": {"names": false}}
+ ]
+}

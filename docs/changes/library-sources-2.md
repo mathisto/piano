@@ -1,12 +1,12 @@
 # The missing study books: sources checked, 106 pieces added, titles cleaned
 
-Branch `feature/source1`, 1 Nov 2026. Owner's brief: "do the missing study books, anything open source, free and available". Sources were checked one by one (table below); the pipeline gained two source sets and a retitle step. Nothing was published, merged or deployed.
+Branch `feature/source1`, 1 Nov 2026. Owner's brief: "do the missing study books, anything open source, free and available". Sources were checked one by one (table below); the pipeline gained two source sets and a retitle step. The owner approved PDMX with credit and the public-domain LilyPond files on 1 Nov 2026. The branch also adds first-party packs for Czerny Op. 599 and Op. 299.
 
-Output: `/Users/mathisto/projects/piano-roller/.cache/library/out-src1/` (built `8c525d19be85ec7f`), made over `out-c1` (never touched). Publish with `LIBRARY_OUT=.cache/library/out-src1 scripts/deploy-library.sh` once the owner has decided the points under "Needs the owner".
+Output: `/Users/mathisto/projects/piano-roller/.cache/library/out-src1/` (built `9b71a88520e8c3a1`), made over `out-c1` (never touched). Rebuilding from the cached source archives under current `main` produced the same ids, files and hashes; it additionally classified the ten Czerny Op. 840 titles as `form: study`.
 
 ## What changed in the catalogue (`catalog-diff out-c1 out-src1`, exit 0, identity holds)
 
-- **2,241 to 2,347 pieces** (+106), files 2,420 to 2,526, `catalog.json` 1.942 to 2.026 MB (310 to 323 KB gzipped), incipit sidecar 338 to 353 KB gzipped (every new piece has one).
+- **2,241 to 2,347 pieces** (+106), files 2,420 to 2,526, `catalog.json` 1.942 to 2.026 MB (316 to 329 KB gzipped), incipit sidecar 359 KB gzipped (every new piece has one).
 - Ids, order, tables, aliases, every old file, byte and sha256 are unchanged. LICENSES.md: every old row is still there (see "Found on the way" for the 12 composer cells that moved).
 - **106 added, by book:** Lemoine Op. 37 35 · Czerny Op. 599 16 · Duvernoy Op. 176 16 · Czerny Op. 299 11 · Op. 740 9 · Op. 300 3 · Op. 139 2 · Op. 849 1 · Op. 399 1 · Bertini Op. 29 3 · Schumann Op. 68 3 (Nos. 15, 17, 19) · Anna Magdalena notebook 4 (BWV Anh. 122, 124, 125, 132) · Tchaikovsky Op. 39 No. 8 · Diabelli Op. 168 No. 1.
 - **By grade (new pieces):** 24 at 1, 29 at 2, 16 at 3, 19 at 4, 18 at 5. 53 of the 106 sit at grades 1 and 2, against 48 grade-1 pieces outside Lieder and studies before (library-and-profile 4.6): the thin first rung gets its supply, as studies (Lemoine, Duvernoy, Op. 599, Op. 139 mostly).
@@ -20,6 +20,7 @@ Output: `/Users/mathisto/projects/piano-roller/.cache/library/out-src1/` (built 
   - Schumann Op. 68 (20): English names and `Op. 68, No. n`. The old opus was "O 68 n°16", which dedupe cannot read as a catalogue number, so a second typesetting of the same piece would have shipped beside it. Now PDMX's Nos. 1 to 8, 10 to 14 and 16 are dropped as duplicates (14 of them) and only 15, 17 and 19 are new.
   - `form` is read again from the new titles (52 pieces gain one: preludes, dances, songs of the Clementi lessons).
 - **Czerny Op. 840 tagged as studies: yes.** C1's rule read the technique tag only, and Mutopia styles Op. 840 "Romantic". Now by composer (above), in `run()` and in `retitle`.
+- **Two packs added:** Op. 599 lists Nos. 1 to 14, 63 and 69 with note names off; Op. 299 lists the eleven available studies in book order.
 
 ## Sources: the table
 
@@ -83,10 +84,10 @@ Counts are pieces in the catalogue now / of the book. "Added" are this pass's. E
 
 To rebuild: `npx vite build --config scripts/library/vite.config.mjs`; `node scripts/library/retitle.mjs out-c1 out-src1-titles`; `LILYPOND=<binary> node scripts/library/build.mjs --set open --out out-src1-open --merge-with out-src1-titles`; `node scripts/library/build.mjs --set pdmx --pdmx <dir> --out out-src1 --merge-with out-src1-open`; `node scripts/library/catalog-diff.mjs out-c1 out-src1`. A second run gives byte-identical `catalog.json` and LICENSES.md (checked).
 
-## Needs the owner
+## Owner decisions and held sources
 
-1. **PDMX as a source.** `docs/library.md` said PDMX and MuseScore were not used; this ships 92 pieces from it. They are the uploaders' own typesettings, marked CC0 or Public Domain by them, of works whose composers died by 1893. The labels are claims (PDMX's own paper does not audit them), the dataset was gathered from MuseScore.com by its authors under terms that forbid scraping, and none of the 92 names the printed edition it was typeset from. If that is more risk than wanted, the whole set is one `--set pdmx` run: leave it out.
-2. **Czerny Op. 599 Nos. 1 to 14** (14 LilyPond pieces) rest on the typesetter's header, with no LICENSE file in the repo, in a repo last pushed in 2018. Same standing as a Mutopia "Public Domain" tag, but not Mutopia. Ask the typesetter, or leave them out.
+1. **PDMX approved.** This ships 92 pieces from it with visible credit. They are the uploaders' own typesettings, marked CC0 or Public Domain by them, of works whose composers died by 1893. The labels remain uploader claims; PDMX's paper does not audit them, and none names the printed edition.
+2. **Czerny Op. 599 Nos. 1 to 14 approved.** The 14 LilyPond pieces rest on the typesetter's Public Domain header, with no repository-level licence file. The source tempo remains half note = 88 (quarter = 176 in the MIDI); the device checklist includes hearing Nos. 1, 7 and 14 at written tempo.
 3. **Held back for want of a number or an opus**, any of which the owner can number by hand from IMSLP: Gurlitt Op. 82 (PDMX 5996532, 3971246), Beyer (5965808), Czerny Op. 261 (3972061), Czerny Op. 299 No. 8 (5982347), the Bach "9 Kleine Präludien" (2910501), the Tchaikovsky Children's Album as one score (5329984).
 4. **No symbolic source exists** (so the choice is OMR, which the project dropped, hand entry into MuseScore or LilyPond as CC0, or the generated drills of decision 27): Czerny Op. 261, 777 and most of 599, 139, 849, 740; Burgmüller Nos. 19 to 25 and Op. 105, 109; Gurlitt, Köhler, Beyer, Türk; Clementi Op. 36 Nos. 2 to 6; Kuhlau Op. 55, 88; Diabelli Op. 168 Nos. 2 on; Tchaikovsky Op. 39 but four; Schumann Op. 68 but 23. Cloud MuseScore scores and IMSLP files that need a login or break the sites' terms are not touched.
 5. **Non-commercial:** Craig Sapp's kern repos for Mozart, Haydn and Joplin are CC BY-NC-SA 4.0; usable only with the explicit `nc` flag, and none is on the study list.
@@ -102,4 +103,4 @@ To rebuild: `npx vite build --config scripts/library/vite.config.mjs`; `node scr
 
 ## Checked
 
-`npx tsc --noEmit -p .` clean (exit 0). `npx vitest run`: Test Files 71 passed | 1 skipped (72); Tests 979 passed | 4 skipped (983). New tests in `src/library-pipeline.test.ts` for the composer rule, `retitle`, `lilypondMidi` (cache and missing binary) and `pdmx-pick` (licence, conflict, scrap, mislabelled subtitle, outvoted numbers).
+`npx tsc --noEmit -p .` clean (exit 0). `npx vitest run`: Test Files 77 passed | 1 skipped (78); Tests 1,023 passed | 4 skipped (1,027). Focused pack and pipeline run against `out-src1`: 54 passed, 1 skipped. E2E features 25, 25b and 25 Continue: 3 of 3 passed. A clean rebuild from the cached source archives reproduced every id, file and hash; `catalog-diff` reports only the 106 additions, the named title/form/kind changes and the corrected licence rows. New tests in `src/library-pipeline.test.ts` cover the composer rule, `retitle`, `lilypondMidi` (cache and missing binary) and `pdmx-pick` (licence, conflict, scrap, mislabelled subtitle, outvoted numbers).

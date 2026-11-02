@@ -80,7 +80,7 @@ describe('the packs that come with the app', () => {
   const file = process.env.LIBRARY_CATALOG ?? '.cache/library/out-c1/catalog.json'
   const bundled = new Set((JSON.parse(readFileSync('public/library/manifest.json', 'utf8')) as { id: string }[]).map((m) => m.id))
   it('parse, have ids of their own, and name only Read and Scales stages that exist', () => {
-    expect(files.map((p) => p.id).sort()).toEqual(['anna-magdalena', 'burgmuller-op100', 'clementi-op42', 'czerny-op821', 'czerny-op840', 'hanon-warmup', 'schumann-op68'])
+    expect(files.map((p) => p.id).sort()).toEqual(['anna-magdalena', 'burgmuller-op100', 'clementi-op42', 'czerny-op299', 'czerny-op599', 'czerny-op821', 'czerny-op840', 'hanon-warmup', 'schumann-op68'])
     for (const p of files) expect(unknown(p, () => true), p.id).toEqual([])
     expect(files.find((p) => p.id === 'hanon-warmup')).toMatchObject({ kind: 'study', warmup: 2 }) // decision 26: two a day
   })

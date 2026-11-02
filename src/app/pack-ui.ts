@@ -19,7 +19,7 @@ type From = 'app' | 'file' | 'link'
 interface Rec { pack: Pack; from: From; opened?: number }
 
 /** The packs that come with the app: the files in src/packs, read by the same parser as any other. */
-const ORDER = ['hanon-warmup', 'burgmuller-op100', 'czerny-op821', 'czerny-op840', 'clementi-op42', 'schumann-op68', 'anna-magdalena']
+const ORDER = ['hanon-warmup', 'burgmuller-op100', 'czerny-op599', 'czerny-op821', 'czerny-op840', 'czerny-op299', 'clementi-op42', 'schumann-op68', 'anna-magdalena']
 export const FIRST: Pack[] = Object.values(import.meta.glob('../packs/*.pfpack', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)
   .map(parsePack)
   .sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))

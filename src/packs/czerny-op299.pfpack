@@ -1,0 +1,22 @@
+{
+ "pf": 1,
+ "id": "czerny-op299",
+ "title": "Czerny: School of Velocity, Op. 299",
+ "by": "Piano Forte",
+ "about": "The available studies in book order. Begin below the written tempo and keep the notes even.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  {"piece": "pdmx-5683860", "title": "No. 1"},
+  {"piece": "pdmx-5683865", "title": "No. 2"},
+  {"piece": "pdmx-5683877", "title": "No. 3"},
+  {"piece": "pdmx-5982331", "title": "No. 4"},
+  {"piece": "pdmx-5982337", "title": "No. 5"},
+  {"piece": "pdmx-5982343", "title": "No. 6"},
+  {"piece": "pdmx-5982345", "title": "No. 7"},
+  {"piece": "pdmx-5982350", "title": "No. 9"},
+  {"piece": "pdmx-5982355", "title": "No. 10"},
+  {"piece": "pdmx-5923372", "title": "No. 19"},
+  {"piece": "pdmx-5924738", "title": "No. 22"}
+ ]
+}
