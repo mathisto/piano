@@ -3,7 +3,7 @@ import { type Card as ScaleCard, type Form, mastery as scaleMastery, nextCard, n
 import * as store from '../store'
 import { $, keepFocus } from '../ui'
 import type { QuizState, ScalePick } from '../ui-views'
-import { say } from './state'
+import { hooks, say } from './state'
 import { openSong } from './play'
 
 let scaleTab: 'stages' | 'pick' | 'quiz' = 'stages'
@@ -39,8 +39,9 @@ export async function showScales() {
   const stats = await store.getScales()
   const f = nextScaleStage(stats)
   if (scaleTab === 'quiz' && !quiz) await newQuiz()
-  const { scalesView } = await import('../ui-views')
+  const [{ scalesView }, l] = await Promise.all([import('../ui-views'), scaleTab === 'stages' ? hooks.lamp('scale') : undefined]) // Choose a scale and the Quiz keep their own lamp
   keepFocus($('#scales'), () => scalesView($('#scales'), SCALE_STAGES.map((stage) => ({ stage, ...scaleMastery(stage, stats), next: stage === f, card: nextCard(stage, stats) })), scaleTab, scalePick, quiz))
+  l?.($('#scales'))
 }
 
 export const startScale = (c: ScaleCard, bpm: number) => void openSong(scaleSong(c, bpm), 'perform')

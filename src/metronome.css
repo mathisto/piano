@@ -38,3 +38,7 @@
 .beat-bar i.on {
   background: var(--ink);
 }
+/* the Staff pulse (beatpulse.ts): an ink ball, an aid not score, bouncing on the cursor's tip; ink, not the lamp, which is the cursor's */
+#staff .beatball {
+  fill: var(--paper-ink-3);
+}

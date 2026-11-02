@@ -42,7 +42,7 @@
 .pulse-bar figcaption {
   margin-top: 4px;
   color: var(--ink-3);
-  font: 500 13px/1.2 var(--ui);
+  font: 500 calc(13px * var(--ts))/1.2 var(--ui);
 }
 .pulse-bar figcaption::first-letter {
   text-transform: uppercase; /* 'eighths' is mid-sentence in the prompt, a caption here */

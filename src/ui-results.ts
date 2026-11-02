@@ -8,10 +8,11 @@ import { marks as liveMarks, type Timing } from './coach'
 import { coachLines, timingLine } from './coach-lines'
 import { barList, markLine, rightOf, type Mark } from './marks'
 import type { Song } from './song'
-import type { Evenness } from './even'
+import { EVEN_LEVEL, type Evenness } from './even'
 import { type RunSpec, type Tally } from './run'
 import { band, type TouchStats } from './touch'
 import { esc, plural } from './util'
+import { cont, type Cont } from './next'
 
 // ---------- results ----------
 
@@ -60,8 +61,9 @@ const pm = (cls: string, d: string, more = '') => `<svg class="pm ${cls}" viewBo
 /** One line of the card: what was measured, in plain counts, and whether it decides that the run counts. */
 const measure = (name: string, text: string, status = '') => `<div><dt>${name}</dt><dd>${text}</dd><dd class="cnt">${status}</dd></div>`
 
-/** The song card. `from`: the page the Back button returns to, named on it. `ctx`: the piece and the marks the run left on its score, for the bars and the Mark list. */
-export function results(r: Result, next: Next | null, note = '', from = 'Songs', ctx?: { song: Song; marks: Mark[]; worst?: { a: number; b: number } | null }) {
+/** The song card. `go`: Continue. `from`: the page the Back button returns to, named on it. `ctx`: the piece and the marks the run left on its score, for the bars and the Mark list,
+ *  its worst bars, and the pace step when Continue is not it (for More). */
+export function results(r: Result, go?: Cont, note = '', from = 'Songs', ctx?: { song: Song; marks: Mark[]; worst?: { a: number; b: number } | null; step?: Next | null }) {
   const ms = ctx?.marks ?? []
   const bins = new Array(13).fill(0) // -125..+125 in 20 ms steps
   for (const o of r.offs) bins[Math.min(12, Math.max(0, Math.round((o + 125) / 20)))]++
@@ -87,7 +89,7 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs',
       : '') +
     (r.touch.n >= 4 ? touchBlock(r.touch, !r.voice) : '') +
     (even?.chart ?? '')
-  // One line for each thing measured, each saying whether it decides that the run counts. What counts follows the rules the app has today: notes, and timing in Perform; the exercises add touch.
+  // One line for each thing measured, each saying whether it decides that the run counts: notes, and timing in Perform (its windows and the holds follow the standard, settings.ts strictness); the exercises add touch.
   const hits = r.counts.perfect + r.counts.great + r.counts.good + r.counts.late
   const touch = [
     even?.line,
@@ -99,7 +101,8 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs',
     measure('Notes', [r.wrong > 0 && `<b>${r.wrong}</b> ${r.wrong === 1 ? 'wrong key' : 'wrong keys'}${at(ms, 'wrong')}`, !waited && r.counts.miss > 0 && `<b>${r.counts.miss}</b> missed${at(ms, 'miss')}`].filter(Boolean).join(' · ') || (waited ? 'No wrong key.' : 'No wrong key, none missed.'), 'counts'),
     waited ? measure('Time', 'The song waited, so time is not measured.') : hits ? measure('Time', `<b>${r.counts.perfect + r.counts.great}</b> of ${hits} on the beat · ${lean}`, perform ? 'counts' : 'not counted yet') : '',
     r.holds >= 0 ? measure('Holds', `<b>${Math.round(r.holds * 100)}%</b> released on time`, 'not counted yet') : '',
-    touch.length ? measure('Touch', touch.join(' '), (id.startsWith('tech:') && r.touchPct >= 0) || (id.startsWith('scale:') && r.even) ? 'counts' : 'not counted yet') : '',
+    // touch counts where a pass rule reads it, at the level the run was judged at: a technique run's targets, and from level 2 the evenness of a scale or exercise (scales.ts, syllabus.ts)
+    touch.length ? measure('Touch', touch.join(' '), perform && ((id.startsWith('tech:') && r.touchPct >= 0) || (/^(tech|scale):/.test(id) && r.even && settings.lv >= EVEN_LEVEL)) ? 'counts' : 'not counted yet') : '',
   ].join('')
   const slips = ms.filter((m) => m.kind === 'wrong' || m.kind === 'miss')
   const slipBars = [...new Set(slips.map((m) => m.bar + 1))]
@@ -116,15 +119,16 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs',
   }
   const went = slips.length && runs.length ? `<p class="went">${runs.length > 3 ? `${bars - slipBars.length} of ${bars} bars` : `${runs.length > 1 || runs[0].includes(' ') ? 'Bars' : 'Bar'} ${runs.length > 1 ? `${runs.slice(0, -1).join(', ')} and ${runs.at(-1)}` : runs[0]}`} had no slips.</p>` : ''
   // the coaching points, by priority (docs/research/practice-path.md 2.2): why the lamp loops the bars it does, then a lean worth checking. A clean run gets none.
-  // The loop is the footer's lamp, not a second button here: one action, one place (Continue takes that place in phase 2, and is this loop after a run that was not clean).
+  // The loop is Continue, the footer's lamp, not a second button here: one action, one place.
   const w = ctx?.worst
   const loopBars = w ? slips.filter((m) => m.bar >= w.a && m.bar <= w.b) : []
   const where = w && (w.b > w.a ? `Bars ${w.a + 1} and ${w.b + 1}` : `Bar ${w.a + 1}`)
   const first = loopBars.find((m) => m.kind === 'wrong' && m.written !== undefined && m.written !== m.p) ?? loopBars[0]
   const points = [
-    next?.kind === 'loop' && where && `<li><p>${loopBars.length ? `${where} had ${loopBars.length === slips.length ? (slips.length === 1 ? 'the slip' : `all ${slips.length} slips`) : `${loopBars.length} of the ${slips.length} slips`}. ${esc(markLine(first, ctx!.song))}` : `${where} held you up longest.`}</p></li>`,
+    !r.clean && where && `<li><p>${loopBars.length ? `${where} had ${loopBars.length === slips.length ? (slips.length === 1 ? 'the slip' : `all ${slips.length} slips`) : `${loopBars.length} of the ${slips.length} slips`}. ${esc(markLine(first, ctx!.song))}` : `${where} held you up longest.`}</p></li>`,
     !waited && r.timing && Math.abs(r.timing.bias) >= 30 && `<li><p>Most notes came about ${Math.round(Math.abs(r.timing.bias))} ms ${r.timing.bias > 0 ? 'late' : 'early'}. If they felt on the beat, calibrate Delay in Set up.</p></li>`,
   ].filter(Boolean)
+  const c = cont(go)
   const review = ms.length
     ? `<button class="btn" id="review" aria-expanded="false">Review on the score</button><details class="all marklist"><summary>Mark list</summary><ol>${ms.map((m, i) => `<li><button class="lnk" data-m="${i}">${esc(markLine(m, ctx!.song))}</button></li>`).join('')}</ol></details>`
     : ''
@@ -147,12 +151,19 @@ export function results(r: Result, next: Next | null, note = '', from = 'Songs',
     ${reviewbar}
     </div>
     <div class="row">
-      ${next ? `<button class="btn primary" id="next">${icon(next.kind === 'loop' ? 'loop' : 'play')}${next.label}</button>` : ''}
-      <button class="btn icon${next ? '' : ' primary'}" id="again" aria-label="Again" title="Again">${icon('restart')}</button>
-      <div class="pop"><button class="btn icon" data-more aria-label="More" aria-expanded="false" aria-controls="resMenu">${icon('more')}</button><div class="popmenu" id="resMenu" hidden></div></div>
+      ${c[0]}
+      <button class="btn icon${go ? '' : ' primary'}" id="again" aria-label="Again" title="Again">${icon('restart')}</button>
+      <div class="pop"><button class="btn icon" data-more aria-label="More" aria-expanded="false" aria-controls="resMenu">${icon('more')}</button><div class="popmenu" id="resMenu" hidden>${ctx?.step ? `<button class="btn ghost" id="pace">${ctx.step.label}</button>` : ''}</div></div>
       <button class="btn ghost" id="toLib">Back to ${from}</button>
+      ${c[1]}
     </div>
   </div></div>`
+}
+
+/** A Sight run's footer: Continue, Again as the restart icon, the way back. */
+const runRow = (go?: Cont) => {
+  const c = cont(go)
+  return `<div class="row">${c[0]}<button class="btn icon${go ? '' : ' primary'}" id="runAgain" aria-label="Again" title="Again">${icon('restart')}</button><button class="btn ghost" id="toStages">Back to Read</button>${c[1]}</div>`
 }
 
 export interface DrillSummary {
@@ -169,7 +180,8 @@ export interface DrillSummary {
   goalMs: number
 }
 
-export function drillResults(d: DrillSummary) {
+export function drillResults(d: DrillSummary, go?: Cont) {
+  const c = cont(go)
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
   return `
   <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Drill results">
@@ -192,8 +204,10 @@ export function drillResults(d: DrillSummary) {
         : ''
     }
     <div class="row">
-      <button class="btn primary" id="nextSet">${icon('restart')}${d.solid ? 'Next stage' : 'Another set'}</button>
+      ${c[0]}
+      ${d.solid ? `<button class="btn${go ? '' : ' primary'}" id="nextSet">Next stage</button>` : `<button class="btn icon${go ? '' : ' primary'}" id="nextSet" aria-label="Another set" title="Another set">${icon('restart')}</button>`}
       <button class="btn ghost" id="toStages">All stages</button>
+      ${c[1]}
     </div>
   </div></div>`
 }
@@ -208,7 +222,7 @@ export interface RunSummary {
   weakest: string[]
 }
 
-export function runResults(d: RunSummary) {
+export function runResults(d: RunSummary, go?: Cont) {
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
   const top = Math.max(800, ...d.notes.map((n) => n.ms / n.n))
   const strip = [...d.notes]
@@ -222,7 +236,7 @@ export function runResults(d: RunSummary) {
     <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · most in a row <b>${d.arc.best}</b> · typical <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Most yet on this range</span>' : d.best ? ` · your most in a row here is ${d.best.streak}` : ''}</p>
     ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, × marks a note you missed, redder is missed more.</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
+    ${runRow(go)}
   </div></div>`
 }
 
@@ -238,7 +252,7 @@ export interface PacedSummary {
 }
 
 /** A paced run's results: cards on the beat in plain numbers, the run as a strip of cards, timing, the notes missed and the next tempo. No score, no rank. */
-export function pacedResults(d: PacedSummary) {
+export function pacedResults(d: PacedSummary, go?: Cont) {
   const first = d.cells.findIndex((c) => c === undefined)
   const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Card ${i + 1}: missed"` : ''}></i>`).join('')
   const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
@@ -251,6 +265,6 @@ export function pacedResults(d: PacedSummary) {
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
     <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
     <p class="line">${esc(d.note)}</p>
-    <div class="row"><button class="btn primary" id="runAgain">${icon('restart')}Again</button><button class="btn ghost" id="toStages">Back to Read</button></div>
+    ${runRow(go)}
   </div></div>`
 }

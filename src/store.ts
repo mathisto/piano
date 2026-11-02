@@ -1,6 +1,7 @@
 import { del, get, keys, set } from './kv'
 import { INTERVALS, dayNum, type Stats } from './drill'
 import type { PaceMemo } from './paced'
+import type { Next } from './pace'
 import type { RunSpec } from './run'
 import type { QuizStats, ScaleStats } from './scales'
 import type { TechStats } from './syllabus'
@@ -33,6 +34,7 @@ export interface Progress {
   memStage?: number // Memorise: the highest stage cleared, 0..4
   memDay?: number // the local day number it was cleared
   bars?: number // the bar count heat was kept for: a piece that changed length (a re-analysed catalogue file) starts its heat again
+  pace?: Next // the pace step a clean run left for next time (Today's piece row): a tempo, or no waiting
 }
 
 /** Memorise cleared a stage: keep the highest, and the day. */
@@ -148,8 +150,9 @@ export const edit = <T>(key: string, empty: T, f: (v: T) => T) =>
 export const commit = (...a: Parameters<typeof commitNow>) => serial(() => commitNow(...a))
 
 /** Fold one session's trouble into the long-run heat: old trouble cools as you improve. `bars`: the piece's bar count now. */
-async function commitNow(id: string, heat: number[], bars: number, result?: { acc: number }, clean?: boolean) {
+async function commitNow(id: string, heat: number[], bars: number, result?: { acc: number }, clean?: boolean, pace?: Next | null) {
   const p = await getProgress(id, bars)
+  if (pace !== undefined) p.pace = pace ?? undefined // null: the run left no step
   p.heat = cool(p.heat, heat).slice(0, bars)
   p.bars = bars
   p.last = Date.now()
@@ -231,7 +234,7 @@ export const importAll = async (text: string) => (await import('./backup')).impo
 
 export const clearAll = () =>
   serial(async () => {
-    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup):/.test(String(k))) await del(k)
+    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup|pack):/.test(String(k))) await del(k)
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
     } catch {
@@ -284,10 +287,12 @@ export interface HistoryEntry {
   id?: string // what was practised, stable where the label is for display: song:<id>, scale:<card>@<bpm>, tech:<recipe>
   notes?: number // the Notes line, 0..1: notes right over the written notes and the wrong keys that cost; waiting, right first time
   ok?: boolean // the run counted: what the card for its kind asks of a run
+  lv?: number // the Path level it was played at, the standard it was judged by (song, scale and technique rows)
   as?: 1 // assisted (the song waited, a part only, fewer notes shown): the charts skip it
   rate?: number // tempo, 1 = as written
   sp?: number // timing spread: the standard deviation of the hit offsets in ms around their own mean; absent when the song waited or fewer than 8 notes were timed
-  then?: 'a' | 'b' // what the player did next from the results card: Again, Back
+  then?: 'c' | 'a' | 'b' | 'o' // what the player did next from the results card: Continue, Again, Back, other (Next stage, the pace step)
+  by?: string // what offered it: the nextUp() step (fix, guide, plan, due, path, piece, next.ts), or own when the player picked it
 }
 
 export async function getHistory(): Promise<HistoryEntry[]> {
@@ -295,7 +300,18 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 }
 
 export const HISTORY_KEEP = 3000
-export const logHistory = (e: HistoryEntry) => edit<HistoryEntry[]>('history:log', [], (l) => [...l, e].slice(-HISTORY_KEEP))
+
+let offer: { kind?: HistoryEntry['kind']; by: string } | undefined
+/** Today's lamp, a plan row or Continue started something: the next row, if of that kind, says so. Any row, and leaving a piece, clears it. */
+export const offered = (o?: typeof offer) => (offer = o)
+
+/** Returns what to call with what the player did next from the results card. */
+export const logHistory = (e: HistoryEntry) => {
+  const row = { ...e, by: offer?.kind === e.kind ? offer.by : 'own' }
+  offer = undefined
+  void edit<HistoryEntry[]>('history:log', [], (l) => [...l, row].slice(-HISTORY_KEEP))
+  return (then: NonNullable<HistoryEntry['then']>) => void edit<HistoryEntry[]>('history:log', [], (l) => l.map((x) => (x.ts === e.ts ? { ...x, then } : x)))
+}
 
 /** One card answered (reading drills, Sight run, Theory): which card, first try or not, how long it took. The record a model of the player is fitted to. */
 export interface CardRow {

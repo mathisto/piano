@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { HistoryEntry } from './store'
 
 // IndexedDB as a map whose every call takes a turn of the event loop, so writes that overlap really interleave
 const db = new Map<string, unknown>()
@@ -77,6 +78,20 @@ describe('export and import', () => {
     expect(JSON.parse(db.get('backup:last') as string).practice).toEqual({ d: 90 }) // what was here before the import
   })
 
+  it('carries packs: an imported pack and when each was opened, merged, and Clear all data takes them', async () => {
+    const mine = { pf: 1, id: 'mine', title: 'Mine', by: 'Me', items: [{ read: 't-land' }] }
+    db.set('pack:mine', { pack: mine, from: 'link', added: 1, opened: 5 })
+    db.set('pack:hanon-warmup', { opened: 9 })
+    const file = await store.exportAll()
+    db.clear() // this browser opened the Hanon pack later, and never had the other
+    db.set('pack:hanon-warmup', { opened: 12 })
+    await store.importAll(file)
+    expect(db.get('pack:mine')).toEqual({ pack: mine, from: 'link', added: 1, opened: 5 })
+    expect(db.get('pack:hanon-warmup')).toEqual({ opened: 12 })
+    await store.clearAll()
+    expect([...db.keys()].filter((k) => k.startsWith('pack:'))).toEqual([])
+  })
+
   it('refuses what is not an export', async () => {
     await expect(store.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
   })
@@ -98,6 +113,17 @@ describe('export and import', () => {
 })
 
 describe('the attempt log', () => {
+  it('a row says what offered it, a pick of the player\'s own is own, and what came next is edited onto it', async () => {
+    store.offered({ kind: 'read', by: 'plan' })
+    const then = store.logHistory({ ts: 1, kind: 'read', label: 'a', acc: 1 }) // the offer was a reading set: this is it
+    store.logHistory({ ts: 2, kind: 'read', label: 'b', acc: 1 }) // another set, picked by the player
+    store.offered({ kind: 'theory', by: 'due' })
+    store.logHistory({ ts: 3, kind: 'song', label: 'c', acc: 1 }) // a piece, not the Theory session offered
+    then('c')
+    await store.edit('x', 0, (x) => x) // the queue has run
+    expect((db.get('history:log') as HistoryEntry[]).map((e) => [e.by, e.then])).toEqual([['plan', 'c'], ['own', undefined], ['own', undefined]])
+  })
+
   const jan = Date.UTC(2026, 0, 15)
   const feb = Date.UTC(2026, 1, 3)
 
@@ -116,7 +142,7 @@ describe('the attempt log', () => {
     expect(ts('2026-02')).toEqual([feb])
     expect(ts('2026-03')).toHaveLength(1)
     expect((db.get('log:cards:2026-02') as { got: number[] }[])[0].got).toEqual([60, 64])
-    expect(db.get('history:log')).toEqual([{ ts: 5, kind: 'song', label: 'Minuet', acc: 0.9, id: 'song:minuet', notes: 0.94, ok: true, as: 1, rate: 0.7, sp: 22, then: 'a' }])
+    expect(db.get('history:log')).toEqual([{ ts: 5, kind: 'song', label: 'Minuet', acc: 0.9, id: 'song:minuet', notes: 0.94, ok: true, as: 1, rate: 0.7, sp: 22, then: 'a', by: 'own' }])
 
     await store.clearAll()
     expect([...db.keys()].filter((k) => /^(log|history)/.test(k))).toEqual([])

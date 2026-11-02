@@ -1,0 +1,32 @@
+{
+ "pf": 1,
+ "id": "hanon-warmup",
+ "title": "Hanon warm-up",
+ "by": "Piano Forte",
+ "about": "Two a day, slow, both hands. Stop if it tenses or hurts.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "warmup": 2,
+ "items": [
+  {"piece": "mutopia-2037-1", "title": "No. 1", "rate": 0.6},
+  {"piece": "mutopia-2037-2", "title": "No. 2", "rate": 0.6},
+  {"piece": "mutopia-2037-3", "title": "No. 3", "rate": 0.6},
+  {"piece": "mutopia-2037-4", "title": "No. 4", "rate": 0.6},
+  {"piece": "mutopia-2037-5", "title": "No. 5", "rate": 0.6},
+  {"piece": "mutopia-2037-6", "title": "No. 6", "rate": 0.6},
+  {"piece": "mutopia-2037-7", "title": "No. 7", "rate": 0.6},
+  {"piece": "mutopia-2037-8", "title": "No. 8", "rate": 0.6},
+  {"piece": "mutopia-2037-9", "title": "No. 9", "rate": 0.6},
+  {"piece": "mutopia-2037-10", "title": "No. 10", "rate": 0.6},
+  {"piece": "mutopia-2037-11", "title": "No. 11", "rate": 0.6},
+  {"piece": "mutopia-2037-12", "title": "No. 12", "rate": 0.6},
+  {"piece": "mutopia-2037-13", "title": "No. 13", "rate": 0.6},
+  {"piece": "mutopia-2037-14", "title": "No. 14", "rate": 0.6},
+  {"piece": "mutopia-2037-15", "title": "No. 15", "rate": 0.6},
+  {"piece": "mutopia-2037-16", "title": "No. 16", "rate": 0.6},
+  {"piece": "mutopia-2037-17", "title": "No. 17", "rate": 0.6},
+  {"piece": "mutopia-2037-18", "title": "No. 18", "rate": 0.6},
+  {"piece": "mutopia-2037-19", "title": "No. 19", "rate": 0.6},
+  {"piece": "mutopia-2037-20", "title": "No. 20", "rate": 0.6}
+ ]
+}

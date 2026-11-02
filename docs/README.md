@@ -15,6 +15,8 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 
 **Play and practice**
 - `changes/practice-path-1.md`: the practice path, phase 1: a wrong key costs what a miss costs, marks that stay on the staff, the song results card over the falling notes only, and the attempt log.
+- `changes/practice-path-2.md`: the practice path, phase 2: one "what next" (`next.ts`), Continue on every results card, Today's lamp always present (the first week's step, the plan, Up next once it is done), `by` on the attempt log.
+- `changes/practice-path-3.md`: the practice path, phase 3: Timing and Touch feedback default to Auto, following the Path level; uneven touch counts from level 2 on scales and technique; a Start in every page head from `nextUp()` kept to the page's strand, one lamp a page; Theory's levels kept.
 - `changes/habit.md`: 30 and 45 minute plans, break reminder, day streak, the Path.
 - `changes/guide.md`: the Start here card, tab notes, the Help sheet and the Connect line.
 - `changes/ladder.md`: the repertoire ladder on the Path.
@@ -50,6 +52,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 **Importer and library pipeline**
 - `changes/importer.md`: importer fixes for mass ingestion (key changes, spelling, D.C./D.S., tuplets, tempo).
 - `changes/catalog.md`: the catalogue-driven Songs page, search, offline saving, piece loader, credits.
+- `changes/studies-packs.md`: packs, a small JSON file that names pieces, exercises and stages in an order with notes and never carries music; Studies at the top of Technique and a Packs button on Songs, seven packs that come with the app (Hanon warm-up, Burgmüller, Czerny, Clementi, Schumann, Anna Magdalena), import by file, by the iPad's open-in and by a link that carries the pack in its fragment, sharing, and the Finger numbers switch.
 - `changes/library-c1-s1.md`: the catalogue fix (`mode`, a stated metre, `kind`, `form`, `period`, the raw grade features) and the incipit sidecar; covers for every library row from the sidecar, and the Songs facet engine with its kind lanes and zero state.
 - `changes/library-sources-2.md`: the missing study books: sources checked one by one, 106 pieces added (Lemoine Op. 37, Duvernoy Op. 176, Czerny Op. 599, 299, 740 and more) from PDMX and a LilyPond repository, Clementi Op. 42's lesson titles, Czerny Op. 840 as studies, and the sources that need the owner.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
@@ -89,11 +92,13 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/perf3.md`: 33 kB off the boot JS (`ui.ts` split into lazy views, results and sheets); the pedal coach uses the tuned chord match (`src/chords.ts`).
 - `changes/sheets.md`: e2e feature 22 (Credits, Set up and Options from Settings; slow and refused page and sheet chunks); a sheet whose code does not arrive says so instead of rejecting unhandled.
 - `changes/beatmark.md`: the paced run beat shows in a slim bar between the header and the staff, not in the dock.
+- `changes/beatpulse.md`: a silent visual pulse (Settings > Pulse: Staff, Edges or Beat lines, on trial) and a Silent metronome; the research behind it, captures and frame times; the FP-10 headphone click stops at a note (no MIDI out yet).
 - `changes/docsync.md`: the 2026-10-27 audit of ROADMAP, DESIGN, PRODUCT and this index.
 - `changes/datafix.md`: import merges per record and backs up first, exports carry imported songs, read-modify-write saves queue (and lock across tabs), stale heat, the service worker on a 502 and across a deploy, no empty last bar, MusicXML UTF-16, character references, mid-measure divisions and ties, simplify keeps short notes, CSP.
 - `changes/perf4.md`: 19 kB off the boot JS: the ear and pulse decks and the trainers load with the Theory page or when a card is due (`src/theory-cards.ts` keeps the Path's decks); the Help text loads with the sheets.
 - `changes/shellfix.md`: Escape pauses before it leaves, a stale piece open stays off the screen, leaving returns to where the piece was opened, redraws keep focus, the start card and banner share one column; the iPad app gets Bluetooth pairing, a privacy manifest, the screen awake only during a run, one root view controller, iPad only and a build number from git.
 - `changes/ipad-native.md`: the iPad shell pass: the screen stays on for two minutes after the last key, a run holds the screen edges and fades the home indicator, a call, Siri or headphones coming out pause a run, Listen back stops in the background, no link previews or drags, a flat launch screen; what was decided against.
+- `changes/native-1.md`: the iPad menu bar as the HIG asks (tabs in View on ⌘1 to ⌘7, the app's settings beneath the system's), the opt-in practice reminder, Dynamic Type through one root scale, and `.pfpack` files opening in the app; the event shape for packs and a Check on the iPad list.
 - `changes/sightroll.md`: reading drills and Sight Run show two lines at least and turn a line at a time (the second eases up on the top line's last note), Sight Run deals three lines a set, the cursor stands on the note in every mode; the look-ahead and scrolling research behind it.
 
 ## Research (`research/`)

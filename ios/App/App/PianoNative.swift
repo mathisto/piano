@@ -29,7 +29,7 @@ class PianoViewController: CAPBridgeViewController {
 /// WebKit has no Web MIDI. This forwards every connected MIDI source to the page, which fakes
 /// navigator.requestMIDIAccess on top of it (src/native-midi.ts). Also: Apple's Bluetooth MIDI pairing sheet,
 /// the screen kept awake while a run plays or the keys are played, a run paused when the sound is taken, a daily backup to
-/// Files, and files opened from other apps.
+/// Files, the system text size, and files opened from other apps.
 @objc(CoreMidiPlugin)
 public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CoreMidiPlugin"
@@ -41,6 +41,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setAppearance", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveBackup", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "textSize", returnType: CAPPluginReturnPromise),
     ]
 
     private var client = MIDIClientRef()
@@ -52,8 +53,9 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private(set) var playing = false // a run counts in, plays or waits (setPlaying)
     private var lastKey = -Double.infinity // uptime ms of the last message from a keyboard
 
-    /// A MIDI or MusicXML file opened from Files, Mail or AirDrop ("Open in Piano Forte"). Capacitor posts it, on a cold start
-    /// once the plugins are loaded; the page may not be listening yet, so the event waits for it.
+    /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Piano Forte"). Capacitor
+    /// posts it, on a cold start once the plugins are loaded; the page may not be listening yet, so the event waits for it. The event:
+    /// `file` with { name: the file's name with its extension, data: its bytes in base64 } (src/native-app.ts makes a File of it).
     override public func load() {
         NotificationCenter.default.addObserver(forName: .capacitorOpenURL, object: nil, queue: .main) { [weak self] note in
             guard let url = (note.object as? [String: Any])?["url"] as? URL, url.isFileURL else { return }
@@ -61,6 +63,10 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url) else { return }
             self?.notifyListeners("file", data: ["name": url.lastPathComponent, "data": data.base64EncodedString()], retainUntilConsumed: true)
+        }
+        // the system text size changed (Settings, Control Center): the page rescales its type (textSize below)
+        NotificationCenter.default.addObserver(forName: UIContentSizeCategory.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.notifyListeners("textSize", data: ["category": UIApplication.shared.preferredContentSizeCategory.rawValue])
         }
         // A call, Siri or an alarm takes the sound, or the headphones come out (Apple: playback pauses at once): the page pauses
         // a run and stops Listen back. Not on return from the background, which iOS reports as an interruption too: the run paused on leaving.
@@ -89,6 +95,12 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     /// The clock the events are stamped on, for the page to find its offset from performance.now() (src/native-midi.ts).
     @objc func now(_ call: CAPPluginCall) {
         call.resolve(["t": Self.uptime()])
+    }
+
+    /// The system text size as its content size category (Dynamic Type): the page turns it into a root font scale, once here and on each
+    /// "textSize" event (src/native-app.ts).
+    @objc func textSize(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { call.resolve(["category": UIApplication.shared.preferredContentSizeCategory.rawValue]) }
     }
 
     /// The page's whole record (Settings' export) into Documents, which Files shows as On My iPad > Piano Forte: one file a day,

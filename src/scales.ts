@@ -1,3 +1,4 @@
+import { unevenCounts } from './even'
 import { noteName } from './spell'
 import { build, type Bar, type Hand, type Raw, type Song } from './song'
 
@@ -249,8 +250,8 @@ export const nextStage = (stats: ScaleStats): Stage => STAGES.find((s) => !maste
 
 export const CLEAN_RUNS = 3
 
-/** A run that counts: every note, no stray ones, in time, and not an uneven touch when that is being judged. */
-export const passed = (r: { clean: boolean; acc: number; even: { rating: string } | null }) => r.clean && r.acc >= 0.85 && r.even?.rating !== 'uneven'
+/** A run that counts at Path level `lv`: every note, no stray ones, in time, and from level 2 not an uneven touch when that is being judged. */
+export const passed = (r: { clean: boolean; acc: number; even: { rating: string } | null }, lv: number) => r.clean && r.acc >= 0.85 && !unevenCounts(r.even, lv)
 
 /** Three clean runs in a row at a tempo make it solid at that tempo; a bad run starts the count again. */
 export function record(stats: ScaleStats, c: Card, bpm: number, ok: boolean): ScaleStats {

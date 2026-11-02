@@ -1,10 +1,11 @@
 import '@fontsource-variable/newsreader/opsz-italic.css' // the staff's dynamics and expression words; loads with the staff, not at boot
 import { keyName } from './cover'
+import { between, look, pulse } from './beatpulse'
 import type { Game } from './game'
 import { analyze, densest, figure, fitZoom, layout, windowFor, yOf, S, type Analysis, type Cfg, type Layout, type LChord } from './layout'
 import { settings } from './settings'
 import { BOTTOM_STEP, keyAcc, spell } from './spell'
-import { barAt } from './song'
+import { barAt, type Song } from './song'
 import { marksOf, summary } from './marks'
 
 const NS = 'http://www.w3.org/2000/svg'
@@ -28,6 +29,8 @@ const digits = (s: string) => s.split('').map((c) => G.digit(Number(c))).join(''
 // a score's marks: articulation above and below (with half its height, to centre it), dynamic letters
 const ART = { stac: ['\ue4a2', '\ue4a3', 1.7], ten: ['\ue4a4', '\ue4a5', 1], acc: ['\ue4a0', '\ue4a1', 4.9] } as const
 const DYN: Record<string, string> = { p: '\ue520', m: '\ue521', f: '\ue522', r: '\ue523', s: '\ue524', z: '\ue525' }
+
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)') // live: the setting can change while the app is open
 
 function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, parent: Element, text?: string) {
   const e = document.createElementNS(NS, tag)
@@ -57,10 +60,12 @@ const ROLL_MS = 350 // a line turning up into place: long enough to follow, sett
 export class Staff {
   private svg: SVGSVGElement
   private cursor!: SVGLineElement
+  private ball!: SVGCircleElement // the Staff pulse: a ball that bounces on the cursor's tip, landing on each beat
   private curtain?: SVGRectElement
   private L?: Layout
   private an?: Analysis
   private anKey = ''
+  private anSong?: Song // the game's song the analysis was made from (its notes lose their fingers when the numbers are off)
   private cfgKey = ''
   private dirty = true
   private seen = 0
@@ -220,6 +225,15 @@ export class Staff {
     const bottom = L.base[L.clefs[L.clefs.length - 1]]
     this.cursor.setAttribute('y1', String(dy + top - 12))
     this.cursor.setAttribute('y2', String(dy + bottom + 12))
+    // a ballistic hop from beat to beat (a bouncing ball times nearly as well as a click: Hove et al. 2013), higher into a downbeat; held on the tip under reduced motion, where it only darkens into the beat
+    const p = look(this.game) === 'staff' ? between(this.game.song.bars, this.game.t) : null
+    this.ball.style.display = p ? '' : 'none'
+    if (!p) return
+    const f = p.d0 / (p.d0 + p.d1)
+    const still = REDUCED.matches
+    this.ball.setAttribute('cx', String(cx))
+    this.ball.setAttribute('cy', String(dy + top - 12 - 0.45 * S - (still ? 0 : 4 * f * (1 - f) * 1.5 * S * (0.6 + 0.4 * p.w1))))
+    this.ball.style.opacity = still ? String(0.3 + 0.7 * pulse(this.game.song.bars, this.game.t)) : ''
   }
 
   /** The room the staves have: the host less its margin of paper (style.css --pg, the same inset the svg takes). */
@@ -246,9 +260,11 @@ export class Staff {
     if (r.width <= 0 || r.height <= 0) return // hidden: the resize observer calls render() when it shows
     const read = mode === 'read'
     const { hands, parts } = this.game
-    const key = `${song.id}|${read}|${hands.R}|${hands.L}|${[...parts]}`
-    if (!this.an || this.an.song !== song || key !== this.anKey) {
-      this.an = analyze(song, { read, hide: (n) => this.game.modeOf(n) === 'hide' })
+    const bare = !settings.fingers || song.aids?.fingers === false // Finger numbers off, in Settings or for a pack's item: none drawn and none made room for
+    const key = `${song.id}|${read}|${hands.R}|${hands.L}|${[...parts]}|${bare}`
+    if (!this.an || this.anSong !== song || key !== this.anKey) {
+      this.an = analyze(bare ? { ...song, notes: song.notes.map((n) => (n.f ? { ...n, f: undefined } : n)) } : song, { read, hide: (n) => this.game.modeOf(n) === 'hide' })
+      this.anSong = song
       this.anKey = key
     }
     const cfg = this.cfg(r)
@@ -330,6 +346,7 @@ export class Staff {
     // the cursor is the bottom layer, under the staff lines as well as the notes: a guide, never a mark on the music
     this.cursor = el('line', { class: 'cursor', y1: top - 12, y2: bottom + 12 }, svg) as SVGLineElement
     svg.prepend(this.cursor)
+    this.ball = el('circle', { class: 'beatball', r: 0.45 * S }, svg) as SVGCircleElement // under the notes: a high ledger note is never covered
     const g = el('g', { class: 'notes' }, svg)
     for (const c of L.chords) this.chord(g, c, dyOf(c.sys))
     for (const b of L.beams) {
@@ -419,7 +436,7 @@ export class Staff {
       if (h === c.heads[0]) this.timeline.push({ t: h.t, el: g })
       if (!h.cont && !small) for (const id of h.ids) this.byId.set(id, p)
       if (!h.cont && !small) e.setAttribute('data-id', String(h.ids[0]))
-      const f = !h.cont && !small ? this.game.song.notes[h.ids[0]]?.f : undefined // scales: the finger to use, on the side away from the stem
+      const f = !h.cont && !small ? this.an!.song.notes[h.ids[0]]?.f : undefined // scales: the finger to use, on the side away from the stem
       if (f) el('text', { class: 'finger', x: h.x, y: h.y + dy + (h.up ? 27 : -19), 'text-anchor': 'middle' }, g, String(f))
     }
     for (const a of c.accs) el('text', { class: `smufl acc${a.grace ? ' small' : ''}`, x: a.x, y: a.y + dy, 'text-anchor': 'middle' }, g, G[a.glyph])

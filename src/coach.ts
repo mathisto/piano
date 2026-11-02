@@ -2,7 +2,7 @@ import './coach.css'
 import { evenness, judged, lines, MIN_RUN, MIN_V, tolerance, type Coach, type Evenness } from './even'
 import { writtenTargets, type Edges } from './touch'
 import { barAt, type Hand, type Note, type Song } from './song'
-import { settings } from './settings'
+import { settings, touchCoach } from './settings'
 import * as store from './store'
 import { mean, median } from './util'
 
@@ -140,7 +140,7 @@ export function marksFor(s: Seen | undefined, always: boolean): Marks {
 export const seen = (s: Seen | undefined, rating: string | undefined): Seen => ({ runs: (s?.runs ?? 0) + 1, even: rating === 'even' ? (s?.even ?? 0) + 1 : rating ? 0 : (s?.even ?? 0) })
 
 /** Whether the touch coach watches this run at all. */
-export const coached = (id: string, dyn: string | undefined, mode: string) => settings.coach !== 'off' && mode !== 'read' && judged(id, dyn)
+export const coached = (id: string, dyn: string | undefined, mode: string) => touchCoach() !== 'off' && mode !== 'read' && judged(id, dyn)
 
 let book: Record<string, Seen> | undefined
 export let marks: Marks = 'full' // for the run about to start

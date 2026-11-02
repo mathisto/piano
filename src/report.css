@@ -1,7 +1,7 @@
 /* Report a problem: a quiet text link under a piece's credit, on the start card and in each Credits entry */
 a.report {
   color: var(--accent);
-  font-size: 14px;
+  font-size: calc(14px * var(--ts));
   text-decoration: underline;
   pointer-events: auto;
   display: inline-block;
@@ -25,6 +25,6 @@ dialog.sheet .credlist a.report {
   #ready a.report {
     padding: 2px 4px 0; /* the short card keeps the link, one quiet line under the mode switch */
     margin-top: 0;
-    font-size: 13px;
+    font-size: calc(13px * var(--ts));
   }
 }

@@ -1,6 +1,8 @@
 import 'pixi.js/unsafe-eval' // the page's CSP has no 'unsafe-eval': Pixi's shader uploads without new Function()
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
+import { look as pulseLook, swell } from './beatpulse'
 import type { Game } from './game'
+import { grid } from './metronome'
 import type { Grade } from './judge'
 import { isBlack } from './osk'
 import { C } from './palette'
@@ -239,20 +241,25 @@ export class Highway {
     const pps = H / look
     const fx = settings.fx
     const hide = (g.mode === 'read' && !g.showNotes) || g.view === 'sheet' // reading drills and sheet view: no falling notes
-    const names = g.mode === 'read' ? g.showNames : settings.names
+    const names = (g.mode === 'read' ? g.showNames : settings.names) && g.song.aids?.names !== false // a pack item may turn them off
 
     // ----- bar and beat lines
     const gr = this.grid
     gr.clear()
     const bars = g.song.bars
-    for (let b = hide ? bars.length : Math.max(0, bars.findIndex((x) => x.t1 > T - 0.1)); b < bars.length && bars[b].t0 < T + look; b++) {
+    const lines = pulseLook(g) === 'lines' // the Beat lines pulse: each line swells in Ink as it lands on the keys, the beat read from its approach
+    for (let b = hide ? bars.length : Math.max(0, bars.findIndex((x) => x.t1 > T - 1)); b < bars.length && bars[b].t0 < T + look; b++) {
       const bar = bars[b]
-      const beats = (bar.n * 4) / bar.den
-      for (let k = 0; k < beats; k++) {
-        const t = bar.t0 + (k * (bar.t1 - bar.t0)) / beats
+      const { count, dt, at } = grid(bar) // the metronome's beats: dotted quarters in 6/8, a pickup counted back from its end
+      for (let k = 0; k < count; k++) {
+        const t = at + k * dt
         const y = H - (t - T) * pps
-        if (y < 0 || y > H) continue
-        gr.rect(0, y, this.W, k === 0 ? 2 : 1).fill({ color: C.grid, alpha: k === 0 ? 0.55 : 0.16 })
+        if (t < bar.t0 - 1e-6 || y < 0) continue
+        const down = k === 0 && !bar.ql
+        if (y <= H) gr.rect(0, y, this.W, down ? 2 : 1).fill({ color: C.grid, alpha: down ? 0.55 : 0.16 })
+        const d = (t - T) / dt // beats until it lands: lit through its last beat of fall, then a short fade on the keys
+        const v = lines ? (d >= 0 ? Math.max(0, 1 - d) ** 2 : swell(d)) * (down ? 1 : 0.6) : 0
+        if (v > 0.01) gr.rect(0, Math.min(y, H - 3) - 1, this.W, 3).fill({ color: C.ink, alpha: 0.55 * v })
       }
     }
 

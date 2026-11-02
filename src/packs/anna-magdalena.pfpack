@@ -1,0 +1,24 @@
+{
+ "pf": 1,
+ "id": "anna-magdalena",
+ "title": "The notebook for Anna Magdalena Bach",
+ "by": "Piano Forte",
+ "about": "Dances and airs from the 1725 notebook, in its order. Most are a page long.",
+ "licence": "CC0-1.0",
+ "items": [
+  {"piece": "mutopia-74", "title": "Anh. 113, Menuet"},
+  {"piece": "mutopia-75", "title": "Anh. 114, Minuet in G"},
+  {"piece": "mutopia-76", "title": "Anh. 115, Menuet"},
+  {"piece": "mutopia-77", "title": "Anh. 116, Menuet"},
+  {"piece": "mutopia-1013", "title": "Anh. 117a, Polonaise in F major"},
+  {"piece": "mutopia-1015", "title": "Anh. 117b, Polonaise in F major"},
+  {"piece": "mutopia-1014", "title": "Anh. 118, Minuet in B-flat major"},
+  {"piece": "mutopia-1016", "title": "Anh. 119, Polonaise in G minor"},
+  {"piece": "mutopia-1612", "title": "Anh. 120, Minuet in A minor"},
+  {"piece": "mutopia-1613", "title": "Anh. 121, Minuet in C minor"},
+  {"piece": "mutopia-79", "title": "Anh. 126, Musette in D"},
+  {"piece": "mutopia-1614", "title": "Anh. 127, March in E-flat major"},
+  {"piece": "mutopia-1615", "title": "Anh. 128, Polonaise in D minor"},
+  {"piece": "mutopia-767", "title": "Anh. 131, Air"}
+ ]
+}

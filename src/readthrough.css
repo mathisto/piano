@@ -18,7 +18,7 @@ body.readthru #modeSeg {
 .ready .rt-timer span {
   display: inline;
   min-width: 3ch;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
   color: var(--ink-3);
 }
 .ready .rt-row {
@@ -40,18 +40,18 @@ body.readthru #modeSeg {
 .ready .rt-tempo #rtRate {
   display: inline;
   min-width: 4ch;
-  font: 650 28px/1 var(--ui);
+  font: 650 calc(28px * var(--ts))/1 var(--ui);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 .ready .rt-row .switch {
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .ready .rt-why {
   max-width: 52ch;
   margin: 12px auto 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts));
   color: var(--ink-3);
 }
 @container stage (max-height: 420px) {
@@ -91,10 +91,10 @@ body.readthru #modeSeg {
   justify-content: space-between;
   margin-top: 6px;
   color: var(--ink-3);
-  font: 600 13px/1 var(--ui);
+  font: 600 calc(13px * var(--ts))/1 var(--ui);
 }
 .card .line.rt-sub {
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 #staff .beam.ahead,
 #staff .rest.ahead {

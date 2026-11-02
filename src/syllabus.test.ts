@@ -26,26 +26,33 @@ describe('technique syllabus', () => {
   const good = { acc: 0.95, touchPct: 0.9 }
   it('counts a run as good from 85% accuracy and, when touch was graded, 70% in range', () => {
     const s: TechStats = {}
-    applyRun(s, 'x', { acc: 0.9, touchPct: 0.6 }, 0)
+    applyRun(s, 'x', { acc: 0.9, touchPct: 0.6 }, 0, 1)
     expect(s.x.streak).toBe(0)
-    applyRun(s, 'x', { acc: 0.9, touchPct: -1 }, 0)
+    applyRun(s, 'x', { acc: 0.9, touchPct: -1 }, 0, 1)
     expect(s.x.streak).toBe(1)
+  })
+
+  it('an uneven touch stops a run counting from Path level 2, not at level 1 (decision 5)', () => {
+    const uneven = { ...good, even: { rating: 'uneven' } }
+    expect(goodRun(uneven, 1)).toBe(true)
+    expect(goodRun(uneven, 2)).toBe(false)
+    expect(goodRun({ ...good, even: { rating: 'nearly' } }, 5)).toBe(true)
   })
 
   it('is solid after two good runs in a row, and a bad run resets that', () => {
     const s: TechStats = {}
-    applyRun(s, 'x', good, 0)
+    applyRun(s, 'x', good, 0, 1)
     expect(stateOf(s, 'x', 0)).toBe('learning')
-    applyRun(s, 'x', good, 0)
+    applyRun(s, 'x', good, 0, 1)
     expect(stateOf(s, 'x', 0)).toBe('solid')
-    applyRun(s, 'x', { acc: 0.5, touchPct: 0.1 }, 0)
+    applyRun(s, 'x', { acc: 0.5, touchPct: 0.1 }, 0, 1)
     expect(stateOf(s, 'x', 0)).toBe('learning')
   })
 
   it('schedules a solid exercise for review and calls it due when the day comes', () => {
     const s: TechStats = {}
-    applyRun(s, 'x', good, 0)
-    applyRun(s, 'x', good, 0)
+    applyRun(s, 'x', good, 0, 1)
+    applyRun(s, 'x', good, 0, 1)
     expect(stateOf(s, 'x', 1)).toBe('solid')
     expect(stateOf(s, 'x', 40)).toBe('due')
     expect(stateOf(s, 'never', 0)).toBe('new')
@@ -55,8 +62,8 @@ describe('technique syllabus', () => {
     const s: TechStats = {}
     expect(nextRecipe(s, 0).reason).toBe('next')
     expect(nextRecipe(s, 0).recipe).toBe(SYLLABUS[0])
-    applyRun(s, SYLLABUS[0].id, good, 0)
-    applyRun(s, SYLLABUS[0].id, good, 0)
+    applyRun(s, SYLLABUS[0].id, good, 0, 1)
+    applyRun(s, SYLLABUS[0].id, good, 0, 1)
     expect(nextRecipe(s, 0).recipe).toBe(SYLLABUS[1])
     expect(nextRecipe(s, 99)).toMatchObject({ reason: 'due', recipe: SYLLABUS[0] })
   })
@@ -71,7 +78,7 @@ describe('a good technique run', () => {
       for (let i = 0; i < mash; i++) j.press(40, 0.5 + i) // no note of that pitch anywhere
       return { acc: j.accuracy, touchPct: -1 }
     }
-    expect(goodRun(run(0))).toBe(true)
-    expect(goodRun(run(3))).toBe(false) // 8 right of 11 judged
+    expect(goodRun(run(0), 1)).toBe(true)
+    expect(goodRun(run(3), 1)).toBe(false) // 8 right of 11 judged
   })
 })

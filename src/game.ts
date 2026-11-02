@@ -8,7 +8,7 @@ import { pedalLine, pedalReport, type PedalEv } from './pedal'
 import { articulation, fixedAt, melodyHand, songLines, timing, voicing, type Artic, type Press, type Timing, type Voicing } from './coach'
 import { DEFAULT_EDGES, velStats, type TouchStats } from './touch'
 import { Judge, type Ev, type Grade, type HoldGrade, type VelGrade } from './judge'
-import { settings } from './settings'
+import { settings, strictness, touchCoach } from './settings'
 import { barAt, type Note, type Song } from './song'
 
 export type Mode = 'perform' | 'learn' | 'read'
@@ -181,7 +181,8 @@ export class Game {
 
   cfg() {
     const perform = this.mode === 'perform'
-    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && settings.strict === 'easy' ? 'lenient' : HOLD[settings.strict]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[settings.strict], beat: this.song.spb }
+    const st = strictness()
+    return { rate: this.rate, wait: this.wait, strict: perform, hold: perform ? (this.song.artic === 'staccato' ? 'strict' : this.song.artic === 'legato' && st === 'easy' ? 'lenient' : HOLD[st]) : 'off', ease: this.calib ? CALIBRATION_EASE : this.paced ? PACED_EASE : EASE[st], beat: this.song.spb }
   }
 
   /** Back to the start (or the loop start), stopped. */
@@ -413,7 +414,7 @@ export class Game {
   /** The practice metronome: every beat of the song from the count-in's end, scheduled from the song position like the count-in. */
   private metronome(from: number, end: number) {
     if ((this.mode === 'read' && !this.paced) || !this.running()) return
-    if (settings.metro !== 'off' || this.paced || this.calib) {
+    if (settings.metro === 'beat' || settings.metro === 'eighths' || this.paced || this.calib) { // Silent: the beat is seen (beatpulse.ts), not heard
       for (const k of ticks(this.song.bars, Math.max(this.nextMetro, from), end, !this.paced && settings.metro === 'eighths'))
         audio.click(k.kind === 'down', Math.max(0, (k.t - this.t) / this.rate), true, k.kind === 'sub' ? 0.5 : 1)
     }
@@ -424,7 +425,7 @@ export class Game {
     this.dispatch(this.judge.tick(Infinity))
     const { judge: j, song, mode, rate } = this
     const read = mode === 'read'
-    const coach = settings.coach
+    const coach = touchCoach()
     const quiet = coach === 'off' || read
     const v = j.samples()
     const edges = settings.edges ?? DEFAULT_EDGES

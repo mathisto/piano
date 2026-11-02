@@ -1,8 +1,10 @@
-# The horizon: traps and loves, Studies and free courses, Apple guidance now, and iPhone, Mac and Watch
+# The horizon: traps and loves, Studies and free packs, Apple guidance now, and iPhone, Mac and Watch
 
 Compiled 2026-11-01 for the owner's request of the same day: a dedicated section for Hanon and the other studies, with community content packs like Piano Marvel's (nothing for sale); find the most complained-about and the best-loved features across piano apps and make sure Piano Forte avoids the first and does the second; apply the latest iOS and iPadOS features and Liquid Glass practice, with up-to-date guidance in the repo; and say what parallel iPhone and Mac versions, and an Apple Watch companion that ticks the metronome silently, would take and look like.
 
 It is a synthesis of three research passes run the same day (user voice across 14 apps and community content models; Apple UI and native features; iPhone, Mac and Watch), checked against the repo at HEAD e15144e and then 9ec6f60 (library-and-profile C1 and S1 merged while this was written). It builds on `docs/research/practice-path.md` (decisions 1 to 10) and `docs/research/library-and-profile.md` (decisions 11 to 22), all accepted by the owner. Nothing here replaces them; section 6 merges the three plans into one phase list. The stale Apple passages in `ios-native.md`, `ios-ux.md` and `platforms.md` were corrected in place the same day, with a dated note at each.
+
+**Wording, 1 Nov 2026:** the owner chose "Pack" over "Course" (decision 24), and this note now says pack throughout. Decisions 25, 26 and 28 were accepted as recommended; 23 is open until the owner has seen both placements (`docs/changes/studies-packs.md`, where K1 and most of K2 are built).
 
 Facts fixed for this pass, overriding the research reports where they disagree: the Apple Developer account is **paid** (Individual, team TC8XUVBATG, since 2026-10-31; TestFlight builds ship); the owner's iPad Air 4 runs **iPadOS 26.5** (checked on the device on 1 Nov), not 27; whether the owner has an iPhone or an Apple Watch is **unknown** (decision 33).
 
@@ -12,7 +14,7 @@ Evidence labels are practice-path's: **MA** meta-analysis or systematic review, 
 
 ## 1. The recommendation on one page
 
-**Studies and courses: build it, as a file, not a marketplace.** A *course* is a small JSON list that names things the app can already resolve: catalogue pieces by id, generated exercises by their settings, Read stages and Scales stages by id, each with an optional note, hand, tempo and which aids are on. It never carries music, so it carries no licence risk and needs no moderation of content. The Technique page gains a **Studies** section at its top (Hanon, Czerny, Burgmüller, Clementi), each study book a course that says "next is No. 4 of 18"; repertoire courses (Schumann's Album for the Young, the Anna Magdalena notebook) sit behind a Courses chip on Songs. First-party courses ship in the bundle first. Then import by file and by a link that carries the whole course in its fragment (no server sees it), and a `courses/` folder in the public repo that anyone can add to by pull request, checked by CI and read by a human. No accounts, ratings, comments, uploads or store: those are what made Anki's shared decks noisy and MuseScore.com r/piano's most hated site (OBS). A course with notes is also the free version of the teacher assignment Piano Marvel and Sight Reading Factory charge for (IND).
+**Studies and packs: build it, as a file, not a marketplace.** A *pack* is a small JSON list that names things the app can already resolve: catalogue pieces by id, generated exercises by their settings, Read stages and Scales stages by id, each with an optional note, hand, tempo and which aids are on. It never carries music, so it carries no licence risk and needs no moderation of content. The Technique page gains a **Studies** section at its top (Hanon, Czerny, Burgmüller, Clementi), each study book a pack that says "next is No. 4 of 18"; repertoire packs (Schumann's Album for the Young, the Anna Magdalena notebook) sit behind a Packs chip on Songs. First-party packs ship in the bundle first. Then import by file and by a link that carries the whole pack in its fragment (no server sees it), and a `packs/` folder in the public repo that anyone can add to by pull request, checked by CI and read by a human. No accounts, ratings, comments, uploads or store: those are what made Anki's shared decks noisy and MuseScore.com r/piano's most hated site (OBS). A pack with notes is also the free version of the teacher assignment Piano Marvel and Sight Reading Factory charge for (IND).
 
 **Traps and loves: the app already avoids the loud traps** (billing tricks, vanishing songs, ads, accounts, locked paths, star pressure, mic misdetection) and does most of the loved things. The gaps that matter: the thin start (few easy pieces), studies that exist but are scattered and graded as hard (all 20 Hanon pieces sit at grade 4 or 5, checked), finger numbers that cannot be turned off, own-file import that a newcomer cannot find, progress split between devices, no Dynamic Type, no answer from a human without a GitHub account. Each has a named fix in section 2.
 
@@ -22,7 +24,7 @@ Evidence labels are practice-path's: **MA** meta-analysis or systematic review, 
 
 **The four calls that shape it.**
 
-- **A course names; it never carries.** Every item resolves to something already licensed, graded and hash-pinned in the catalogue, so a shared file can be wrong but cannot be infringing or harmful.
+- **A pack names; it never carries.** Every item resolves to something already licensed, graded and hash-pinned in the catalogue, so a shared file can be wrong but cannot be infringing or harmful.
 - **System glass, our paper.** Native surfaces the app presents (pairing, file picker, share sheet, alerts, menu bar) are glass for free; the web content stays opaque paper and ink.
 - **Sync before screens.** A second or third Apple device is worth little while each holds its own progress; one shared folder in iCloud Drive, merged by the export code that already exists, comes before the iPhone and the Mac app.
 - **Try before building, on the wrist.** A week with an existing watch metronome answers whether a pianist feels the tap, for nothing, before five sessions of SwiftUI.
@@ -40,17 +42,17 @@ Sources: 1-2 star App Store reviews since 2025-11 for 14 apps (Simply Piano 162,
 | 1 | Trials that charge, cancellation that fails, "lifetime" plans that lose songs | The top theme everywhere: 78% of Hello Piano's and 51% of Simply's low stars; Playground's lifetime plan lost its licensed songs after two years (OBS) | **Avoids.** Free, no ads, no account, MIT, and it says so | None. The public repo and the one-file export are the proof against a rug-pull; keep both |
 | 2 | Songs removed; a second paywall | "Flowkey just deletes songs now?"; 16% of flowkey and 21% of Yousician low stars (OBS) | **Avoids.** Public-domain, credited, hash-pinned; `aliases` keep ids across rebuilds (REPO) | None |
 | 3 | No songs people recognise | Pop and film are the most asked-for; three threads ask for an app that takes your own files (OBS) | **Not yet, by licence policy.** Own-file import exists but a newcomer cannot find it | T1: a "Bring your own MIDI or MusicXML" line in Set up and on Songs; Files open-in (built 30 Oct, not seen on the iPad) |
-| 4 | The falling-notes crutch: "it teaches you to copy" | Strong on Reddit, about Synthesia and the subscription apps alike; players turn aids off themselves (OBS) | **Partly.** The staff is the main view; note names, judgement words and live marks fade. Finger numbers on scales are always drawn (`staff.ts:422`, no setting, checked) | T1: a Finger numbers switch; a course item may turn note names and finger numbers off (decision 28) |
+| 4 | The falling-notes crutch: "it teaches you to copy" | Strong on Reddit, about Synthesia and the subscription apps alike; players turn aids off themselves (OBS) | **Partly.** The staff is the main view; note names, judgement words and live marks fade. Finger numbers on scales are always drawn (`staff.ts:422`, no setting, checked) | T1: a Finger numbers switch; a pack item may turn note names and finger numbers off (decision 28) |
 | 5 | Rhythm, holds, dynamics, pedal not graded | "Three stars and think you're great"; "apps use timing only, not velocity" (OBS) | **Avoids, mostly.** Time, holds and touch are separate lines since practice-path phase 1; windows tuned by feel; nothing seen on the FP-10 yet | P3 (Auto strictness by level); the device sheet |
 | 6 | The reverse: over-punishing, or a 16th late still scores 100% | Piano Marvel and flowkey reviews (OBS) | **Partly.** Calibration, Easy, Standard, Strict | P3: Auto follows the Path level |
 | 7 | Wait mode as an accountability hole | Playground and flowkey users (OBS) | **Avoids.** The card says "The song waited, so time is not measured." (`ui-results.ts:100`, checked) | None |
-| 8 | Plateau after month two; bland or badly graded music | Strong on Reddit: "training wheels", "too easy or too complicated" (OBS) | **Partly.** A strong top end; a thin and mis-graded start (48 grade-1 pieces outside Lieder and studies, library-and-profile 4.6) | G1, G3, and the courses in section 3 |
-| 9 | "Almost no etudes, Hanon or Czerny"; "a buffet with no clear path" | A Pianote review; Czerny's "basic trilogy" and Burgmüller Op. 100 recommended in threads (OBS, PRAC) | **Partly.** The material exists (section 3.4) but is scattered, titled "Movement k" and graded hard | K1: the Studies section and first-party courses |
+| 8 | Plateau after month two; bland or badly graded music | Strong on Reddit: "training wheels", "too easy or too complicated" (OBS) | **Partly.** A strong top end; a thin and mis-graded start (48 grade-1 pieces outside Lieder and studies, library-and-profile 4.6) | G1, G3, and the packs in section 3 |
+| 9 | "Almost no etudes, Hanon or Czerny"; "a buffet with no clear path" | A Pianote review; Czerny's "basic trilogy" and Burgmüller Op. 100 recommended in threads (OBS, PRAC) | **Partly.** The material exists (section 3.4) but is scattered, titled "Movement k" and graded hard | K1: the Studies section and first-party packs |
 | 10 | Microphone misdetection | 31% of Piano Academy's low stars (OBS) | **Avoids.** MIDI only; the cost is that acoustic-only players are excluded | None (PRODUCT.md) |
 | 11 | MIDI that will not connect, or stops after an update | Hello Piano, Piano Marvel ("loss of keyboard recognition since latest update"), Melodics ("the only way to tell is to start playing") (OBS) | **Partly.** The keyboard chip says Connected or No keyboard; in-app Bluetooth pairing is built; nothing seen on the iPad per TestFlight build | Run the device sheet on every TestFlight build; the Appium smoke lane (ios-native B4) once a regression recurs |
 | 12 | Stars, streak guilt, gamification | "IT GAVE ME ZERO STARS"; "gimmicky beyond belief" (OBS) | **Avoids.** No points or ranks; a quiet streak with freezes | Keep it so; the reminder (decision 29) must not threaten the streak |
 | 13 | Forced paths, locked lessons, A/B-tested progressions | Skoove "locked"; Yousician A/B "could mess up your learning" (OBS) | **Avoids.** Nothing locks (principle 7) | None |
-| 14 | No teacher, no technique or posture | The most common Reddit answer is "get a method book and a teacher" (OBS) | **Not yet.** Touch coaching, Listen back, Compare and the teacher summary are partial | A course is a free assignment: a teacher writes one, the summary returns by text (section 3.7) |
+| 14 | No teacher, no technique or posture | The most common Reddit answer is "get a method book and a teacher" (OBS) | **Not yet.** Touch coaching, Listen back, Compare and the teacher summary are partial | A pack is a free assignment: a teacher writes one, the summary returns by text (section 3.7) |
 | 15 | Ads, "learn piano in a day" | 141 points on one thread (OBS) | **Avoids.** The copy rules forbid transfer claims | None |
 | 16 | Login loops, re-pairing every session | Hello Piano, Skoove, Playground on iPad (OBS) | **Avoids.** No account; paired BLE reconnects by itself since iOS 16 (IND) | None |
 | 17 | Progress lost, or split between devices | Playground "my progress doesn't save" (OBS) | **Partly.** IndexedDB plus export; a daily backup file to Files (built, not seen on the iPad); the iPad app and Chrome on the Mac are separate; a damaged record is fixed only by Clear all data (ROADMAP) | A5 (iCloud Drive backup that merges, decision 34); T1: skip and report a damaged record instead of Clear all data |
@@ -63,15 +65,15 @@ Sources: 1-2 star App Store reviews since 2025-11 for 14 apps (Simply Piano 162,
 
 | Love | Evidence | Piano Forte | To do |
 |---|---|---|---|
-| Playing something real in the first sitting | Simply is the most-recommended beginner app even among its critics (OBS (unv)) | **Partly.** Eight starters; few short easy pieces; no famous tunes, by policy | G3 (written first pieces, decision 15); Clementi's Op. 42 lessons as a first course (3.4) |
+| Playing something real in the first sitting | Simply is the most-recommended beginner app even among its critics (OBS (unv)) | **Partly.** Eight starters; few short easy pieces; no famous tunes, by policy | G3 (written first pieces, decision 15); Clementi's Op. 42 lessons as a first pack (3.4) |
 | Motivation and guidance, "90% of the battle" | Reddit (OBS) | **Partly**, closing with practice-path phase 2 (`nextUp()`, Continue) | P2 |
-| A clear method in a clear order | Piano Marvel, Pianote's Method, Playground bootcamps (OBS) | **Partly.** The Path, Start here, the ladder | Courses give each study book its order |
+| A clear method in a clear order | Piano Marvel, Pianote's Method, Playground bootcamps (OBS) | **Partly.** The Path, Start here, the ladder | Packs give each study book its order |
 | Wait mode; chunk, slow, build to tempo | Reddit, Trustpilot, HN (OBS) | **Does it.** Learn, A-B loop, tempo ladder, Auto tempo | None |
 | Sight-reading with an assessment | Piano Marvel's SASR "superb" (OBS) | **Partly.** Read stages and Sight Run; no single reading level | P5 placement (decision 9) |
 | Your own library | Reddit (OBS) | **Does it**; hard to find | T1 |
 | Instant, honest feedback | Playground on Trustpilot (OBS) | **Does it** | None |
 | Aids you can switch off | Reddit (OBS) | **Mostly** | The Finger numbers switch (T1) |
-| A graded library with playlists | OKTAV's five-star reviews (OBS) | **Partly.** Graded; no playlists | Courses are the playlists |
+| A graded library with playlists | OKTAV's five-star reviews (OBS) | **Partly.** Graded; no playlists | Packs are the playlists |
 | A human who answers | Pianote, Tonestro (OBS) | **Not yet**; a solo maintainer | `REPORT_TO`; say plainly in Credits that it is one person's project |
 | A one-time tool with no streak nagging | Tenuto: 0 of 12 recent reviews low (OBS) | **Does it**, for free | None |
 | Not being talked down to | flowkey's "adult look and feel" (OBS) | **Does it.** Urtext, grand staff, bass clef, no cartoon | None |
@@ -79,7 +81,7 @@ Sources: 1-2 star App Store reviews since 2025-11 for 14 apps (Simply Piano 162,
 
 ---
 
-## 3. Studies and courses
+## 3. Studies and packs
 
 ### 3.1 How the models work, and the lesson from each
 
@@ -99,9 +101,9 @@ What makes sharing work: one small file that travels by chat or link, content wh
 
 Decision 14 put the studies under Technique, off the piece ladder. The owner now asks for a dedicated section. Both fit one design:
 
-- **Technique gets a Studies section at its top**, above the generated syllabus (which becomes "Exercises"). Each row is a course: the book's name, how far you are ("No. 4 of 18 next"), one Start (the lamp only if it is the page's recommended Start, practice-path 2.5), and an ⋯ with the list. Hanon, Czerny, Burgmüller, Clementi's lessons and the generated drill courses live here.
-- **Songs already has a Studies lane** (C1 and S1, merged 1 Nov as 9ec6f60: `kind: study` for the 39 pieces tagged `technique`, listed by composer and number). The lane is the pile; a course is the order and the guidance. Each Studies course on Technique links to its pieces in the lane, and the lane's head links back to the courses.
-- **Songs gets a Courses chip in Browse** (library-and-profile Option D) for repertoire courses: Schumann Op. 68, the Anna Magdalena notebook, the ladder's five levels, and any course you imported.
+- **Technique gets a Studies section at its top**, above the generated syllabus (which becomes "Exercises"). Each row is a pack: the book's name, how far you are ("No. 4 of 18 next"), one Start (the lamp only if it is the page's recommended Start, practice-path 2.5), and an ⋯ with the list. Hanon, Czerny, Burgmüller, Clementi's lessons and the generated drill packs live here.
+- **Songs already has a Studies lane** (C1 and S1, merged 1 Nov as 9ec6f60: `kind: study` for the 39 pieces tagged `technique`, listed by composer and number). The lane is the pile; a pack is the order and the guidance. Each Studies pack on Technique links to its pieces in the lane, and the lane's head links back to the packs.
+- **Songs gets a Packs chip in Browse** (library-and-profile Option D) for repertoire packs: Schumann Op. 68, the Anna Magdalena notebook, the ladder's five levels, and any pack you imported.
 - **No eighth tab.** The HIG says fewer tabs and no overflow (IND, HIG Tab bars, revised 8 Jun 2026); the tab capsule already scrolls at 820 px (ROADMAP Known gaps). Decision 23 holds the alternative.
 
 **Wireframe: Technique with Studies (iPad landscape, 1180 x 820).**
@@ -115,14 +117,14 @@ Decision 14 put the studies under Technique, off the piece ladder. The owner now
 |  Burgmüller, 25 Studies Op. 100       one a week · 18 in library    next: No. 4    [>] |
 |  Czerny, short exercises Op. 821      reading and patterns          next: No. 7    [>] |
 |  Clementi, Introduction Op. 42        the first lessons             3 of 24 done   [>] |
-|  Bring a course   (a file, or a link someone sent you)                                 |
+|  Bring a pack   (a file, or a link someone sent you)                                 |
 |                                                                                        |
 |  Exercises                                                                             |
 |  Five-finger · Scales · Hands together · Contrary motion · Arpeggios · ...  (as today) |
 +----------------------------------------------------------------------------------------+
 ```
 
-**A course opened.**
+**A pack opened.**
 
 ```
 +----------------------------------------------------------------------------------------+
@@ -139,7 +141,7 @@ Decision 14 put the studies under Technique, off the piece ladder. The owner now
 +----------------------------------------------------------------------------------------+
 ```
 
-### 3.3 The course format
+### 3.3 The pack format
 
 ```jsonc
 {
@@ -160,9 +162,9 @@ Decision 14 put the studies under Technique, off the piece ladder. The owner now
 ```
 
 - **Items.** `piece` is a catalogue id (`src/catalog-types.ts`); `drill` is a technique `Opts` object (`src/technique.ts`), range-checked against the patterns that exist; `read` and `scale` are stage ids (`src/drill.ts`, `src/scales.ts`). `note` (at most 140 characters), `hands`, `rate` (a share of the written tempo, 0.4 to 1) and `view` (which aids are on) are optional. Nothing else is accepted.
-- **Resolution.** An unknown id shows as a greyed row with its note. `sha` is advisory (rebuilds can change bytes; the repeats patch did): a mismatch says "this piece was updated since the course was written". An alias resolves through `aliases`. All text goes through `textContent`. A course cannot run code, carry bytes or claim a licence for music (INF).
-- **Done.** An item is done when its own existing rule says so: a piece at Ready, a drill at a counted good run (`syllabus.ts`), a stage at Solid. The course's next item is the first not done. No new grading.
-- **Progress.** `course:<id>` holds the done indices and the last-opened date; add `course:` to the `EXTRA` pattern in `src/backup.ts` (line 29) so export, import and merge carry it, and to the `clearAll` prefixes. One course in progress offers its next item to `nextUp()` as a candidate with the reason "Next in Burgmüller Op. 100", never a gate (principle 7).
+- **Resolution.** An unknown id shows as a greyed row with its note. `sha` is advisory (rebuilds can change bytes; the repeats patch did): a mismatch says "this piece was updated since the pack was written". An alias resolves through `aliases`. All text goes through `textContent`. A pack cannot run code, carry bytes or claim a licence for music (INF).
+- **Done.** An item is done when its own existing rule says so: a piece at Ready, a drill at a counted good run (`syllabus.ts`), a stage at Solid. The pack's next item is the first not done. No new grading.
+- **Progress.** `pack:<id>` holds the done indices and the last-opened date; add `pack:` to the `EXTRA` pattern in `src/backup.ts` (line 29) so export, import and merge carry it, and to the `clearAll` prefixes. One pack in progress offers its next item to `nextUp()` as a candidate with the reason "Next in Burgmüller Op. 100", never a gate (principle 7).
 - **External files: not in v1.** `{ "file": url }` would be another trust class (an unvetted licence, takedowns). People who want their own MIDI already import it.
 
 ### 3.4 What the catalogue actually holds (checked)
@@ -171,9 +173,9 @@ Read from `.cache/library/out-reanalyse/catalog.json` (built 30 Oct, 2,241 piece
 
 | Book | In the catalogue | Ids | Grades today | Notes |
 |---|---|---|---|---|
-| Hanon, The Virtuoso Pianist, Part I | Nos. 1 to 20 of 60 | `mutopia-2037-1` to `-20` | 19 at 4, 1 at 5 | MIDI; titled "Movement k"; tagged `technique`. Graded far too hard: a five-finger pattern in C is not grade 4. `kind: study` (C1, merged 1 Nov) moves them to the Studies lane but keeps the grade, so a course shows no level for them until G1 |
+| Hanon, The Virtuoso Pianist, Part I | Nos. 1 to 20 of 60 | `mutopia-2037-1` to `-20` | 19 at 4, 1 at 5 | MIDI; titled "Movement k"; tagged `technique`. Graded far too hard: a five-finger pattern in C is not grade 4. `kind: study` (C1, merged 1 Nov) moves them to the Studies lane but keeps the grade, so a pack shows no level for them until G1 |
 | Czerny, 160 Eight-Measure Exercises, Op. 821 | Nos. 1 to 19 | 19 Mutopia ids | 3 to 5 | Eight bars, about 13 s each; tagged `technique` (with Hanon these are decision 14's 39 studies, now `kind: study`) |
-| Czerny, 50 Melodic Studies, Op. 840 | Nos. 1 to 10 | `mutopia-2146` to `-2154`, `-2177` | 2 to 4 | Not tagged `technique`, so C1 (merged 1 Nov) leaves them as pieces: `kindOf` reads only the tag, and its title regex for the `study` form does not match "Übungsstücke" (`scripts/library/kind.ts`). A course names them by id either way; tagging the ten `technique` would put them in the Studies lane too |
+| Czerny, 50 Melodic Studies, Op. 840 | Nos. 1 to 10 | `mutopia-2146` to `-2154`, `-2177` | 2 to 4 | Not tagged `technique`, so C1 (merged 1 Nov) leaves them as pieces: `kindOf` reads only the tag, and its title regex for the `study` form does not match "Übungsstücke" (`scripts/library/kind.ts`). A pack names them by id either way; tagging the ten `technique` would put them in the Studies lane too |
 | Czerny Op. 599, 261, 299, 740, 849 | **none** | | | The books teachers name ("the basic trilogy 832, 299, 740", OBS) are absent |
 | Burgmüller, 25 Easy and Progressive Studies, Op. 100 | Nos. 1 to 18 of 25 | `mutopia-202` to `-230` | 2 to 4 | Nos. 19 to 25 (Ave Maria to La Chevaleresque) absent; titles inconsistent (some "Op. 100 No. n", some the French title alone) |
 | Schumann, Album for the Young, Op. 68 | 20 of 43 | | 1 to 4 | Nos. 1 to 14, 16, 18, 25, 26, 32, 36 |
@@ -182,36 +184,36 @@ Read from `.cache/library/out-reanalyse/catalog.json` (built 30 Oct, 2,241 piece
 | Bach | Inventions 15, Sinfonias 15, Little Preludes 3 | | | |
 | Gurlitt, Köhler, Beyer, Duvernoy, Heller, Bertini, Diabelli, Türk, Concone | **none** | | | |
 
-Consequences: Hanon, Czerny Op. 821 and 840, Burgmüller 1 to 18, Op. 68 and the Anna Magdalena pieces make courses today. Clementi's Op. 42 needs its movement titles (lesson names from the source) before it reads as a course; a course note can carry the lesson name, but the fix belongs in the catalogue (`title`), not in a list. The missing books go on a hand sourcing list (decision 27), checked one source at a time on Mutopia and IMSLP, never scraped (`public-domain-sources.md`).
+Consequences: Hanon, Czerny Op. 821 and 840, Burgmüller 1 to 18, Op. 68 and the Anna Magdalena pieces make packs today. Clementi's Op. 42 needs its movement titles (lesson names from the source) before it reads as a pack; a pack note can carry the lesson name, but the fix belongs in the catalogue (`title`), not in a list. The missing books go on a hand sourcing list (decision 27), checked one source at a time on Mutopia and IMSLP, never scraped (`public-domain-sources.md`).
 
-### 3.5 First-party courses
+### 3.5 First-party packs
 
-All public domain or generated; the catalogue's per-piece licence and the course list's CC0 apply.
+All public domain or generated; the catalogue's per-piece licence and the pack list's CC0 apply.
 
 1. **Hanon warm-up** (Nos. 1 to 20): two a day, slow, both hands, "stop if it tenses or hurts"; never "finish the book". The Reddit consensus is a small, careful part of practice (OBS); two "stop Hanon" threads (178 and 71 points) say what happens otherwise.
 2. **Burgmüller Op. 100**, Nos. 1 to 18, one a week, hands apart first; reordered by the re-grade (G1) where its own numbering and the level disagree.
 3. **Czerny for reading and patterns**: Op. 821 for eight-bar sight-reading, Op. 840 as melodic studies, interleaved so no study repeats two days running (the Reddit advice quoted above; contextual interference, MA, `learning-science.md`).
 4. **Clementi's first lessons** (Op. 42, the 39 short movements), once titled: the bottom rung that library-and-profile 4.6 found thin.
 5. **Album for the Young** and **the Anna Magdalena notebook** as "first real music".
-6. **Generated courses at no content cost**: the Technique syllabus as `drill` items (five-finger, then C, G, D and F); Read stages from treble landmarks to ledger lines.
-7. **The ladder's five levels** as courses, so the ladder and courses are one mechanism (`src/ladder-data.ts` already is `{ level, id, why }`).
+6. **Generated packs at no content cost**: the Technique syllabus as `drill` items (five-finger, then C, G, D and F); Read stages from treble landmarks to ledger lines.
+7. **The ladder's five levels** as packs, so the ladder and packs are one mechanism (`src/ladder-data.ts` already is `{ level, id, why }`).
 
 ### 3.6 Import, discovery, moderation
 
-- **By file.** `*.course.json` from Files, Mail or a drop on Songs. The iPad's `file` listener (`src/native-app.ts:54`) already routes opened files into `importFiles`; sniff for `"pf"` before the song importer.
-- **By link.** `https://pianoforte.mattkelly.io/#course=z:<base64url(deflate(json))>`: the whole course rides in the fragment, which never reaches a server; the native `CompressionStream` does the deflate. A 12-item course is about 400 bytes (INF), small enough for a text message. **Links never fetch a third-party URL:** the page's CSP allows `connect-src` only to itself and pianoforte.mattkelly.io (`index.html:6`, checked), and widening it to GitHub or gists would be a new security surface for no gain over the inline link.
-- **The index.** A `courses/` folder in the public repo, one file per course, deployed to `pianoforte.mattkelly.io/courses/` with an `index.json`, read by the app (already inside the CSP). Submit by pull request. CI checks every `piece` id exists, every `drill` validates, text lengths hold, no URLs in text, the list licence is CC0 or CC BY. A human reads the title and the notes (Mutopia's model, at hobby scale). The index is a convenience, not a gate: a course can travel as a file or a link without it.
-- **Shown origin.** "Piano Forte" only for courses in the bundle or the repo index; any other shows "From a file" or "From a link". No signing: a signature on a no-account app proves only "the same key as before" (INF).
+- **By file.** `*.pack.json` from Files, Mail or a drop on Songs. The iPad's `file` listener (`src/native-app.ts:54`) already routes opened files into `importFiles`; sniff for `"pf"` before the song importer.
+- **By link.** `https://pianoforte.mattkelly.io/#pack=<base64url(deflate(json))>`: the whole pack rides in the fragment, which never reaches a server; the native `CompressionStream` does the deflate. A 12-item pack is about 400 bytes (INF), small enough for a text message. **Links never fetch a third-party URL:** the page's CSP allows `connect-src` only to itself and pianoforte.mattkelly.io (`index.html:6`, checked), and widening it to GitHub or gists would be a new security surface for no gain over the inline link.
+- **The index.** A `packs/` folder in the public repo, one file per pack, deployed to `pianoforte.mattkelly.io/packs/` with an `index.json`, read by the app (already inside the CSP). Submit by pull request. CI checks every `piece` id exists, every `drill` validates, text lengths hold, no URLs in text, the list licence is CC0 or CC BY. A human reads the title and the notes (Mutopia's model, at hobby scale). The index is a convenience, not a gate: a pack can travel as a file or a link without it.
+- **Shown origin.** "Piano Forte" only for packs in the bundle or the repo index; any other shows "From a file" or "From a link". No signing: a signature on a no-account app proves only "the same key as before" (INF).
 - **Licence of the list.** CC0 preferred, CC BY allowed. A reference to a CC BY-SA score copies none of it, so share-alike does not attach to a list (INF, not legal advice; `docs/library.md` keeps BY-SA bytes out of the MIT code, and a reference is not bytes).
-- **Universal links, later.** With Associated Domains (open now the account is paid), a course link tapped in Messages opens the app instead of Safari. 0.5 to 1 session, once there is someone to share with.
+- **Universal links, later.** With Associated Domains (open now the account is paid), a pack link tapped in Messages opens the app instead of Safari. 0.5 to 1 session, once there is someone to share with.
 
 ### 3.7 The teacher loop, free
 
-A teacher (or the owner, for himself) writes a course with notes ("Bars 9 to 12 hands apart at 60"), sends the link; the student's progress stays on the student's device; Settings > Data > Practice summary already writes the text that goes back. That is Piano Marvel's and Sight Reading Factory's assignment, minus the account and the platform fee (IND). It is the cheapest honest answer to trap 14.
+A teacher (or the owner, for himself) writes a pack with notes ("Bars 9 to 12 hands apart at 60"), sends the link; the student's progress stays on the student's device; Settings > Data > Practice summary already writes the text that goes back. That is Piano Marvel's and Sight Reading Factory's assignment, minus the account and the platform fee (IND). It is the cheapest honest answer to trap 14.
 
 ### 3.8 Not to build
 
-Accounts, ratings, comments, download counts (they need a server), music uploads, a marketplace, trusted uploader licence labels, signed courses, a course editor inside the app in v1 (a JSON file and the validator's error messages are enough for the people who will write them; an editor is the upgrade if non-programmers ask).
+Accounts, ratings, comments, download counts (they need a server), music uploads, a marketplace, trusted uploader licence labels, signed packs, a pack editor inside the app in v1 (a JSON file and the validator's error messages are enough for the people who will write them; an editor is the upgrade if non-programmers ask).
 
 ---
 
@@ -267,7 +269,7 @@ P1 do now, P2 next, P3 a later bet, No decided against. Effort in agent sessions
 | iCloud Drive backup that merges (section 5.4) | Survives an app delete; carries progress between Apple devices and Chrome on the Mac | 2 | P2 |
 | App Intents and Shortcuts ("Start today's practice", "Open Sight Run") | Voice and Spotlight without a tap; classic Siri and Shortcuts run on the A14 (IND) | 1 | P2 |
 | Live region and `ariaNotify` | VoiceOver hears results | 0.25 on top of N6 | P2 |
-| Universal links | Course and piece links open the app | 0.5 to 1 | P3 |
+| Universal links | Pack and piece links open the app | 0.5 to 1 | P3 |
 | Widgets (streak, today's next) | A daily glance on the Home and Lock Screen | 1 to 2 | P3 |
 | Background Assets (Apple-hosted packs by level) | Makes the iPad independent of the home server at an App Store release (IND) | 2 to 3 | P3, at release |
 | Pencil marks per bar | A teacher's circle on a bar; anchoring to a re-engraved score is the hard part | 1 to 2 (web) | P3 |
@@ -334,7 +336,7 @@ A wrist pulse tied to the app's own beat would share a *schedule*, not a clock: 
 | Idea | Verdict | Why |
 |---|---|---|
 | A dedicated Studies section | **Strong** | The material is in the library, scattered and mis-graded; an order is what players ask for (sections 2 and 3) |
-| Community packs like Piano Marvel's | **Strong, as a free file** | The course format and a repo index give the value with none of the marketplace's failure modes |
+| Community packs like Piano Marvel's | **Strong, as a free file** | The pack format and a repo index give the value with none of the marketplace's failure modes |
 | A curriculum marketplace | **Trap** | Accounts, ratings and uploads are where Anki, MuseScore.com and Hooktheory went wrong |
 | Liquid Glass throughout | **Mostly a trap for a web view** | System surfaces already have it; imitation in content is against Apple's own rule and costs frames |
 | The latest native features | **Strong, selectively** | Reminder, Dynamic Type, menu bar, icon, App Intents; not Live Activities, Game Center or native tab chrome |
@@ -348,7 +350,7 @@ A wrist pulse tied to the app's own beat would share a *schedule*, not a clock: 
 1. **Sync through one iCloud Drive folder (strong).** Each device writes its existing backup file (`saveBackup`, built 30 Oct) as `Piano Forte/<device>.json` into the app's iCloud Drive folder; on open, each merges the other devices' files with the import merge that already exists (`src/backup.ts`: per record, `byTs`, max for days and minutes). Each device writes only its own file, so iCloud never sees a conflict. Chrome on the Mac reaches the same folder through a folder the player picks once (Chrome's File System Access, a persisted handle). That covers the iPad, an iPhone, the Mac app and Chrome on the Mac with no server, no account beyond the Apple ID the device already has, and no second schema; it fits principle 5 better than the sync-code relay. Unverified (INF, M): iCloud placeholders for files not yet downloaded (the native side must ask for the download), and Chrome reading a dataless file in the iCloud Drive folder. About 2 sessions. The sync-code relay on quartz stays the answer if Android or another browser joins (decision 34).
 2. **A click in the FP-10's own headphones (strong if it works).** For silent practice the problem is the room, not the wrist. With headphones in the FP-10, its own speakers are off and the iPad's click is the only sound in the room. Send the click to the keyboard as a short, quiet, very high note over MIDI out, scheduled ahead with a timestamp (Web MIDI `output.send(data, t)` in Chrome; `MIDISendEventList` with a future host time natively): it then sounds in the player's ears with the keyboard's own latency and nothing in the room. Unverified (INF): which note and velocity read as a click on the FP-10, and whether it masks the player's own notes. A ten-minute test from Chrome before any code (decision 36). About 0.5 session: the app has MIDI in, not out.
 3. **A silent pulse on the staff (strong, from the research pass).** A slow ink-tone pulse on the current-bar marker, never amber (amber means "play this") and never a flash, honouring reduced motion. It works on every device with no pairing, and it is what the player is already looking at. 0.5 session.
-4. **Course links as the cross-device carrier.** The same link opens a course on any device, so the iPhone, the Mac and a teacher's student need no sync to share a plan.
+4. **Pack links as the cross-device carrier.** The same link opens a pack on any device, so the iPhone, the Mac and a teacher's student need no sync to share a plan.
 5. **The phone as the away-from-the-piano trainer.** Theory, ear, rhythm echo and Read cards with headphones and on-screen keys already fit a phone in portrait; that, not a "companion mode", is the iPhone's real use, and its minutes count as effort like any other.
 
 ### 5.5 Effort and order
@@ -377,7 +379,7 @@ Steps 7 to 9 add a second UI language (SwiftUI) to a repo that is TypeScript apa
 
 ### 6.2 The phases
 
-**P** is practice-path, **L, C, S, G, R** library-and-profile (both unchanged); **A** Apple shell, **K** courses, **T** traps, **X** other platforms are this plan's.
+**P** is practice-path, **L, C, S, G, R** library-and-profile (both unchanged); **A** Apple shell, **K** packs, **T** traps, **X** other platforms are this plan's.
 
 | # | Phase | Builds | Estimate | Needs |
 |---|---|---|---|---|
@@ -385,11 +387,11 @@ Steps 7 to 9 add a second UI language (SwiftUI) to a repo that is TypeScript apa
 | 1 | **A1** Shell fixes and checks | tabs into View and settings below Settings (decision 31); web manifest; the Designed-for-iPad run; device-sheet lines for window controls, the menu bar and the icon in Clear and Tinted | 0.5 | nothing |
 | done | C1, S1 | catalogue fix, `kind`, sidecar, covers, facets with a Studies lane | merged 1 Nov (9ec6f60); the catalogue publish and the iPad look are owed (`docs/changes/library-c1-s1.md`) | |
 | 3 | P2 + L2 | `nextUp()`, Continue, `by` | 1 (as planned) | P1 |
-| 4 | **K1** Studies and first-party courses | the course loader and validator (pure, unit-tested), `course:` progress in export, merge and clear; Studies on Technique; Courses chip on Songs; a course's next item as a `nextUp()` candidate; the seven first-party courses of 3.5 except Clementi | 1.5, plus an hour of the owner's look at each order | P2 for the Today candidate |
+| 4 | **K1** Studies and first-party packs | the pack loader and validator (pure, unit-tested), `pack:` progress in export, merge and clear; Studies on Technique; Packs chip on Songs; a pack's next item as a `nextUp()` candidate; the seven first-party packs of 3.5 except Clementi | 1.5, plus an hour of the owner's look at each order | P2 for the Today candidate |
 | 5 | **T1** Trap fixes | Finger numbers switch; own-file import findable on first run and on Songs; `REPORT_TO` once the owner gives an address; a damaged IndexedDB record skipped and reported instead of Clear all data | 1 | the owner's address |
 | 6 | **A2** Practice reminder | plugin method, Settings row, the three-day schedule of 4.3 | 0.75 | decision 29 |
 | 7 | R1, G1, P3 | as planned | 1, 2, 1 | as planned |
-| 8 | **K2** Course import and the index | file sniffing on open and drop; `#course=z:` links; `courses/` in the repo with the CI validator; the index page; Clementi's lesson titles in the catalogue and its course | 1 | K1 |
+| 8 | **K2** Pack import and the index | file sniffing on open and drop; `#pack=` links; `packs/` in the repo with the CI validator; the index page; Clementi's lesson titles in the catalogue and its pack | 1 | K1 |
 | 9 | **A4** Dynamic Type | root scale from the system size, Newsreader ratio, a 200% pass | 1 + device pass | decision 32 |
 | 10 | **A5** iCloud Drive folder sync | 5.4 item 1; Principle 5 reworded in PRODUCT.md | 2 + device days | decision 34 |
 | 11 | G2 + S2, G3 | as planned | 2, 1 | G1, P2 |
@@ -410,12 +412,12 @@ Steps 7 to 9 add a second UI language (SwiftUI) to a repo that is TypeScript apa
 
 Answer by number. Each has a recommended answer and the alternative. The numbering continues from library-and-profile's 11 to 22.
 
-23. **Where the studies live.** Recommended: a Studies section at the top of Technique (Hanon, Czerny, Burgmüller, Clementi), each book a course that says what is next, and repertoire courses (Schumann Op. 68, Anna Magdalena) behind a Courses chip on Songs; no eighth tab. Alternative: an eighth tab, Studies.
-24. **The word.** Recommended: "Course". Alternative: "Book" or "Pack".
-25. **What ships first.** Recommended: first-party courses in the bundle first; then import by file and by link, and a `courses/` folder in the public repo added to by pull request, checked by CI and read by a human; never accounts, ratings, comments or uploads. Alternative: import in the first release.
-26. **Hanon.** Recommended: Nos. 1 to 20 as a warm-up course, two a day, slow, "stop if it tenses or hurts", no level shown. Alternative: list Hanon as plain studies with no guidance.
+23. **Where the studies live.** Recommended: a Studies section at the top of Technique (Hanon, Czerny, Burgmüller, Clementi), each book a pack that says what is next, and repertoire packs (Schumann Op. 68, Anna Magdalena) behind a Packs chip on Songs; no eighth tab. Alternative: an eighth tab, Studies. **Decided 1 Nov 2026: A, the top of Technique** (the owner compared both renders; an eighth tab squeezed Progress to its icon at 1180 px).
+24. **The word.** Chosen (1 Nov 2026): "Pack". Recommended was "Course"; the alternatives were "Book" or "Pack".
+25. **What ships first.** Recommended: first-party packs in the bundle first; then import by file and by link, and a `packs/` folder in the public repo added to by pull request, checked by CI and read by a human; never accounts, ratings, comments or uploads. Alternative: import in the first release.
+26. **Hanon.** Recommended: Nos. 1 to 20 as a warm-up pack, two a day, slow, "stop if it tenses or hurts", no level shown. Alternative: list Hanon as plain studies with no guidance.
 27. **The missing study books.** Recommended: a hand sourcing list (Czerny Op. 599, 261 and 299; Burgmüller Nos. 19 to 25; the rest of Op. 68; Gurlitt, Köhler, Beyer, Duvernoy), checked one source at a time, never scraped; generated drills fill the gap meanwhile. Alternative: write Czerny-style exercises from rules now.
-28. **Aids you can switch off.** Recommended: a Finger numbers switch, and a course item may turn note names and finger numbers off. Alternative: the switch only.
+28. **Aids you can switch off.** Recommended: a Finger numbers switch, and a pack item may turn note names and finger numbers off. Alternative: the switch only.
 29. **A practice reminder.** Recommended: opt-in, one time of day, at most one a day, none on a day already practised, silent after three unanswered days, words about what is next and never about the streak; iPad app only. Alternative: no reminder.
 30. **iPadOS on your iPad.** Recommended: stay on 26.5 until 27.2 ships with Apple's Bluetooth pairing fix, then update, since most users will be on 27. Alternative: update to 27 now to test the 27-only behaviour.
 31. **The menu bar.** Recommended: the seven tabs in the View menu (⌘1 to ⌘7) and the app's own settings below the system's Settings item, as the HIG asks. Alternative: keep Go and Settings as built, recorded as an exception.
@@ -429,10 +431,10 @@ Answer by number. Each has a recommended answer and the alternative. The numberi
 
 ## 8. Risks
 
-- **Courses that point at moving targets.** A rebuild can change a piece's bytes or merge two ids. `aliases` and the advisory `sha` cover it; CI on the `courses/` folder runs against the live catalogue on every deploy, and a broken id greys one row, never the course.
-- **Studies graded wrong until the re-grade.** Hanon at grade 4 would mislead a course's level line; K1 shows no level for `kind: study` items until G1.
-- **Course noise.** If the index grows like Anki's, the human read is the brake; one maintained first-party course per book beats forks, so first-party courses take pull requests instead of duplicates.
-- **Inline links can be long.** A 60-item course with notes may pass 2,000 characters; some chat apps cut links (INF). Fall back to a file.
+- **Packs that point at moving targets.** A rebuild can change a piece's bytes or merge two ids. `aliases` and the advisory `sha` cover it; CI on the `packs/` folder runs against the live catalogue on every deploy, and a broken id greys one row, never the pack.
+- **Studies graded wrong until the re-grade.** Hanon at grade 4 would mislead a pack's level line; K1 shows no level for `kind: study` items until G1.
+- **Pack noise.** If the index grows like Anki's, the human read is the brake; one maintained first-party pack per book beats forks, so first-party packs take pull requests instead of duplicates.
+- **Inline links can be long.** A 60-item pack with notes may pass 2,000 characters; some chat apps cut links (INF). Fall back to a file.
 - **The reminder as nagging.** One a day, three days, then silence; words about what is next. Measure turn-offs (the switch going off within a week means the words or the time are wrong).
 - **A menu bar nobody has seen.** It was built on 30 Oct and has not appeared on a device; the HIG fixes are tiny, but the device check comes first.
 - **Folder sync unknowns.** iCloud placeholders, Chrome's permission prompt on each visit for a persisted folder handle, and big backups (imported songs and takes): if any blocks it, CloudKit or the sync-code relay is the fallback, and the export file still works by hand.
@@ -445,7 +447,7 @@ Answer by number. Each has a recommended answer and the alternative. The numberi
 
 **Unknowns.** Whether the system adds its own Settings item to the iPad app's menu; whether CoreMIDI shows the FP-10 in the Designed-for-iPad build; iCloud Drive and Chrome folder access in practice; which MIDI note reads as a click on the FP-10; how a pianist feels a wrist tap while both hands play; Clementi Op. 42's lesson titles in the Mutopia source.
 
-**What to measure** (local, in the export): course starts and completions per course, and which item stalls (the order may be wrong there); courses imported by file against by link; reminder taps against turn-offs; the share of days practised after a reminder against without (one player, so a trend, not a test); W0's one-week verdict in the owner's words.
+**What to measure** (local, in the export): pack starts and completions per pack, and which item stalls (the order may be wrong there); packs imported by file against by link; reminder taps against turn-offs; the share of days practised after a reminder against without (one player, so a trend, not a test); W0's one-week verdict in the owner's words.
 
 ---
 

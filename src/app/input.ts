@@ -48,8 +48,10 @@ addEventListener('keydown', (e) => {
   const typing = /INPUT|SELECT|TEXTAREA/.test(t.tagName) && (t as HTMLInputElement).type !== 'range' && (t as HTMLInputElement).type !== 'radio' && (t as HTMLInputElement).type !== 'checkbox'
   if (typing || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return // defaultPrevented: a popover already took it
   if ((e.target as HTMLElement).closest('dialog')) return
-  if (e.key.length === 1 && e.key !== ' ' && !settings.shortcuts) return // the single-character shortcuts are off (Settings, Advanced)
+  if (e.key.length === 1 && e.key !== ' ' && !settings.shortcuts && e.isTrusted) return // the single-character shortcuts are off (Settings, Advanced); a menu command (native-app.ts) is not a stray key
   if (e.key === '?') ($('#help') as HTMLDialogElement).showModal()
+  else if (/^[1-7]$/.test(e.key) && !$('#nav').hidden) $<HTMLInputElement>(`#nav label:nth-child(${e.key}) input`).click() // the tabs, as the menu bar's View items
+  else if (e.key === ',') $('#settingsBtn').click()
   else if (e.key === 'm' && current) zen()
   else if (e.key === 'n') {
     settings.names = !settings.names

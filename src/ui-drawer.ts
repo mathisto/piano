@@ -4,8 +4,13 @@ import { INSTRUMENTS, instrument } from './instruments'
 import type { Input } from './midi'
 import { icon } from './icons'
 import { noteName } from './spell'
-import { settings } from './settings'
+import { native } from './native-midi'
+import { settings, strictness, touchCoach } from './settings'
 import { KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
+
+const TIMING: [string, string][] = [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']]
+const TOUCH: [string, string][] = [['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']]
+const name = (opts: [string, string][], v: string) => opts.find(([k]) => k === v)?.[1] ?? v
 
 export function drawer(el: HTMLElement, inputs: Input[]) {
   const seg = (name: string, label: string, opts: [string, string][], cur: string) =>
@@ -17,8 +22,8 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <div class="dhead"><h2 id="drawerTitle" tabindex="-1">Settings</h2><button class="btn icon ghost" id="sClose" aria-label="Close settings">${icon('x')}</button></div>
   <h3 class="sgh">Playing</h3>
   <div class="sgroup">
-    ${row('Timing', seg('strict', 'Timing', [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']], settings.strict), 'How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less. In Perform, Standard and Strict also check how long you hold each note; Easy does not.')}
-    ${row('Touch feedback', seg('coach', 'Touch feedback', [['off', 'Off'], ['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']], settings.coach), 'Watches how loud each note is: marks notes much louder or softer than the ones around them, and adds evenness, dynamics and pedal lines to results. Gentle flags only big differences; Strict small ones too.')}
+    ${row('Timing', seg('strict', 'Timing', [['auto', 'Auto'], ...TIMING], settings.strict), `<b>Auto: ${name(TIMING, strictness(settings.lv))}, from your level ${settings.lv}.</b> How close to the beat a note must land to count. Easy allows about a third more time; Strict a quarter less. In Perform, Standard and Strict also check how long you hold each note; Easy does not.`)}
+    ${row('Touch feedback', seg('coach', 'Touch feedback', [['auto', 'Auto'], ['off', 'Off'], ...TOUCH], settings.coach), `<b>Auto: ${name(TOUCH, touchCoach(settings.lv))}, from your level ${settings.lv}.</b> Watches how loud each note is: marks notes much louder or softer than the ones around them, and adds evenness, dynamics and pedal lines to results. Gentle flags only big differences; Strict small ones too.`)}
     ${row('Delay', `<div class="inl"><input id="sOffset" type="number" min="-300" max="300" step="5" value="${settings.offset}" aria-label="Delay in milliseconds"><small>ms</small><button class="btn" id="sCal"${inputs.length ? '' : ' disabled'}>Calibrate</button></div>`, `Makes up for the time your keyboard and speakers take, so notes are judged when you really played them. Calibrate measures it${inputs.length ? '.' : ', and needs a keyboard: connect one first.'}${outputLatency() > 0.08 ? ` This device's sound arrives about ${Math.round(outputLatency() * 1000)} ms late, as Bluetooth audio does; wired headphones or the built-in speakers are on time.` : ''}`)}
   </div>
   <h3 class="sgh">Sound</h3>
@@ -36,7 +41,16 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   <div class="sgroup">
     ${row('Appearance', seg('theme', 'Appearance', [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']], settings.theme), "Auto follows this device's light or dark setting.")}
     ${row('Effects', seg('fx', 'Effects', [['0', 'Off'], ['1', 'Calm']], String(settings.fx)), 'A soft glow on the falling notes and keys as you play.')}
+    ${row('Pulse', seg('pulse', 'Pulse', [['off', 'Off'], ['lines', 'Beat lines'], ['staff', 'Ball']], settings.pulse), 'The metronome\'s beat, seen: the falling beat lines light as they land, or a ball bounces on the staff (it stands in for the lines when only the staff shows). Metronome Silent, in Practice, keeps it without the click.')}
   </div>
+  ${
+    native
+      ? `<h3 class="sgh">Reminder</h3>
+  <div class="sgroup">
+    ${row('Remind me', `<div class="inl">${seg('remind', 'Practice reminder', [['0', 'Off'], ['1', 'On']], settings.remind === undefined ? '0' : '1')}<input id="sRemindAt" type="time" value="${String(Math.floor((settings.remind ?? 1140) / 60)).padStart(2, '0')}:${String((settings.remind ?? 1140) % 60).padStart(2, '0')}" aria-label="Reminder time"${settings.remind === undefined ? ' disabled' : ''}></div>`, 'One note a day at this time, never on a day you have already practised. It stops after three days you do not open the app, and it says what is next, not what you might lose. <span id="sRemindNote" role="status"></span>')}
+  </div>`
+      : ''
+  }
   <h3 class="sgh">Your data</h3>
   <div class="sgroup">
     ${row('Backup', `<div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" id="sSummary">Summary for a teacher</button><button class="btn ghost" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div>`, 'Everything stays on this device. Export saves your progress, settings and files in one file; Import restores it, here or on another device.')}
@@ -45,6 +59,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     <div class="sgroup">
     <label class="switch"><input id="sNames" type="checkbox"${settings.names ? ' checked' : ''}><i></i>Note names</label>
     <label class="switch sub"><input id="sFade" type="checkbox"${settings.fade ? ' checked' : ''}${settings.names ? '' : ' disabled'}><i></i>Fade names I know</label>
+    <label class="switch"><input id="sFingers" type="checkbox"${settings.fingers ? ' checked' : ''}><i></i><span><b>Finger numbers</b><small>The fingering drawn on scales. A pack can turn it off for one item.</small></span></label>
     <label class="switch"><input id="sKeys" type="checkbox"${settings.shortcuts ? ' checked' : ''}><i></i><span><b>Keyboard shortcuts</b><small>Single keys such as N, M and V, and the computer keys that play notes. Turn off if you use voice control.</small></span></label>
     <label class="switch"><input id="sFull" type="checkbox"${settings.full ? ' checked' : ''}><i></i>All 88 keys</label>
     <label class="switch"><input type="checkbox" data-osk-sw${(settings.osk ?? inputs.length === 0) ? ' checked' : ''}><i></i>On-screen keys</label>

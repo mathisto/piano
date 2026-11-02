@@ -109,9 +109,12 @@ async function runSetDone() {
 
 async function markRun() {
   const done = await store.getPlan(dayKey())
-  void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
-  void store.markPlan(dayKey(), 'run')
+  await store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
+  await store.markPlan(dayKey(), 'run')
 }
+
+/** Continue (app/today.ts), once the plan has this card's tick: undefined when its code did not load, and Again is the lamp. */
+const next = (marked: Promise<unknown>) => marked.then(() => hooks.next()).catch(() => undefined)
 
 /** The notes of a paced set as the judge left them, each with its card. */
 const struck = (): Struck[] => game.song.notes.map((n, i) => ({ card: drill!.noteCard[i], p: n.p, h: n.h, t: n.t, grade: game.judge.grade[i], off: game.judge.off[i] }))
@@ -128,16 +131,13 @@ async function pacedFinish(r: RunCtx) {
     out = after(saved.paced?.[k], { bpm, every, n: sc.n, hit: sc.hit, day: dayNum() })
     return { ...saved, paced: { ...saved.paced, [k]: out.memo } }
   })
-  void markRun()
-  void store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
+  const then = store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
   const names = sc.missed.map((i) => d.cards[i].pitches.map((p) => noteName(p, r.spec.fifths)).join(' '))
+  const [ui, go] = await Promise.all([import('../ui-results'), next(markRun())])
   const res = $('#res')
-  res.innerHTML = (await import('../ui-results')).pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note })
-  resOpen(true)
-  $('#runAgain', res).focus()
+  res.innerHTML = ui.pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note }, go)
+  wire(res, then, go, () => void startRun({ ...r.base, pace: out.memo.bpm, every: out.memo.every }).then(() => game.toggle()))
   say(`Run finished. ${sc.hit} of ${sc.n} cards on the beat.`)
-  $('#runAgain', res).onclick = () => void startRun({ ...r.base, pace: out.memo.bpm, every: out.memo.every }).then(() => game.toggle())
-  $('#toStages', res).onclick = leave
 }
 
 export async function runFinish() {
@@ -156,10 +156,11 @@ export async function runFinish() {
     st.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
     return st
   })
-  if (r.arc.cards) void store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) })
+  const then = r.arc.cards ? store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) }) : () => {}
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
+  const [ui, go] = await Promise.all([import('../ui-results'), next(Promise.resolve())]) // the plan was ticked by the first set
   const res = $('#res')
-  res.innerHTML = (await import('../ui-results')).runResults({
+  res.innerHTML = ui.runResults({
     spec: r.spec,
     arc: r.arc,
     medianMs: median(r.rts),
@@ -167,12 +168,18 @@ export async function runFinish() {
     best: saved.best[k],
     notes,
     weakest: notes.filter((n) => n.miss).sort((a, b) => b.miss / b.n - a.miss / a.n).slice(0, 4).map((n) => noteName(n.p, r.spec.fifths)),
-  })
-  resOpen(true)
-  $('#runAgain', res).focus()
+  }, go)
+  wire(res, then, go, () => void startRun(r.base).then(() => game.toggle()))
   say(`Run finished. ${r.arc.cards} cards, ${r.arc.cards ? Math.round((r.arc.clean / r.arc.cards) * 100) : 0} percent first try.`)
-  $('#runAgain', res).onclick = () => void startRun(r.base).then(() => game.toggle())
-  $('#toStages', res).onclick = leave
+}
+
+/** A drill or Sight run card's footer: Continue, Again (`again`), the way back; each says in the run's row what came next. */
+function wire(res: HTMLElement, then: (t: 'c' | 'a' | 'b' | 'o') => void, go: Awaited<ReturnType<typeof next>>, again: () => void, t: 'a' | 'o' = 'a') {
+  resOpen(true)
+  res.querySelector<HTMLButtonElement>('#next, #nextSet, #runAgain')!.focus()
+  res.querySelector<HTMLButtonElement>('#next')?.addEventListener('click', () => (then('c'), void go!.start()))
+  res.querySelector<HTMLButtonElement>('#nextSet, #runAgain')!.onclick = () => (then(t), again())
+  $('#toStages', res).onclick = () => (then('b'), leave())
 }
 
 function drillHud() {
@@ -218,13 +225,14 @@ export async function drillDone() {
   const d = drill!
   await store.saveDrill(drillStats)
   const done = await store.getPlan(dayKey())
-  void store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read')
-  void store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
+  const go = next(store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read'))
+  const then = store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats, d.goal) : undefined
   const nxt = nextStage(drillStats)
   const res = $('#res')
-  res.innerHTML = (await import('../ui-results')).drillResults({
+  const [ui, cont] = await Promise.all([import('../ui-results'), go])
+  res.innerHTML = ui.drillResults({
     stage: d.title,
     cards: d.cards.length,
     clean: d.cleanN / d.cards.length,
@@ -236,15 +244,12 @@ export async function drillDone() {
     nextName: nxt.name,
     fast: !!d.fast,
     goalMs: d.goal,
-  })
-  resOpen(true)
-  $('#nextSet', res).focus()
+  }, cont)
+  wire(res, then, cont, () => void (m?.solid && stage ? startDrill(nxt) : startDrill(d.stage, d.fast)).then(() => game.toggle()), m?.solid && stage ? 'o' : 'a')
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
-  $('#nextSet', res).onclick = () => void (m?.solid && stage ? startDrill(nxt) : startDrill(d.stage, d.fast)).then(() => game.toggle())
-  $('#toStages', res).onclick = leave
 }
 
-Object.assign(hooks, { drillOk })
+Object.assign(hooks, { drillOk, startDrill })
 game.on((e) => {
   const i = e.type === 'wrong' && drill ? drill.noteCard[game.judge.nextPending()] : undefined
   if (i !== undefined) got.set(i, [...(got.get(i) ?? []), (e as { p: number }).p])

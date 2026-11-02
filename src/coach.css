@@ -15,7 +15,7 @@
   opacity: 0.35;
 }
 .card .line.sub {
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .song-res .more {
   margin: 0; /* the column's gap spaces it */

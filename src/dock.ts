@@ -79,7 +79,7 @@ export class Dock {
             <label class="switch" data-modes="read"><input type="checkbox" id="showNotes"><i></i>Falling notes</label>
             <label class="switch" data-modes="read"><input type="checkbox" id="showNames"><i></i>Note names</label>
             <div class="opt" data-modes="perform learn"><span class="cap">Metronome</span>
-              <div class="seg" role="radiogroup" aria-label="Metronome">${METROS.map((m) => `<label><input type="radio" name="metro" value="${m}"><span>${m === 'off' ? 'Off' : m === 'beat' ? 'Beats' : 'Eighths'}</span></label>`).join('')}</div>
+              <div class="seg" role="radiogroup" aria-label="Metronome">${METROS.map((m) => `<label><input type="radio" name="metro" value="${m}"><span>${{ off: 'Off', beat: 'Beats', eighths: 'Eighths', silent: 'Silent' }[m]}</span></label>`).join('')}</div>
             </div>
             <div class="hands" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
             <div class="opt" role="group" aria-label="Staff size"><span class="cap">Staff</span>
@@ -182,7 +182,7 @@ export class Dock {
     this.drawLoop()
   }
 
-  /** Off, on the beat, or with eighths between; remembered. The B key steps through them. */
+  /** Off, on the beat, with eighths between, or silent (seen, not heard); remembered. The B key steps through them. */
   cycleMetro() {
     this.setMetro(METROS[(METROS.indexOf(settings.metro) + 1) % METROS.length])
   }

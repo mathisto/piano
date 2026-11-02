@@ -5,7 +5,7 @@ import { bestKey, DEFAULT_RUN, LIMITS, runCards, type RunSpec } from '../run'
 import * as store from '../store'
 import { $, keepFocus, RUN_START, runTitle } from '../ui'
 import type { StageRow } from '../ui-views'
-import { drillStats, runSpec, setDrillStats, setRunSpec, stageById } from './state'
+import { drillStats, hooks, runSpec, setDrillStats, setRunSpec, stageById } from './state'
 import { saveRun, startDrill, startRun } from './drill'
 
 let readTab: 'stages' | 'run' = 'stages'
@@ -22,10 +22,11 @@ export async function stageRows(): Promise<StageRow[]> {
 }
 
 export async function showRead() {
-  const saved = await store.getRuns()
+  const tab = readTab
+  const [saved, { readView, runForm }, l] = await Promise.all([store.getRuns(), import('../ui-views'), hooks.lamp(tab === 'run' ? 'run' : 'read')])
   if (saved.last) setRunSpec({ ...DEFAULT_RUN, ...saved.last })
-  const { readView, runForm } = await import('../ui-views')
-  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, readTab, runForm(runSpec, saved.presets, saved.best, bestKey, offer(runSpec, saved.paced?.[bestKey(runSpec)])))
+  readView($('#read'), await stageRows(), reviewPool(drillStats).length >= 3, tab, runForm(runSpec, saved.presets, saved.best, bestKey, offer(runSpec, saved.paced?.[bestKey(runSpec)])))
+  l?.($('#read')) // the head's Start: the next stage, or on Sight run the run set up, at its tempo; the table's and the form's Start step down
 }
 
 /** The tempo a paced run of this setup offers: where the player left it, else a little under their usual time on these cards, else 50. */

@@ -20,7 +20,7 @@ body.memorise #modeSeg {
   padding: 4px 8px 4px 16px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
-  font-size: 15px; /* read mid-pass from the music stand */
+  font-size: calc(15px * var(--ts)); /* read mid-pass from the music stand */
   color: var(--ink-2);
 }
 .mem-bar .mem-live {
@@ -36,7 +36,7 @@ body.memorise #modeSeg {
 }
 .ready .mem-seg span {
   min-width: 44px;
-  font: 650 22px/1 var(--ui);
+  font: 650 calc(22px * var(--ts))/1 var(--ui);
   font-variant-numeric: tabular-nums;
 }
 @container stage (max-height: 420px) {
@@ -60,7 +60,7 @@ body.memorise #modeSeg {
   justify-content: center;
   gap: 4px 18px;
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts));
 }
 .mem-facts dl div {
   display: flex;

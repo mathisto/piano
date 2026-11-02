@@ -383,6 +383,7 @@ describe('catalogue fields: mode, a stated metre, kind, form, period, the grade 
     expect(k({ bars: 15 })).toBe('fragment')
     expect(k({ sec: 9 })).toBe('fragment')
     expect(k({ tags: ['baroque', 'ties'] })).toBeUndefined()
+    expect([k({ title: '50 Melodische Übungsstücke, No. 2' }), k({ title: 'Melodic Study, Op. 840 No. 1' }), k({ title: 'Étude, Op. 10 No. 3' })]).toEqual(['study', 'study', undefined]) // Czerny's Op. 840 is a study book; a Chopin étude stays a piece
     // through run(): the style of a Mutopia piece is a tag, and the length is the score's
     const { cat } = await built([input('study', xml({}), { title: 'Exercise 1', style: 'Technique' }), input('tune', xml({}), { title: 'Melody' }), input('short', xml({ bars: 8 }), { title: 'Scrap' })])
     expect(cat.pieces.map((p) => [p.id, p.kind])).toEqual([['short', 'fragment'], ['study', 'study'], ['tune', undefined]])
