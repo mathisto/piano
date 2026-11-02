@@ -60,6 +60,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
 - `changes/regrade-g1-corpus.md`: the 153-piece, 32-group corpus test and model feasibility result; no tested model meets the fixed gate, so no grade changed and G2/S2 remains blocked.
+- `changes/regrade-g1-existing-systems.md`: existing board and consensus grades replace commissioned grading; 497 matched scores disprove aggregate formulas and establish the whole-score multi-system sequence model as the next G1 experiment.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.
@@ -115,7 +116,7 @@ Dated reports behind the decisions; read the ratings before relying on a claim.
 - `research/practice-path.md`: graded results, wrong-key and early or late marks kept on the score, Continue, and one "what next" behind Today, each section and the results card (1 Nov 2026): the design, the evidence, a phased plan and the owner's decisions.
 - `research/library-and-profile.md`: Apple Intelligence (not on the iPad Air 4), a long-term player profile from raw logs, one difficulty scale with skill tags and a fit function for the next piece, four Songs page layouts, and a cover for every piece from a sidecar of opening bars (1 Nov 2026): the plan, how it slots into practice-path's phases, and decisions 11 to 22.
 - `research/grade-anchors.md`: the approved 100-piece G1 Henle/ABRSM anchor table and the grouped-holdout failure that blocks the fitted re-grade.
-- `research/difficulty-model.md`: the G1 feasibility result across additive, forest and neighbour models, the CIPI benchmark and licence boundary, and the two credible next paths.
+- `research/difficulty-model.md`: the G1 feasibility results across Henle and multi-system labels, the corrected CIPI benchmark and licence boundary, and the whole-score ordinal ensemble design.
 - `research/horizon.md`: the traps and loves of piano apps checked against Piano Forte, a Studies section and a free course format (JSON naming catalogue pieces, generated drills and stages; import by file or link; a repo index), current Apple guidance (Liquid Glass, the menu bar, reminders, Dynamic Type, the icon), and what iPhone, Mac and Apple Watch versions would take (1 Nov 2026): one combined phase list and decisions 23 to 36.
 - `research/learning-science.md`: what the evidence says about piano practice.
 - `research/products-and-ux.md`: practice products, rhythm-game design, settings and progression UX.
