@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Do not ship an automatic re-grade. Aggregate score formulas fail even after expanding the verified corpus to 153 Henle pieces and testing 497 catalogue scores matched to an existing 11-level consensus syllabus. Existing human-assigned grades are the correct supervision; the next model must preserve the score as a sequence.
+Do not ship an automatic re-grade. Aggregate score formulas fail even after expanding the verified corpus to 153 Henle pieces and testing 497 catalogue scores matched to an existing 11-level consensus syllabus. Existing human-assigned grades are the correct supervision; the next model must preserve the score as a sequence. The academic and patent prior-art screen is in `difficulty-prior-art.md`; deterministic score grading is established, so publication waits for a concrete result and a patent/FTO decision.
 
 ## Piano Forte Henle results
 
@@ -45,7 +45,7 @@ More labels identify the target but do not rescue a weighted feature formula. Di
 ## Correct algorithm and next path
 
 1. Obtain written commercial-training permission for the existing Piano Syllabus/PSyllabus ranks, or reconstruct the matched label matrix from official board syllabuses. This replaces the rejected proposal to commission graders.
-2. Preserve each source's ordinal labels instead of averaging raw grade numbers. Train a shared latent difficulty representation with one ordered threshold head per grading system; this accounts for ABRSM 0–8, Trinity 0–8, RCM 0–10 and Henle 1–9 having different boundaries.
+2. Preserve each source's ordinal labels instead of averaging raw grade numbers. Test a shared latent difficulty representation with one ordered threshold map per grading system; this accounts for ABRSM 0–8, Trinity 0–8, RCM 0–10 and Henle 1–9 having different boundaries. Separate multi-task heads already have prior art; the common latent calibration and leave-one-system-out result are the research question.
 3. Represent the whole score as ordered per-hand note/chord events. Train complementary ordinal sequence models for pitch/rhythm, inferred fingering/gesture, and expressive markings, then ensemble their calibrated latent predictions.
 4. Hold out complete numbered works and all their editions. Also run a leave-one-grading-system-out test so a board-specific head cannot disguise a bad shared ordering. The release gate remains Spearman ≥ 0.9 and ≥ 85% within one Henle level; the displayed 1–5 thresholds are fitted only after that common ordering passes.
 5. Export only the frozen deterministic inference artifact into the library build. Training data, Python and model frameworks never enter the app or its boot path.
