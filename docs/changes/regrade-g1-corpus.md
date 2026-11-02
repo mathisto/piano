@@ -13,6 +13,8 @@ Branch `codex/regrade-g1-anchor-corpus`. This tests the root data hypothesis and
 - The unchanged additive model reached Spearman 0.785 and 66.7% within one level.
 - A deterministic random forest reached 0.774 and 67.3%; nearest neighbours reached 0.762 and 57.5%.
 - All remain below the fixed 0.9 / 85% release gate. Experimental feature and model code is not shipped.
+- `node scripts/library/anchors.mjs .cache/library/out-src1/catalog.json`: 153/153 catalogue identities passed.
+- TypeScript passed; Vitest passed 1,033 tests with 4 skipped; all 47 browser journeys passed in 423 seconds.
 
 ## Next
 
