@@ -1,0 +1,86 @@
+{
+ "lilypond": [
+  {
+   "repo": "DASTSAD/Czerny-op599",
+   "ref": "5d026ee445bf616252d6d58c702488120859b306",
+   "composer": "Carl Czerny (1791–1857)",
+   "book": "Practical Method for Beginners, Op. 599",
+   "opus": "Op. 599",
+   "licence": "Public Domain",
+   "licenceUrl": "https://creativecommons.org/licenses/publicdomain/",
+   "headerLicence": "Public Domain",
+   "files": [
+    {
+     "id": "ly-czerny-op599-1",
+     "path": "Czerny op599no01.ly",
+     "n": 1
+    },
+    {
+     "id": "ly-czerny-op599-2",
+     "path": "Czerny op599no02.ly",
+     "n": 2
+    },
+    {
+     "id": "ly-czerny-op599-3",
+     "path": "Czerny op599no03.ly",
+     "n": 3
+    },
+    {
+     "id": "ly-czerny-op599-4",
+     "path": "Czerny op599no04.ly",
+     "n": 4
+    },
+    {
+     "id": "ly-czerny-op599-5",
+     "path": "Czerny op599no05.ly",
+     "n": 5
+    },
+    {
+     "id": "ly-czerny-op599-6",
+     "path": "Czerny op599no06.ly",
+     "n": 6
+    },
+    {
+     "id": "ly-czerny-op599-7",
+     "path": "Czerny op599no07.ly",
+     "n": 7
+    },
+    {
+     "id": "ly-czerny-op599-8",
+     "path": "Czerny op599no08.ly",
+     "n": 8
+    },
+    {
+     "id": "ly-czerny-op599-9",
+     "path": "Czerny op599no09.ly",
+     "n": 9
+    },
+    {
+     "id": "ly-czerny-op599-10",
+     "path": "Czerny op599no10.ly",
+     "n": 10
+    },
+    {
+     "id": "ly-czerny-op599-11",
+     "path": "Czerny op599no11.ly",
+     "n": 11
+    },
+    {
+     "id": "ly-czerny-op599-12",
+     "path": "Czerny op599no12.ly",
+     "n": 12
+    },
+    {
+     "id": "ly-czerny-op599-13",
+     "path": "Czerny op599no13.ly",
+     "n": 13
+    },
+    {
+     "id": "ly-czerny-op599-14",
+     "path": "Czerny op599no14.ly",
+     "n": 14
+    }
+   ]
+  }
+ ]
+}

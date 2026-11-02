@@ -39,16 +39,20 @@ export function formOf(title: string): Piece['form'] {
   return FORMS.find(([, re]) => re.test(t))?.[0]
 }
 
+/** Composers whose catalogue entries are all teaching books (Czerny's Op. 840 is tagged Romantic on Mutopia, not Technique, so the tag alone missed it). Burgmuller, Gurlitt and
+ *  Schumann's Album are repertoire for the same learners, so they are not here. */
+const STUDY_COMPOSERS = /\b(czerny|hanon|bertini|duvernoy|kohler|beyer|lemoine|concone|cramer)\b/
+
 /** Study books whose Mutopia style is not Technique, by title: Czerny's 50 melodic studies, Op. 840 (owner, 1 Nov 2026: studies, with Hanon and Op. 821). */
 const STUDY_BOOKS = /\b(melodische ubungsstucke|melodic study)\b/
 
-/** `accomp`: a Lied (the vocal line is folded or dropped, the piano part is the accompaniment); `study`: a piece tagged technique (Hanon, the Virtuoso Pianist, the Eight-Measure
- *  Exercises); `fragment`: under 16 bars or under 10 seconds; otherwise a piece (no field). A rule that called any piece of one repeated figure a study was tried on the
+/** `accomp`: a Lied (the vocal line is folded or dropped, the piano part is the accompaniment); `study`: a piece tagged technique, from a teaching-book composer, or named as a study;
+ *  `fragment`: under 16 bars or under 10 seconds; otherwise a piece (no field). A rule that called any piece of one repeated figure a study was tried on the
  *  catalogue and took Bach's C major Prelude and Chopin's Op. 28 No. 8, which are repertoire, so it is not here (docs/changes/library-c1-s1.md). The plan's other fragment
  *  rule, the bar-length flag, marks 60 full Chopin works whose bars are uneven, so it is not here either. */
-export function kindOf(o: { source: Piece['source']; tags: string[]; bars: number; sec: number; title?: string }): Piece['kind'] {
+export function kindOf(o: { source: Piece['source']; tags: string[]; bars: number; sec: number; composer?: string; title?: string }): Piece['kind'] {
   if (o.source === 'openscore-lieder') return 'accomp'
-  if (o.tags.includes('technique') || STUDY_BOOKS.test(fold(o.title ?? ''))) return 'study'
+  if (o.tags.includes('technique') || (o.composer && STUDY_COMPOSERS.test(fold(o.composer))) || STUDY_BOOKS.test(fold(o.title ?? ''))) return 'study'
   if (o.bars < 16 || o.sec < 10) return 'fragment'
   return undefined
 }

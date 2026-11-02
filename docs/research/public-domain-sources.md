@@ -424,3 +424,29 @@ Holes found that this research did not close (file in the roadmap):
 5. Read the unreadable terms (musescore.com, Kunst der Fuge, CPDL, free-scores, 8notes, Piano Society) from a browser, if any of those matter.
 6. Importer: repeats, key changes in MIDI, missing-tempo warning, part filtering (section 5).
 7. ~~Decide the policy for a later CC BY and CC BY-SA tier.~~ Decided 19 Oct 2026: accepted, with credit.
+
+---
+
+## 9. The study-book pass (1 Nov 2026)
+
+What was checked for the missing study books and easy repertoire, and what the pipeline now takes. The book-by-book table, the counts and the owner's open points are in `docs/changes/library-sources-2.md`. Markers as above; everything here is [V] from this pass unless marked.
+
+**Now in the pipeline**
+
+- **PDMX, picked.** The CSV (225 MB), `metadata.tar.gz` (159 MB) and `mxl.tar.gz` (1.9 GB) come from Zenodo 15571083 as plain downloads (the Zenodo files API, byte ranges for the large one), never from musescore.com. In `PDMX.csv` the `license` column holds only two values, `publicdomain` (210,364 scores) and `cc-zero` (43,713); the per-score metadata JSON repeats the licence (`data.score.license`) and names the uploader (`data.score.user.name`) and the score URL, which become `typesetter` and `sourceUrl`. `scripts/library/pdmx-pick.mjs` keeps a score only when the title names a book and a number, `license_conflict` is False, the metadata agrees with the CSV, and the composer (fixed by the book table) died by 1930; 113 picks gave 92 new pieces and 21 duplicates. The reliability points of section 3.4 stand: the labels are uploader claims, so the set is picked by book, run through the pipeline's gates and flags, and not bulk-imported. Nobody has listened to the 92 yet. The dataset's CC BY 4.0 asks for credit: LICENSES.md and `SOURCE.pdmx` carry it. The edition is not stated in PDMX; the catalogue says so.
+- **LilyPond in a GitHub repository** (`--set open`, `open-sources.json`) when the files' own header states the licence, as Mutopia's do. First entry: `DASTSAD/Czerny-op599`, Nos. 1 to 14 of Op. 599, header `license = "Public Domain"` and "Placed in the public domain by the typesetter", source "Library of Musical Classics, No.146, New York: G. Schirmer, 1893". The MIDI is made with LilyPond 2.26 (prebuilt macOS binary from gitlab.com/lilypond), cached by the sha256 of the source. A repository with no licence text and no header (`da-x/czerny`, Op. 139 and Op. 453; `nathanaelmeister/...Czerny-Variations`, the author's own arrangement) is not usable.
+
+**Checked and not used**
+
+| Source | Finding |
+|---|---|
+| OpenScore | the GitHub organisation has two repositories, Lieder and StringQuartets, both CC0 and both done; the Orchestral collection is still unreleased |
+| KernScores (`kern.humdrum.org`) | answers 503 with a Chopin Institute maintenance page [X]; the GitHub kern repos of Craig Sapp (Mozart and Haydn sonatas, Joplin) are CC BY-NC-SA 4.0; none holds a book on the list |
+| MuseScore.com | `robots.txt` disallows `/score/*/download/*`; no download without an account; terms unreadable |
+| IMSLP | `robots.txt` disallows `/images/` and `/wiki/File:`; PD scans, symbolic files rare; manual only |
+| piano-midi.de | HTTP 418 to our User-Agent; performance MIDI, not made from a score |
+| Wikimedia Commons | file search for each book: scans and recordings only |
+| Mutopia | the index (827 rows, 1 Nov) is already fully in the catalogue except voice, duets, ensembles and living composers; no Czerny beyond Op. 821 and 840, no Gurlitt, Köhler, Beyer, Duvernoy, Lemoine, Bertini or Türk |
+
+**Open items from section 8, updated:** item 4 (verified sources for Hanon, Beyer, Gurlitt, Bach Little Preludes, James Scott): Hanon stays at the 20 of Part I that Mutopia has; Beyer, Gurlitt, Köhler, Türk and James Scott have no symbolic source I could reach; Bach's Little Preludes stay at Mutopia's three. The pass also found that Mutopia's page, not its MIDI, names Clementi Op. 42's lessons: the `-mids.zip` file names are the index.
+
