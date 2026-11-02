@@ -3,11 +3,17 @@
 // ponytail: a cascade, not a weighted score; the drop-back, plateau and strand-lag rules (phase 4) slot in before `path`.
 
 import type { Row } from './grades'
+import type { Stage as DrillStage } from './drill'
 import { icon } from './icons'
+import { adaptation } from './profile'
+import { cardsOf, nextCard, scaleSong, type ScaleStats, type Stage as ScaleStage } from './scales'
+import type { HistoryEntry } from './store'
+import { SYLLABUS, type Recipe } from './syllabus'
+import type { Trainer } from './theory-cards'
 import { esc } from './util'
 
 /** The step that chose a unit; it goes on the history row it leads to (`by`), with `own` for the player's own pick. `next` is a page's own next unit, when nothing else applied. */
-export type By = 'fix' | 'guide' | 'plan' | 'due' | 'path' | 'piece' | 'next'
+export type By = 'fix' | 'guide' | 'plan' | 'due' | 'back' | 'change' | 'lag' | 'path' | 'piece' | 'next'
 /** A section of practice: the kind of history row a unit leads to, and the page whose head starts it. */
 export type Strand = 'read' | 'run' | 'scale' | 'tech' | 'theory' | 'song'
 
@@ -29,7 +35,57 @@ export interface Snap {
   guide?: Unit // the first week's step for today, while it is undone
   path?: string // the key of the row that does the Path's next requirement
   reqs?: Row[] // the Path's requirements: a page's Start takes its strand's first one not solid yet
+  log?: HistoryEntry[] // counted sessions: phase 4's rules read these, but never write them
+  adapt?: { id: string; strand: Strand; back?: Unit; change?: Unit }[] // an easier step and a different task for a practised unit
+  lag?: (Unit & { level: number })[] // learning units, one per strand; the lowest level gets the free slot
   after?: { clean: boolean; fix?: Unit; offers: number } // the run just finished, its fix (the loop of its worst bars), and how often that was offered today
+}
+
+interface Phase4Input {
+  reqs: Row[]
+  units: Unit[]
+  rows: { stage: DrillStage }[]
+  next: { stage: DrillStage }
+  tech: Recipe
+  scale: ScaleStage
+  scales: ScaleStats
+  theory?: { trainer: Trainer; level: number }
+  last: { id: string; title: string; plays: number; ready: boolean; level?: number }
+  worst: { a: number; b: number } | null
+  history: HistoryEntry[]
+}
+
+/** Build phase 4's candidates behind the lazy recommendation boundary, not in boot. */
+export function phase4(x: Phase4Input): Pick<Snap, 'log' | 'adapt' | 'lag'> {
+  const learning: NonNullable<Snap['lag']> = x.reqs.filter((r) => r.state === 'learning' && r.start).flatMap((r) => {
+    const u = x.units.find((u) => u.strand === r.start!.kind)
+    return u ? [{ ...u, level: r.level }] : []
+  })
+  const lag = [...new Map([...learning].reverse().map((u) => [u.strand, u])).values()]
+  const piece = x.units.find((u) => u.key === 'piece')
+  if (piece && x.last.plays && !x.last.ready && x.last.level) lag.push({ ...piece, level: x.last.level })
+  const readAt = x.rows.findIndex((r) => r.stage.id === x.next.stage.id)
+  const readBack = readAt > 0 ? x.rows[readAt - 1].stage : undefined
+  const techAt = SYLLABUS.findIndex((r) => r.id === x.tech.id)
+  const techBack = techAt > 0 ? SYLLABUS[techAt - 1] : undefined
+  const rhythm = SYLLABUS.find((r) => r.opts.pattern === 'rhythm')!
+  const sc = nextCard(x.scale, x.scales)
+  const scaleId = scaleSong(sc, x.scale.bpm).id
+  const otherScale = cardsOf(x.scale).find((c) => scaleSong(c, x.scale.bpm).id !== scaleId)
+  const otherTheory = x.reqs.map((r) => r.start).find((s) => s?.kind === 'theory' && (!x.theory || s.trainer !== x.theory.trainer))
+  const adapt: NonNullable<Snap['adapt']> = [
+    { id: `drill:${x.next.stage.id}`, strand: 'read', ...(readBack && { back: { key: `back:read:${readBack.id}`, title: readBack.name, sub: readBack.blurb, go: { today: 'read', id: readBack.id }, strand: 'read' as const } }), change: { key: 'change:read', title: 'Review weak notes', sub: 'A mixed set from notes you have missed', go: { today: 'read', id: 'review' }, strand: 'read' } },
+    { id: x.tech.id, strand: 'tech', ...(techBack && { back: { key: `back:tech:${techBack.id}`, title: techBack.label, sub: 'The preceding technique exercise', go: { today: 'tech', id: techBack.id }, strand: 'tech' as const } }), change: { key: `change:tech:${rhythm.id}`, title: rhythm.label, sub: 'A rhythm task before returning', go: { today: 'tech', id: rhythm.id }, strand: 'tech' } },
+    { id: scaleId, strand: 'scale', back: scaleUnit(sc, Math.max(40, Math.round(x.scale.bpm * 0.8)), 'back', 'The same scale at a slower tempo'), ...(otherScale && { change: scaleUnit(otherScale, x.scale.bpm, 'change', 'A different key in this stage') }) },
+    ...(x.theory ? [{ id: `theory:${x.theory.trainer}:${x.theory.level}`, strand: 'theory' as const, ...(x.theory.level > 1 && { back: { key: `back:theory:${x.theory.trainer}`, title: 'Earlier theory cards', sub: 'The previous level of this trainer', go: { today: 'start', start: JSON.stringify({ kind: 'theory', trainer: x.theory.trainer, level: x.theory.level - 1 }) }, strand: 'theory' as const } }), ...(otherTheory?.kind === 'theory' && { change: { key: `change:theory:${otherTheory.trainer}`, title: 'A different theory task', sub: 'Switch trainers before returning', go: { today: 'start', start: JSON.stringify(otherTheory) }, strand: 'theory' as const } }) }] : []),
+    ...(x.last.plays ? [{ id: `song:${x.last.id}`, strand: 'song' as const, back: { key: `back:song:${x.last.id}`, title: x.last.title, sub: 'A full pass at 70% tempo', go: { today: 'continue', id: x.last.id, rate: '0.7' }, strand: 'song' as const }, ...(x.worst && { change: { key: `change:song:${x.last.id}`, title: `Bars ${x.worst.a + 1} to ${x.worst.b + 1} of ${x.last.title}`, sub: 'Isolate the hardest bars at 70%', go: { today: 'fix', id: x.last.id, a: String(x.worst.a), b: String(x.worst.b) }, strand: 'song' as const } }) }] : []),
+  ]
+  return { log: x.history, adapt, lag }
+}
+
+const scaleUnit = (card: Parameters<typeof scaleSong>[0], bpm: number, kind: 'back' | 'change', sub: string): Unit => {
+  const song = scaleSong(card, bpm)
+  return { key: `${kind}:scale:${song.id}`, title: song.title, sub, go: { today: 'scale', id: song.id }, strand: 'scale' }
 }
 
 /** The first that applies: the fix after a run that was not clean (three offers at most), the first week's step, the plan's next row,
@@ -43,11 +99,27 @@ export function nextUp(s: Snap, strand?: Strand) {
   const rows = s.rows.filter((r) => mine(r))
   const row = (k?: string) => rows.find((r) => r.key === k)
   const a = s.after
+  const recent = [...(s.adapt ?? [])]
+    .filter((x) => !strand || x.strand === strand)
+    .sort((a, b) => Math.max(...(s.log ?? []).filter((r) => r.id === b.id).map((r) => r.ts), 0) - Math.max(...(s.log ?? []).filter((r) => r.id === a.id).map((r) => r.ts), 0))
+  const changed = (rule: 'back' | 'change') => {
+    const hit = recent.find((x) => {
+      if (adaptation(s.log ?? [], x.id, rule) !== rule || !x[rule]) return false
+      const trigger = Math.max(...(s.log ?? []).filter((r) => r.id === x.id && !r.as).map((r) => r.ts), 0)
+      return !(s.log ?? []).some((r) => r.by === rule && r.ts > trigger)
+    })
+    const u = hit?.[rule]
+    return u && { ...u, strand: hit!.strand, sub: rule === 'back' ? 'Two recent sessions under 70%; take one step back.' : 'Five sessions without a gain; change the task.' }
+  }
+  const lag = [...(s.lag ?? [])].filter((u) => mine(u)).sort((a, b) => a.level - b.level)[0]
   const steps: [Unit | undefined, By][] = [
     [a && !a.clean && a.offers < 3 ? mine(a.fix) : undefined, 'fix'],
     [mine(s.guide), 'guide'],
     [row(s.plan.find((k) => !s.done.includes(k) && row(k))), 'plan'],
     [[...rows].sort((x, y) => (y.due ?? 0) - (x.due ?? 0)).find((r) => r.due), 'due'],
+    [changed('back'), 'back'],
+    [changed('change'), 'change'],
+    [lag && { ...lag, sub: `Your furthest-behind learning strand, level ${lag.level}.` }, 'lag'],
     [strand ? frontier(s.reqs, strand) : row(s.path), 'path'],
     strand ? [rows[0], 'next'] : [row('piece') ?? s.rows[0], 'piece'],
   ]

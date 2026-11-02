@@ -21,6 +21,7 @@ import type { LadderLevel } from './ladder'
 import type { Streak } from './streak'
 import { esc } from './util'
 import { cont, type Cont } from './next'
+import type { Stuck, WeakNote } from './profile'
 
 // ---------- reading drills ----------
 
@@ -157,6 +158,8 @@ export interface ProgressData {
   log: TouchEntry[]
   history: HistoryEntry[]
   stats: Stats // reading, card by card
+  weak: WeakNote[]
+  stuck: Stuck[]
 }
 
 const KIND_NAME: Record<HistoryEntry['kind'], string> = { read: 'Reading drills', run: 'Sight run', scale: 'Scales', theory: 'Theory', song: 'Songs', tech: 'Technique' }
@@ -205,6 +208,22 @@ function knownStrip(stats: Stats) {
   return `<h2 class="sec">Notes you know</h2><svg class="hist known" viewBox="0 0 600 62" preserveAspectRatio="xMinYMid meet" role="img" aria-label="How well you read each note on the keyboard, from C2 to C7">${bars}</svg><p class="note">Brighter: met often, answered cleanly and fast. Outlined: not drilled yet.</p>`
 }
 
+function trouble(weak: WeakNote[], stalled: Stuck[]) {
+  const top = weak.slice(0, 3)
+  const practice = top.map((x) => x.pitch).join(',')
+  const map = weak
+    .map((x) => `<div class="weak-note" title="${noteName(x.pitch)}, ${x.attempts} attempts, ${x.misses} missed"><b>${noteName(x.pitch)}</b><span>${Math.round(x.rate * 100)}%</span><small>${x.misses} of ${x.attempts} missed</small><i style="--miss:${x.rate.toFixed(3)}"></i></div>`)
+    .join('')
+  const confused = weak.filter((x) => x.confused).slice(0, 3).map((x) => `${noteName(x.pitch)} played as ${noteName(x.confused!.pitch)} (${x.confused!.n} ${x.confused!.n === 1 ? 'time' : 'times'})`).join(' · ')
+  return `<div class="profile-panels">
+    <section class="tcard trouble" aria-labelledby="wrongTitle"><div><h2 id="wrongTitle">Where it goes wrong</h2>${top.length ? `<p>${top.map((x) => noteName(x.pitch)).join(' · ')}</p>` : '<p>After ten attempts on a note, its pattern appears here.</p>'}</div>
+      ${top.length ? `<button class="btn ghost" data-practise="${practice}">Practise these</button><details class="all"><summary>Open map</summary><p class="note">Miss rates are pulled toward your overall average so a thin sample does not look extreme. Only notes with at least ten attempts appear.</p><div class="weak-map">${map}</div>${confused ? `<p class="confused"><b>Mixed up most:</b> ${confused}</p>` : ''}</details>` : ''}</section>
+    ${stalled.length ? `<section class="tcard stalled" aria-labelledby="stuckTitle"><h2 id="stuckTitle">Stuck</h2>${stalled.slice(0, 3).map((x) => `<p><b>${esc(x.label)}</b><span>${x.sessions} sessions, no gain</span></p>`).join('')}<small>The next recommendation changes the task.</small></section>` : ''}
+  </div>`
+}
+
+export const weakStage = (pitches: string): Stage => ({ id: 'profile', name: 'Practise weak notes', blurb: 'Your most-missed notes, mixed together.', pool: pitches.split(',').map(Number), size: 1, goalMs: 2500 })
+
 export function progressView(el: HTMLElement, d: ProgressData) {
   const solid = d.stages.filter((r) => r.solid).length
   const runs = d.log.filter((r) => r.id !== 'calibration')
@@ -230,6 +249,7 @@ export function progressView(el: HTMLElement, d: ProgressData) {
     <h2 class="sec">Over time</h2>
     ${overTime(d.history)}
     ${knownStrip(d.stats)}
+    ${trouble(d.weak, d.stuck)}
     <h2 class="sec">Reading<span>${solid} of ${d.stages.length} stages solid</span></h2>
     ${d.stages.every((r) => !r.seen) ? '<p class="note">Cells fill as you practise each stage.</p>' : `<div class="cells">${GROUPS.map(([g, f]) => {
       const rs = d.stages.filter((r) => f(r.stage.id))

@@ -6,7 +6,7 @@ import { planOf, type PlanMin, theoryDue } from '../plan'
 import type { Snap, Unit } from '../next'
 import { pickPiece } from '../readthrough'
 import { bestKey, DEFAULT_RUN, type RunSpec } from '../run'
-import { keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, STAGES as SCALE_STAGES } from '../scales'
+import { keyName, mastery as scaleMastery, nextCard, nextStage as nextScaleStage, parseId as parseScaleId, STAGES as SCALE_STAGES } from '../scales'
 import { save, settings } from '../settings'
 import * as store from '../store'
 import { streak as dayStreak } from '../streak'
@@ -27,7 +27,7 @@ import { startScale } from './scales-ui'
 
 /** What Today gathers: every row it can offer, the plan, the first week's step and what the Path asks next. Today draws it; Continue reads it (next.ts). */
 async function snapshot() {
-  const [{ last, all }, rows, days, done] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey())])
+  const [{ last, all }, rows, days, done, history] = await Promise.all([libraryData(), stageRows(), store.getPractice(), store.getPlan(dayKey()), store.getHistory()])
   const next = rows.find((r) => r.next)!
   const ts = await store.getTech()
   const nr = nextRecipe(ts, dayNum())
@@ -83,6 +83,7 @@ async function snapshot() {
     sight: sight && { id: sight.piece.id, title: sight.piece.title, sub: `One pass, no stopping · ${sight.fresh ? 'a new piece, ' : ''}${sight.piece.level}`, cover: thumb(sight.piece.id) },
   }
   const units = todayRows(d).map((u) => ({ ...u, strand: kindOf(u.go) }))
+  const p4 = (await import('../next')).phase4({ reqs: gp.flatMap((l) => l.rows), units, rows, next, tech: nr.recipe, scale: sst, scales: ctx.scales, theory: td, last: { id: last.id, title: last.title, plays: last.prog?.plays ?? 0, ready: (last.prog?.days?.length ?? 0) >= 2, level: last.cover.level }, worst, history })
   const now = guide?.rows.find((r) => r.state === 'now')?.step
   const at: Snap = {
     rows: units,
@@ -91,6 +92,7 @@ async function snapshot() {
     guide: now && { key: 'guide', title: now.title, sub: now.sub, go: { today: 'guide', go: now.go }, strand: kindOf({ today: 'guide', go: now.go }) },
     path: d.path ? 'path' : nx?.start?.kind === 'scale' ? 'scale' : undefined,
     reqs: gp.flatMap((l) => l.rows),
+    ...p4,
   }
   return { d, at }
 }
@@ -193,12 +195,13 @@ export async function showProgress() {
   const [stages, days, log, ts, history, { all }] = await Promise.all([stageRows(), store.getPractice(), store.getTouch(), store.getTech(), store.getHistory(), libraryData()])
   const today = dayNum()
   const gp = levelOf(gradePath(await pathCtx(ts)), readyLevels(all))
-  const [{ ladderState }, { LADDER }, { progressView }] = await Promise.all([import('../ladder'), import('../ladder-data'), import('../ui-views')])
+  const [{ ladderState }, { LADDER }, { progressView }, profile] = await Promise.all([import('../ladder'), import('../ladder-data'), import('../ui-views'), import('../profile')])
+  const cards = await profile.getCards()
   const ladder = ladderState(LADDER, await store.allProgress(), (id) => {
     const x = lib.piece(id)
     return x && { title: x.title, composer: lib.catalog.composers[x.composer]?.name ?? '' }
   })
-  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, ladder, next: nextOf(gp), stages, log, history: history.filter((e) => !e.as), stats: drillStats, tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
+  progressView($('#progress'), { week: weekOf(days), goal: settings.goal, streak: dayStreak(days), path: gp, ladder, next: nextOf(gp), stages, log, history: history.filter((e) => !e.as), stats: drillStats, weak: profile.weakNotes(cards), stuck: profile.stuck(history), tech: SYLLABUS.map((r) => ({ id: r.id, label: r.label, group: PATTERNS[r.opts.pattern], state: stateOf(ts, r.id, today) })) })
   $('#pGoal').addEventListener('change', (e) => {
     settings.goal = Number((e.target as HTMLSelectElement).value)
     save()
@@ -252,6 +255,8 @@ async function startPiece(b: HTMLButtonElement) {
 }
 
 $('#progress').addEventListener('click', (e) => {
+  const wp = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-practise]')
+  if (wp) return void import('../ui-views').then((v) => startDrill(v.weakStage(wp.dataset.practise!)))
   const lb = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-ladder]')
   if (lb) return void startPiece(lb)
   const st = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-start]')
@@ -293,7 +298,11 @@ function launch(g: Record<string, string | undefined>) {
   else if (g.today === 'run') void store.getRuns().then((r) => startRun(lastRun(r)))
   else if (g.today === 'continue') void openAt(g.id!, { rate: Number(g.rate) || undefined, nowait: !!g.nowait })
   else if (g.today === 'fix') void openAt(g.id!, { rate: 0.7, loop: [Number(g.a), Number(g.b)] })
-  else if (g.today === 'read') void startDrill(stageById(g.id!)!)
+  else if (g.today === 'read') void startDrill(g.id === 'review' ? 'review' : stageById(g.id!)!)
+  else if (g.today === 'scale') {
+    const s = parseScaleId(g.id!)
+    if (s) startScale(s.card, s.bpm)
+  }
   else if (g.today === 'sight') void readThrough(g.id)
   else void openSong(exercise((SYLLABUS.find((r) => r.id === g.id) ?? SYLLABUS[0]).opts, settings.edges), 'perform')
 }

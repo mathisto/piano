@@ -89,7 +89,7 @@ export async function rtDone(r: Result) {
   c.heat = prog.heat
   dock.setSong(c.song, prog.heat)
   void store.markPlan(dayKey(), 'sight')
-  if (r.total) void store.logHistory({ ts: Date.now(), kind: 'song', label: `Read-through: ${c.song.title}`, acc: r.acc })
+  if (r.total) void store.logHistory({ ts: Date.now(), kind: 'song', label: `Read-through: ${c.song.title}`, id: `song:${c.song.id}`, acc: r.acc })
   if (clean) {
     settings.readBest = Math.max(settings.readBest ?? 0, r.rate)
     save()

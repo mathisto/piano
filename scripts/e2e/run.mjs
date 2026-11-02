@@ -1065,7 +1065,7 @@ const reviewFlow = () => fresh({
     await redraw(page, 'today')
     await page.waitForSelector('#today .plan-done')
     const lamps = await page.$$eval('#today .btn.primary', (b) => b.map((x) => [x.closest('.upnext') ? 'upnext' : 'other', x.dataset.by]))
-    ok(lamps.length === 1 && lamps[0][0] === 'upnext' && ['due', 'path', 'piece'].includes(lamps[0][1]), JSON.stringify(lamps))
+    ok(lamps.length === 1 && lamps[0][0] === 'upnext' && ['due', 'lag', 'path', 'piece'].includes(lamps[0][1]), JSON.stringify(lamps))
     await axe(page, 'Today, plan done', '#today')
   },
 })
