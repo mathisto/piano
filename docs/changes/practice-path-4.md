@@ -24,6 +24,7 @@ Branch `codex/practice-path-4`. Phase 4 of `docs/research/practice-path.md`, wit
 - A deterministic 30-day learner exercises drop-back, task-change and strand-lag choices; every offered curriculum unit has its prerequisite solid, `nextUp()` is never empty, and success is 25 of 30 (83%).
 - Take tests cover `2 of 3`, `all 3`, opposing directions, waiting takes and incompatible arrangements.
 - Boot is 221,923 bytes under the unchanged 223,000-byte budget; the profile rules and repeated-take analysis are lazy.
+- Full e2e: 46 of 47 passed in 422 seconds; the Lied-row accompaniment check timed out under the full load, then passed alone in 55.9 seconds. All 47 features are verified, with that one load-sensitive retry recorded.
 
 ## Owner check
 

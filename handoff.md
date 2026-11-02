@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: `main` at `96ceab00`, live and in TestFlight build 529. HEAD, GitHub and the live `version.txt` matched at the last deploy. `codex/practice-path-4` is the active branch for section 7 item 4.
+- Current state: practice path phase 4 is merged on `main`; this release is live and in TestFlight build 532. Local `main`, GitHub and the live `version.txt` matched at deploy.
 
 ## 1. Read these first, in this order
 
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 529)
+## 4. What this session shipped (all live, TestFlight build 532)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -79,6 +79,7 @@ In order. Each line points to its change note in `docs/changes/`.
 11. Library source expansion (`library-sources-2.md`): the owner approved PDMX with credit and the public-domain Czerny LilyPond files. The live catalogue grew 2,241 → 2,347 without changing an old score file; Czerny Op. 599 and Op. 299 packs joined the app.
 12. Boot headroom (`perf5.md`): Memorise and its memory engine load on first use. Boot fell 222,113 → 220,403 bytes; `BUDGET` stayed 223,000.
 13. Per-strand Auto standard (`per-strand-standard.md`): Auto uses the lower of the Read frontier and the Songs repertoire ceiling (three Ready pieces at one level). Theory, Scales and Technique no longer hold the standard down; phase 5 still replaces this interim rule with Elo per strand.
+14. Practice path phase 4 (`practice-path-4.md`): low-session drop-back, plateau task changes, the furthest-behind learning strand, Progress's shrunk reading error map and Stuck panel, and repeated bar timing across the three takes the app keeps. The impossible “4 of 5” plan sample was corrected to truthful `2 of 3` / `all 3` wording.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -106,6 +107,7 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
    - the View menu and shortcuts with a hardware keyboard; the reminder end to end; the largest text size; AirDrop a `.pfpack` to themself;
    - Pulse: Beat lines vs Ball from the stand;
    - Auto rows in Settings and the page-head Start lines;
+   - phase 4: Progress's Where it goes wrong / Open map / Practise these and Stuck cards; a two-low-run step-back reason; repeated bar timing says `2 of your 3` or `all 3`;
    - the FP-10 MIDI-out click test (console snippet in `docs/changes/beatpulse.md`).
 
 ## 7. What to do next, in order
@@ -115,7 +117,7 @@ Do each as its own branch, with its tests, its `docs/changes/` note (listed in `
 1. **Done:** library sourcing, live corpus build `9b71a88520e8c3a1`, TestFlight 524.
 2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
 3. **Done:** Auto from the lower of the Songs repertoire ceiling and the Read frontier, ignoring Theory, Scales and Technique until phase 5; TestFlight 529.
-4. **Active on `codex/practice-path-4`:** two sessions under 70% suggest one step back; five sessions with no gain change the task; the furthest-behind learning strand gets the free slot; Progress shows the shrunk reading error map and Stuck evidence; review truthfully names a timing pattern across the three kept takes (the plan's “4 of 5” sample was impossible without retaining more). Branch tests and visual checks are complete; merge, full e2e, deploy, push and TestFlight remain.
+4. **Done:** practice path phase 4: low-session drop-back, plateau task changes, the furthest-behind learning strand, reading error map, Stuck evidence, and timing patterns across the three kept takes; TestFlight 532.
 5. Re-grade, G1 (`library-and-profile.md` section 4 and 7): the anchor table (60 to 100 named pieces with ABRSM/Henle levels) for the owner to review (about an hour of their time), new difficulty features, an ordinal monotone fit to an internal 0–9 `lvl`, shown as Level 1 to 5 with fixed cut points; Lieder graded on the piano part; `gradeOverride` on anchors. Then G2 + S2: skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
 6. Horizon items (`horizon.md` section 6), roughly in this order:
    - T1 trap fixes: own-file import findable on first run; `REPORT_TO` for Report a problem; skip damaged records instead of forcing Clear all data.
