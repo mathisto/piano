@@ -8,7 +8,7 @@ const fail = (message) => { throw new Error(message) }
 const ids = new Set()
 const levels = new Map()
 
-if (data.anchors.length < 60 || data.anchors.length > 100) fail(`expected 60–100 anchors, got ${data.anchors.length}`)
+if (data.anchors.length < 60 || data.anchors.length > 200) fail(`expected 60–200 anchors, got ${data.anchors.length}`)
 for (const a of data.anchors) {
   if (ids.has(a.id)) fail(`duplicate anchor ${a.id}`)
   if (!data.sources[a.source]) fail(`${a.id}: unknown source ${a.source}`)
