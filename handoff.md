@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: G1 now uses existing human-assigned grading systems, not commissioned grading. A research-only join found 497 catalogue scores representing 338 consensus labels across 188 work groups; aggregate score models still miss the unchanged gate, so no catalogue grade or model code shipped. Prior-art review found that deterministic score grading, local difficulty, fingering cost, multiple system heads and explainable models are established. The public repository already disclosed the broad shared-ordering / system-threshold direction in commit `51b96db` on 2 Nov 2026; do not publish a further mechanism or result before a patent/FTO decision. The model experiment still waits on commercial reuse permission or an independently cited board-label reconstruction. The last deployed release is live and in TestFlight build 544; local `main`, GitHub and the live `version.txt` matched at deploy.
+- Current state: G1 now uses existing human-assigned grading systems, not commissioned grading. A research-only join found 497 catalogue scores representing 338 consensus labels across 188 work groups; aggregate score models still miss the unchanged gate, so no catalogue grade or model code shipped. Prior-art review found that deterministic score grading, local difficulty, fingering cost, multiple system heads and explainable models are established. The public repository already disclosed the broad shared-ordering / system-threshold direction in commit `51b96db` on 2 Nov 2026; do not publish a further mechanism or result before a patent/FTO decision. The model experiment still waits on commercial reuse permission or an independently cited board-label reconstruction. This research-only release is live and in TestFlight build 547; local `main`, GitHub and the live `version.txt` matched at deploy.
 
 ## 1. Read these first, in this order
 
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 544)
+## 4. What this session shipped (all live, TestFlight build 547)
 
 In order. Each line points to its change note in `docs/changes/`.
 

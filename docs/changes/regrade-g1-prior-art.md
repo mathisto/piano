@@ -15,6 +15,7 @@ Branch `codex/regrade-g1-prior-art`. This is a research-only release. It changes
 - Deterministic inference alone does not distinguish the method.
 - The public repository already disclosed the broad shared-ordering / system-threshold direction in commit `51b96db` on 2 November 2026. Any counsel review must start from that verified disclosure date.
 - No catalogue or runtime file changed.
+- TypeScript and all 1,034 unit tests passed; all 47 browser journeys passed in 423 seconds. The web release was verified from its public version response; the TestFlight release build is 547.
 
 ## Next
 
