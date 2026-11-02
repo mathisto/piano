@@ -1,11 +1,11 @@
-# Handoff: Piano Forte, 1 Nov 2026
+# Handoff: Piano Forte, 2 Nov 2026
 
 You are picking up Piano Forte, a piano-learning app for adults on real MIDI keyboards (web + iPad). This file is the complete state at handoff: what exists, how to work here, what the owner has decided, and what to do next, in order. Read it top to bottom once before touching anything.
 
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: G1's source-backed research table has 153 exact live-catalogue matches across 32 independent groups; this release is live and in TestFlight build 541. Additive, forest and neighbour models all miss the unchanged release gate, so no catalogue grade or model code shipped. Local `main`, GitHub and the live `version.txt` matched at deploy.
+- Current state: G1 now uses existing human-assigned grading systems, not commissioned grading. A research-only join found 497 catalogue scores representing 338 consensus labels across 188 work groups; aggregate score models still miss the unchanged gate, so no catalogue grade or model code shipped. The next experiment is a whole-score ordinal sequence ensemble after commercial reuse permission or an independently cited board-label reconstruction. This release is live and in TestFlight build 544; local `main`, GitHub and the live `version.txt` matched at deploy.
 
 ## 1. Read these first, in this order
 
@@ -36,7 +36,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,033 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,034 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (47 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
 - Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 221,923 bytes: Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 541)
+## 4. What this session shipped (all live, TestFlight build 544)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -82,7 +82,8 @@ In order. Each line points to its change note in `docs/changes/`.
 14. Practice path phase 4 (`practice-path-4.md`): low-session drop-back, plateau task changes, the furthest-behind learning strand, Progress's shrunk reading error map and Stuck panel, and repeated bar timing across the three takes the app keeps. The impossible “4 of 5” plan sample was corrected to truthful `2 of 3` / `all 3` wording.
 15. G1 anchor review (`regrade-g1-anchors.md`): 80 complete live-catalogue pieces matched to published Henle 1–9 levels; seven current ABRSM placements; exact identity validation; the two Anna Magdalena BWV numbers checked; grouped holdout required to prevent collection leakage. This changes no grade and waits for owner approval.
 16. G1 anchor expansion (`regrade-g1-anchor-expansion.md`): after owner approval, 20 exact matches from eleven additional works or collections brought the table to 100. Grouped holdout fell to Spearman 0.789 and 74.0% within one Henle level, below the unchanged 0.9 / 85% release gate. No fitted grade or experimental feature code shipped.
-17. G1 corpus feasibility (`regrade-g1-corpus.md`): 53 further exact matches from ten official Henle sources brought the research table to 153 pieces across 32 independent groups. Grouped holdout still failed: additive 0.785 / 66.7% within one, forest 0.774 / 67.3%, neighbours 0.762 / 57.5%. Published CIPI results also remain below the gate, and its NC-SA, open-research-only dataset terms exclude the planned paid app without permission. No grade or model code shipped; G1 now needs commercially usable expert labels or human catalogue grading.
+17. G1 corpus feasibility (`regrade-g1-corpus.md`): 53 further exact matches from ten official Henle sources brought the research table to 153 pieces across 32 independent groups. Grouped holdout still failed: additive 0.785 / 66.7% within one, forest 0.774 / 67.3%, neighbours 0.762 / 57.5%. No grade or model code shipped.
+18. G1 existing systems (`regrade-g1-existing-systems.md`): replaced commissioned grading with existing ABRSM, RCM, Trinity, Henle and Piano Syllabus ranks. A conservative research join found 497 catalogue scores, 338 labels and 188 work groups; eight aggregate features reached Spearman 0.707, 26 technical features 0.706, and fold-only composer/form priors 0.780, all below the 0.9 gate. Corrected the CIPI evidence: its whole-piece pitch/fingering/expression ensemble reached 87.3% within one level. The next algorithm preserves each grading system's thresholds in a whole-score ordinal sequence ensemble; its existing labels need commercial permission or independent official citations before production use.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -121,7 +122,7 @@ Do each as its own branch, with its tests, its `docs/changes/` note (listed in `
 2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
 3. **Done:** Auto from the lower of the Songs repertoire ceiling and the Read frontier, ignoring Theory, Scales and Technique until phase 5; TestFlight 529.
 4. **Done:** practice path phase 4: low-session drop-back, plateau task changes, the furthest-behind learning strand, reading error map, Stuck evidence, and timing patterns across the three kept takes; TestFlight 532.
-5. **Blocked after feasibility test:** Re-grade, G1 (`library-and-profile.md` section 4 and 7; `difficulty-model.md`): 153 exact catalogue matches across 32 independent groups are live in TestFlight 541. Additive, forest and neighbour models all failed the unchanged 0.9 / 85% grouped-holdout gate; no grade or model code shipped. The rejected experiments are preserved only in local stashes `WIP rejected G1 model experiment` and `WIP rejected G1 model experiments after 153 anchors`. G1 now needs commercially usable expert labels or human Henle-aligned catalogue grading; do not start G2/S2 until one path passes the same gate. After G1 passes: G2 + S2 adds skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
+5. **Blocked on label rights, then model:** Re-grade, G1 (`library-and-profile.md` section 4 and 7; `difficulty-model.md`): existing human-assigned grades are the target; no new graders. The 497-score multi-system test disproved aggregate formulas, including 26 technical features. Obtain commercial-training permission for Piano Syllabus/PSyllabus or independently reconstruct the matches from official syllabuses, then train the specified whole-score ordinal ensemble with separate system thresholds and pitch, fingering and expression heads. Keep complete works and editions in one fold and retain the 0.9 / 85% gate. No grade or model code has shipped; do not start G2/S2 until this passes. After G1 passes: G2 + S2 adds skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
 6. Horizon items (`horizon.md` section 6), roughly in this order:
    - T1 trap fixes: own-file import findable on first run; `REPORT_TO` for Report a problem; skip damaged records instead of forcing Clear all data.
    - K2 rest: the public `packs/` folder with CI validation and an index; packs made of generated exercises; universal links so a pack link opens the iPad app.

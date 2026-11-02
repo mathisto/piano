@@ -15,6 +15,7 @@ Branch `codex/regrade-g1-existing-systems`. This corrects the sourcing strategy 
 - Five-fold grouped holdout disproved aggregate formulas: 8 features reached Spearman 0.707; 26 technical features remained 0.706; training-fold-only composer/form priors reached 0.780. All miss the unchanged 0.9 release gate.
 - Published CIPI evidence corrects the next model class: a whole-piece pitch/fingering/expression ensemble reached 87.3% within one of nine levels. The prior note's 75.3% figure was not the final ensemble.
 - PSyllabus and CIPI remain research/non-commercial sources. No label, grade, model or boot code shipped.
+- TypeScript and all 1,034 unit tests passed; all 47 browser journeys passed in 423 seconds. The web release was verified from its public version response; the TestFlight release build is 544.
 
 ## Next
 
