@@ -166,3 +166,10 @@ export function path(c: Ctx): Level[] {
 
 /** The level to work on: the first with a requirement left. */
 export const nextOf = (p: Level[]) => p.find((l) => l.next)?.next
+
+/** Auto's interim standard: the lower of the reading frontier and the repertoire ceiling (three Ready pieces at one level). */
+export function standardLevel(p: Level[], readyPieces: number[]) {
+  const reading = p.flatMap((l) => l.rows).find((r) => r.start?.kind === 'read' && r.state !== 'solid' && r.state !== 'coming')?.level ?? 5
+  const songs = [5, 4, 3, 2, 1].find((level) => readyPieces.filter((x) => x === level).length >= 3) ?? 1
+  return Math.min(reading, songs)
+}
