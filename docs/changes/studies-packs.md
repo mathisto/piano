@@ -44,7 +44,7 @@ Text holding a web address is refused; every string reaches the page through `es
 
 ## The packs that come with the app
 
-`src/packs/*.pfpack`, read by the same parser (`import.meta.glob`, in the lazy chunk). Generated from `out-c1/catalog.json`; `src/pack.test.ts` checks every id against the catalogue when one is on the machine (`LIBRARY_CATALOG`, default `.cache/library/out-c1/catalog.json`).
+`src/packs/*.pfpack`, read by the same parser (`import.meta.glob`, in the lazy chunk). Generated from the current corpus catalogue; `src/pack.test.ts` checks every id against it when one is on the machine (`LIBRARY_CATALOG`, default `.cache/library/out-src1/catalog.json`).
 
 | Pack | Where | Items | Notes |
 |---|---|---|---|
