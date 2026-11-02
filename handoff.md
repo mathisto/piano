@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: `main` at `02ada7a2`, live and in TestFlight build 526. HEAD, GitHub and the live `version.txt` matched at the last deploy. The library source worktree is removed; `codex/per-strand-standard` is the only active branch and is waiting on the Auto decision in section 7 item 3.
+- Current state: `main` at `96ceab00`, live and in TestFlight build 529. HEAD, GitHub and the live `version.txt` matched at the last deploy. `codex/practice-path-4` is the active branch for section 7 item 4.
 
 ## 1. Read these first, in this order
 
@@ -36,10 +36,10 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,023 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,032 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (47 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
-- Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 220,403 bytes: Memorise and `memory.ts` load on first use (`docs/changes/perf5.md`). New UI goes in lazy chunks and on the test's `lazy` list.
+- Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 221,923 bytes: Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.
 - `src/docs.test.ts`: every `docs/changes/*.md` must be listed in `docs/README.md`, and DESIGN.md front-matter colours must exist in the CSS.
 - Dev server: `npx vite --port <free port>`; in dev, `window.__piano` exposes `game`, `open`, `drill`, `setView`, `key(p, v, ts)`, `up(p, ts)` and more for driving the app.
 
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 526)
+## 4. What this session shipped (all live, TestFlight build 529)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -78,6 +78,7 @@ In order. Each line points to its change note in `docs/changes/`.
 10. Docs brought current: the Apple notes (`ios-native.md`, `ios-ux.md`, `platforms.md`) now reflect the paid account, iPadOS 26.5 on the owner's iPad, and the shipped light mode and menu bar.
 11. Library source expansion (`library-sources-2.md`): the owner approved PDMX with credit and the public-domain Czerny LilyPond files. The live catalogue grew 2,241 → 2,347 without changing an old score file; Czerny Op. 599 and Op. 299 packs joined the app.
 12. Boot headroom (`perf5.md`): Memorise and its memory engine load on first use. Boot fell 222,113 → 220,403 bytes; `BUDGET` stayed 223,000.
+13. Per-strand Auto standard (`per-strand-standard.md`): Auto uses the lower of the Read frontier and the Songs repertoire ceiling (three Ready pieces at one level). Theory, Scales and Technique no longer hold the standard down; phase 5 still replaces this interim rule with Elo per strand.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -98,8 +99,7 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
 
 ## 6. Waiting on the owner
 
-1. Auto semantics for section 7 item 3: ask whether the standard should use the lower of the song and reading strand levels, ignoring Theory, Scales and Technique until phase 5's per-strand model.
-2. Device checks on the iPad (the owner is the only tester; give them a short list with each TestFlight build):
+1. Device checks on the iPad (the owner is the only tester; give them a short list with each TestFlight build):
    - results card and Review from the music stand; the ◂ ▸ triangles readable;
    - Continue's destination line; the first-week Today (about ten Start buttons on day 1: too busy?);
    - Songs: first visit loads the thumbnail sidecar (about 370 KB): slow?;
@@ -114,8 +114,8 @@ Do each as its own branch, with its tests, its `docs/changes/` note (listed in `
 
 1. **Done:** library sourcing, live corpus build `9b71a88520e8c3a1`, TestFlight 524.
 2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
-3. Per-strand standard (filed in ROADMAP 17): the Path level gates strictness for everything, so one unfinished Theory requirement keeps a strong reader at level 1 with Easy timing on pieces. Interim fix: compute the level that sets the standard from the song and reading strands only; the full fix is phase 5's per-strand model. Ask the owner before changing what Auto means (a one-line question is enough).
-4. Practice path phase 4 (`practice-path.md` section 5, row 4; with `library-and-profile.md` P4/R4): rules on the attempt log in `src/next.ts`: two sessions under 70% on a unit suggest one step back; five sessions with no gain change the task; the strand furthest behind gets the free slot; the review says "bar 7: late in 4 of the last 5 runs" from the three kept takes. Tests: rule tests on synthetic logs and a 30-day synthetic learner (success stays 75–92%, never an unmet prerequisite, `nextUp` never empty).
+3. **Done:** Auto from the lower of the Songs repertoire ceiling and the Read frontier, ignoring Theory, Scales and Technique until phase 5; TestFlight 529.
+4. **Active on `codex/practice-path-4`:** two sessions under 70% suggest one step back; five sessions with no gain change the task; the furthest-behind learning strand gets the free slot; Progress shows the shrunk reading error map and Stuck evidence; review truthfully names a timing pattern across the three kept takes (the plan's “4 of 5” sample was impossible without retaining more). Branch tests and visual checks are complete; merge, full e2e, deploy, push and TestFlight remain.
 5. Re-grade, G1 (`library-and-profile.md` section 4 and 7): the anchor table (60 to 100 named pieces with ABRSM/Henle levels) for the owner to review (about an hour of their time), new difficulty features, an ordinal monotone fit to an internal 0–9 `lvl`, shown as Level 1 to 5 with fixed cut points; Lieder graded on the piano part; `gradeOverride` on anchors. Then G2 + S2: skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
 6. Horizon items (`horizon.md` section 6), roughly in this order:
    - T1 trap fixes: own-file import findable on first run; `REPORT_TO` for Report a problem; skip damaged records instead of forcing Clear all data.

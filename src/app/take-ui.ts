@@ -5,6 +5,7 @@ import * as audio from '../audio'
 import { icon } from '../icons'
 import * as store from '../store'
 import { compareTakes, ghostOf, MAX_KEYS, newTake, type BarStat, type Take } from '../take'
+import { repeatedTiming } from '../take-pattern'
 import { jg } from '../icons'
 import { $ } from '../ui'
 import { calibrating, current, drill, game, mem, resOpen, rt, say, staff } from './state'
@@ -210,6 +211,12 @@ export async function takeCard(res: HTMLElement) {
   takes = ks
   takesFor = current.song.id
   const [k, last] = ks
+  const pattern = repeatedTiming(current.song, ks)
+  if (pattern) {
+    const points = card.querySelector('.points')
+    if (points) points.insertAdjacentHTML('beforeend', `<li><p>${pattern}</p></li>`)
+    else card.querySelector('.measures')?.insertAdjacentHTML('afterend', `<ol class="points"><li><p>${pattern}</p></li></ol>`)
+  }
   card.querySelector('#resMenu')?.insertAdjacentHTML('afterbegin', `<button class="btn ghost" id="listenBack" type="button">Listen back</button>${last ? '<button class="btn ghost" id="cmpBtn" type="button" aria-expanded="false">Compare with last time</button>' : ''}`)
   const lb = $('#listenBack', card) as HTMLButtonElement
   lb.onclick = () => listen(k, card.querySelector<HTMLElement>('[data-more]') ?? lb, 'Listening back') // focus comes back to the menu's button: its items are hidden by then

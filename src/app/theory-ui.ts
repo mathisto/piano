@@ -145,7 +145,7 @@ function nextTheory() {
 
 /** The session is over: its row in the log and the plan's tick, then the results with Continue (the card waits for it, so its lamp does not jump). */
 async function end(t: TheoryRun) {
-  t.then = store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, acc: t.ok / t.cards.length, ms: untimed(t.trainer) || isPulse(t.trainer) ? undefined : median(t.rts) })
+  t.then = store.logHistory({ ts: Date.now(), kind: 'theory', label: TRAINERS.find((x) => x.id === t.trainer)!.name, id: `theory:${t.trainer}:${t.level}`, acc: t.ok / t.cards.length, ms: untimed(t.trainer) || isPulse(t.trainer) ? undefined : median(t.rts) })
   t.cont = await store.markPlan(dayKey(), 'theory').then(() => hooks.next()).catch(() => undefined)
   if (theory !== t) return
   showTheory()

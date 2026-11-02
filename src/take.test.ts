@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { compareTakes, ghostOf, newTake, type Take } from './take'
+import { repeatedTiming } from './take-pattern'
 import type { Bar, Note } from './song'
 
 // two bars of 2 s, two notes each: C4 D4 | E4 F4
@@ -49,5 +50,19 @@ describe('ghostOf', () => {
   it('in time order, in seconds, with the hand of the note played or by register', () => {
     const g = ghostOf(take([[64, 2000, 2], [48, 500, -1], [60, 0, 0]]), { notes: notes.map((n, i) => (i === 0 ? { ...n, h: 'L' } : n)) })
     expect(g).toEqual({ p: [60, 48, 64], t: [0, 0.5, 2], d: [0.4, 0.4, 0.4], h: ['L', 'L', 'R'] })
+  })
+})
+
+describe('repeatedTiming', () => {
+  it('reports only a direction repeated in the kept takes, with the count it actually has', () => {
+    const late = (ms: number) => take([[60, ms, 0], [62, 1000 + ms, 1], [64, 2000, 2], [65, 3000, 3]])
+    expect(repeatedTiming(song, [late(50), late(45), late(-40)])).toBe('Bar 1 was late in 2 of your 3 recent runs.')
+    expect(repeatedTiming(song, [late(50), late(45), late(60)])).toBe('Bar 1 was late in all 3 recent runs.')
+    expect(repeatedTiming(song, [late(50), late(-45)])).toBeUndefined()
+  })
+
+  it('ignores waiting and incompatible takes', () => {
+    const late = take([[60, 50, 0], [62, 1050, 1]])
+    expect(repeatedTiming(song, [late, { ...late, wait: true }, { ...late, n: 9 }])).toBeUndefined()
   })
 })

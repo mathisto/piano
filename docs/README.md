@@ -17,6 +17,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/practice-path-1.md`: the practice path, phase 1: a wrong key costs what a miss costs, marks that stay on the staff, the song results card over the falling notes only, and the attempt log.
 - `changes/practice-path-2.md`: the practice path, phase 2: one "what next" (`next.ts`), Continue on every results card, Today's lamp always present (the first week's step, the plan, Up next once it is done), `by` on the attempt log.
 - `changes/practice-path-3.md`: the practice path, phase 3: Timing and Touch feedback default to Auto, following the Path level; uneven touch counts from level 2 on scales and technique; a Start in every page head from `nextUp()` kept to the page's strand, one lamp a page; Theory's levels kept.
+- `changes/practice-path-4.md`: the practice path, phase 4: drop back after two low sessions, change a stalled task, give the furthest-behind learning strand the free slot, show the reading error map and Stuck evidence, and name timing repeated across the three kept takes.
 - `changes/per-strand-standard.md`: Auto Timing and Touch feedback use the lower of the Read frontier and the Songs repertoire ceiling; Theory, Scales and Technique no longer hold the standard down.
 - `changes/habit.md`: 30 and 45 minute plans, break reminder, day streak, the Path.
 - `changes/guide.md`: the Start here card, tab notes, the Help sheet and the Connect line.

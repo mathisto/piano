@@ -131,7 +131,7 @@ async function pacedFinish(r: RunCtx) {
     out = after(saved.paced?.[k], { bpm, every, n: sc.n, hit: sc.hit, day: dayNum() })
     return { ...saved, paced: { ...saved.paced, [k]: out.memo } }
   })
-  const then = store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
+  const then = store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, id: `run:${k}`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
   const names = sc.missed.map((i) => d.cards[i].pitches.map((p) => noteName(p, r.spec.fifths)).join(' '))
   const [ui, go] = await Promise.all([import('../ui-results'), next(markRun())])
   const res = $('#res')
@@ -156,7 +156,7 @@ export async function runFinish() {
     st.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
     return st
   })
-  const then = r.arc.cards ? store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), acc: r.arc.clean / r.arc.cards, ms: median(r.rts) }) : () => {}
+  const then = r.arc.cards ? store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), id: `run:${k}`, acc: r.arc.clean / r.arc.cards, ms: median(r.rts) }) : () => {}
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const [ui, go] = await Promise.all([import('../ui-results'), next(Promise.resolve())]) // the plan was ticked by the first set
   const res = $('#res')
@@ -226,7 +226,7 @@ export async function drillDone() {
   await store.saveDrill(drillStats)
   const done = await store.getPlan(dayKey())
   const go = next(store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read'))
-  const then = store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
+  const then = store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, id: `drill:${d.stage === 'review' ? 'review' : d.stage.id}`, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats, d.goal) : undefined
   const nxt = nextStage(drillStats)
