@@ -1,20 +1,18 @@
 # G1 difficulty anchors — owner review
 
-**TL;DR:** 80 complete piano pieces in the live catalogue are matched to their published Henle difficulty. Seven also appear in the current ABRSM practical syllabus. This is review data only: it changes no catalogue level.
+**TL;DR:** 100 complete piano pieces in the live catalogue are matched to their published Henle difficulty. Seven also appear in the current ABRSM practical syllabus. This is approved training data only: it changes no catalogue level.
 
-**Status:** waiting for owner approval before the fitted re-grade. Reviewed 2 November 2026.
+**Status:** the original 80 and the 20-piece expansion were approved 2 November 2026. The fitted re-grade remains blocked by its release gate.
 
 ## What to review
 
-1. Each catalogue piece is the same work named by the source. Pay particular attention to the two Anna Magdalena minuets (BWV Anh. 114 and 115), whose numbering was the known open check.
-2. Flag any published placement that should not control Piano Forte because this edition is materially easier or harder than the named work.
-3. Approve the set, or name additions/removals. The fit and every `gradeOverride` wait for that approval.
+The owner approved the exact-work matches and published placements. The two Anna Magdalena minuets are BWV Anh. 114 and 115, closing the known numbering check. Any later edition-specific exception must be explicit rather than silently changing the source level.
 
 The later five-fold holdout must group rows by collection/work (for example, all Op. 68 pieces in one fold), not scatter near-neighbours across train and test. Otherwise the reported accuracy would be leakage.
 
 ## Coverage
 
-Henle distribution — 1: 2 · 2: 4 · 3: 12 · 4: 27 · 5: 9 · 6: 9 · 7: 6 · 8: 8 · 9: 3.
+Henle distribution — 1: 2 · 2: 6 · 3: 14 · 4: 33 · 5: 13 · 6: 13 · 7: 8 · 8: 8 · 9: 3.
 
 The deliberate concentration at levels 3–4 supplies the learning path’s busy range. Chopin ballades, etudes, nocturnes and preludes supply independent upper-range anchors. No fragment, study-lane item or accompaniment is included.
 
@@ -29,11 +27,23 @@ The deliberate concentration at levels 3–4 supplies the learning path’s busy
 - Henle · Ballades: https://www.henle.de/Ballades/HN-863
 - Henle · Etudes: https://www.henle.de/en/Etudes/HN-124
 - Henle · Nocturnes: https://www.henle.de/en/Nocturnes/HN-233
+- Henle · Beethoven at the Piano: https://www.henle.de/us/At-the-Piano-9-well-known-original-pieces/HN-1820
+- Henle · Mozart piano works: https://www.henle.de/en/Works-for-Piano-Solo-4-Volumes-in-a-Slipcase/HN-9023
+- Henle · Mendelssohn Songs without Words: https://www.henle.de/en/Piano-works-Volume-III-Songs-without-Words/HN-327
+- Henle · Brahms Intermezzo op. 118 no. 2: https://www.henle.de/us/Intermezzo-A-major-op.-118-no.-2/HN-1377
+- Henle · Debussy Arabesques: https://www.henle.de/de/Deux-Arabesques/HN-380
+- Henle · Debussy Clair de lune: https://www.henle.de/Clair-de-lune/HN-391
+- Henle · Chopin Impromptus: https://www.henle.de/en/Impromptus/HN-235
+- Henle · Liszt Consolations: https://www.henle.de/en/Consolations-including-first-edition-of-the-early-version/HN-465
+- Henle · Grieg Wedding Day at Troldhaugen: https://www.henle.de/en/Wedding-Day-at-Troldhaugen-op.-65-no.-6/HN-1291
+- Henle · Grieg Lyric Pieces op. 54: https://www.henle.de/us/Lyric-Pieces-Volume-V-op.-54/HN-681
+- Henle · Satie Gymnopédies: https://www.henle.de/us/Gymnopedies/HN-1072
+- Henle · Rachmaninoff Prelude op. 3 no. 2: https://www.henle.de/us/Prelude-c-sharp-minor-op.-3-no.-2/HN-1211
 - ABRSM Piano Practical Grades 2025–26: https://www.abrsm.org/sites/default/files/2024-06/Piano%202025%20%26%202026%20Prac%20syllabus%2020240524_access.pdf
 
 ABRSM page numbers below are PDF page numbers. A blank ABRSM cell means no current ABRSM placement was used; Henle remains the anchor.
 
-## Table
+## Original 80
 
 | Henle | Catalogue piece | Catalogue id | Published source title | ABRSM |
 |---:|---|---|---|---:|
@@ -117,3 +127,34 @@ ABRSM page numbers below are PDF page numbers. A blank ABRSM cell means no curre
 | 9 | F. F. Chopin — Ballade in F minor, Op. 52 | `chopin-052-1-Sm` | Ballade f minor op. 52 · [Henle · Ballades](https://www.henle.de/Ballades/HN-863) |  |
 | 9 | F. F. Chopin — Etude in C major, Op. 10 No. 1 | `chopin-010-1b-Sm-001` | Etude C major op. 10,1 · [Henle · Etudes](https://www.henle.de/en/Etudes/HN-124) |  |
 | 9 | F. F. Chopin — Prelude in D minor, Op. 28 No. 24 | `chopin-028_13-24-1a-C-024` | Prelude d minor op. 28,24 · [Henle · Preludes](https://www.henle.de/en/Preludes/HN-882) |  |
+
+## Approved 20-piece expansion
+
+These rows add eleven works or collections not represented in the original set. They were selected after grouped holdout exposed the original table's concentration in ten collections.
+
+| Henle | Catalogue piece | Catalogue id | Published source title |
+|---:|---|---|---|
+| 2 | Erik Satie — Gymnopédie No. 1 | `mutopia-37` | Gymnopédie no. 1 · [Henle · Satie Gymnopédies](https://www.henle.de/us/Gymnopedies/HN-1072) |
+| 2 | E. Satie — Gymnopédie No. 2 | `mutopia-38` | Gymnopédie no. 2 · [Henle · Satie Gymnopédies](https://www.henle.de/us/Gymnopedies/HN-1072) |
+| 3 | Ludwig van Beethoven — Für Elise, WoO 59 | `mutopia-931` | Bagatelle (Für Elise) a minor WoO 59 · [Henle · Beethoven at the Piano](https://www.henle.de/us/At-the-Piano-9-well-known-original-pieces/HN-1820) |
+| 3 | W. A. Mozart — Marche funebre KV 453a | `mutopia-446` | Marche funèbre del Signor Maestro Contrapunto c minor K. 453a · [Henle · Mozart piano works](https://www.henle.de/en/Works-for-Piano-Solo-4-Volumes-in-a-Slipcase/HN-9023) |
+| 4 | L. V. Beethoven — Menuett Op. WoO 82 | `mutopia-904` | Minuet E flat major WoO 82 · [Henle · Beethoven at the Piano](https://www.henle.de/us/At-the-Piano-9-well-known-original-pieces/HN-1820) |
+| 4 | L. V. Beethoven — Sonata No. 14 “Moonlight”: Movement 1 | `mutopia-276-1` | Adagio sostenuto from Sonata c sharp minor (Moonlight) op. 27,2 · [Henle · Beethoven at the Piano](https://www.henle.de/us/At-the-Piano-9-well-known-original-pieces/HN-1820) |
+| 4 | F. Mendelssohn-Bartholdy — Lieder ohne Worte: Venetianisches Gondellied, Op.19 No.6 | `mutopia-1679` | Venetian Gondola Song g minor op. 19,6 · [Henle · Mendelssohn](https://www.henle.de/en/Piano-works-Volume-III-Songs-without-Words/HN-327) |
+| 4 | Claude Debussy — Première Arabesque | `mutopia-1777` | Arabesque no. 1 · [Henle · Debussy Arabesques](https://www.henle.de/de/Deux-Arabesques/HN-380) |
+| 4 | Claude Debussy — Deuxième Arabesque | `mutopia-1994` | Arabesque no. 2 · [Henle · Debussy Arabesques](https://www.henle.de/de/Deux-Arabesques/HN-380) |
+| 4 | F. Liszt — Consolation, S.172 No.1 | `mutopia-1654` | Consolation no. 1 E major · [Henle · Liszt Consolations](https://www.henle.de/en/Consolations-including-first-edition-of-the-early-version/HN-465) |
+| 5 | F. Mendelssohn-Bartholdy — Lieder ohne Worte: Venetianisches Gondellied, Op.30 No.6 | `mutopia-1741` | Venetian Gondola Song f sharp minor op. 30,6 · [Henle · Mendelssohn](https://www.henle.de/en/Piano-works-Volume-III-Songs-without-Words/HN-327) |
+| 5 | Claude Debussy — Clair de lune (Suite bergamasque) | `mutopia-1778` | Clair de lune D flat major · [Henle · Debussy Clair de lune](https://www.henle.de/Clair-de-lune/HN-391) |
+| 5 | F. Liszt — Consolation, S.172 No.3 | `mutopia-1647` | Consolation no. 3 D flat major · [Henle · Liszt Consolations](https://www.henle.de/en/Consolations-including-first-edition-of-the-early-version/HN-465) |
+| 5 | S. Rachmaninoff — Prelude in C# minor | `mutopia-2033` | Prélude c sharp minor op. 3,2 · [Henle · Rachmaninoff Prelude](https://www.henle.de/us/Prelude-c-sharp-minor-op.-3-no.-2/HN-1211) |
+| 6 | W. A. Mozart — Gigue in G Major | `mutopia-239` | Gigue G major K. 574 · [Henle · Mozart piano works](https://www.henle.de/en/Works-for-Piano-Solo-4-Volumes-in-a-Slipcase/HN-9023) |
+| 6 | J. Brahms — 2. Intermezzo | `mutopia-535` | Intermezzo A major op. 118,2 · [Henle · Brahms Intermezzo](https://www.henle.de/us/Intermezzo-A-major-op.-118-no.-2/HN-1377) |
+| 6 | E. Grieg — Wedding-day at Troldhaugen | `mutopia-781` | Wedding Day at Troldhaugen op. 65,6 · [Henle · Grieg Wedding Day](https://www.henle.de/en/Wedding-Day-at-Troldhaugen-op.-65-no.-6/HN-1291) |
+| 6 | E. Grieg — Troldtog (March of the Dwarfs) | `mutopia-2014` | March of the Dwarfs op. 54,3 · [Henle · Grieg Lyric Pieces](https://www.henle.de/us/Lyric-Pieces-Volume-V-op.-54/HN-681) |
+| 7 | F. Mendelssohn-Bartholdy — Inquiétude | `mutopia-989` | Song without Words f sharp minor op. 19,5 · [Henle · Mendelssohn](https://www.henle.de/en/Piano-works-Volume-III-Songs-without-Words/HN-327) |
+| 7 | F. F. Chopin — Fantaisie-Impromptu | `mutopia-1693` | Fantaisie-Impromptu c sharp minor op. 66 · [Henle · Chopin Impromptus](https://www.henle.de/en/Impromptus/HN-235) |
+
+## Model gate
+
+The planned non-negative ordinal fit was evaluated with five collection-grouped folds. On the original 80 anchors its best run reached Spearman 0.875 and 77.5% within one Henle level. On the broader 100 anchors, the same approach fell to 0.789 and 74.0%. Both miss the release gate of Spearman 0.9 and 85% within one level. The broader result shows the 80-row estimate was optimistic; no fitted level or `gradeOverride` ships from this experiment.
