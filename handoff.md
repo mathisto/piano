@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- State at handoff: `main` at `b166e65` (the app code is `6747d49e`, live and in TestFlight build 515). HEAD, GitHub and the live `version.txt` matched at the last deploy. One unmerged branch: `feature/source1` (worktree `../piano-wt-source1`, see "Waiting on the owner").
+- Current state: `main` at `02ada7a2`, live and in TestFlight build 526. HEAD, GitHub and the live `version.txt` matched at the last deploy. The library source worktree is removed; `codex/per-strand-standard` is the only active branch and is waiting on the Auto decision in section 7 item 3.
 
 ## 1. Read these first, in this order
 
@@ -36,10 +36,10 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,018 passing, 4 skipped at handoff). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,023 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (47 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
-- Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is at about 222,700, so the next change that adds startup weight must first move something behind a dynamic `import()` (the named candidate is `src/scales.ts`). New UI goes in lazy chunks and on the test's `lazy` list.
+- Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 220,403 bytes: Memorise and `memory.ts` load on first use (`docs/changes/perf5.md`). New UI goes in lazy chunks and on the test's `lazy` list.
 - `src/docs.test.ts`: every `docs/changes/*.md` must be listed in `docs/README.md`, and DESIGN.md front-matter colours must exist in the CSS.
 - Dev server: `npx vite --port <free port>`; in dev, `window.__piano` exposes `game`, `open`, `drill`, `setView`, `key(p, v, ts)`, `up(p, ts)` and more for driving the app.
 
@@ -54,7 +54,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Native code: `ios/App/App/*.swift` (AppDelegate menu, PianoNative plugin for CoreMIDI, open-in files, text size). JS side: `src/native-app.ts` (lazy), `src/native-midi.ts`, `src/native-reminder.ts`.
 
 ### The music library (catalogue)
-- Pipeline: `scripts/library/*` (build, reanalyse, combine, delta, catalog-diff, retitle, kind rules). Build cache and outputs live in `.cache/library/` (not in git). The live catalogue is built from `.cache/library/out-c1` (2,241 pieces).
+- Pipeline: `scripts/library/*` (build, reanalyse, combine, delta, catalog-diff, retitle, kind rules). Build cache and outputs live in `.cache/library/` (not in git). The live catalogue is `.cache/library/out-src1`, build `9b71a88520e8c3a1` (2,347 pieces).
 - Publish a catalogue: `LIBRARY_OUT=.cache/library/<dir> scripts/deploy-library.sh` (adds score files, then swaps `catalog.json` atomically). Check `catalog-diff` first.
 - Licence policy: public domain, CC0, CC BY and CC BY-SA with visible credit; NC only with an explicit flag; never copyrighted arrangements. Details: `docs/research/public-domain-sources.md`.
 
@@ -62,7 +62,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 515)
+## 4. What this session shipped (all live, TestFlight build 526)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -76,6 +76,8 @@ In order. Each line points to its change note in `docs/changes/`.
 8. Practice path phase 3 (`practice-path-3.md`): Timing (strictness) and Touch feedback default to Auto by Path level (1 Easy / no holds / Gentle; 2–3 Standard / lenient / Gentle; 4 Standard / lenient / Standard; 5 Strict); evenness counts from level 2 on scales and technique, never on pieces; a Start in every page head from `nextUp(snapshot, strand)`, one lamp per page; Theory levels stored.
 9. Test reliability: `scripts/e2e/run.mjs` `perform()` now presses each key at its song time on the game's live clock and passes that time as the key's timestamp, like a MIDI packet (fixed the "2b Sight Run paced" full-run flake).
 10. Docs brought current: the Apple notes (`ios-native.md`, `ios-ux.md`, `platforms.md`) now reflect the paid account, iPadOS 26.5 on the owner's iPad, and the shipped light mode and menu bar.
+11. Library source expansion (`library-sources-2.md`): the owner approved PDMX with credit and the public-domain Czerny LilyPond files. The live catalogue grew 2,241 → 2,347 without changing an old score file; Czerny Op. 599 and Op. 299 packs joined the app.
+12. Boot headroom (`perf5.md`): Memorise and its memory engine load on first use. Boot fell 222,113 → 220,403 bytes; `BUDGET` stayed 223,000.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -96,10 +98,7 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
 
 ## 6. Waiting on the owner
 
-1. Library sourcing branch `feature/source1` (worktree `../piano-wt-source1`, built, not merged or published; read `docs/changes/library-sources-2.md` on that branch). It adds 106 pieces (half at grades 1–2: Czerny Op. 599 / 299 / 740 / 139 / 849 / 399, Lemoine Op. 37, Duvernoy Op. 176, Bertini Op. 29, three more Schumann Op. 68, four more Anna Magdalena, Tchaikovsky Op. 39 No. 8, Diabelli Op. 168 No. 1), fixes the 76 Clementi Op. 42 titles, and tags Czerny Op. 840, Hanon, Bertini, Duvernoy, Köhler, Beyer, Lemoine, Concone and Cramer as studies. Output: `.cache/library/out-src1` (2,347 pieces). Two questions asked and not yet answered:
-   - Use PDMX (92 of the 106)? A CC BY 4.0 academic dataset of MuseScore scores, each marked public domain or CC0 by its uploader, no printed edition named. Recommendation given: yes, with credit.
-   - Publish Czerny Op. 599 Nos. 1 to 14 from a GitHub LilyPond repo whose only licence is "Public Domain" in each file header (tempo half note = 88, check by ear)? Recommendation given: yes, after a listen.
-   When answered: merge `feature/source1`, rebuild without PDMX if refused (drop `--set pdmx`), run `catalog-diff`, publish with `deploy-library.sh`, deploy, update the Packs (Czerny Op. 599 and 299 deserve packs), remove the worktree.
+1. Auto semantics for section 7 item 3: ask whether the standard should use the lower of the song and reading strand levels, ignoring Theory, Scales and Technique until phase 5's per-strand model.
 2. Device checks on the iPad (the owner is the only tester; give them a short list with each TestFlight build):
    - results card and Review from the music stand; the ◂ ▸ triangles readable;
    - Continue's destination line; the first-week Today (about ten Start buttons on day 1: too busy?);
@@ -113,8 +112,8 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
 
 Do each as its own branch, with its tests, its `docs/changes/` note (listed in `docs/README.md`), DESIGN.md updates for any UI, then merge, full e2e, deploy, push, TestFlight, and a short owner check list.
 
-1. Finish the library sourcing once the owner answers (section 6, item 1).
-2. Free boot headroom: move `src/scales.ts` (or another boot module) behind a dynamic `import()` so the next features have room. Do not raise `BUDGET`.
+1. **Done:** library sourcing, live corpus build `9b71a88520e8c3a1`, TestFlight 524.
+2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
 3. Per-strand standard (filed in ROADMAP 17): the Path level gates strictness for everything, so one unfinished Theory requirement keeps a strong reader at level 1 with Easy timing on pieces. Interim fix: compute the level that sets the standard from the song and reading strands only; the full fix is phase 5's per-strand model. Ask the owner before changing what Auto means (a one-line question is enough).
 4. Practice path phase 4 (`practice-path.md` section 5, row 4; with `library-and-profile.md` P4/R4): rules on the attempt log in `src/next.ts`: two sessions under 70% on a unit suggest one step back; five sessions with no gain change the task; the strand furthest behind gets the free slot; the review says "bar 7: late in 4 of the last 5 runs" from the three kept takes. Tests: rule tests on synthetic logs and a 30-day synthetic learner (success stays 75–92%, never an unmet prerequisite, `nextUp` never empty).
 5. Re-grade, G1 (`library-and-profile.md` section 4 and 7): the anchor table (60 to 100 named pieces with ABRSM/Henle levels) for the owner to review (about an hour of their time), new difficulty features, an ordinal monotone fit to an internal 0–9 `lvl`, shown as Level 1 to 5 with fixed cut points; Lieder graded on the piano part; `gradeOverride` on anchors. Then G2 + S2: skill tags, `needs`, `fit()` and the Songs home shelves (Option D) as saved filters over the existing facet engine. Then G3: if Levels 1–2 have fewer than 24 pieces per window, generated first-rung pieces ("Written for Piano Forte"), owner hears samples before any ship.
@@ -130,7 +129,7 @@ Do each as its own branch, with its tests, its `docs/changes/` note (listed in `
 
 ## 8. Known open items and gotchas
 
-- Boot JS margin about 300 bytes (see section 3).
+- Boot JS margin 2,597 bytes (see section 3).
 - The Path level is coarse (section 7, item 3).
 - Results/marks quirks listed in DESIGN.md "Known quirks": wrong keys in the densest bars stay cramped at the fitted size; the disabled Perform | Learn segment reads pale under the card in Matinée; an unlabelled input in the tab order outside the results card; the Holds line shows although holds do not count yet.
 - Dynamic Type at 200%: the Learn start card is cramped in landscape and spills over the on-screen keys in portrait; Theory's level line sits tight.
