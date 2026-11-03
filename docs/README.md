@@ -69,6 +69,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/roadmap-2nov.md`: reconciles shipped work, current priorities and private G1 phase status across ROADMAP and the handoff without publishing the grader mechanism.
 - `changes/recognition-provenance-status.md`: records completion of private G1 recognition provenance and its conflict gate without publishing the mechanism.
 - `changes/grader-phase3-complete.md`: records completion of private G1's canonical, played and acquisition graph phases without publishing the mechanism.
+- `changes/fingering-oracle-status.md`: records the private phase-4 route-oracle milestone without publishing the fingering mechanism.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.
