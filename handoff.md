@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: the owner superseded the proposed trained grading model. G1 is now a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its mechanism, constants and results live only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. No catalogue grade or grader code has shipped. The last runtime deployment is verified at `5d5347c1`, whose iPad upload succeeded as TestFlight build 551; later commits may be documentation-only.
+- Current state: the owner superseded the proposed trained grading model. G1 is now a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Private phases 1, 2 and canonical-graph phase 3a are complete; played control flow and acquisition provenance are next. Its mechanism, constants and results live only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. No catalogue grade or grader code has shipped. The last runtime deployment is verified at `5d5347c1`, whose iPad upload succeeded as TestFlight build 551; later commits may be documentation-only.
 
 ## 1. Read these first, in this order
 
@@ -17,7 +17,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
    - `docs/research/library-and-profile.md`: no Apple Intelligence (the owner's iPad Air 4 / A14 cannot run it), the long-term player profile, one difficulty scale, the Songs page, a thumbnail for every piece. Decisions 11 to 22. Its section 7 is the combined phase plan.
    - `docs/research/horizon.md`: traps and loves of 14 rival apps, Studies and Packs, Apple platform guidance now, iPhone / Mac / Watch. Decisions 23 to 36. Its section 6 is the combined phase list.
 5. `docs/README.md`: the index of every doc; `docs/changes/*.md` is one note per shipped branch (what was built, judgement calls, what is left).
-6. `private-research/difficulty-grader-spec.md`, then its `changes/position-law.md` and `changes/route-oracles.md`: the private deterministic-grader contract and exact current starting point. This is a separate local Git repository and has no remote by design.
+6. `private-research/ROADMAP.md`, then `difficulty-grader-spec.md` and `changes/canonical-graph.md`: the private deterministic-grader status, contract and exact current starting point. This is a separate local Git repository and has no remote by design.
 
 ## 2. The owner and how they want you to work
 
@@ -37,7 +37,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,034 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,035 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (47 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
 - Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 221,923 bytes: Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.
@@ -63,7 +63,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (all live, TestFlight build 547)
+## 4. What this session shipped (runtime live through TestFlight build 551)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -86,7 +86,7 @@ In order. Each line points to its change note in `docs/changes/`.
 17. G1 corpus feasibility (`regrade-g1-corpus.md`): 53 further exact matches from ten official Henle sources brought the research table to 153 pieces across 32 independent groups. Grouped holdout still failed: additive 0.785 / 66.7% within one, forest 0.774 / 67.3%, neighbours 0.762 / 57.5%. No grade or model code shipped.
 18. G1 existing systems (`regrade-g1-existing-systems.md`): replaced commissioned grading with existing ABRSM, RCM, Trinity, Henle and Piano Syllabus ranks. A conservative research join found 497 catalogue scores, 338 labels and 188 work groups; eight aggregate features reached Spearman 0.707, 26 technical features 0.706, and fold-only composer/form priors 0.780, all below the 0.9 gate. Corrected the CIPI evidence: its whole-piece pitch/fingering/expression ensemble reached 87.3% within one level. The next algorithm preserves each grading system's thresholds in a whole-score ordinal sequence ensemble; its existing labels need commercial permission or independent official citations before production use.
 19. G1 prior art (`regrade-g1-prior-art.md`): automatic score grading, local passage difficulty, fingering cost, whole-piece performance dimensions, multi-system heads and explainable white-box models all have prior art. Deterministic inference is not a novelty claim. Public commit `51b96db` already disclosed the broad shared-ordering / system-threshold direction on 2 Nov 2026. Keep any further mechanism and results private; patentability and freedom-to-operate review precede another enabling public disclosure.
-20. G1 deterministic pivot (private): the owner rejected training and label-permission dependencies. The local private specification is at v0.8; its dependency-free law generator has exact fixed-point, representation, rejection, span, aggregation, hand-position and first route-order oracles. A fresh suite contains 2,046 valid MusicXML fixtures. No app or catalogue output changed.
+20. G1 deterministic pivot (private): the owner rejected training and label-permission dependencies. The local private specification is at v0.9; its dependency-free law generator has exact fixed-point, representation, rejection, span, aggregation, hand-position and first route-order oracles. A fresh suite contains 2,046 MusicXML fixtures. Canonical-graph phase 3a adds the deterministic MusicXML/MXL parser, structural gate and scoped printed/performed projections; all 2,035 non-rejection fixtures parse. No app or catalogue output changed.
 21. Reading results (`read-results.md`): result copy now says notes rather than internal cards, separates first-try accuracy from timing, compares like-for-like prior attempts, marks a strict personal best, and keeps diagnostic detail collapsed.
 22. Row shortcuts (`row-shortcuts.md`): a tap anywhere on a Today, Read, saved Sight Run, Scales, Technique or Theory row invokes its visible default action; inner controls retain their own behavior. Phone Read and Scales tables drop the typical-time column.
 
@@ -111,6 +111,7 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
 
 1. Device checks on the iPad (the owner is the only tester; give them a short list with each TestFlight build):
    - results card and Review from the music stand; the ◂ ▸ triangles readable;
+   - tap the body of one Read, Scales and Technique row; each should open its visible default action while ⋯ and inner buttons stay independent;
    - Continue's destination line; the first-week Today (about ten Start buttons on day 1: too busy?);
    - Songs: first visit loads the thumbnail sidecar (about 370 KB): slow?;
    - the View menu and shortcuts with a hardware keyboard; the reminder end to end; the largest text size; AirDrop a `.pfpack` to themself;
@@ -121,13 +122,13 @@ Research reports behind the plans (raw, for depth) were in a temporary session f
 
 ## 7. What to do next, in order
 
-Do each as its own branch, with its tests, its `docs/changes/` note (listed in `docs/README.md`), DESIGN.md updates for any UI, then merge, full e2e, deploy, push, TestFlight, and a short owner check list.
+Do each runtime change as its own branch, with its tests, its `docs/changes/` note (listed in `docs/README.md`), DESIGN.md updates for any UI, then merge, full e2e, deploy, push, TestFlight, and a short owner check list. Private-research and documentation-only branches still get tests, a note, merge and push where a remote exists, but do not create a false web deployment or TestFlight build.
 
 1. **Done:** library sourcing, live corpus build `9b71a88520e8c3a1`, TestFlight 524.
 2. **Done:** boot headroom through lazy Memorise, 220,403 bytes under the unchanged budget, TestFlight 526.
 3. **Done:** Auto from the lower of the Songs repertoire ceiling and the Read frontier, ignoring Theory, Scales and Technique until phase 5; TestFlight 529.
 4. **Done:** practice path phase 4: low-session drop-back, plateau task changes, the furthest-behind learning strand, reading error map, Stuck evidence, and timing patterns across the three kept takes; TestFlight 532.
-5. **In progress, private deterministic G1:** continue from `private-research/difficulty-grader-spec.md` and its change notes. Build the lossless canonical MusicXML graph next, against the existing law suite, then deterministic hand allocation/fingering, the six cost families, serialization and the sealed grouped benchmark. Published human grades remain evaluation evidence only; there is no commercial-training or label-permission dependency. Retain the 0.9 / 85% evaluation gate and keep complete works/editions in one fold. Keep all mechanism, constants, results and ablations private until patentability/FTO and publication decisions. No grade or grader code has shipped; do not start G2/S2 until G1 passes. After G1 passes: G2 + S2 adds skill tags, `needs`, `fit()` and Songs Option D; then count the Level 1–2 windows before deciding whether G3 generated first-rung pieces are needed.
+5. **In progress, private deterministic G1:** phases 1 and 2 and canonical-graph phase 3a are done. Continue from `private-research/ROADMAP.md` at phase 3b: complete played control flow and acquisition provenance, then deterministic hand allocation/fingering, six component costs and explanations, result serialization and the sealed grouped benchmark. Published human grades remain evaluation evidence only; there is no commercial-training, label-permission or human-grading dependency. Retain the 0.9 / 85% gate and keep complete works/editions in one fold. Keep all mechanism, constants, results and ablations private until patentability/FTO and publication decisions. No grade or grader code has shipped; do not start G2/S2 until G1 passes. After G1 passes: G2 + S2 adds skill tags, `needs`, `fit()` and Songs Option D; then count Level 1–2 gaps before deciding whether G3 generated first-rung pieces are needed.
 6. Horizon items (`horizon.md` section 6), roughly in this order:
    - T1 trap fixes: own-file import findable on first run; `REPORT_TO` for Report a problem; skip damaged records instead of forcing Clear all data.
    - K2 rest: the public `packs/` folder with CI validation and an index; packs made of generated exercises; universal links so a pack link opens the iPad app.
