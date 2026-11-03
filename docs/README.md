@@ -79,6 +79,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/canonical-route-status.md`: records completion of the private canonical fingering route artifact without publishing its mechanism.
 - `changes/motor-status.md`: records completion of the private Motor component without publishing its mechanism.
 - `changes/rhythm-status.md`: records completion of the private Rhythm component without publishing its mechanism.
+- `changes/coordination-status.md`: records completion of the private Coordination component without publishing its mechanism.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.
