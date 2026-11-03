@@ -32,7 +32,8 @@ for (const p of a.pieces) {
   for (const k of new Set([...Object.keys(p), ...Object.keys(q)])) if (j(p[k]) !== j(q[k])) (diffs[k] ??= []).push(`${p.id}: ${j(p[k])} -> ${j(q[k])}`)
 }
 const fresh = a.pieces.filter((p) => B_.get(p.id)?.file !== p.file).map((p) => p.id) // a new file: all three fields move, the new one must exist and hash
-for (const k of ['file', 'bytes', 'sha256']) if ((diffs[k]?.length ?? 0) !== fresh.length) bad.push(`${k} differs in ${diffs[k]?.length ?? 0} pieces but ${fresh.length} have a new file`)
+for (const k of ['file', 'sha256']) if ((diffs[k]?.length ?? 0) !== fresh.length) bad.push(`${k} differs in ${diffs[k]?.length ?? 0} pieces but ${fresh.length} have a new file`)
+if (diffs.bytes?.some((row) => !fresh.includes(row.split(':')[0]))) bad.push('bytes differs without a new file') // changed content may keep the same byte length
 for (const k of ['title', 'opus'])
   if (diffs[k]?.some((s) => !titled.has(s.split(':')[0]))) bad.push(`${k} differs for pieces that are not in the titles file`) // kind and form follow a title or a composer rule: listed below
 for (const k of ['composer', 'licence', 'source', 'edition', 'sourceUrl', 'licenceEvidence', 'tags', 'format'])

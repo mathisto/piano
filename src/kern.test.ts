@@ -54,6 +54,28 @@ describe('kern: a hand-written score', () => {
 })
 
 describe('kern: structure', () => {
+  it('pairs nested and crossing slurs with distinct MusicXML numbers', () => {
+    const nested = kernToMusicXml(k('**kern', '(4c', '(4d', '4e)', '4f)', '==')).xml
+    expect([...nested.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'start2', 'stop2', 'stop1'])
+
+    const crossing = kernToMusicXml(k('**kern', '(4c', '&(4d', '4e)', '4f&)', '==')).xml
+    expect([...crossing.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'start2', 'stop1', 'stop2'])
+  })
+
+  it('keeps a slur identity through a spine split and join', () => {
+    const xml = kernToMusicXml(k('**kern', '(2c', '*^', '4d\t4e', '*v\t*v', '2f)', '==')).xml
+    expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'stop1'])
+  })
+
+  it('pairs each played copy of a slurred expansion section', () => {
+    const xml = kernToMusicXml(k('**kern', '*>[A,A]', '*>A', '(4c', '4d)', '=1', '==')).xml
+    expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'stop1', 'start1', 'stop1'])
+  })
+
+  it('refuses more simultaneous slurs than MusicXML can identify', () => {
+    expect(() => kernToMusicXml(k('**kern', ...Array.from({ length: 17 }, () => '(4c'), '=='))).toThrow(/more than 16 overlapping slurs/)
+  })
+
   it('splits and joins spines into voices of one hand, plays out the expansion list and joins the short bars it makes', () => {
     const s = fromKern(
       k('**kern\t**kern', '*>[A,A,B]\t*>[A,A,B]', '*M2/4\t*M2/4', '*>A\t*>A', '4C\t4c', '=1\t=1', '*\t*^', '4D\t4d\t4f', '4E\t4e\t4g', '*\t*v\t*v', '=2\t=2', '4F\t4a', '=:|!|:\t=:|!|:', '*>B\t*>B', '4G\t4b', '=3\t=3', '2C\t2cc', '==\t=='),

@@ -11,7 +11,11 @@ const read = (d, f) => readFileSync(`${d}/${f}`, 'utf8')
 const A = JSON.parse(read(base, 'catalog.json'))
 const B = JSON.parse(read(over, 'catalog.json'))
 let lic = read(base, 'LICENSES.md')
-const mine = new Map(B.pieces.map((p) => [p.id, p]))
+const old = new Map(A.pieces.map((p) => [p.id, p]))
+const mine = new Map(B.pieces.map((p) => {
+  const prior = old.get(p.id)
+  return [p.id, prior ? { ...p, composer: prior.composer, licence: prior.licence } : p]
+}))
 let changed = 0
 A.pieces = A.pieces.map((p) => {
   const q = mine.get(p.id)
