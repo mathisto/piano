@@ -10,4 +10,4 @@ Checks: `src/kern.test.ts` (18 tests), TypeScript, the complete Chopin build, st
 
 ## Published
 
-Pending merge.
+Public commit `46e3505`; catalogue `db7e04b0a3b34f56` published with `LIBRARY_OUT=.cache/library/out-linked-candidate4 scripts/deploy-library.sh`. The live catalogue is byte-identical to the candidate, reports 2,347 pieces, and the recovered Op. 20 package matches its local SHA-256. The converter is offline build tooling and the app reads the catalogue remotely, so neither a web-shell deployment nor a TestFlight binary would change this release; neither was made. Private reseal `82237bd` preserves the exact 57 / 96 acquisition boundary without opening levels.
