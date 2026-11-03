@@ -254,7 +254,7 @@ async function mainFlow() {
 
   await feature('1 Read: a stage set, then Another set', page, async () => {
     await nav(page, 'read')
-    await page.click('#readStart') // the head's Start: the next stage
+    await page.click('#read table.stages tr.open td.name')
     await ready(page)
     const n = await ev(page, () => window.__piano.game.song.notes.length)
     ok(n >= 10, `a drill of ${n} notes`)
@@ -300,7 +300,7 @@ async function mainFlow() {
     await page.click('#rSave') // named by the dialog handler
     await page.waitForSelector('#read [data-runp="0"]')
     ok(/E2E run/.test(await text(page, '#read .plan')), 'saved run not listed by name')
-    await page.click('#read [data-runp="0"]')
+    await page.click('#read .prow.open:has([data-runp="0"]) .pwho')
     await ready(page)
     ok(/^Bass/.test(await text(page, '#title')), 'preset did not start its own setup')
     await leave(page, 'read')
@@ -342,7 +342,7 @@ async function mainFlow() {
 
   await feature('3 Scales: stage run, Choose a scale, Quiz', page, async () => {
     await nav(page, 'scales')
-    await page.click('#scalesStart') // the head's Start: the Path's first scale stage
+    await page.click('#scales table.stages tr.open td.name')
     await ready(page)
     const id = await ev(page, () => window.__piano.game.song.id)
     ok(/^scale:/.test(id), id)
@@ -425,6 +425,10 @@ async function mainFlow() {
     ok(seen.join() === '1:even/marks,2:even/marks,3:even/marks,4:even/none/test,5:even/marks/faint', seen.join(' '))
     const tech = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['tech:stats'] ?? '{}')))
     ok(Object.values(tech).some((x) => x.runs === 5), `tech:stats ${JSON.stringify(tech)}`)
+    await page.click('#technique > .plan .prow.open .pwho')
+    await ready(page)
+    ok(/^tech:/.test(await ev(page, () => window.__piano.game.song.id)), 'the Technique row did not start its exercise')
+    await leave(page, 'technique')
   })
 
   await feature('7b Songs: start card Notes shown, saved', page, async () => {
@@ -496,7 +500,7 @@ async function theory(page, trainers) {
     await nav(page, 'theory')
     for (const t of trainers) if (LEVEL[t]) await page.selectOption(`select[data-tlevel=${t}]`, LEVEL[t])
     for (const t of trainers) {
-      await page.click(`button[data-trainer=${t}]`)
+      await page.click(`.prow.open:has(button[data-trainer=${t}]) .pwho > b`)
       const r = await ev(page, () => window.__e2e.theory(240000))
       ok(r.ok === r.n, `${t}: ${r.ok} of ${r.n} (${r.why})`)
       await page.waitForSelector('#theory [aria-label="Session results"]')
@@ -671,6 +675,9 @@ const guideFlow = () => fresh({
     await wait(page, () => !document.querySelector('#today .guide'))
     await boot(page)
     ok(!(await page.$(card)), 'Hide not remembered')
+    await page.click('#today .plan .prow.open .pwho')
+    await ready(page)
+    await leave(page, 'today')
     await page.keyboard.press('?')
     await page.waitForSelector('dialog#help[open] h2')
     await wait(page, () => /How touch feedback works/.test(document.querySelector('#help').textContent), undefined, 5000) // the text arrives with ui-sheets

@@ -31,7 +31,7 @@ it('the plan: the lamp on its first row not done, every other row quiet', () => 
 it('the plan done: one line, a longer plan to choose, and the lamp on what comes next (never a Today without one)', () => {
   const html = draw({ ...d, done: ['warm', 'read', 'piece'] })
   expect(html).toContain(`<p class="plan-done">Today's plan is done.<button class="btn ghost" data-plan="20">Make it 20 min</button></p>`)
-  expect(html).toMatch(/class="prow upnext".*<b><span class="pn">Twinkle<\/span> <span class="tag next">Next<\/span><\/b><span>Best 80%<\/span>/)
+  expect(html).toMatch(/class="prow open upnext".*<b><span class="pn">Twinkle<\/span> <span class="tag next">Next<\/span><\/b><span>Best 80%<\/span>/)
   expect(primaries(html)).toEqual([expect.stringContaining('data-by="piece"')])
   expect(draw({ ...d, planMin: 45, done: ['warm', 'scale', 'read', 'run', 'sight', 'piece'] })).not.toContain('Make it') // the longest plan
   // something due comes before the piece

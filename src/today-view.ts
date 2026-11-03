@@ -21,7 +21,7 @@ export interface TodayRow extends Unit {
   cover?: string // a piece row's thumbnail, as HTML
 }
 const start = (s: Start) => ({ today: 'start', start: JSON.stringify(s) })
-const btn = (c: string, r: TodayRow, by: string) => `<button class="btn${c}"${Object.entries({ ...r.go, by }).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')}>${icon(r.ic ?? 'play')}${r.verb}</button>`
+const btn = (c: string, r: TodayRow, by: string) => `<button class="btn${c}" data-row${Object.entries({ ...r.go, by }).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')}>${icon(r.ic ?? 'play')}${r.verb}</button>`
 
 /** Every row Today can offer, whether or not the plan has room for it today. */
 export function todayRows(d: TodayData): TodayRow[] {
@@ -45,11 +45,15 @@ export function todayRows(d: TodayData): TodayRow[] {
 
 /** The day as a short list in practice order; nothing is locked and each row stands alone. `lamp`: what nextUp() chose (next.ts), the one primary. */
 export function todayView(el: HTMLElement, d: TodayData, lamp: { key: string; by: string }) {
+  if (el.parentElement) el.parentElement.onclick = (e) => {
+    const t = e.target as HTMLElement
+    if (!t.closest('button,a,label')) t.closest('.open')?.querySelector<HTMLButtonElement>('[data-row]')?.click()
+  }
   const all = todayRows(d)
   const plan = planOf(d.planMin, all.map((r) => r.key)).map(({ key, min }) => ({ ...all.find((r) => r.key === key)!, min }))
   const todo = plan.filter((r) => !d.done.includes(r.key))
   const row = (r: TodayRow, cls: string, o: { done?: boolean; up?: boolean; by?: string } = {}) =>
-    `<div class="prow${o.done ? ' done' : o.up ? ' upnext' : ''}"><span class="plead">${o.done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : (r.cover ?? '')}<div class="pwho"><b>${r.h ?? esc(r.title)}${o.up ? ' <span class="tag next">Next</span>' : ''}</b><span>${esc(r.sub)}${o.done || o.up ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${btn(cls, r, o.by ?? 'plan')}</div></div>`
+    `<div class="prow open${o.done ? ' done' : o.up ? ' upnext' : ''}"><span class="plead">${o.done ? icon('check') : ''}</span>${r.key === 'piece' ? d.last.cover : (r.cover ?? '')}<div class="pwho"><b>${r.h ?? esc(r.title)}${o.up ? ' <span class="tag next">Next</span>' : ''}</b><span>${esc(r.sub)}${o.done || o.up ? '' : ` · about ${r.min} min`}</span></div>${r.mid ?? ''}<div class="pact">${btn(cls, r, o.by ?? 'plan')}</div></div>`
   const longer = PLAN_LENGTHS.find((m) => m > d.planMin)
   const up = all.find((r) => r.key === lamp.key)
   // what is still to do comes first, in practice order, the lamp on the first unless the first week's step has it. Once all is done the

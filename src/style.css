@@ -2664,6 +2664,16 @@ button.link {
     padding: 0 10px;
   }
 }
+@media (max-width: 520px) {
+  table.stages col.mcol,
+  table.stages col:last-child {
+    width: 100px !important;
+  }
+  table.stages col[style]:not(:last-child),
+  table.stages :is(th, td).num {
+    display: none;
+  }
+}
 
 @media (max-height: 820px) {
   .ready {
@@ -2837,6 +2847,14 @@ body.zen .bar {
   gap: 8px 20px;
   padding: 12px;
   border-top: 1px solid var(--line);
+}
+.prow.open {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .prow.open:hover {
+    background: var(--wash);
+  }
 }
 .prow:last-child {
   border-bottom: 1px solid var(--line);

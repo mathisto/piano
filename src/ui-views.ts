@@ -59,11 +59,11 @@ export function readView(el: HTMLElement, rows: StageRow[], canReview: boolean, 
       const pct = Math.round(r.pct * 100)
       const speed = r.solid && !r.fast && !r.next // Solid, not yet Fluent: the button practises against the tighter clock
       const sub = r.solid && !r.fast ? `Solid · Fluent under ${fluentMs(r.stage) / 1000} s a card` : `${r.seen} of ${r.total} seen`
-      return `${band}<tr>
+      return `${band}<tr class="open">
         <td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}${r.fast ? ' <span class="tag">Fluent</span>' : ''}${r.due ? ` <span class="tag">${r.due} due</span>` : ''}<small>${esc(r.stage.blurb)}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} mastery`, r.fluent)}<b>${r.solid ? Math.round(r.fluent * 100) : pct}%</b></div><small style="color:var(--ink-3)">${sub}</small></td>
         ${timed ? `<td class="num">${r.rt ? (r.rt / 1000).toFixed(1) + ' s' : ''}</td>` : ''}
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practise ${esc(r.stage.name)}${speed ? ' faster' : ''}">${icon('play')}${speed ? 'Faster' : 'Practise'}</button></div></td></tr>`
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-row data-stage="${r.stage.id}"${speed ? ' data-fast="1"' : ''} aria-label="Practise ${esc(r.stage.name)}${speed ? ' faster' : ''}">${icon('play')}${speed ? 'Faster' : 'Practise'}</button></div></td></tr>`
     })
     .join('')
   el.innerHTML = `
@@ -137,7 +137,7 @@ function pathBlock(path: PathRow[]) {
   if (!path.length) return ''
   const solid = path.filter((p) => p.state === 'solid').length
   const row = (p: PathRow) =>
-    `<div class="prow"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-recipe="${esc(p.id)}">${icon('play')}Start</button></div></div>`
+    `<div class="prow open"><div class="pwho"><b>${esc(p.label.charAt(0).toUpperCase() + p.label.slice(1))}${p.state === 'due' ? ' <span class="tag">Due</span>' : ''}</b><span>${p.state === 'learning' ? 'Learning' : p.state === 'solid' ? 'Solid' : p.state === 'new' ? 'Not started' : ''}</span></div><div class="pact"><button class="btn ghost" data-row data-recipe="${esc(p.id)}">${icon('play')}Start</button></div></div>`
   const next = path.filter((p) => p.state !== 'solid').slice(0, 5)
   const rest = path.filter((p) => !next.includes(p))
   return `<h2 class="sec">Syllabus<span>${solid} of ${path.length} solid</span></h2>
@@ -292,7 +292,7 @@ export function runForm(s: RunSpec, presets: RunSpec[], best: Record<string, { s
   const saved = presets
     .map((p, i) => {
       const b = best[bestKey(p)]
-      return `<div class="prow"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Most in a row ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-runp="${i}">${icon('play')}Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
+      return `<div class="prow open"><div class="pwho"><b>${esc(p.name ?? runTitle(p))}</b><span>${esc(runLine(p))}${b ? ` · Most in a row ${b.streak}` : ''}</span></div><div class="pact"><button class="btn ghost" data-row data-runp="${i}">${icon('play')}Start</button><button class="btn icon ghost" data-rund="${i}" aria-label="Remove ${esc(p.name ?? runTitle(p))}">${icon('x')}</button></div></div>`
     })
     .join('')
   const b = best[bestKey(s)]
@@ -374,9 +374,9 @@ export function scalesView(el: HTMLElement, rows: ScaleRow[], tab: 'stages' | 'p
       <thead><tr><th scope="col">Stage</th><th scope="col">Mastery</th><th scope="col"><span style="position:absolute;left:-9999px">Actions</span></th></tr></thead>
       <tbody>${rows
         .map(
-          (r) => `<tr><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm} bpm.${r.next ? ` Up next: ${esc(cardName(r.card))}.` : ''}</small></td>
+          (r) => `<tr class="open"><td class="name">${esc(r.stage.name)}${r.next ? ' <span class="tag next">Next</span>' : ''}<small>${esc(r.stage.blurb)} Eighth notes at ${r.stage.bpm} bpm.${r.next ? ` Up next: ${esc(cardName(r.card))}.` : ''}</small></td>
         <td><div class="mrow">${meter(r.pct, r.solid, `${esc(r.stage.name)} solid`)}<b>${Math.round(r.pct * 100)}%</b></div><small style="color:var(--ink-3)">${r.done} of ${r.total} solid</small></td>
-        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-sstage="${r.stage.id}" aria-label="Practise ${esc(r.stage.name)}">${icon('play')}Practise</button></div></td></tr>`,
+        <td class="acts"><div class="row-actions"><button class="btn${r.next ? ' primary' : ' ghost'}" data-row data-sstage="${r.stage.id}" aria-label="Practise ${esc(r.stage.name)}">${icon('play')}Practise</button></div></td></tr>`,
         )
         .join('')}</tbody></table>`
       : `<section class="tcard run" aria-label="Choose a scale"><div class="tech-form">
@@ -416,8 +416,8 @@ export function theoryView(el: HTMLElement, levels: Record<Trainer, number>, run
   let body: string
   if (!run) {
     body = `<div class="plan">${TRAINERS.map(
-      (t) => `<div class="prow"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span>${t.levels.length ? `<label class="pick">${icon('back')}<select data-tlevel="${t.id}" aria-label="Level of ${esc(t.name)}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}</div>
-      <div class="pact"><button class="btn ghost" data-trainer="${t.id}">${icon('play')}Start</button></div></div>`,
+      (t) => `<div class="prow open"><div class="pwho"><b>${esc(t.name)}</b><span>${esc(t.blurb)}</span>${t.levels.length ? `<label class="pick">${icon('back')}<select data-tlevel="${t.id}" aria-label="Level of ${esc(t.name)}">${t.levels.map((l, i) => `<option value="${i + 1}"${levels[t.id] === i + 1 ? ' selected' : ''}>Level ${i + 1}: ${esc(l)}</option>`).join('')}</select></label>` : ''}</div>
+      <div class="pact"><button class="btn ghost" data-row data-trainer="${t.id}">${icon('play')}Start</button></div></div>`,
     ).join('')}</div>`
   } else if (run.i >= run.cards.length) {
     const n = run.cards.length

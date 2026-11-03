@@ -35,6 +35,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 **Read, Scales, Theory, Technique**
 - `changes/readcur.md`: the 37 Read stages, the Fluent tier and keyed Sight Run.
 - `changes/read-results.md`: plain reading-result counts, accuracy comparison and personal best, the quieter detail disclosures, and removal of the internal “card” term from results.
+- `changes/row-shortcuts.md`: whole-row default actions across the main indexes, protected inner controls and readable phone-width stage tables.
 - `changes/scales2.md`: contrary motion, chromatic and arpeggio scales, and the fingering table to verify.
 - `changes/fingers.md`: the paper cross-check of arpeggio, contrary and chromatic fingerings, with the Alfred checklist.
 - `changes/ear.md`: the ear and rhythm trainers in Theory.
