@@ -5,7 +5,7 @@ import { Judge } from './judge'
 import { settings } from './settings'
 import { fromSpec } from './song'
 import { STARTERS } from './starters'
-import { drillResults, results, runResults } from './ui-results'
+import { drillResults, pacedResults, results, runResults } from './ui-results'
 
 const r = (o: Partial<Result>): Result => ({ acc: 1, counts: { perfect: 0, great: 0, good: 0, late: 0, miss: 0 }, maxCombo: 0, touch: { n: 0 } as never, even: null, timing: null, artic: null, voice: null, pedal: null, follow: [], clean: false, touchPct: -1, holds: -1, wrong: 24, first: -1, offs: [], heat: [], total: 40, mode: 'learn', rate: 1, ...o })
 const flat = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
@@ -94,11 +94,26 @@ it('Continue after a clean run names where it goes; the tempo step waits in More
 
 it('the reading and Sight run cards lead with Continue too; Again is the restart icon', () => {
   const go = { by: 'due', title: 'Theory: chords', sub: '4 cards due for review' }
-  const d = { stage: 'Treble landmarks', cards: 12, clean: 0.8, medianMs: 1200, weakest: [], before: 0.2, after: 0.4, solid: false, nextName: 'x', fast: false, goalMs: 2000 }
+  const progress = { before: 0.2, after: 0.4, solid: false, nextName: 'x', fast: false, goalMs: 2000 }
+  const d = { stage: 'Treble landmarks', cards: 12, clean: 0.8, medianMs: 1200, weakest: [], progress }
   const drill = drillResults(d, go)
   expect(drill).toMatch(/id="next"[^>]*>.*Continue<\/button>\s*<button class="btn icon" id="nextSet" aria-label="Another set"/)
   expect(drill).toContain('Theory: chords · 4 cards due for review')
-  expect(drillResults({ ...d, solid: true }, go)).toContain('<button class="btn" id="nextSet">Next stage</button>')
+  expect(drillResults({ ...d, progress: { ...progress, solid: true } }, go)).toContain('<button class="btn" id="nextSet">Next stage</button>')
   const run = runResults({ spec: { clef: 'treble', lo: 60, hi: 72, size: 1, fifths: 0 } as never, arc: { cards: 10, clean: 8, best: 5 } as never, medianMs: 900, record: false, notes: [], weakest: [] }, go)
   expect(run).toMatch(/id="next".*Continue<\/button><button class="btn icon" id="runAgain" aria-label="Again"/)
+})
+
+it('reading results lead with plain counts, compare like-for-like accuracy, and never expose cards', () => {
+  const drill = drillResults({ stage: 'Treble landmarks', cards: 26, clean: 24 / 26, medianMs: 1200, weakest: [], comparison: { previous: 20 / 26, best: true } })
+  expect(flat(drill)).toContain('24 of 26 right first try Personal best First-try accuracy up 15 points from last time.')
+  expect(flat(drill)).not.toMatch(/\bcards?\b/i)
+
+  const run = runResults({ spec: { clef: 'treble', lo: 60, hi: 72, size: 1, fifths: 0 } as never, arc: { cards: 26, clean: 24, best: 8 } as never, medianMs: 900, record: true, notes: [], weakest: [], comparison: { previous: 24 / 26, best: false } })
+  expect(flat(run)).toContain('24 of 26 right first try First-try accuracy matched last time.')
+  expect(flat(run)).not.toMatch(/\bcards?\b/i)
+
+  const paced = pacedResults({ spec: { clef: 'treble', lo: 60, hi: 72, size: 1, fifths: 0, pace: 50, every: 1 } as never, n: 26, hit: 24, cells: Array(24).fill(true).concat(false, false), missed: ['B4'], timing: null, wrong: 0, note: 'Next time: 50 bpm.', comparison: { previous: 20 / 26, best: true } })
+  expect(flat(paced)).toContain('24 of 26 on the beat Personal best On-beat accuracy up 15 points from last time.')
+  expect(flat(paced)).not.toMatch(/\bcards?\b/i)
 })

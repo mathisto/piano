@@ -172,40 +172,52 @@ export interface DrillSummary {
   clean: number // 0..1
   medianMs: number
   weakest: { name: string; clean: number; rt: number }[]
-  before: number // mastery 0..1
-  after: number
-  solid: boolean
-  nextName: string
-  fast: boolean // a Fluent set: before, after and solid are the Fluent tier
-  goalMs: number
+  progress?: {
+    before: number // mastery 0..1
+    after: number
+    solid: boolean
+    nextName: string
+    fast: boolean // a Fluent set: before, after and solid are the Fluent tier
+    goalMs: number
+  }
+  comparison?: { previous: number; best: boolean }
+}
+
+const trend = (label: string, now: number, c?: { previous: number; best: boolean }) => {
+  if (!c) return ''
+  const points = Math.round((now - c.previous) * 100)
+  const change = points ? `${label} ${points > 0 ? 'up' : 'down'} <b>${Math.abs(points)} ${Math.abs(points) === 1 ? 'point' : 'points'}</b> from last time.` : `${label} matched last time.`
+  return `<p class="line result-trend">${c.best ? '<span class="tag next">Personal best</span>' : ''}${change}</p>`
 }
 
 export function drillResults(d: DrillSummary, go?: Cont) {
   const c = cont(go)
   const secs = (ms: number) => (ms / 1000).toFixed(1) + ' s'
+  const p = d.progress
+  const right = Math.round(d.cards * d.clean)
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Drill results">
-    <h2>${esc(d.stage)}: set complete</h2>
-    <p class="line"><b>${d.cards}</b> cards · <b>${Math.round(d.clean * 100)}%</b> first try · typical <b>${secs(d.medianMs)}</b> a card</p>
-    <div>
-      <p class="line" style="margin-bottom:6px">${d.fast ? 'Fluent' : 'Stage mastery'} went from <b>${Math.round(d.before * 100)}%</b> to <b>${Math.round(d.after * 100)}%</b>${
-        d.solid
-          ? d.fast ? '. Fluent.' : '. Solid. Next is Fluent: the same cards, answered faster. Choose Faster on the stage list.'
-          : `. It is ${d.fast ? 'fluent' : 'solid'} when every card is right first try, in under ${secs(d.goalMs)}.`
-      }</p>
-      <div class="mrow" style="max-width:420px">${meter(d.after, d.solid, `${d.fast ? 'Fluent' : 'Stage mastery'} after this set`)}<b>${Math.round(d.after * 100)}%</b></div>
-    </div>
-    ${d.solid ? `<p class="line">Next up: <b>${esc(d.nextName)}</b></p>` : ''}
+  <div class="results"><div class="card read-res" role="region" aria-label="Reading results">
+    <h2>${esc(d.stage)}<span class="result-kicker">Set complete</span></h2>
+    <div class="big-grade"><b>${right} of ${d.cards}</b><span class="hcap">right first try</span></div>
+    <div class="stats">
+    ${trend('First-try accuracy', d.clean, d.comparison)}
+    <dl class="result-facts">
+      <div><dt>Typical response</dt><dd>${secs(d.medianMs)}</dd></div>
+      ${p ? `<div><dt>${p.fast ? 'Fluency' : 'Stage mastery'}</dt><dd>${Math.round(p.before * 100)}% <span aria-hidden="true">→</span><span class="sr-only">to</span> ${Math.round(p.after * 100)}%</dd></div>` : ''}
+    </dl>
+    ${p ? `<div class="mrow read-meter">${meter(p.after, p.solid, `${p.fast ? 'Fluency' : 'Stage mastery'} after this set`)}<b>${Math.round(p.after * 100)}%</b></div>` : ''}
+    ${p?.solid ? `<p class="line">${p.fast ? 'Fluent.' : 'Solid. Next, build fluency with the same material.'} Next up: <b>${esc(p.nextName)}</b></p>` : p ? `<p class="line">${p.fast ? 'Fluent' : 'Solid'} when everything is right first try in under <b>${secs(p.goalMs)}</b>.</p>` : ''}
     ${
       d.weakest.length
-        ? `<div><p class="line" style="margin-bottom:6px">Needs the most work</p><ul style="margin:0;padding-left:20px;color:var(--ink-2)">${d.weakest
+        ? `<div><p class="line result-label">Needs the most work</p><ul class="result-list">${d.weakest
             .map((w) => `<li>${esc(w.name)}: ${Math.round(w.clean * 100)}% first try, ${secs(w.rt)}</li>`)
             .join('')}</ul></div>`
         : ''
     }
+    </div>
     <div class="row">
       ${c[0]}
-      ${d.solid ? `<button class="btn${go ? '' : ' primary'}" id="nextSet">Next stage</button>` : `<button class="btn icon${go ? '' : ' primary'}" id="nextSet" aria-label="Another set" title="Another set">${icon('restart')}</button>`}
+      ${p?.solid ? `<button class="btn${go ? '' : ' primary'}" id="nextSet">Next stage</button>` : `<button class="btn icon${go ? '' : ' primary'}" id="nextSet" aria-label="Another set" title="Another set">${icon('restart')}</button>`}
       <button class="btn ghost" id="toStages">All stages</button>
       ${c[1]}
     </div>
@@ -220,6 +232,7 @@ export interface RunSummary {
   best?: { streak: number; ms: number }
   notes: { p: number; n: number; miss: number; ms: number }[]
   weakest: string[]
+  comparison?: { previous: number; best: boolean }
 }
 
 export function runResults(d: RunSummary, go?: Cont) {
@@ -230,12 +243,18 @@ export function runResults(d: RunSummary, go?: Cont) {
     .map((n) => `<div class="hbar" style="--h:${Math.round(((n.ms / n.n) / top) * 100)}%;--m:${Math.round((n.miss / n.n) * 100)}%" title="${esc(noteName(n.p, d.spec.fifths))}: ${secs(n.ms / n.n)}, ${n.miss} missed of ${n.n}"><i></i>${n.miss ? jg('miss') : ''}<span>${esc(noteName(n.p, d.spec.fifths))}</span></div>`)
     .join('')
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Run results">
-    <h2>Run complete</h2>
-    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
-    <p class="line"><b>${d.arc.cards}</b> cards · <b>${d.arc.cards ? Math.round((d.arc.clean / d.arc.cards) * 100) : 0}%</b> first try · most in a row <b>${d.arc.best}</b> · typical <b>${secs(d.medianMs)}</b> a card${d.record ? ' <span class="tag next">Most yet on this range</span>' : d.best ? ` · your most in a row here is ${d.best.streak}` : ''}</p>
-    ${strip ? `<div><p class="line" style="margin-bottom:6px">Every note you met: taller is slower, × marks a note you missed, redder is missed more.</p><div class="hstrip" role="img" aria-label="Speed and misses for each note">${strip}</div></div>` : ''}
+  <div class="results"><div class="card read-res" role="region" aria-label="Sight run results">
+    <h2>${esc(d.spec.name ?? runTitle(d.spec))}<span class="result-kicker">Sight run complete</span></h2>
+    <div class="big-grade"><b>${d.arc.clean} of ${d.arc.cards}</b><span class="hcap">right first try</span></div>
+    <div class="stats">
+    ${trend('First-try accuracy', d.arc.cards ? d.arc.clean / d.arc.cards : 0, d.comparison)}
+    <dl class="result-facts">
+      <div><dt>Typical response</dt><dd>${secs(d.medianMs)}</dd></div>
+      <div><dt>Longest run</dt><dd>${d.arc.best}${d.record ? ' <span class="tag next">Longest yet</span>' : d.best ? ` <span class="fine">best ${d.best.streak}</span>` : ''}</dd></div>
+    </dl>
     ${d.weakest.length ? `<p class="line">Needs the most work: <b>${d.weakest.map(esc).join(', ')}</b></p>` : ''}
+    ${strip ? `<details class="all more"><summary>Note-by-note detail</summary><p class="line">Taller means slower. A cross marks a miss; deeper red means more misses.</p><div class="hstrip" role="img" aria-label="Response time and misses for each note">${strip}</div></details>` : ''}
+    </div>
     ${runRow(go)}
   </div></div>`
 }
@@ -249,22 +268,26 @@ export interface PacedSummary {
   timing: Timing | null
   wrong: number // keys struck that were no note on the beat
   note: string // what the tempo rule says
+  comparison?: { previous: number; best: boolean }
 }
 
 /** A paced run's results: cards on the beat in plain numbers, the run as a strip of cards, timing, the notes missed and the next tempo. No score, no rank. */
 export function pacedResults(d: PacedSummary, go?: Cont) {
   const first = d.cells.findIndex((c) => c === undefined)
-  const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Card ${i + 1}: missed"` : ''}></i>`).join('')
-  const cardWord = d.spec.every === 1 ? 'every beat' : 'every two beats'
+  const strip = d.cells.map((c, i) => `<i class="${c === true ? 'on' : c === false ? 'off' : ''}"${c === false ? ` title="Reading ${i + 1}: missed"` : ''}></i>`).join('')
+  const pace = d.spec.every === 1 ? 'one reading every beat' : 'one reading every two beats'
   return `
-  <div class="results"><div class="card" style="grid-template-columns:1fr" role="region" aria-label="Run results">
-    <h2>Run complete</h2>
-    <p class="line"><b>${esc(d.spec.name ?? runTitle(d.spec))}</b></p>
-    <p class="line">Hit <b>${d.hit} of ${d.n}</b> on the beat at <b>${d.spec.pace} bpm</b>, a card ${cardWord}${first >= 0 ? `. You finished after ${first} of ${d.cells.length} cards.` : '.'}</p>
-    <div><p class="line" style="margin-bottom:6px">The run, card by card: filled is on the beat, empty is missed.</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} cards on the beat${d.missed.length ? `; missed ${d.missed.length}` : ''}">${strip}</div></div>
+  <div class="results"><div class="card read-res" role="region" aria-label="Paced sight run results">
+    <h2>${esc(d.spec.name ?? runTitle(d.spec))}<span class="result-kicker">Sight run complete · ${d.spec.pace} bpm</span></h2>
+    <div class="big-grade"><b>${d.hit} of ${d.n}</b><span class="hcap">on the beat</span></div>
+    <div class="stats">
+    ${trend('On-beat accuracy', d.n ? d.hit / d.n : 0, d.comparison)}
+    <p class="line">${pace}.${first >= 0 ? ` You stopped after <b>${first} of ${d.cells.length}</b>.` : ''}</p>
     ${d.timing ? `<p class="line">${timingLine(d.timing)}</p>` : ''}
-    <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on without them.` : 'No card missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
+    <p class="line">${d.missed.length ? `Missed: <b>${d.missed.map(esc).join(', ')}</b>. The pulse carried on.` : 'Nothing missed.'}${d.wrong ? ` ${d.wrong} ${d.wrong === 1 ? 'key was' : 'keys were'} struck off the beat or wrong.` : ''}</p>
     <p class="line">${esc(d.note)}</p>
+    <details class="all more"><summary>Run detail</summary><p class="line">Filled is on the beat; outlined is missed; dotted was not reached.</p><div class="pstrip" role="img" aria-label="${d.hit} of ${d.n} on the beat${d.missed.length ? `; ${d.missed.length} missed` : ''}">${strip}</div></details>
+    </div>
     ${runRow(go)}
   </div></div>`
 }

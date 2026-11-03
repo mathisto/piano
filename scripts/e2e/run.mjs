@@ -122,7 +122,7 @@ const INIT = `
         while (P().theory() === T && T.i === i && T.step === step && !T.answered) await sleep(10)
       }
     },
-    async axe(sel) { return (await window.axe.run(sel ? document.querySelector(sel) : document, { resultTypes: ['violations'] })).violations.map((v) => v.id + ' (' + v.nodes.length + ')') },
+    async axe(sel) { return (await window.axe.run(sel ? document.querySelector(sel) : document, { resultTypes: ['violations'] })).violations.map((v) => v.id + ' (' + v.nodes.length + '): ' + v.nodes.slice(0, 3).map((n) => n.target.join(' ') + (n.any[0]?.data ? ' ' + JSON.stringify(n.any[0].data) : '')).join(', ')) },
     // one IndexedDB entry: read it, or write v (seeding records the app would build over days)
     async idb(k, v) {
       const db = await new Promise((r, j) => { const q = indexedDB.open('keyval-store'); q.onsuccess = () => r(q.result); q.onerror = j })
@@ -261,8 +261,8 @@ async function mainFlow() {
     await page.$eval('#tempo', (e) => ((e.value = '125'), e.dispatchEvent(new Event('input')))) // the slider: a quicker set
     await page.click('#go')
     await ev(page, () => window.__e2e.follow('false', 60000))
-    const r = await res(page, 'Drill results')
-    ok(/set complete/.test(await r.textContent()), 'no "set complete"')
+    const r = await res(page, 'Reading results')
+    ok(/Set complete/.test(await r.textContent()), 'no "Set complete"')
     ok((await text(page, '#hCards')) === `${n}/${n}`, `cards ${await text(page, '#hCards')}`)
     await axe(page, 'drill results', '#res')
     await page.click('#nextSet')
@@ -287,8 +287,10 @@ async function mainFlow() {
     await wait(page, (n) => document.querySelector('#hCards').textContent === String(n) && ['countin', 'playing', 'waiting'].includes(window.__piano.game.phase), first)
     await page.mouse.move(600, 300) // a pointer wakes the hushed bar (which is inert while hushed)
     await page.click('#stagesBtn') // Finish
-    const r = await res(page, 'Run results')
-    ok(new RegExp(`${first}\\s*cards`).test(await r.textContent()), 'results do not count the set')
+    const r = await res(page, 'Sight run results')
+    ok(new RegExp(`${first}\\s*of\\s*${first}`).test(await r.textContent()), 'results do not count the set')
+    ok(await page.isVisible('summary:has-text("Note-by-note detail")') && !(await page.isVisible('.hstrip')), 'per-note detail is not collapsed')
+    await page.click('summary:has-text("Note-by-note detail")')
     ok(await page.isVisible('.hstrip'), 'no per-note strip')
     await axe(page, 'run results', '#res')
     const best = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'] ?? '{}')))
@@ -323,9 +325,9 @@ async function mainFlow() {
     await page.click('#go')
     await wait(page, () => document.querySelectorAll('#beatBar i.on').length === 1 && !document.querySelector('#beats i')) // the beat shows in the bar above the staff, not in the dock
     await ev(page, () => window.__e2e.perform({ skip: [2, 9] })) // every other card on its beat, two never played: the pulse carries on
-    const r = await res(page, 'Run results')
+    const r = await res(page, 'Paced sight run results')
     const t = await r.textContent()
-    ok(/Hit\s*14 of 16\s*on the beat at\s*100 bpm/.test(t), 'coverage: ' + t.replace(/\s+/g, ' ').trim().slice(0, 160))
+    ok(/14 of 16\s*on the beat/.test(t) && /100 bpm/.test(t), 'coverage: ' + t.replace(/\s+/g, ' ').trim().slice(0, 160))
     ok(/Missed:/.test(t) && (await page.$$('.pstrip i.off')).length === 2, 'the two missed cards are not shown')
     await axe(page, 'paced results', '#res')
     const st = await ev(page, () => window.__e2e.snapshot().then((s) => JSON.parse(s.idb['run:state'])))
