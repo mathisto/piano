@@ -14,6 +14,12 @@ const cards: store.CardRow[] = [] // the cards answered this set, written to the
 const got = new Map<number, number[]>() // per card of the set: the pitches struck wrong, for the log
 const flush = () => (got.clear(), void store.logCards(cards.splice(0)))
 
+/** The last like-for-like result and whether this one is strictly the best recorded. */
+async function comparison(id: string, label: string, acc: number) {
+  const past = (await store.getHistory()).filter((e) => e.id === id && e.label === label)
+  return past.length ? { previous: past.at(-1)!.acc, best: acc > Math.max(...past.map((e) => e.acc)) } : undefined
+}
+
 export async function saveRun(s: RunSpec) {
   setRunSpec(s)
   await store.saveRuns((r) => ({ ...r, last: s }))
@@ -126,18 +132,21 @@ async function pacedFinish(r: RunCtx) {
   if (!sc.n) return leave()
   const { pace: bpm, every } = r.spec
   const k = bestKey(r.spec)
+  const label = `${runTitle(r.spec)}, paced at ${bpm} bpm`
+  const id = `run:${k}`
   let out!: ReturnType<typeof after>
   await store.saveRuns((saved) => {
     out = after(saved.paced?.[k], { bpm, every, n: sc.n, hit: sc.hit, day: dayNum() })
     return { ...saved, paced: { ...saved.paced, [k]: out.memo } }
   })
-  const then = store.logHistory({ ts: Date.now(), kind: 'run', label: `${runTitle(r.spec)}, paced at ${bpm} bpm`, id: `run:${k}`, acc: sc.hit / sc.n, bias: sc.timing?.bias })
+  const cmp = await comparison(id, label, sc.hit / sc.n)
+  const then = store.logHistory({ ts: Date.now(), kind: 'run', label, id, acc: sc.hit / sc.n, bias: sc.timing?.bias })
   const names = sc.missed.map((i) => d.cards[i].pitches.map((p) => noteName(p, r.spec.fifths)).join(' '))
   const [ui, go] = await Promise.all([import('../ui-results'), next(markRun())])
   const res = $('#res')
-  res.innerHTML = ui.pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note }, go)
+  res.innerHTML = ui.pacedResults({ spec: r.spec, n: sc.n, hit: sc.hit, cells: sc.cells, missed: names, timing: sc.timing, wrong: game.judge.wrong, note: out.note, comparison: cmp }, go)
   wire(res, then, go, () => void startRun({ ...r.base, pace: out.memo.bpm, every: out.memo.every }).then(() => game.toggle()))
-  say(`Run finished. ${sc.hit} of ${sc.n} cards on the beat.`)
+  say(`Run finished. ${sc.hit} of ${sc.n} on the beat.`)
 }
 
 export async function runFinish() {
@@ -148,6 +157,8 @@ export async function runFinish() {
   if (r.spec.pace) return pacedFinish(r)
   await store.saveDrill(drillStats)
   const k = bestKey(r.spec)
+  const label = runTitle(r.spec)
+  const id = `run:${k}`
   const ms = median(r.rts)
   let record = false
   const saved = await store.saveRuns((st) => {
@@ -156,7 +167,8 @@ export async function runFinish() {
     st.best[k] = { streak: Math.max(prev?.streak ?? 0, r.arc.best), ms: prev?.ms ? Math.min(prev.ms, ms || prev.ms) : ms }
     return st
   })
-  const then = r.arc.cards ? store.logHistory({ ts: Date.now(), kind: 'run', label: runTitle(r.spec), id: `run:${k}`, acc: r.arc.clean / r.arc.cards, ms: median(r.rts) }) : () => {}
+  const cmp = r.arc.cards ? await comparison(id, label, r.arc.clean / r.arc.cards) : undefined
+  const then = r.arc.cards ? store.logHistory({ ts: Date.now(), kind: 'run', label, id, acc: r.arc.clean / r.arc.cards, ms: median(r.rts) }) : () => {}
   const notes = [...r.seen].map(([p, v]) => ({ p, ...v }))
   const [ui, go] = await Promise.all([import('../ui-results'), next(Promise.resolve())]) // the plan was ticked by the first set
   const res = $('#res')
@@ -168,9 +180,10 @@ export async function runFinish() {
     best: saved.best[k],
     notes,
     weakest: notes.filter((n) => n.miss).sort((a, b) => b.miss / b.n - a.miss / a.n).slice(0, 4).map((n) => noteName(n.p, r.spec.fifths)),
+    comparison: cmp,
   }, go)
   wire(res, then, go, () => void startRun(r.base).then(() => game.toggle()))
-  say(`Run finished. ${r.arc.cards} cards, ${r.arc.cards ? Math.round((r.arc.clean / r.arc.cards) * 100) : 0} percent first try.`)
+  say(`Run finished. ${r.arc.clean} of ${r.arc.cards} right first try.`)
 }
 
 /** A drill or Sight run card's footer: Continue, Again (`again`), the way back; each says in the run's row what came next. */
@@ -226,7 +239,10 @@ export async function drillDone() {
   await store.saveDrill(drillStats)
   const done = await store.getPlan(dayKey())
   const go = next(store.markPlan(dayKey(), done.includes('read') ? 'review' : 'read'))
-  const then = store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, id: `drill:${d.stage === 'review' ? 'review' : d.stage.id}`, acc: d.cleanN / d.cards.length, ms: median(d.rts) })
+  const id = `drill:${d.stage === 'review' ? 'review' : d.stage.id}`
+  const acc = d.cleanN / d.cards.length
+  const cmp = await comparison(id, d.title, acc)
+  const then = store.logHistory({ ts: Date.now(), kind: 'read', label: d.title, id, acc, ms: median(d.rts) })
   const stage = d.stage === 'review' ? undefined : d.stage
   const m = stage ? mastery(stage, drillStats, d.goal) : undefined
   const nxt = nextStage(drillStats)
@@ -238,12 +254,8 @@ export async function drillDone() {
     clean: d.cleanN / d.cards.length,
     medianMs: median(d.rts),
     weakest: weakest(drillStats, 3),
-    before: d.before,
-    after: m ? m.pct : 0,
-    solid: !!m?.solid,
-    nextName: nxt.name,
-    fast: !!d.fast,
-    goalMs: d.goal,
+    progress: m && { before: d.before, after: m.pct, solid: m.solid, nextName: nxt.name, fast: !!d.fast, goalMs: d.goal },
+    comparison: cmp,
   }, cont)
   wire(res, then, cont, () => void (m?.solid && stage ? startDrill(nxt) : startDrill(d.stage, d.fast)).then(() => game.toggle()), m?.solid && stage ? 'o' : 'a')
   say(`Set complete. ${Math.round((d.cleanN / d.cards.length) * 100)} percent first try.`)
