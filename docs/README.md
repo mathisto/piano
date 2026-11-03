@@ -82,6 +82,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/coordination-status.md`: records completion of the private Coordination component without publishing its mechanism.
 - `changes/reading-status.md`: records completion of the private Reading component without publishing its mechanism.
 - `changes/expression-status.md`: records completion of the private Expression component without publishing its mechanism.
+- `changes/endurance-status.md`: records completion of the private Endurance component and phase 5 without publishing its mechanism.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.
