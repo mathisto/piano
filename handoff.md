@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: the owner superseded the proposed trained grading model. G1 is now a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its mechanism, constants and results live only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. No catalogue grade or grader code has shipped. The web app, GitHub and local `main` are verified at `5d5347c1`; its iPad upload succeeded as TestFlight build 551.
+- Current state: the owner superseded the proposed trained grading model. G1 is now a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its mechanism, constants and results live only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. No catalogue grade or grader code has shipped. The last runtime deployment is verified at `5d5347c1`, whose iPad upload succeeded as TestFlight build 551; later commits may be documentation-only.
 
 ## 1. Read these first, in this order
 
