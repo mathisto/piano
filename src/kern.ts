@@ -14,6 +14,11 @@ import { fromMusicXml } from './musicxml'
 import type { Song } from './song'
 
 type Frac = [number, number]
+interface SlurMark {
+  level: number
+  linked: boolean
+  number?: number
+}
 interface Nt {
   step: string
   oct: number
@@ -23,8 +28,8 @@ interface Nt {
   dots: number
   tie: string // '[' start, ']' end, '_' both
   art: string
-  open: number[] // slur elision levels while parsing, MusicXML numbers after pairing
-  close: number[]
+  open: SlurMark[]
+  close: SlurMark[]
   rest?: boolean
   hide?: boolean // an invisible rest or spacer ('4ryy', a bare '4'), or a token it could not read: it only keeps time
   slash?: boolean
@@ -66,7 +71,10 @@ const ARTS: [RegExp, string][] = [[/\^\^/, 'strong-accent'], [/(?<!\^)\^(?!\^)/,
 // signifiers it reads or knowingly ignores; any other character is counted (the note is still read)
 const KNOWN = /[\d.%a-gA-Gr#\-n[\]_(){}&'`~^qQLJKk/\\Xxyz<>;:TtMmWwSs$OoNijPpv?]/g
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-const slurs = (x: string, mark: '(' | ')') => [...x.matchAll(new RegExp(`(&*)\\${mark}`, 'g'))].map((m) => m[1].length)
+const slurs = (x: string, mark: '(' | ')', linked: Set<string>) => [...x.matchAll(new RegExp(`(&*)\\${mark}`, 'g'))].map((m) => ({
+  level: m[1].length,
+  linked: linked.has(x[m.index! - 1] ?? ''),
+}))
 
 /** Written type, extra dots and tuplet ratio of an undotted value: 1/3 is a triplet eighth, 3/5 a dotted eighth of a 5:4. */
 function written([a, b]: Frac) {
@@ -79,7 +87,7 @@ function written([a, b]: Frac) {
 }
 
 /** One note of a token ('8.cc#L', '[4B-', '16qdd', '4ryy'); one it cannot read keeps its time as a hidden rest. */
-function note(x: string): Nt | string {
+function note(x: string, linked: Set<string>): Nt | string {
   const d = /(\d+)(?:%(\d+))?(\.*)/.exec(x)
   const ps = x.match(/[a-gA-G]+/g) ?? []
   const P0 = ps[0] ?? ''
@@ -104,8 +112,8 @@ function note(x: string): Nt | string {
     dots: k,
     tie: /_/.test(x) ? '_' : /\[/.test(x) ? '[' : /\]/.test(x) ? ']' : '',
     art: ARTS.filter(([re]) => re.test(x)).map(([, t]) => `<${t}/>`).join(''),
-    open: slurs(x, '('),
-    close: slurs(x, ')'),
+    open: slurs(x, '(', linked),
+    close: slurs(x, ')', linked),
     ...(rest && { rest: true }),
     ...(rest && (!!bad || /y/.test(x) || !x.includes('r')) && { hide: true }),
     ...(bad && { bad }),
@@ -114,6 +122,7 @@ function note(x: string): Nt | string {
 }
 
 export function kernToMusicXml(src: string, rights?: string): Kern {
+  const linked = new Set([...src.matchAll(/^!!!RDF\*\*kern:\s*(.)\s*=\s*linked\b/gm)].map((match) => match[1]))
   const refs: Record<string, string> = {}
   const skipped: Record<string, number> = {}
   const skip = (why: string) => void (skipped[why] = (skipped[why] ?? 0) + 1)
@@ -245,7 +254,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
           sub = dur + sub
         }
         dur = /\d+(?:%\d+)?\.*/.exec(sub)?.[0] ?? dur
-        const n = note(sub)
+        const n = note(sub, linked)
         if (typeof n === 'string') skip(n)
         else {
           if (n.bad) skip(n.bad)
@@ -298,37 +307,46 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
 
   // Pair Humdrum's nested and explicitly elided slurs after expansion, when their performed score order is final. A
   // split/join may move an endpoint to another voice; only a unique same-staff or global candidate may cross that path.
-  const openSlurs = new Map<string, number[]>()
+  const openSlurs = new Map<string, SlurMark[]>()
+  const linkedSlurs: SlurMark[] = []
   const freeSlur = () => {
-    const active = new Set([...openSlurs.values()].flat())
+    const active = new Set([...openSlurs.values(), linkedSlurs].flat().map((mark) => mark.number!))
     const id = Array.from({ length: 16 }, (_, j) => j + 1).find((candidate) => !active.has(candidate))
     if (!id) throw new Error('more than 16 overlapping slurs')
     return id
   }
   for (const b of merged) for (const e of [...b.evs].sort((a, z) => a.q - z.q)) {
     const n = e.notes[0]
-    n.close = n.close.map((level) => {
-      const exact = `${e.staff}:${e.voice}:${level}`
-      let candidates = [...openSlurs].filter(([, ids]) => ids.length).map(([key]) => key)
+    n.close = n.close.map((mark) => {
+      if (mark.linked) {
+        const open = linkedSlurs.shift()
+        return { ...mark, number: open?.number ?? freeSlur() }
+      }
+      const exact = `${e.staff}:${e.voice}:${mark.level}`
+      let candidates = [...openSlurs].filter(([, stack]) => stack.length).map(([key]) => key)
       if (openSlurs.get(exact)?.length) candidates = [exact]
       else {
-        const staff = candidates.filter((key) => key.startsWith(`${e.staff}:`) && key.endsWith(`:${level}`))
+        const staff = candidates.filter((key) => key.startsWith(`${e.staff}:`) && key.endsWith(`:${mark.level}`))
         if (staff.length) candidates = staff
-        else candidates = candidates.filter((key) => key.endsWith(`:${level}`))
+        else candidates = candidates.filter((key) => key.endsWith(`:${mark.level}`))
       }
-      if (candidates.length !== 1) return freeSlur() // retain an unpaired endpoint for the strict reader to refuse
+      if (candidates.length !== 1) return { ...mark, number: freeSlur() } // retain an unpaired endpoint for the strict reader to refuse
       const stack = openSlurs.get(candidates[0])!
-      const id = stack.pop()!
+      const open = stack.pop()!
       if (!stack.length) openSlurs.delete(candidates[0])
-      return id
+      return { ...mark, number: open.number }
     })
-    n.open = n.open.map((level) => {
-      const id = freeSlur()
-      const key = `${e.staff}:${e.voice}:${level}`
+    n.open = n.open.map((mark) => {
+      const number = freeSlur()
+      if (mark.linked) {
+        linkedSlurs.push({ ...mark, number })
+        return { ...mark, number }
+      }
+      const key = `${e.staff}:${e.voice}:${mark.level}`
       const stack = openSlurs.get(key) ?? []
-      stack.push(id)
+      stack.push({ ...mark, number })
       openSlurs.set(key, stack)
-      return id
+      return { ...mark, number }
     })
   }
 
@@ -381,7 +399,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
         e.notes.forEach((n, c) => {
           const w = written(n.u)
           const ties = n.tie === '[' ? ['start'] : n.tie === ']' ? ['stop'] : n.tie === '_' ? ['stop', 'start'] : []
-          const nots = [...ties.map((y) => `<tied type="${y}"/>`), ...n.close.map((number) => `<slur type="stop" number="${number}"/>`), ...n.open.map((number) => `<slur type="start" number="${number}"/>`), n.art && `<articulations>${n.art}</articulations>`].filter(Boolean)
+          const nots = [...ties.map((y) => `<tied type="${y}"/>`), ...n.close.map(({ number }) => `<slur type="stop" number="${number}"/>`), ...n.open.map(({ number }) => `<slur type="start" number="${number}"/>`), n.art && `<articulations>${n.art}</articulations>`].filter(Boolean)
           x.push(
             `<note>${e.grace ? `<grace${n.slash ? ' slash="yes"' : ''}/>` : ''}${c ? '<chord/>' : ''}` +
               (n.rest ? '<rest/>' : `<pitch><step>${n.step}</step>${n.alter ? `<alter>${n.alter}</alter>` : ''}<octave>${n.oct}</octave></pitch>`) +

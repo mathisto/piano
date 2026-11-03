@@ -67,6 +67,30 @@ describe('kern: structure', () => {
     expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'stop1'])
   })
 
+  it('pairs RDF-linked slurs across spines without stealing an ordinary slur', () => {
+    const xml = kernToMusicXml(k(
+      '**kern\t**kern',
+      'N(2C\t(2c',
+      '2D\t2dN)',
+      '2E\t2e)',
+      '==\t==',
+      '!!!RDF**kern: N = linked',
+    )).xml
+    expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start2', 'stop1', 'stop2', 'start1'])
+  })
+
+  it('pairs concurrent RDF-linked slurs by source order', () => {
+    const xml = kernToMusicXml(k(
+      '**kern\t**kern',
+      'N(2C\tN(2c',
+      '2D\t2dN)',
+      '2EN)\t2e',
+      '==\t==',
+      '!!!RDF**kern: N = linked',
+    )).xml
+    expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start2', 'stop1', 'start1', 'stop2'])
+  })
+
   it('pairs each played copy of a slurred expansion section', () => {
     const xml = kernToMusicXml(k('**kern', '*>[A,A]', '*>A', '(4c', '4d)', '=1', '==')).xml
     expect([...xml.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'stop1', 'start1', 'stop1'])
