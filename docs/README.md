@@ -67,6 +67,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/regrade-g1-prior-art.md`: academic and patent prior art narrows G1 to a cross-system experiment and puts patent/FTO review before any further enabling public disclosure.
 - `changes/grader-handoff-sync.md`: the private deterministic G1 pivot replaces the trained-model/label-rights next step in the handoff without disclosing its mechanism publicly.
 - `changes/roadmap-2nov.md`: reconciles shipped work, current priorities and private G1 phase status across ROADMAP and the handoff without publishing the grader mechanism.
+- `changes/recognition-provenance-status.md`: records completion of private G1 recognition provenance and its conflict gate without publishing the mechanism.
 - `changes/pipeline.md`: the library batch pipeline, grade fit, the 500-piece run and its open items.
 - `changes/repeats.md`: LilyPond repeats unfolded at ingestion and the patch of the published catalogue.
 - `changes/dc.md`: D.C., D.S., Fine, segno and mid-bar repeats unfolded at ingestion.
