@@ -14,4 +14,4 @@ Checks: `src/kern.test.ts` (16 tests), TypeScript, the complete Chopin build, th
 
 ## Published
 
-Pending merge.
+Public commit `6bf0508`; catalogue `422e6685ce72ed9e` published with `LIBRARY_OUT=.cache/library/out-slur scripts/deploy-library.sh`. The live `catalog.json` is byte-identical to the candidate, reports 2,347 pieces, and a fetched replacement score matches its local SHA-256. The converter is an offline library-build tool and the app reads the catalogue remotely, so neither a web-shell deployment nor a TestFlight binary would change this release; neither was made.
