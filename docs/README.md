@@ -68,6 +68,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/kern-unmeasured-time.md`: explicit `senza Tempo` score time survives an invisible Humdrum system boundary and reaches MusicXML and the app as one unmeasured passage; one Chopin package changes.
 - `changes/grader-duplicate-ties.md`: records the private closure of the five duplicate-tie refusals and the next unmatched-tie cluster without publishing the grading mechanism.
 - `changes/grader-endpoint-cluster.md`: records the private closure of the exposed endpoint cluster and the next structural cause without publishing the grading mechanism.
+- `changes/grader-spacer-annotations.md`: records private preservation of notation attached to invisible spacers and the corrected outcome boundary without publishing the grading mechanism.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
