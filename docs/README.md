@@ -77,6 +77,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-midi-timing.md`: records private exact MIDI timing evidence and the remaining source-stated grace discrepancy without publishing the grading mechanism.
 - `changes/grader-appoggiatura-evidence.md`: records private source-stated grace evidence and the final two attack-mismatch audits without publishing the grading mechanism.
 - `changes/grader-repeat-boundary-ties.md`: records the private repeat-aware tie milestone and final manual-repeat audit without publishing the grading mechanism.
+- `changes/grader-acquisition-complete.md`: records closure of the outcome-free acquisition stage and the development-only evaluation gate without publishing the grading mechanism.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
