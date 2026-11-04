@@ -26,7 +26,7 @@ interface Nt {
   q: number // quarters it sounds (0 for a grace)
   u: Frac // undotted value in quarters, for the written type and tuplet
   dots: number
-  tie: string // '[' start, ']' end, '_' both
+  tie: { start: boolean; stop: boolean }
   art: string
   open: SlurMark[]
   close: SlurMark[]
@@ -110,7 +110,7 @@ function note(x: string, linked: Set<string>): Nt | string {
     q,
     u: [a, b],
     dots: k,
-    tie: /_/.test(x) ? '_' : /\[/.test(x) ? '[' : /\]/.test(x) ? ']' : '',
+    tie: { start: /\[|_/.test(x), stop: /\]|_/.test(x) },
     art: ARTS.filter(([re]) => re.test(x)).map(([, t]) => `<${t}/>`).join(''),
     open: slurs(x, '(', linked),
     close: slurs(x, ')', linked),
@@ -286,14 +286,47 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   // each labelled section in the list's order
   let seq = bars
   if (expand && bars.some((b) => b.sec)) {
+    const order = expand
+    const tieKey = (e: Ev, n: Nt) => `${e.staff}:${n.step}:${n.oct}:${n.alter}`
+    const section = (label: string) => bars.filter((b) => b.sec === label)
+    const outgoing = (label: string) => {
+      const open = new Map<string, Nt[]>()
+      for (const b of section(label)) for (const e of [...b.evs].sort((a, z) => a.q - z.q)) for (const n of e.notes) {
+        const key = tieKey(e, n)
+        const stack = open.get(key) ?? []
+        if (n.tie.stop) stack.pop()
+        if (n.tie.start) stack.push(n)
+        if (stack.length) open.set(key, stack)
+        else open.delete(key)
+      }
+      return open
+    }
+    const enters = (label: string | undefined, key: string) => {
+      if (!label) return false
+      for (const b of section(label)) for (const e of [...b.evs].sort((a, z) => a.q - z.q)) for (const n of e.notes)
+        if (tieKey(e, n) === key) return n.tie.stop
+      return false
+    }
+    const omit = new Map<number, Set<Nt>>()
+    for (const label of new Set(order)) {
+      const copies = order.flatMap((candidate, i) => candidate === label ? [i] : [])
+      if (copies.length < 2) continue
+      for (const [key, starts] of outgoing(label)) {
+        const matched = copies.map((i) => enters(order[i + 1], key))
+        if (!matched.some(Boolean) || matched.every(Boolean)) continue
+        copies.forEach((at, i) => {
+          if (!matched[i]) omit.set(at, new Set([...(omit.get(at) ?? []), ...starts]))
+        })
+      }
+    }
     seq = [
       ...bars.filter((b) => !b.sec),
-      ...expand.flatMap((l) => {
+      ...order.flatMap((l, i) => {
         const xs = bars.filter((b) => b.sec === l)
         if (!xs.length) throw new Error(`expansion label ${l} has no bars`)
-        return xs
+        return xs.map((b) => ({ ...b, evs: b.evs.map((e) => ({ ...e, notes: e.notes.map((n) => ({ ...n, tie: { ...n.tie, ...(omit.get(i)?.has(n) && { start: false }) }, open: [...n.open], close: [...n.close] })) })) }))
       }),
-    ].map((b) => ({ ...b, fwd: false, bwd: false, evs: b.evs.map((e) => ({ ...e, notes: e.notes.map((n) => ({ ...n, open: [...n.open], close: [...n.close] })) })) }))
+    ].map((b) => ({ ...b, fwd: false, bwd: false }))
   }
   // a short bar before a repeat and the pickup played after it make one full bar
   const nom = (b: Bar) => (b.n * 4) / b.den
@@ -398,7 +431,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
         if (e.notes[0].hide) continue // the next move steps over it
         e.notes.forEach((n, c) => {
           const w = written(n.u)
-          const ties = n.tie === '[' ? ['start'] : n.tie === ']' ? ['stop'] : n.tie === '_' ? ['stop', 'start'] : []
+          const ties = [...(n.tie.stop ? ['stop'] : []), ...(n.tie.start ? ['start'] : [])]
           const nots = [...ties.map((y) => `<tied type="${y}"/>`), ...n.close.map(({ number }) => `<slur type="stop" number="${number}"/>`), ...n.open.map(({ number }) => `<slur type="start" number="${number}"/>`), n.art && `<articulations>${n.art}</articulations>`].filter(Boolean)
           x.push(
             `<note>${e.grace ? `<grace${n.slash ? ' slash="yes"' : ''}/>` : ''}${c ? '<chord/>' : ''}` +

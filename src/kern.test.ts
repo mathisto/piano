@@ -54,6 +54,21 @@ describe('kern: a hand-written score', () => {
 })
 
 describe('kern: structure', () => {
+  it('keeps both endpoints on an intermediate tied note', () => {
+    const xml = kernToMusicXml(k('**kern', '[2c', '=1', '[2c]', '=2', '2c]', '==')).xml
+    expect([...xml.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'stop', 'start', 'stop'])
+    expect(fromMusicXml(xml, 'x', 'x').notes).toHaveLength(1)
+  })
+
+  it('keeps a repeated section tie only for the ending that closes it', () => {
+    const xml = kernToMusicXml(k('**kern', '*>[A,B,B1,B,B2]', '*>A', '2d', '=1', '*>B', '[2c', '=2', '*>B1', '2c]', '=3', '*>B2', '2e', '==')).xml
+    expect([...xml.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'stop'])
+    expect(fromMusicXml(xml, 'x', 'x').notes.map((n) => [n.p, n.qd])).toEqual([[62, 2], [60, 4], [60, 2], [64, 2]])
+
+    const malformed = kernToMusicXml(k('**kern', '*>[B,B1,B,B2]', '*>B', '[2c', '=1', '*>B1', '2d', '=2', '*>B2', '2e', '==')).xml
+    expect([...malformed.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'start'])
+  })
+
   it('pairs nested and crossing slurs with distinct MusicXML numbers', () => {
     const nested = kernToMusicXml(k('**kern', '(4c', '(4d', '4e)', '4f)', '==')).xml
     expect([...nested.matchAll(/<slur type="(start|stop)" number="(\d+)"\/>/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(['start1', 'start2', 'stop2', 'stop1'])
