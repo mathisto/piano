@@ -10,6 +10,6 @@ The complete cached 512-source Chopin build changes one shipped package, `chopin
 
 Checks: 62 focused converter/importer tests, TypeScript, all 1,049 unit tests, the boot bundle gate, all 47 end-to-end tests, the complete Chopin build twice, recursive output comparison and exact old/new package comparison. The two existing smoke diagnostics remain open: Settings exceeds the one-screen fixture and the inline-CSP fixture logs a console error.
 
-Published: pending.
+Published: commit `65a78f3`; live catalogue `44a4bc80bf5e2109`, 2,347 pieces, catalogue SHA-256 `a85c524779c93a7922388075dc1fa720dc44eea935bf08b37e3db7e9f3045a5d`; web runtime `65a78f3f`; TestFlight build 631. The live catalogue and changed package match the twice-built candidate hashes above.
 
 Sources: [Chopin Online Kistner score page](https://chopinonline.ac.uk/ocve/browse/pageview/67747/), [MusicXML `senza-misura`](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/senza-misura/), [Humdrum invisible barlines](https://doc.verovio.humdrum.org/humdrum/getting_started/barlines.html), [Humdrum **kern barlines](https://www.humdrum.org/Humdrum/representations/kern.html).
