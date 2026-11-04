@@ -6,4 +6,6 @@ Expansion lists need one further distinction: a tie leaving a repeated section c
 
 The complete 512-source Chopin build changes 39 existing notation packages: 139 intermediate notes gain the missing endpoint and one copied first-ending start is omitted on its second pass. Thirty-three attack counts are corrected. After removing only MusicXML tie elements, every old and new score is byte-identical; all 2,347 ids, ordering, tables, aliases, credits, incipits and existing content-addressed files are unchanged. Two independent builds produced byte-identical standalone outputs and the same combined catalogue, `c99223ef3bef5b55`.
 
-Checks: `src/kern.test.ts` (20 tests), TypeScript, the complete Chopin build, structural comparison of every replacement, catalogue identity/hash audit, deterministic rerun, and the full unit suite (80 files, 1,043 tests). Publishing and live verification are recorded below after merge.
+Checks: `src/kern.test.ts` (20 tests), TypeScript, the complete Chopin build, structural comparison of every replacement, catalogue identity/hash audit, deterministic rerun, and the full unit suite (80 files, 1,043 tests).
+
+Published as public commit `1d92ef8` and live catalogue `c99223ef3bef5b55`. The live catalogue and four sampled replacement packages are byte-identical to the verified candidate. The converter is offline build tooling and the app reads the catalogue remotely, so neither a web-shell deployment nor a TestFlight binary changed; the verified app runtime remains `5d5347c1` / build 551.
