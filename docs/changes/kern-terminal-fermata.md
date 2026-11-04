@@ -10,4 +10,6 @@ The complete cached 512-source Chopin build changes one shipped package, `chopin
 
 Checks: `src/kern.test.ts` (24 tests), TypeScript, the complete Chopin build twice, exact old/new MusicXML comparison, recursive output comparison and `catalog-diff`. The converter is offline build tooling, so a catalogue publish needs neither a web-shell deployment nor a TestFlight binary.
 
+Published: converter commit `12cd426`; live catalogue `cce6489407f16a08`, 2,347 pieces. The live catalogue and changed package match the verified local SHA-256 values above.
+
 Sources: [Chopin Online 10–1b-Sm catalogue](https://chopinonline.ac.uk/aco/catalogue/etudes-opus-10/101b-sm/), [the corresponding 10–1a-Sm final score page](https://chopinonline.ac.uk/ocve/browse/pageview/78537/), [MusicXML duration](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/duration/), [MusicXML note type](https://www.w3.org/2021/06/musicxml40/musicxml-reference/data-types/note-type-value/).
