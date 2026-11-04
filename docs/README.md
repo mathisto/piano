@@ -63,6 +63,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/kern-slur-identity.md`: exact nested, crossing, split/join and repeated-section slur identities in Humdrum-to-MusicXML conversion; a 191-piece notation-only Chopin overlay and the catalogue gates it repaired.
 - `changes/kern-linked-slurs.md`: source-declared cross-spine Humdrum slurs pair in reference source order; four false 16-number refusals are removed without weakening strict acquisition.
 - `changes/kern-tie-endpoints.md`: simultaneous tie stops and starts and pass-specific numbered-ending ties survive Humdrum-to-MusicXML conversion; 39 notation packages change without changing a catalogue identity.
+- `changes/kern-fermata.md`: note, chord, rest and barline fermatas survive Humdrum-to-MusicXML conversion with their source orientation; 123 notation packages change without changing a catalogue identity.
 - `changes/grader-duplicate-ties.md`: records the private closure of the five duplicate-tie refusals and the next unmatched-tie cluster without publishing the grading mechanism.
 - `changes/grader-endpoint-cluster.md`: records the private closure of the exposed endpoint cluster and the next structural cause without publishing the grading mechanism.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.

@@ -54,6 +54,27 @@ describe('kern: a hand-written score', () => {
 })
 
 describe('kern: structure', () => {
+  it('preserves note, chord and rest fermatas with their source orientation', () => {
+    const xml = kernToMusicXml(k(
+      '**kern\t**kern',
+      '*staff2\t*staff1',
+      '4C;< 4E-\t4c;>',
+      '4r;\t4r;',
+      '==\t==',
+      '!!!RDF**kern: > = above',
+      '!!!RDF**kern: < = below',
+    )).xml
+    expect([...xml.matchAll(/<fermata type="(upright|inverted)"\/>/g)].map((match) => match[1])).toEqual([
+      'upright', 'upright', 'inverted', 'upright',
+    ])
+  })
+
+  it('preserves internal and final barline fermatas', () => {
+    const xml = kernToMusicXml(k('**kern', '4c', '=1;', '4d', '==;')).xml
+    expect(xml).toMatch(/<measure number="2"[^>]*><barline location="left"><fermata\/><\/barline>/)
+    expect(xml).toMatch(/<barline location="right"><fermata\/><\/barline><\/measure>/)
+  })
+
   it('keeps both endpoints on an intermediate tied note', () => {
     const xml = kernToMusicXml(k('**kern', '[2c', '=1', '[2c]', '=2', '2c]', '==')).xml
     expect([...xml.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'stop', 'start', 'stop'])

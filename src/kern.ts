@@ -6,7 +6,7 @@
 // Strict: more than two **kern spines (staves; three with a **text spine), *+ or *x, a line whose tokens do not match its spines, a section label
 // inside a bar or an expansion label with no bars is an error. A note token it cannot read is skipped and counted.
 // Kept: pitch and spelling, durations (dots, tuplets as reciprocals, N%M), rests, chords, ties, grace notes, slurs,
-// articulations, *k[] keys, *M meters, *MM and !!!OMD tempo, *clef, **dynam letters and hairpins, spine splits and joins
+// fermatas, articulations, *k[] keys, *M meters, *MM and !!!OMD tempo, *clef, **dynam letters and hairpins, spine splits and joins
 // (each subspine a voice of its staff), pickups and short bars (implicit), repeats: a *>[A,A,B] expansion list is played
 // out here, else :| and |: barlines go into the score and the importer plays them. Ignored: beams, stems, layout, ornaments,
 // **fing, **text, and *cue (Chopin's small-note cadenzas are played), *rscale and ottava marks (kern writes sounding pitch).
@@ -27,6 +27,7 @@ interface Nt {
   u: Frac // undotted value in quarters, for the written type and tuplet
   dots: number
   tie: { start: boolean; stop: boolean }
+  fermata?: 'upright' | 'inverted'
   art: string
   open: SlurMark[]
   close: SlurMark[]
@@ -55,6 +56,8 @@ interface Bar {
   on?: boolean // has data: its meter, key and section are fixed
   fwd?: boolean
   bwd?: boolean
+  leftFermata?: boolean
+  rightFermata?: boolean
 }
 export interface Kern {
   xml: string // the piano part
@@ -87,7 +90,7 @@ function written([a, b]: Frac) {
 }
 
 /** One note of a token ('8.cc#L', '[4B-', '16qdd', '4ryy'); one it cannot read keeps its time as a hidden rest. */
-function note(x: string, linked: Set<string>): Nt | string {
+function note(x: string, linked: Set<string>, below: Set<string>): Nt | string {
   const d = /(\d+)(?:%(\d+))?(\.*)/.exec(x)
   const ps = x.match(/[a-gA-G]+/g) ?? []
   const P0 = ps[0] ?? ''
@@ -111,6 +114,7 @@ function note(x: string, linked: Set<string>): Nt | string {
     u: [a, b],
     dots: k,
     tie: { start: /\[|_/.test(x), stop: /\]|_/.test(x) },
+    ...(x.includes(';') && { fermata: [...below].some((mark) => x.includes(mark)) ? 'inverted' : 'upright' }),
     art: ARTS.filter(([re]) => re.test(x)).map(([, t]) => `<${t}/>`).join(''),
     open: slurs(x, '(', linked),
     close: slurs(x, ')', linked),
@@ -123,6 +127,7 @@ function note(x: string, linked: Set<string>): Nt | string {
 
 export function kernToMusicXml(src: string, rights?: string): Kern {
   const linked = new Set([...src.matchAll(/^!!!RDF\*\*kern:\s*(.)\s*=\s*linked\b/gm)].map((match) => match[1]))
+  const below = new Set([...src.matchAll(/^!!!RDF\*\*kern:\s*(.)\s*=\s*below\b/gm)].map((match) => match[1]))
   const refs: Record<string, string> = {}
   const skipped: Record<string, number> = {}
   const skip = (why: string) => void (skipped[why] = (skipped[why] ?? 0) + 1)
@@ -152,10 +157,11 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
       start()
       bars.push(bar)
     }
-    const { fwd, dirs } = bar // a bar with nothing in it (before the first barline) hands its repeat and marks on
+    const { fwd, dirs, leftFermata } = bar // a bar with nothing in it (before the first barline) hands its repeat and marks on
     if (pend) [st.sec, pend] = [pend, '']
     bar = fresh()
-    if (!keep) Object.assign(bar, { fwd, dirs })
+    if (!keep && leftFermata && bars.length) bars[bars.length - 1].rightFermata = true
+    else if (!keep) Object.assign(bar, { fwd, dirs, leftFermata })
   }
 
   for (const [ln, line] of src.split(/\r?\n/).entries()) {
@@ -187,8 +193,10 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     if (tk[0][0] === '=') {
       if (/:[|!]/.test(tk[0])) bar.bwd = true
       const fwd = /[|!]:/.test(tk[0])
+      const fermata = tk.some((x, i) => spines![i].kind === '**kern' && x.startsWith('=') && x.includes(';'))
       close()
       bar.fwd ||= fwd
+      bar.leftFermata ||= fermata
       continue
     }
     if (tk[0][0] === '*') {
@@ -254,7 +262,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
           sub = dur + sub
         }
         dur = /\d+(?:%\d+)?\.*/.exec(sub)?.[0] ?? dur
-        const n = note(sub, linked)
+        const n = note(sub, linked, below)
         if (typeof n === 'string') skip(n)
         else {
           if (n.bad) skip(n.bad)
@@ -333,7 +341,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const merged: Bar[] = []
   for (const b of seq) {
     const a = merged[merged.length - 1]
-    if (merged.length > 1 && a.len < nom(a) - 1e-9 && b.len < nom(b) - 1e-9 && Math.abs(a.len + b.len - nom(a)) < 1e-9 && a.n === b.n && a.den === b.den && a.fifths === b.fifths && !a.bwd && !b.fwd)
+    if (merged.length > 1 && a.len < nom(a) - 1e-9 && b.len < nom(b) - 1e-9 && Math.abs(a.len + b.len - nom(a)) < 1e-9 && a.n === b.n && a.den === b.den && a.fifths === b.fifths && !a.bwd && !b.fwd && !a.rightFermata && !b.leftFermata)
       merged[merged.length - 1] = { ...a, len: nom(a), evs: [...a.evs, ...b.evs.map((e) => ({ ...e, q: e.q + a.len }))], dirs: [...a.dirs, ...b.dirs.map((d) => ({ ...d, q: d.q + a.len }))] }
     else merged.push(b)
   }
@@ -403,7 +411,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     const staffOf = (s: number) => used.indexOf(s) + 1
     const prev = merged[i - 1]
     const x: string[] = []
-    if (b.fwd) x.push('<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>')
+    if (b.fwd || b.leftFermata) x.push(`<barline location="left">${b.fwd ? '<bar-style>heavy-light</bar-style>' : ''}${b.leftFermata ? '<fermata/>' : ''}${b.fwd ? '<repeat direction="forward"/>' : ''}</barline>`)
     const att = [
       !prev && `<divisions>${D}</divisions>`,
       (!prev || prev.fifths !== b.fifths) && `<key><fifths>${b.fifths}</fifths></key>`,
@@ -432,7 +440,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
         e.notes.forEach((n, c) => {
           const w = written(n.u)
           const ties = [...(n.tie.stop ? ['stop'] : []), ...(n.tie.start ? ['start'] : [])]
-          const nots = [...ties.map((y) => `<tied type="${y}"/>`), ...n.close.map(({ number }) => `<slur type="stop" number="${number}"/>`), ...n.open.map(({ number }) => `<slur type="start" number="${number}"/>`), n.art && `<articulations>${n.art}</articulations>`].filter(Boolean)
+          const nots = [...ties.map((y) => `<tied type="${y}"/>`), ...n.close.map(({ number }) => `<slur type="stop" number="${number}"/>`), ...n.open.map(({ number }) => `<slur type="start" number="${number}"/>`), n.art && `<articulations>${n.art}</articulations>`, n.fermata && `<fermata type="${n.fermata}"/>`].filter(Boolean)
           x.push(
             `<note>${e.grace ? `<grace${n.slash ? ' slash="yes"' : ''}/>` : ''}${c ? '<chord/>' : ''}` +
               (n.rest ? '<rest/>' : `<pitch><step>${n.step}</step>${n.alter ? `<alter>${n.alter}</alter>` : ''}<octave>${n.oct}</octave></pitch>`) +
@@ -448,7 +456,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     })
     if (!streams.length) for (const d of dirs) x.push(d.xml)
     move(Math.max(cur, I(b.len)))
-    if (b.bwd) x.push('<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline>')
+    if (b.bwd || b.rightFermata) x.push(`<barline location="right">${b.bwd ? '<bar-style>light-heavy</bar-style>' : ''}${b.rightFermata ? '<fermata/>' : ''}${b.bwd ? '<repeat direction="backward"/>' : ''}</barline>`)
     return `<measure number="${i + 1}"${b.len < nom(b) - 1e-9 ? ' implicit="yes"' : ''}>${x.join('')}</measure>`
   })
 
