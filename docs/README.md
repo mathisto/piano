@@ -74,6 +74,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-cross-bar-notes.md`: records private cross-bar note carry and the next unsupported semantic class without publishing the grading mechanism.
 - `changes/grader-measured-tremolo.md`: records private measured-tremolo coverage and the next unsupported semantic class without publishing the grading mechanism.
 - `changes/grader-una-corda.md`: records private una-corda coverage and the next timing-evidence sequence without publishing the grading mechanism.
+- `changes/grader-midi-timing.md`: records private exact MIDI timing evidence and the remaining source-stated grace discrepancy without publishing the grading mechanism.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
