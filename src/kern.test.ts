@@ -75,6 +75,23 @@ describe('kern: structure', () => {
     expect(xml).toMatch(/<barline location="right"><fermata\/><\/barline><\/measure>/)
   })
 
+  it('keeps terminal whole-note fermatas graphic while fitting their intended duration to a shorter bar', () => {
+    const xml = kernToMusicXml(k('**kern\t**kern', '*M2/4\t*M2/4', '=1\t=1', '1CC; 1C\t1c', '==\t==')).xml
+    const last = /<measure number="1"[^>]*>(.*?)<\/measure>/.exec(xml)![1]
+    expect([...last.matchAll(/<note>.*?<duration>(\d+)<\/duration>.*?<\/note>/g)].map((m) => m[1])).toEqual(['2', '2', '2'])
+    expect(last.match(/<type>whole<\/type>/g)).toHaveLength(3)
+    expect(last.match(/<fermata type="upright"\/>/g)).toHaveLength(1)
+  })
+
+  it('does not fit a whole note without a fermata, an internal bar or a second onset', () => {
+    const finalPlain = kernToMusicXml(k('**kern', '*M2/4', '1c', '==')).xml
+    const internal = kernToMusicXml(k('**kern', '*M2/4', '1c;', '=1', '2d', '==')).xml
+    const twoOnsets = kernToMusicXml(k('**kern', '*M2/4', '2c;', '2d;', '==')).xml
+    expect(finalPlain).toMatch(/<duration>4<\/duration>/)
+    expect(internal).toMatch(/<measure number="1"[^>]*>.*<duration>4<\/duration>.*<\/measure>/)
+    expect(twoOnsets).toMatch(/<measure number="1"[^>]*>.*<duration>2<\/duration>.*<duration>2<\/duration>.*<\/measure>/)
+  })
+
   it('keeps both endpoints on an intermediate tied note', () => {
     const xml = kernToMusicXml(k('**kern', '[2c', '=1', '[2c]', '=2', '2c]', '==')).xml
     expect([...xml.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'stop', 'start', 'stop'])

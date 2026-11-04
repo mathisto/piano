@@ -290,6 +290,14 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   close()
   if (!spines) throw new Error('no **kern header')
 
+  // A final whole-note chord under fermatas can be the graphic ending of a shorter measure (for example in 2/4).
+  // Keep its written type, but let the barline determine its intended duration.
+  const last = bars[bars.length - 1]
+  const lastNom = last && (last.n * 4) / last.den
+  if (last && last.len > lastNom + 1e-9 && lastNom < 4 && last.evs.some((e) => e.notes.some((n) => n.fermata)) && last.evs.every((e) =>
+    !e.grace && Math.abs(e.q) < 1e-9 && e.notes.every((n) => !n.rest && n.u[0] === 4 && n.u[1] === 1),
+  )) last.len = lastNom
+
   // play out the expansion list (a file without labels has only its barline repeats): the bars before any label, then
   // each labelled section in the list's order
   let seq = bars
