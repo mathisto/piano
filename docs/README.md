@@ -64,6 +64,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/kern-linked-slurs.md`: source-declared cross-spine Humdrum slurs pair in reference source order; four false 16-number refusals are removed without weakening strict acquisition.
 - `changes/kern-tie-endpoints.md`: simultaneous tie stops and starts and pass-specific numbered-ending ties survive Humdrum-to-MusicXML conversion; 39 notation packages change without changing a catalogue identity.
 - `changes/grader-duplicate-ties.md`: records the private closure of the five duplicate-tie refusals and the next unmatched-tie cluster without publishing the grading mechanism.
+- `changes/grader-endpoint-cluster.md`: records the private closure of the exposed endpoint cluster and the next structural cause without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
 - `changes/regrade-g1-corpus.md`: the 153-piece, 32-group corpus test and model feasibility result; no tested model meets the fixed gate, so no grade changed and G2/S2 remains blocked.
