@@ -65,6 +65,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/kern-tie-endpoints.md`: simultaneous tie stops and starts and pass-specific numbered-ending ties survive Humdrum-to-MusicXML conversion; 39 notation packages change without changing a catalogue identity.
 - `changes/kern-fermata.md`: note, chord, rest and barline fermatas survive Humdrum-to-MusicXML conversion with their source orientation; 123 notation packages change without changing a catalogue identity.
 - `changes/kern-terminal-fermata.md`: a source-proven whole-note closing sonority keeps its engraved value while its intended MusicXML duration ends at the shorter final barline; one Chopin package changes.
+- `changes/kern-unmeasured-time.md`: explicit `senza Tempo` score time survives an invisible Humdrum system boundary and reaches MusicXML and the app as one unmeasured passage; one Chopin package changes.
 - `changes/grader-duplicate-ties.md`: records the private closure of the five duplicate-tie refusals and the next unmatched-tie cluster without publishing the grading mechanism.
 - `changes/grader-endpoint-cluster.md`: records the private closure of the exposed endpoint cluster and the next structural cause without publishing the grading mechanism.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.

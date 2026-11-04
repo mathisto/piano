@@ -92,6 +92,27 @@ describe('kern: structure', () => {
     expect(twoOnsets).toMatch(/<measure number="1"[^>]*>.*<duration>2<\/duration>.*<duration>2<\/duration>.*<\/measure>/)
   })
 
+  it('turns explicit senza Tempo and its invisible system boundary into one unmeasured measure', () => {
+    const source = k(
+      '**kern',
+      '*M3/4',
+      '=1',
+      '!LO:TX:b:i:t=senza Tempo e legatissimo',
+      '1c',
+      '=-',
+      '1d',
+      '=2',
+      '*M2/4',
+      '2e',
+      '==',
+    )
+    const xml = kernToMusicXml(source).xml
+    expect(xml.match(/<measure number=/g)).toHaveLength(2)
+    expect(xml).toMatch(/<measure number="1"><attributes>.*<time><senza-misura\/><\/time>/)
+    expect(xml).toMatch(/<measure number="2"><attributes><time><beats>2<\/beats><beat-type>4<\/beat-type><\/time>/)
+    expect(fromMusicXml(xml, 'x', 'x').bars.map((bar) => bar.ql)).toEqual([8, 2])
+  })
+
   it('keeps both endpoints on an intermediate tied note', () => {
     const xml = kernToMusicXml(k('**kern', '[2c', '=1', '[2c]', '=2', '2c]', '==')).xml
     expect([...xml.matchAll(/<tie type="(start|stop)"\/>/g)].map((m) => m[1])).toEqual(['start', 'stop', 'start', 'stop'])

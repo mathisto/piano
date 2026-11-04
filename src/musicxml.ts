@@ -228,6 +228,7 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
   const evs: Ev[] = []
   const maxQ: number[] = [] // longest content of each measure across parts
   const implicit: boolean[] = []
+  const unmetered: (boolean | undefined)[] = []
   const sig: ({ n: number; den: number } | undefined)[] = []
   const tempos: { pi: number; m: number; q: number; bpm: number }[] = [] // <sound tempo> and <metronome>
   const worded: { pi: number; m: number; q: number; text: string }[] = [] // Allegro, Andante ...: only when no part gives a number
@@ -276,7 +277,10 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
           if (k !== undefined) keyM[m] ??= k
           if (pi === 0 && m === 0) mode0 ??= kid(kid(e, 'key'), 'mode')?.t.trim()
           const t = kid(e, 'time')
-          if (t && pi === 0) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
+          if (t && pi === 0) {
+            unmetered[m] = !!kid(t, 'senza-misura')
+            if (!unmetered[m]) sig[m] = { n: num(t, 'beats') ?? 4, den: num(t, 'beat-type') ?? 4 }
+          }
         } else if (e.n === 'note') {
           const grace = !!kid(e, 'grace')
           const dur = grace ? 0 : (num(e, 'duration') ?? 0)
@@ -452,11 +456,13 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
     const pick = <T,>(a: T[]) => order.map((o) => a[o])
     const q2 = pick(maxQ)
     const i2 = pick(implicit)
+    const u2 = pick(unmetered)
     const s2 = pick(sig)
     const k2 = pick(keyOf)
-    maxQ.length = implicit.length = sig.length = keyOf.length = 0
+    maxQ.length = implicit.length = unmetered.length = sig.length = keyOf.length = 0
     maxQ.push(...q2)
     implicit.push(...i2)
+    unmetered.push(...u2)
     sig.push(...s2)
     keyOf.push(...k2)
     const tmoved = tempos.flatMap((t) => (at.get(t.m) ?? []).map((k) => ({ ...t, m: k })))
@@ -466,14 +472,16 @@ export function fromMusicXml(xml: string, title: string, id: string, tempo?: Tem
   }
   const measures = Math.max(order.length, ...parts.slice(1).map((p) => kids(p, 'measure').length))
   let cs = { n: 4, den: 4 }
+  let free = false
   const bars: Bar[] = []
   const mq: number[] = [0] // quarter position of each measure start
   const sigs: { n: number; den: number }[] = []
   for (let m = 0; m < measures; m++) {
     cs = sig[m] ?? cs
+    free = unmetered[m] ?? free
     sigs.push(cs)
     const nominal = (cs.n * 4) / cs.den
-    const len = implicit[m] ? maxQ[m] || nominal : Math.max(maxQ[m] ?? 0, nominal)
+    const len = free ? maxQ[m] || nominal : implicit[m] ? maxQ[m] || nominal : Math.max(maxQ[m] ?? 0, nominal)
     mq.push(mq[m] + len)
   }
 

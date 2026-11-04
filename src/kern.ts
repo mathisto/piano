@@ -58,6 +58,7 @@ interface Bar {
   bwd?: boolean
   leftFermata?: boolean
   rightFermata?: boolean
+  unmetered?: boolean
 }
 export interface Kern {
   xml: string // the piano part
@@ -189,8 +190,12 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
       continue
     }
     if (tk.length !== spines.length) throw new Error(`${at}: ${tk.length} tokens for ${spines.length} spines`)
-    if (tk[0][0] === '!') continue
+    if (tk[0][0] === '!') {
+      if (tk.some((x) => /^!LO:TX:/.test(x) && /\bsenza[ _]+tempo\b/i.test(x))) bar.unmetered = true
+      continue
+    }
     if (tk[0][0] === '=') {
+      if (bar.unmetered && tk.every((x, i) => spines![i].kind !== '**kern' || x === '=-')) continue
       if (/:[|!]/.test(tk[0])) bar.bwd = true
       const fwd = /[|!]:/.test(tk[0])
       const fermata = tk.some((x, i) => spines![i].kind === '**kern' && x.startsWith('=') && x.includes(';'))
@@ -349,7 +354,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const merged: Bar[] = []
   for (const b of seq) {
     const a = merged[merged.length - 1]
-    if (merged.length > 1 && a.len < nom(a) - 1e-9 && b.len < nom(b) - 1e-9 && Math.abs(a.len + b.len - nom(a)) < 1e-9 && a.n === b.n && a.den === b.den && a.fifths === b.fifths && !a.bwd && !b.fwd && !a.rightFermata && !b.leftFermata)
+    if (merged.length > 1 && !a.unmetered && !b.unmetered && a.len < nom(a) - 1e-9 && b.len < nom(b) - 1e-9 && Math.abs(a.len + b.len - nom(a)) < 1e-9 && a.n === b.n && a.den === b.den && a.fifths === b.fifths && !a.bwd && !b.fwd && !a.rightFermata && !b.leftFermata)
       merged[merged.length - 1] = { ...a, len: nom(a), evs: [...a.evs, ...b.evs.map((e) => ({ ...e, q: e.q + a.len }))], dirs: [...a.dirs, ...b.dirs.map((d) => ({ ...d, q: d.q + a.len }))] }
     else merged.push(b)
   }
@@ -423,7 +428,9 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     const att = [
       !prev && `<divisions>${D}</divisions>`,
       (!prev || prev.fifths !== b.fifths) && `<key><fifths>${b.fifths}</fifths></key>`,
-      (!prev || prev.n !== b.n || prev.den !== b.den) && `<time><beats>${b.n}</beats><beat-type>${b.den}</beat-type></time>`,
+      b.unmetered
+        ? (!prev || !prev.unmetered) && '<time><senza-misura/></time>'
+        : (!prev || prev.unmetered || prev.n !== b.n || prev.den !== b.den) && `<time><beats>${b.n}</beats><beat-type>${b.den}</beat-type></time>`,
       !prev && (voice || used.length > 1) && '<staves>2</staves>',
       ...used.map((s) => b.clefs[s] && (!prev || prev.clefs[s] !== b.clefs[s]) && `<clef number="${staffOf(s)}"><sign>${b.clefs[s][0]}</sign><line>${b.clefs[s][1]}</line></clef>`),
     ].filter(Boolean)
@@ -465,7 +472,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
     if (!streams.length) for (const d of dirs) x.push(d.xml)
     move(Math.max(cur, I(b.len)))
     if (b.bwd || b.rightFermata) x.push(`<barline location="right">${b.bwd ? '<bar-style>light-heavy</bar-style>' : ''}${b.rightFermata ? '<fermata/>' : ''}${b.bwd ? '<repeat direction="backward"/>' : ''}</barline>`)
-    return `<measure number="${i + 1}"${b.len < nom(b) - 1e-9 ? ' implicit="yes"' : ''}>${x.join('')}</measure>`
+    return `<measure number="${i + 1}"${!b.unmetered && b.len < nom(b) - 1e-9 ? ' implicit="yes"' : ''}>${x.join('')}</measure>`
   })
 
   const score = (...parts: [string, string, string][]) => `<?xml version="1.0" encoding="UTF-8"?>

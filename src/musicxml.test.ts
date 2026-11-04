@@ -246,6 +246,15 @@ describe('musicxml jumps, keys, spelling, tuplets, cues and tempo', () => {
     expect(figure(0.75, '2:3')).toEqual(figure(0.5)) // written as eighths under a 2
   })
 
+  it('uses occupied duration for unmeasured time and restores the next numeric meter', () => {
+    const s = read(
+      `<measure number="1">${head()}${note('C', 4)}</measure>` +
+      `<measure number="2"><attributes><time><senza-misura/></time></attributes>${note('D', 2)}</measure>` +
+      `<measure number="3"><attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>${note('E', 3)}</measure>`,
+    )
+    expect(s.bars.map((bar) => [bar.ql, bar.n, bar.den])).toEqual([[4, 4, 4], [2, 4, 4], [3, 3, 4]])
+  })
+
   it('skips cue notes but keeps their time', () => {
     const s = read(meas('<note><cue/><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration></note>' + note('D', 2)))
     expect(s.notes.map((n) => [n.p, n.qb])).toEqual([[62, 2]])
