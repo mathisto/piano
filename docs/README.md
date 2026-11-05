@@ -84,6 +84,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-historical-playback.md`: records closure of the remaining historical playback mismatches and the next exact-notation cause without publishing the private mechanism, constants or results.
 - `changes/grader-source-conversion.md`: records closure of the repeated source-conversion boundary and the next exact-notation cause without publishing the private mechanism, constants or results.
 - `changes/grader-legacy-expression.md`: records closure of one pinned legacy source-expression failure and the next exact-notation family without publishing the private mechanism, constants or results.
+- `changes/grader-visible-rest-slurs.md`: records closure of the repeated slur-boundary family and the next exact-notation cause without publishing the private mechanism, constants or results.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
