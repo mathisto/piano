@@ -88,6 +88,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-dangling-ties.md`: records evidence closure of the repeated dangling-tie family and the next exact-notation cause without publishing the private mechanism, constants or results.
 - `changes/grader-nonmusical-output.md`: records closure of the repeated compiler-output annotation family as page-layout data and the next exact-notation boundary without publishing the private mechanism, constants or results.
 - `changes/grader-visible-rest-text-spans.md`: records closure of the visible-rest expression carrier boundary and the next repeated acquisition family without publishing the private mechanism, constants or results.
+- `changes/grader-written-note-mismatches.md`: records evidence closure of the repeated written-note mismatch family and the next outcome-blind acquisition audit without publishing the private mechanism, constants or results.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
