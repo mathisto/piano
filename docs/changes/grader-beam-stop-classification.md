@@ -1,7 +1,7 @@
-# G1 unmatched beam-stop status
+# G1 beam-stop compiler semantics
 
-**3 November 2026.** The four remaining unmatched beam-stop incidents are verified malformed-source notation, not missing acquisition semantics. They remain strict named refusals, and a focused private regression law prevents the adapter from inventing a beam start.
+**5 November 2026.** A deeper private audit against the pinned compiler supersedes the 3 November malformed-source conclusion. One source crosses strict acquisition and the other three advance to independent named boundaries; no grading mechanism, acceptance allowance or prior complete result changes.
 
-The acquisition boundary remains 65 accepted / 88 refused. The complete private suite, law corpus, freeze, source ledger and grouped split pass locally and on `lovelace`; published outcomes remain closed. The three unsupported partial-placement incidents are next.
+The complete private acquisition, prediction and evaluation chain is deterministic on macOS and independently verified on `lovelace`. Development evidence and the holdout remain sealed. Mutopia 70's isolated source-expression failure is next.
 
-This private classification changes no app, catalogue, deployment or TestFlight build.
+The enabling method, constants and detailed evidence remain private pending the patent/publication decision. This milestone changes no app, catalogue, public grader, deployment or TestFlight build.

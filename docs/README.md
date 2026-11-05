@@ -172,7 +172,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-trill-spans.md`: private source-valid long-trill spans retain their notation and uncertainty; dangling tie starts are next and benchmark outcomes remain closed.
 - `changes/grader-tie-spans.md`: all five private dangling-tie incidents are classified without changing the acceptance boundary; repeated articulation coverage is next and benchmark outcomes remain closed.
 - `changes/grader-staccatissimo.md`: private staccatissimo acquisition admits two exact graphs and advances two sources to later strict causes.
-- `changes/grader-beam-stop-classification.md`: four unmatched beam-stop incidents are verified malformed-source notation and remain strict refusals; partial placement is next and outcomes remain closed.
+- `changes/grader-beam-stop-classification.md`: private pinned-compiler evidence supersedes the earlier beam-stop classification and advances all four sources to their exact next boundary.
 - `changes/grader-partial-placement.md`: valid later incomplete measures admit one exact graph and advance two sources to later strict causes; structural skips are next and outcomes remain closed.
 - `changes/grader-invisible-time.md`: exact invisible score time advances two sources to later strict causes; espressivo is next and outcomes remain closed.
 - `changes/grader-espressivo.md`: exact espressivo notation admits two complete graphs; remaining standard articulations are next and outcomes remain closed.
