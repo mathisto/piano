@@ -23,8 +23,9 @@ Piano Forte can now merge progress, imported pieces and packs through one folder
 
 - Focused unit coverage exercises multi-file merge with a damaged peer, device-setting isolation, own-file exclusion and failed-merge write safety.
 - TypeScript and Vite production build pass with `sync.ts`, `backup.ts` and `@capacitor/core` outside the fixed 223,000-byte boot budget.
-- The unsigned generic-device Xcode build compiles the Swift document-container path.
+- The signed archive, App Store provisioning profile and uploaded binary carry `iCloud.io.mattkelly.piano` as both the iCloud and ubiquity container. TestFlight build 683 uploaded successfully.
 - The Settings row was rendered in light and dark at 1180×820, 820×1180 and 390×844 with no horizontal overflow; the Impeccable detector returned no findings.
+- The merged release passed 1,056 unit tests and all 47 end-to-end browser journeys; local main, GitHub main and the live `version.txt` matched `84533dc` after deployment.
 
 ## Check on the iPad
 
