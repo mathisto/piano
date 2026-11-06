@@ -96,6 +96,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-empty-anchors.md`: records the strict empty-anchor boundary and the source's next musical uncertainty without publishing the private mechanism, constants or results.
 - `changes/grader-cross-lane-beams.md`: records closure of the compiler-sibling beam representation boundary and the source's next independent refusal without publishing the private mechanism, constants or results.
 - `changes/grader-staff-polymeter.md`: records strict staff-local metre representation and the source's next independent refusal without publishing the private mechanism, constants or results.
+- `changes/grader-g1-freeze.md`: records completion of the bounded private G1 notation program, the fixed stop decision and the move to launch readiness without publishing the private mechanism, constants or detailed results.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
