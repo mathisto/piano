@@ -17,7 +17,7 @@ const sw = (): Plugin => ({
   apply: 'build',
   enforce: 'post',
   async generateBundle(_, bundle) {
-    const files = ['/', ...Object.keys(bundle).filter((f) => !f.endsWith('.map')).map((f) => `/${f}`)].sort()
+    const files = [...new Set(['/', '/theme.js', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon.svg', ...Object.keys(bundle).filter((f) => !f.endsWith('.map')).map((f) => `/${f}`)])].sort()
     const version = createHash('sha1').update(files.join()).digest('hex').slice(0, 10)
     const { code } = await transformWithOxc(readFileSync(new URL('./src/sw.ts', import.meta.url), 'utf8'), 'sw.ts')
     this.emitFile({ type: 'asset', fileName: 'sw.js', source: `const PRECACHE=${JSON.stringify(files)},VERSION=${JSON.stringify(version)};\n${code.replace(/^export /gm, '')}` })

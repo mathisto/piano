@@ -43,7 +43,7 @@ Rationale: Newsreader supplies literary authority without faux-historic ornament
 
 - 16 and 32 px: use the default paper/ink square; snap the dot to whole pixels after scaling.
 - 180 px: use the default icon unchanged.
-- 512 px maskable: keep all critical geometry within the central 68% safe zone. The supplied mark already complies.
+- 192 and 512 px maskable: keep all critical geometry within the central 68% safe zone. The supplied mark already complies.
 - PWA background: `#FBF8F1`; theme colour may follow the current app mode.
 
 ## Library cover system

@@ -657,6 +657,18 @@ const openStarter = async (page, id, mode = 'perform') => {
   await ready(page)
 }
 
+const manifestFlow = () => fresh({
+  async '27 Install: Chrome accepts the standalone manifest and both identity icons'(page) {
+    const cdp = await page.context().newCDPSession(page)
+    const [{ errors, manifest, url }, { installabilityErrors }] = await Promise.all([cdp.send('Page.getAppManifest'), cdp.send('Page.getInstallabilityErrors')])
+    ok(url.endsWith('/manifest.json') && errors.length === 0, JSON.stringify({ url, errors }))
+    ok(manifest.name === 'Piano Forte' && manifest.display === 'kStandalone' && manifest.id === URL_ && manifest.scope === URL_ && manifest.startUrl === URL_, JSON.stringify(manifest))
+    ok(manifest.icons.map((i) => i.sizes).join() === '192x192,512x512', JSON.stringify(manifest.icons))
+    const real = installabilityErrors.filter((e) => e.errorId !== 'in-incognito') // every headless Chrome context is incognito; it cannot be installed by definition
+    ok(real.length === 0, JSON.stringify(real))
+  },
+})
+
 const guideFlow = () => fresh({
   async '12 Start here: card, Start, Skip, Hide; Help'(page) {
     const card = '#today section.guide'
@@ -1397,7 +1409,7 @@ const sheetsFlow = async () => {
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
-  mainFlow().then(async (p) => (await lane(guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
+  mainFlow().then(async (p) => (await lane(manifestFlow, guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, packsFlow, pathFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
