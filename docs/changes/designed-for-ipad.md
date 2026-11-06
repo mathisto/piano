@@ -16,7 +16,7 @@ Piano Forte now builds, signs, installs and runs through Xcode's real **My Mac (
 - Xcode installed and ran the compatibility app. The repaired launch produced no duplicate-shortcut or `CFBundleTypeRole` warnings; the menu bar visibly omitted Format, showed Practice, and Help contained only Keyboard Shortcuts.
 - Clean first launch showed Set up. After Done, Today rendered; Songs showed all eight starters and the 902-piece Pieces lane; Settings opened; the native CoreMIDI bridge started and returned an empty source list with no keyboard attached.
 - The app remained readable and operable at the regular window size and macOS half- and quarter-screen sizes. Relaunch skipped Set up, proving the local first-run state persisted.
-- `npm test`: 84 files and 1,065 tests passed; one file and four tests skipped. `npm run build` passed. Boot JavaScript remains 222,030 bytes under the unchanged 223,000-byte gate.
+- `npm test`: 84 files and 1,065 tests passed; one file and four tests skipped. `npm run build` passed. All 50 merged end-to-end journeys passed. Boot JavaScript remains 222,030 bytes under the unchanged 223,000-byte gate.
 
 ## Still requires hardware or distribution
 

@@ -37,7 +37,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,062 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,065 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (50 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
 - Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 222,030 bytes: sync, backup, Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.

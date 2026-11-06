@@ -1,6 +1,6 @@
 # Roadmap
 
-Where the work stands. The reasoning is in `docs/STRATEGY.md`; the evidence is in `docs/research/`; each feature branch left a note in `docs/changes/` with what it built, how it was checked and what is still open. This file has five parts: Shipped, Next (with the decisions pending for the owner), Known gaps, Content and licences, Research. Counts verified on 6 November 2026: 84 test files and 1,065 tests pass (1 file and 4 tests skipped); 49 end-to-end features pass in the default run; 2,347 pieces are in live catalogue `8c7f693628fb8dce`.
+Where the work stands. The reasoning is in `docs/STRATEGY.md`; the evidence is in `docs/research/`; each feature branch left a note in `docs/changes/` with what it built, how it was checked and what is still open. This file has five parts: Shipped, Next (with the decisions pending for the owner), Known gaps, Content and licences, Research. Counts verified on 6 November 2026: 84 test files and 1,065 tests pass (1 file and 4 tests skipped); 50 end-to-end features pass in the default run; 2,347 pieces are in live catalogue `8c7f693628fb8dce`.
 
 ## Shipped
 
