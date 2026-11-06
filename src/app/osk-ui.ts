@@ -22,14 +22,14 @@ box.hidden = true
 box.setAttribute('role', 'region')
 box.setAttribute('aria-label', 'On-screen keys')
 box.setAttribute('aria-describedby', 'oskHelp')
-box.innerHTML = `<p class="sr-only" id="oskHelp">Piano keys to tap with a finger; a screen reader cannot press them. Play a MIDI keyboard, or the computer keys: A to ; for the white keys, W E T Y U O P for the black, Z and X to shift the octave.</p><div class="osk-bar"><button class="btn icon sm" data-oct="-1" aria-label="Octave down">${icon('back')}</button><b class="osk-range" aria-live="polite"></b><button class="btn icon sm flip" data-oct="1" aria-label="Octave up">${icon('back')}</button><button class="btn sm osk-names" aria-pressed="false">Names</button><button class="btn icon sm" data-hide aria-label="Hide on-screen keys">${icon('x')}</button></div><div class="osk-keys" aria-hidden="true"></div>`
+box.innerHTML = `<p class="sr-only" id="oskHelp">Piano keys. Touch a key, or move through the named buttons with VoiceOver and activate one. VoiceOver gives you four seconds to move between notes of a chord.</p><div class="osk-bar"><button class="btn icon sm" data-oct="-1" aria-label="Octave down">${icon('back')}</button><b class="osk-range" aria-live="polite"></b><button class="btn icon sm flip" data-oct="1" aria-label="Octave up">${icon('back')}</button><button class="btn sm osk-names" aria-pressed="false">Names</button><button class="btn icon sm" data-hide aria-label="Hide on-screen keys">${icon('x')}</button></div><div class="osk-keys" role="group" aria-label="Piano keys"></div>`
 $('#app').insertBefore(box, $('#drawer'))
 const board = $('.osk-keys', box)
 
 const midi = (on: boolean, p: number): MidiMsg => ({ on, p, v: on ? VEL : 0, ts: performance.now(), virtual: true })
 
 function draw() {
-  board.innerHTML = keys.map((k) => `<i class="${k.black ? 'b' : 'w'}" data-p="${k.p}" style="left:${k.x * 100}%;width:${k.w * 100}%">${label(k.p, !!settings.oskNames)}</i>`).join('')
+  board.innerHTML = keys.map((k) => `<button type="button" class="${k.black ? 'b' : 'w'}" data-p="${k.p}" style="left:${k.x * 100}%;width:${k.w * 100}%" aria-label="${noteName(k.p)}">${label(k.p, !!settings.oskNames)}</button>`).join('')
   $('.osk-range', box).textContent = `${noteName(low)} to ${noteName(keys[keys.length - 1].p)}`
   $('.osk-names', box).setAttribute('aria-pressed', String(!!settings.oskNames))
   box.querySelectorAll<HTMLButtonElement>('[data-oct]').forEach((b) => (b.disabled = clampLow(low + Number(b.dataset.oct) * 12, whites) === low))
@@ -85,16 +85,25 @@ board.addEventListener('pointermove', (e) => {
   lift(e.pointerId) // glide: the finger leaves one key for the next
   press(e.pointerId, p)
 })
-for (const ev of ['pointerup', 'pointercancel'] as const) board.addEventListener(ev, (e) => lift(e.pointerId))
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) board.addEventListener(ev, (e) => lift(e.pointerId))
+board.addEventListener('click', (e) => {
+  if (e.detail !== 0) return // direct touch already played through the pointer events; detail 0 is keyboard or assistive activation
+  const key = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-p]')
+  if (!key) return
+  audio.unlock()
+  const p = Number(key.dataset.p)
+  send({ ...midi(true, p), assistive: true })
+  setTimeout(() => send({ ...midi(false, p), assistive: true }), 80)
+})
 box.addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest('button')
-  if (!b) return
+  if (!b || b.dataset.p !== undefined) return
   if (b.dataset.hide !== undefined) {
     settings.osk = false
     save()
     syncOsk()
   } else if (b.dataset.oct) build(whites, clampLow(low + Number(b.dataset.oct) * 12, whites))
-  else {
+  else if (b.classList.contains('osk-names')) {
     settings.oskNames = !settings.oskNames
     save()
     draw()

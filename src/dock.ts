@@ -29,6 +29,7 @@ export class Dock {
   private lastHeat = 0
   private shownBar = 0
   private kb = 0 // the bar the keyboard is on, while the strip has focus
+  private loopAnchor: number | undefined
   private beatKey = ''
   private get bar() {
     return document.querySelector<HTMLElement>('#beatBar')!
@@ -82,6 +83,7 @@ export class Dock {
               <div class="seg" role="radiogroup" aria-label="Metronome">${METROS.map((m) => `<label><input type="radio" name="metro" value="${m}"><span>${{ off: 'Off', beat: 'Beats', eighths: 'Eighths', silent: 'Silent' }[m]}</span></label>`).join('')}</div>
             </div>
             <div class="hands" data-modes="learn">${handSeg('R')}${handSeg('L')}</div>
+            <div class="opt" data-modes="learn"><span class="cap">A–B loop</span><button class="btn sm" id="loopPick">Set start</button></div>
             <div class="opt" role="group" aria-label="Staff size"><span class="cap">Staff</span>
               <button class="btn icon sm" data-zoom="out" aria-label="Smaller staff, more bars">${icon('minus')}</button>
               <button class="btn icon sm" data-zoom="fit" aria-label="Fit the whole piece" title="Fit the whole piece">${icon('page')}</button>
@@ -129,7 +131,22 @@ export class Dock {
     }
     q('#loopWorst').onclick = () => this.loopWorst()
     q('#loopClear').onclick = () => {
+      this.loopAnchor = undefined
       game.setLoop(null)
+      this.sync()
+    }
+    q('#loopPick').onclick = () => {
+      const at = this.kb
+      if (this.loopAnchor === undefined) {
+        this.loopAnchor = at
+        this.onNote(`Loop start: bar ${at + 1}. Tap the last bar on the timeline, then choose Set end.`)
+      } else {
+        const a = Math.min(this.loopAnchor, at)
+        const b = Math.max(this.loopAnchor, at)
+        this.loopAnchor = undefined
+        game.setLoop({ a: this.song.bars[a].t0, b: this.song.bars[b].t1 })
+        this.onNote(`Looping bars ${a + 1} to ${b + 1}.`)
+      }
       this.sync()
     }
     // the two pop-ups: one open at a time, closed by an outside click or Escape (app/input.ts: focus back on its button)
@@ -173,6 +190,10 @@ export class Dock {
       if (r) r.checked = true
     }
     ;(this.host.querySelector('#loopClear') as HTMLButtonElement).hidden = !g.loop
+    const loopPick = this.host.querySelector<HTMLButtonElement>('#loopPick')!
+    loopPick.textContent = this.loopAnchor === undefined ? 'Set start' : 'Set end'
+    loopPick.setAttribute('aria-pressed', String(this.loopAnchor !== undefined))
+    loopPick.setAttribute('aria-label', this.loopAnchor === undefined ? 'Set A–B loop start at the selected bar' : `Set A–B loop end; start is bar ${this.loopAnchor + 1}`)
     this.showWorst()
     // in Perform the strip is a progress bar, not a control
     this.scrub.classList.toggle('still', !learn)
@@ -231,6 +252,8 @@ export class Dock {
   setSong(song: Song, heat: number[]) {
     this.song = song
     this.heat = heat
+    this.kb = 0
+    this.loopAnchor = undefined
     this.showWorst()
     this.scrub.setAttribute('aria-valuemin', '1')
     this.scrub.setAttribute('aria-valuemax', String(song.bars.length))
@@ -311,6 +334,10 @@ export class Dock {
 
   private pointer() {
     let down: { i: number; x: number } | undefined
+    const cancel = () => {
+      down = undefined
+      this.tip.hidden = true
+    }
     this.scrub.onpointerdown = (e) => {
       if (this.game.mode !== 'learn') return
       this.scrub.setPointerCapture(e.pointerId)
@@ -332,13 +359,17 @@ export class Dock {
       if (Math.abs(e.clientX - down.x) > 6) {
         const a = Math.min(down.i, i)
         const b = Math.max(down.i, i)
+        this.loopAnchor = undefined
         this.game.setLoop({ a: bars[a].t0, b: bars[b].t1 })
       } else {
+        this.kb = i
         this.game.jump(bars[i].t0 - this.song.spb * 2)
       }
-      down = undefined
+      cancel()
       this.sync()
     }
+    this.scrub.onpointercancel = cancel
+    this.scrub.onlostpointercapture = cancel
     // the keys step through the bars from `kb`, not from the clock (a jump lands two beats before its bar, so the clock cannot say which bar was asked for);
     // Shift with an arrow stretches a loop from the bar it started at: the keyboard's way to the drag
     let anchor = -1

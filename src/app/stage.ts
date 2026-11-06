@@ -63,7 +63,7 @@ export function screenKeys(canvas: HTMLCanvasElement) {
     down.set(e.pointerId, k.p)
     game.press(k.p, k.vel, performance.now(), true)
   })
-  for (const ev of ['pointerup', 'pointercancel'] as const) canvas.addEventListener(ev, (e) => lift(e.pointerId))
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) canvas.addEventListener(ev, (e) => lift(e.pointerId))
 }
 
 /** Show the panes the view asks for: staff only, both, or falling notes only. */
@@ -134,6 +134,7 @@ export function setZoom(z: number) {
   let moved = false
   let down = { x: 0, y: 0 }
   host.addEventListener('pointerdown', (e) => {
+    host.setPointerCapture(e.pointerId)
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
     down = { x: e.clientX, y: e.clientY }
     moved = pts.size > 1
@@ -154,7 +155,7 @@ export function setZoom(z: number) {
       setZoom(1)
     } else tap = { t: e.timeStamp, x: e.clientX, y: e.clientY }
   })
-  host.addEventListener('pointercancel', (e) => pts.delete(e.pointerId))
+  for (const ev of ['pointercancel', 'lostpointercapture'] as const) host.addEventListener(ev, (e) => pts.delete(e.pointerId))
   host.addEventListener('wheel', (e) => {
     if (!e.ctrlKey && !e.metaKey) return // a trackpad pinch arrives as ctrl + wheel
     e.preventDefault()
@@ -193,9 +194,11 @@ function nudge(dir: 1 | -1) {
     if (Math.abs(e.clientY - dragFrom.y) > 4) dragFrom.moved = true
     if (dragFrom.moved) setPane((e.clientY - dragFrom.top) / dragFrom.total)
   }
-  sp.onpointercancel = () => sp.classList.remove('drag')
+  const endDrag = () => sp.classList.remove('drag')
+  sp.onpointercancel = endDrag
+  sp.onlostpointercapture = endDrag
   sp.onpointerup = () => {
-    sp.classList.remove('drag')
+    endDrag()
     if (dragFrom.moved) save()
     else cycle()
   }

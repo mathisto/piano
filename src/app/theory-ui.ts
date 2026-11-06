@@ -76,7 +76,7 @@ function promptTheory(demo = false) {
 export const theoryOpen = () => $('#theory').classList.contains('on') && !!theory && theory.i < theory.cards.length && !theory.answered
 
 /** A key played on a Theory card: single-note answers are judged at once, chords when the hand has settled. */
-export function theoryNote(p: number, ts: number) {
+export function theoryNote(p: number, ts: number, settle = 600) {
   const t = theory!
   if (ts < t.ears.deaf) return // a prompt is playing
   const c = t.cards[t.i]
@@ -87,7 +87,7 @@ export function theoryNote(p: number, ts: number) {
   const step = c.steps[t.step]
   clearTimeout(t.timer)
   if (t.buf.length >= step.pcs.length) judgeTheory()
-  else t.timer = window.setTimeout(judgeTheory, 600)
+  else t.timer = window.setTimeout(judgeTheory, settle)
 }
 
 function judgeTheory() {
