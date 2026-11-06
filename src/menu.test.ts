@@ -38,3 +38,8 @@ it('no two menu commands share a shortcut, and each shortcut is its key with ⌘
     if (c.page.length === 1 && c.page !== ' ') expect([c.page, 'Return'].includes(c.key === '\\r' ? 'Return' : c.key), c.title).toBe(true) // the same letter as the web key
   }
 })
+
+it('owns its Mac shortcuts instead of colliding with irrelevant system menus', () => {
+  expect(swift).toContain('builder.remove(menu: .format)')
+  expect(swift).toMatch(/replace\(menu: \.help, with: system\.replacingChildren\(\[help\]\)\)/)
+})

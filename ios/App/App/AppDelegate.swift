@@ -25,6 +25,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let key = { (title: String, input: String, mods: UIKeyModifierFlags, page: String) in
             UIKeyCommand(title: title, action: #selector(PianoViewController.pageKey(_:)), input: input, modifierFlags: mods, propertyList: page)
         }
+        // WKWebView contributes rich-text commands that Piano Forte does not support; on "Designed for iPad" they collide with
+        // the app's Metronome, Next View and Zoom Out shortcuts.
+        builder.remove(menu: .format)
         let settings = key("In-App Settings…", ",", [.command, .alternate], ",")
         if let system = builder.menu(for: .preferences) {
             builder.replace(menu: .preferences, with: system.replacingChildren(system.children + [settings]))
@@ -47,7 +50,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             key("Hide or Show Controls", "m", [.command, .alternate], "m"),
         ]), atStartOfMenu: .view)
         builder.insertChild(UIMenu(options: .displayInline, children: tabs.enumerated().map { i, t in key(t, "\(i + 1)", .command, "\(i + 1)") }), atStartOfMenu: .view)
-        builder.insertChild(UIMenu(options: .displayInline, children: [key("Keyboard Shortcuts", "?", .command, "?")]), atStartOfMenu: .help)
+        let help = key("Keyboard Shortcuts", "?", .command, "?")
+        if let system = builder.menu(for: .help) {
+            builder.replace(menu: .help, with: system.replacingChildren([help]))
+        } else {
+            builder.insertChild(UIMenu(options: .displayInline, children: [help]), atStartOfMenu: .help)
+        }
     }
 
     /// The one window, built in code by SceneDelegate (there is no main storyboard).

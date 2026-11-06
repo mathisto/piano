@@ -36,6 +36,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/web-manifest.md`: the installable Chrome/Edge web app, generated maskable identity icons, standalone app identity and offline-cached startup assets.
 - `changes/touch-swipe-a11y.md`: named VoiceOver piano keys, a tap-only A–B loop route, pointer-interruption cleanup and the decision against whole-page swipe navigation.
 - `changes/app-shortcuts.md`: two native App Shortcuts for Today's next practice unit and the Sight Run builder, routed through the existing page logic across warm and cold launches.
+- `changes/designed-for-ipad.md`: signed Designed-for-iPad build and Mac launch validation, responsive window and persistence checks, and the native menu/document fixes the run exposed.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**
