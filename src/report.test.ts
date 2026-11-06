@@ -61,6 +61,10 @@ What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, o
     expect(mail.startsWith('mailto:owner@example.org?subject=Problem%20with%20Melodie')).toBe(true)
     expect(decodeURIComponent(mail)).toContain('App version: v1')
   })
+
+  it('opens the public support mailbox by default', () => {
+    expect(reportHref(cat, p, 3)).toMatch(/^mailto:pianoforte@mattkelly\.io\?/)
+  })
 })
 
 describe('practice summary', () => {

@@ -8,6 +8,7 @@ import { SYLLABUS, stateOf, type TechStats } from './syllabus'
 import { dayKey } from './week'
 import type { HistoryEntry, Progress, TouchEntry } from './store'
 import { mean, pct, plural } from './util'
+import { SUPPORT_EMAIL } from './support'
 
 declare const __COMMIT__: string | undefined // set in vite.config.ts; absent under other tools
 
@@ -15,7 +16,7 @@ declare const __COMMIT__: string | undefined // set in vite.config.ts; absent un
  * Where a problem report goes. An address (contains @) opens the mail app; a URL opens that page with title and body in the query.
  * Nothing is sent by the app: the link only opens the user's mail or browser. The owner may swap in a mailto address here.
  */
-const REPORT_TO = 'https://github.com/mathisto/piano/issues/new'
+const REPORT_TO = SUPPORT_EMAIL
 
 const PROMPT = 'What is wrong? (wrong note, wrong rhythm, wrong key, wrong hand, missing bars, other)'
 

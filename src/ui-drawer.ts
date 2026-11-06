@@ -7,6 +7,7 @@ import { noteName } from './spell'
 import { native } from './native-midi'
 import { settings, strictness, touchCoach } from './settings'
 import { KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
+import { PRIVACY_URL, SUPPORT_URL } from './support'
 
 const TIMING: [string, string][] = [['easy', 'Easy'], ['standard', 'Standard'], ['strict', 'Strict']]
 const TOUCH: [string, string][] = [['gentle', 'Gentle'], ['steady', 'Standard'], ['strict', 'Strict']]
@@ -71,5 +72,5 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
     ${row('Key touch', keyTouchSelect('sKeyTouch'), KEY_TOUCH_HINT)}
     </div>
   </details>
-  <p class="fine foot"><button class="link" id="sSetup">Set up</button><button class="link" id="sHelp">Help</button><button class="link" id="sCredits">Credits</button></p>`
+  <p class="fine foot"><button class="link" id="sSetup">Set up</button><button class="link" id="sHelp">Help</button><button class="link" id="sCredits">Credits</button><a class="link" href="${SUPPORT_URL}" target="_blank" rel="noopener">Support</a><a class="link" href="${PRIVACY_URL}" target="_blank" rel="noopener">Privacy</a></p>`
 }

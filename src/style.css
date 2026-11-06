@@ -2532,7 +2532,8 @@ input[type='number'] {
   font-size: calc(13px * var(--ts));
   color: var(--ink-3);
 }
-button.link {
+button.link,
+a.link {
   border: 0;
   background: none;
   color: var(--accent);
@@ -2541,6 +2542,10 @@ button.link {
   text-underline-offset: 3px;
   cursor: pointer;
   padding: 0;
+}
+a.link {
+  display: inline-flex;
+  align-items: center;
 }
 
 .tklist {

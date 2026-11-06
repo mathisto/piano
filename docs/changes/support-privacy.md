@@ -1,0 +1,7 @@
+# Support and privacy surfaces — 6 November 2026
+
+Piano Forte now has durable public Support and Privacy pages in the Urtext design language. Settings and Credits link to both outside the iPad web view, and a library piece's Report a problem action now drafts an email to `pianoforte@mattkelly.io` instead of opening GitHub. The draft still includes only score provenance, the current bar and release information; it never attaches practice data or a file.
+
+The Privacy page records the real boundary: practice data stays local or in the folder the player chooses, optional catalogue and web requests cross Cloudflare, Apple handles payment, support mail is voluntary, and export/deletion paths are explicit. The shared paid-launch sentence is unchanged until the owner confirms the paid-download model.
+
+Verification: 1,070 unit tests and all 50 end-to-end journeys pass; the production multi-page build passes; boot JavaScript is 222,105 bytes under the unchanged 223,000-byte budget; local static responses return 200; Matinee/Nocturne renders pass at iPad landscape, iPad portrait and phone widths; axe and independent Impeccable review found no actionable issue. `cap sync ios` copies both pages, their stylesheet and fonts, and an unsigned simulator build contains both final HTML files. Publication and TestFlight remain gated on the owner confirming the public mailbox and paid-up-front model.

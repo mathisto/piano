@@ -7,6 +7,7 @@ import type { Report, Selection, TrackInfo } from './midi-tracks'
 import { DEFAULT_EDGES } from './touch'
 import { esc } from './util'
 import { noKeyboardArt } from './empty'
+import { PRIVACY_URL, SUPPORT_URL } from './support'
 
 const SOUNDS = [
   'Grand piano: Salamander Grand Piano by Alexander Holm\nLicence: CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)',
@@ -20,7 +21,7 @@ const links = (s: string) => s.replace(/Licence: ([^\n]+?) \((https?:\/\/[^\s)]+
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><p class="fine free">${FREE}</p><h3>Sounds</h3>
+    <div class="body"><p class="fine free">${FREE} ${a(SUPPORT_URL, 'Support')} · ${a(PRIVACY_URL, 'Privacy')}</p><h3>Sounds</h3>
     <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div><h3>Icons</h3>
     <div class="credlist"><pre>${links(esc('Lucide, by Lucide Contributors (lucide.dev)\nLicence: ISC (https://github.com/lucide-icons/lucide/blob/main/LICENSE)'))}</pre></div>
     <h3>Scores</h3><p class="fine">Public domain or openly licensed, each under its own licence. Every score and its licence: ${a(licences.app, 'pieces in the app')}, ${a(licences.corpus, 'the whole library')}.</p>

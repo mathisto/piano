@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin, transformWithOxc } from 'vite'
 
 const commit = (() => {
@@ -28,6 +29,17 @@ export default defineConfig({
   plugins: [sw()],
   define: { __COMMIT__: JSON.stringify(commit) },
   // cssTarget: light-dark() (style.css tokens) stays native. Lowered, it would resolve at :root and a sub-tree with its own color-scheme (#judge, #count) would get the wrong side.
-  build: { target: 'es2022', cssTarget: ['chrome123', 'safari17.5', 'firefox120'], chunkSizeWarningLimit: 330 },
+  build: {
+    target: 'es2022',
+    cssTarget: ['chrome123', 'safari17.5', 'firefox120'],
+    chunkSizeWarningLimit: 330,
+    rollupOptions: {
+      input: {
+        app: fileURLToPath(new URL('./index.html', import.meta.url)),
+        support: fileURLToPath(new URL('./support/index.html', import.meta.url)),
+        privacy: fileURLToPath(new URL('./privacy/index.html', import.meta.url)),
+      },
+    },
+  },
   test: { include: ['src/**/*.test.ts'] },
 })
