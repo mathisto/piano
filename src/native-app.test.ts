@@ -1,9 +1,15 @@
 import { expect, it, vi } from 'vitest'
-import { offsetOf, packLink } from './native-app'
+import { offsetOf, packLink, shortcutAction } from './native-app'
 
 it('accepts only Piano Forte pack universal links', () => {
   expect(packLink('https://pianoforte.mattkelly.io/#pack=eJyrVio')).toBe('#pack=eJyrVio')
   for (const url of ['https://evil.example/#pack=eJyrVio', 'http://pianoforte.mattkelly.io/#pack=eJyrVio', 'https://pianoforte.mattkelly.io/packs/#pack=eJyrVio', 'https://pianoforte.mattkelly.io/#other=x', 'not a url']) expect(packLink(url)).toBeUndefined()
+})
+
+it('accepts only the two native shortcut actions', () => {
+  expect(shortcutAction('practice')).toBe('practice')
+  expect(shortcutAction('sight-run')).toBe('sight-run')
+  for (const action of ['', 'today', 'run', 'Practice']) expect(shortcutAction(action)).toBeUndefined()
 })
 
 it('the clock offset comes from the quickest round trip', () => {

@@ -58,10 +58,19 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var syncQuery: NSMetadataQuery?
     private var syncObserver: NSObjectProtocol?
 
+    private func deliverShortcut() {
+        guard let action = PianoShortcutRouter.takePending() else { return }
+        notifyListeners("shortcut", data: ["action": action.rawValue], retainUntilConsumed: true)
+    }
+
     /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Piano Forte"). Capacitor
     /// posts it, on a cold start once the plugins are loaded; the page may not be listening yet, so the event waits for it. The event:
     /// `file` with { name: the file's name with its extension, data: its bytes in base64 } (src/native-app.ts makes a File of it).
     override public func load() {
+        NotificationCenter.default.addObserver(forName: .pianoShortcut, object: nil, queue: .main) { [weak self] _ in
+            self?.deliverShortcut()
+        }
+        deliverShortcut() // an intent can run before Capacitor has loaded its plugin on a cold launch
         NotificationCenter.default.addObserver(forName: .capacitorOpenURL, object: nil, queue: .main) { [weak self] note in
             guard let url = (note.object as? [String: Any])?["url"] as? URL, url.isFileURL else { return }
             let scoped = url.startAccessingSecurityScopedResource() // a file opened in place, still in its own app's folder

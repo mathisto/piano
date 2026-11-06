@@ -10,6 +10,8 @@ import { saveRun, startDrill, startRun } from './drill'
 
 let readTab: 'stages' | 'run' = 'stages'
 
+export const openSightRun = () => (readTab = 'run')
+
 export async function stageRows(): Promise<StageRow[]> {
   setDrillStats(await store.getDrill())
   const f = focus(drillStats)

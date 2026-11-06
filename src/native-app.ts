@@ -1,6 +1,6 @@
 // The iPad app's side of src/native-midi.ts, loaded only inside the app: the CoreMidi plugin's events stamped on the page's
 // clock, the menu bar's commands, files opened from other apps, the sound taken away, a daily backup to Files, the system text
-// size and the practice reminder.
+// size, App Shortcuts and the practice reminder.
 import { registerPlugin, SystemBars, SystemBarType } from '@capacitor/core'
 import type { Port, Source } from './native-midi'
 
@@ -18,6 +18,7 @@ interface Native {
   addListener(event: 'link', cb: (d: { url: string }) => void): Promise<unknown>
   addListener(event: 'textSize', cb: (d: { category: string }) => void): Promise<unknown>
   addListener(event: 'interrupt', cb: () => void): Promise<unknown>
+  addListener(event: 'shortcut', cb: (d: { action: string }) => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
 }
 
@@ -38,6 +39,9 @@ export function packLink(value: string): string | undefined {
     return undefined
   }
 }
+
+export type ShortcutAction = 'practice' | 'sight-run'
+export const shortcutAction = (value: string): ShortcutAction | undefined => (value === 'practice' || value === 'sight-run' ? value : undefined)
 
 // Apple's body sizes by content size category (Dynamic Type), in points
 const BODY: Record<string, number> = { XS: 14, S: 15, M: 16, L: 17, XL: 19, XXL: 21, XXXL: 23, AccessibilityM: 28, AccessibilityL: 33, AccessibilityXL: 40, AccessibilityXXL: 47, AccessibilityXXXL: 53 }
@@ -84,6 +88,11 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   void n.textSize().then((d) => text(d.category)).catch(() => {})
   // a call, Siri or an alarm took the sound, or the headphones came out: src/app/play.ts pauses a run, take-ui.ts stops Listen back
   void n.addListener('interrupt', () => dispatchEvent(new Event('interrupt')))
+  // App Intents only name the action; after this module's dynamic import has yielded, main.ts owns navigation and practice logic.
+  void n.addListener('shortcut', ({ action }) => {
+    const valid = shortcutAction(action)
+    if (valid) setTimeout(() => dispatchEvent(new CustomEvent('native-shortcut', { detail: valid })))
+  })
   void n.addListener('m', (d) => {
     const port = inputs.get(d.id)
     if (!port?.onmidimessage) return

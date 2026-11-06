@@ -667,6 +667,19 @@ const openStarter = async (page, id, mode = 'perform') => {
   await ready(page)
 }
 
+const shortcutsFlow = () => fresh({
+  async '0c App Shortcuts: Sight Run and today\'s next item use the existing routes'(page) {
+    await ev(page, () => dispatchEvent(new CustomEvent('native-shortcut', { detail: 'sight-run' })))
+    await page.waitForSelector('#read.on #rStart')
+    await ev(page, () => dispatchEvent(new CustomEvent('native-shortcut', { detail: 'practice' })))
+    await page.waitForTimeout(1000)
+    ok(!page.errs.length, page.errs.join(' | '))
+    const state = await ev(page, () => ({ phase: window.__piano.game.phase, play: !!document.querySelector('#play.on') }))
+    ok(state.phase === 'ready' && state.play, `practice shortcut state ${JSON.stringify(state)}`)
+    // The shortcut stops on the ordinary ready card; it never starts playing by itself.
+  },
+})
+
 const manifestFlow = () => fresh({
   async '27 Install: Chrome accepts the standalone manifest and both identity icons'(page) {
     const cdp = await page.context().newCDPSession(page)
@@ -1420,7 +1433,7 @@ const sheetsFlow = async () => {
 // three lanes at a time: seven browsers at once starve the clock-driven players and the main flow then stalls
 const lane = async (...fs) => { for (const f of fs) await f() }
 const [page] = await Promise.all([
-  mainFlow().then(async (p) => (await lane(manifestFlow, guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
+  mainFlow().then(async (p) => (await lane(shortcutsFlow, manifestFlow, guideFlow, sheetsFlow, ladderFlow, fluentFlow, marksFlow, memFlow), p)),
   lane(songsFlow, packsFlow, pathFlow, () => side(['keys', 'intervals', 'degrees']), () => side(['earint']), () => side(['earchord']), oskFlow, accompFlow, recorderFlow, reviewFlow),
   lane(() => side(['earplay']), () => side(['eardeg']), () => side(['rhythm']), qaFlow, pedalFlow, leadFlow, shellFlow),
   ...(process.env.E2E_PULSE ? [lane(() => side(['keepbeat']), () => side(['subdiv', 'holdrhythm']))] : []),
