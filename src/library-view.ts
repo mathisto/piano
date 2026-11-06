@@ -303,7 +303,7 @@ function table(caption: string, rows: Row[], empty: string) {
 export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', damaged: DamagedSong[] = [], redraw?: () => void) {
   const bad = damaged.length === 1 ? `${damaged[0].title} could not be read, so it was skipped.` : `${damaged.length} files could not be read, so they were skipped.`
   el.innerHTML = `
-    ${head('Songs', `<button class="btn" id="addFiles">${icon('plus')}Add files</button><input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pfpack,audio/midi" multiple hidden>`, 'Bring your own MIDI or MusicXML. Files stay on this device.')}
+    ${head('Songs', `<button class="btn" id="addFiles">${icon('plus')}Add files</button><input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pthpack,audio/midi" multiple hidden>`, 'Bring your own MIDI or MusicXML. Files stay on this device.')}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
     ${damaged.length ? notice(bad, `<button class="btn ghost" data-forget-damaged>Remove damaged ${damaged.length === 1 ? 'copy' : 'copies'}</button>`) : ''}
     ${table('Starter pieces', starters, '')}

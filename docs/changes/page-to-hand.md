@@ -14,7 +14,7 @@ This was a preliminary product-name clearance, not a legal opinion.
 
 - Changed every current user-facing product name in the web app, PWA manifest, support and privacy pages, pack shelf, reports, native menu copy, App Shortcuts, iPad display name, document names and accessibility labels to Page to Hand.
 - Changed the package and archive labels to `page-to-hand` / `PageToHand` without changing the public repository, Apple record or installed-app identity.
-- Preserved the bundle ID `io.mattkelly.piano`, iCloud container `iCloud.io.mattkelly.piano`, existing `piano.*` storage keys, `.pfpack`, its legacy MIME type and the current `pianoforte.mattkelly.io` origin. Those are compatibility identifiers, not visible branding.
+- Preserved the bundle ID `io.mattkelly.piano`, iCloud container `iCloud.io.mattkelly.piano`, existing `piano.*` storage keys and the current `pianoforte.mattkelly.io` origin. Those have installed-data or network compatibility costs. The unreleased pack format had none, so the follow-up `page-to-hand-packs.md` replaces it outright.
 - New sync and daily-recovery files use Page to Hand. Both the browser and iPad still read the old Piano Forte filenames so the owner's existing TestFlight data survives the rename.
 - Updated the current product, design, identity, roadmap and handoff sources. Historical research, audits and shipped change notes keep the name they had when written.
 

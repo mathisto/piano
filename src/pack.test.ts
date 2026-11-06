@@ -4,7 +4,7 @@ import type { Catalog, Piece } from './catalog-types'
 import { type Ctx, nextOf, type Pack, packFragment, packFromFragment, parsePack, rows, unknown } from './pack'
 import type { Progress } from './store'
 
-const good = { pf: 1, id: 'my-pack', title: 'My pack', by: 'A teacher', about: 'Slowly.', licence: 'CC0-1.0', items: [{ piece: 'a', note: 'Hands apart.', rate: 0.7, view: { names: false, fingers: false } }, { drill: { pattern: 'scale', tonic: 7, dyn: 'medium', hands: 'both', bpm: 60 } }, { read: 't-led1' }, { scale: 's1', title: 'Easy keys' }] }
+const good = { pth: 1, id: 'my-pack', title: 'My pack', by: 'A teacher', about: 'Slowly.', licence: 'CC0-1.0', items: [{ piece: 'a', note: 'Hands apart.', rate: 0.7, view: { names: false, fingers: false } }, { drill: { pattern: 'scale', tonic: 7, dyn: 'medium', hands: 'both', bpm: 60 } }, { read: 't-led1' }, { scale: 's1', title: 'Easy keys' }] }
 const bad = (o: object) => () => parsePack(JSON.stringify({ ...good, ...o }))
 const item = (it: object) => bad({ items: [it] })
 const files = readdirSync('src/packs').map((f) => parsePack(readFileSync(`src/packs/${f}`, 'utf8')))
@@ -15,8 +15,9 @@ describe('parsePack', () => {
   })
   it('says what is wrong and where', () => {
     expect(() => parsePack('{oops')).toThrow('not JSON')
-    expect(() => parsePack('{"version":1}')).toThrow('no "pf" version')
-    expect(bad({ pf: 2 })).toThrow('version 2; this app reads version 1')
+    expect(() => parsePack('{"version":1}')).toThrow('no "pth" version')
+    expect(bad({ pth: undefined, pf: 1 })).toThrow('no "pth" version')
+    expect(bad({ pth: 2 })).toThrow('version 2; this app reads version 1')
     expect(bad({ id: 'Has Spaces' })).toThrow('"id" must be lower-case')
     expect(bad({ title: '' })).toThrow('"title" must be some text')
     expect(bad({ about: 'x'.repeat(301) })).toThrow('longer than 300')
@@ -50,7 +51,7 @@ describe('where you are in a pack', () => {
     expect(unknown(p, (id) => cat.has(id))).toEqual([2, 3])
   })
   it('a warm-up offers today the ones played longest ago, then says when today is done', () => {
-    const p: Pack = { pf: 1, id: 'w', title: 'W', by: 'X', warmup: 2, items: [{ piece: 'h1' }, { piece: 'h2' }, { piece: 'h3' }] }
+    const p: Pack = { pth: 1, id: 'w', title: 'W', by: 'X', warmup: 2, items: [{ piece: 'h1' }, { piece: 'h2' }, { piece: 'h3' }] }
     const day = (c: Ctx) => nextOf(p, rows(p, c), c)
     expect(day(ctx()).today.map((r) => r.i)).toEqual([0, 1])
     const c = ctx([['lib:h1', prog({ last: 9 })], ['lib:h2', prog({ last: 10 })]]) // h1 yesterday, h2 today
@@ -71,7 +72,7 @@ describe('links', () => {
   it('say plainly when a link is damaged, and check what they carry as a file', async () => {
     await expect(packFromFragment('pack=@@@')).rejects.toThrow('damaged')
     await expect(packFromFragment('pack=AAAA')).rejects.toThrow('damaged')
-    const f = await packFragment({ ...good, pf: 2 } as unknown as Pack)
+    const f = await packFragment({ ...good, pth: 2 } as unknown as Pack)
     await expect(packFromFragment(f)).rejects.toThrow('version 2')
   })
 })

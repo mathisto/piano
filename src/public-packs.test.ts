@@ -5,13 +5,13 @@ import type { Catalog } from './catalog-types'
 import { parsePack, unknown } from './pack'
 
 const dir = 'public/packs'
-const names = readdirSync(dir).filter((name) => name.endsWith('.pfpack')).sort()
+const names = readdirSync(dir).filter((name) => name.endsWith('.pthpack')).sort()
 const packs = names.map((name) => ({ name, text: readFileSync(`${dir}/${name}`, 'utf8') })).map((f) => ({ ...f, pack: parsePack(f.text) }))
 
 test('the public pack index is complete, deterministic and licensed', () => {
   const index = JSON.parse(readFileSync(`${dir}/index.json`, 'utf8'))
   expect(index).toEqual({
-    pf: 1,
+    pth: 1,
     packs: packs.map(({ name, text, pack }) => ({ id: pack.id, title: pack.title, by: pack.by, about: pack.about, licence: pack.licence, items: pack.items.length, file: name, sha256: createHash('sha256').update(text).digest('hex') })),
   })
   expect(new Set(packs.map(({ pack }) => pack.id)).size).toBe(packs.length)

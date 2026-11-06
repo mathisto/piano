@@ -41,6 +41,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/support-privacy.md`: static public Support and Privacy pages, in-app links and the support-mail destination.
 - `changes/platform-copy.md`: platform-specific ownership copy for the paid app and free browser edition, with no paywall or boot-budget increase.
 - `changes/page-to-hand.md`: the cleared Page to Hand rename across web and iPad, with old data, Apple identifiers, pack links and the live origin preserved for compatibility.
+- `changes/page-to-hand-packs.md`: the unreleased pack format renamed outright to `.pthpack`, including its JSON version key, MIME type and Apple document identifier; no Piano Forte compatibility dialect remains.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**
@@ -214,7 +215,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-grace-playback.md`: stricter private source-timing evidence expands outcome-blind coverage, corrects former false acceptances and leaves exact-search capacity next; the holdout remains sealed.
 - `changes/shellfix.md`: Escape pauses before it leaves, a stale piece open stays off the screen, leaving returns to where the piece was opened, redraws keep focus, the start card and banner share one column; the iPad app gets Bluetooth pairing, a privacy manifest, the screen awake only during a run, one root view controller, iPad only and a build number from git.
 - `changes/ipad-native.md`: the iPad shell pass: the screen stays on for two minutes after the last key, a run holds the screen edges and fades the home indicator, a call, Siri or headphones coming out pause a run, Listen back stops in the background, no link previews or drags, a flat launch screen; what was decided against.
-- `changes/native-1.md`: the iPad menu bar as the HIG asks (tabs in View on ⌘1 to ⌘7, the app's settings beneath the system's), the opt-in practice reminder, Dynamic Type through one root scale, and `.pfpack` files opening in the app; the event shape for packs and a Check on the iPad list.
+- `changes/native-1.md`: the iPad menu bar as the HIG asks (tabs in View on ⌘1 to ⌘7, the app's settings beneath the system's), the opt-in practice reminder, Dynamic Type through one root scale, and `.pthpack` files opening in the app; the event shape for packs and a Check on the iPad list.
 - `changes/sightroll.md`: reading drills and Sight Run show two lines at least and turn a line at a time (the second eases up on the top line's last note), Sight Run deals three lines a set, the cursor stands on the note in every mode; the look-ahead and scrolling research behind it.
 
 ## Research (`research/`)

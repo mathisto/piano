@@ -18,7 +18,7 @@ export interface Item {
   view?: { names?: boolean; fingers?: boolean } // false turns that aid off for this item
 }
 export interface Pack {
-  pf: 1
+  pth: 1
   id: string // stable: progress and a re-import go by it
   title: string
   by: string // the credit, shown as written, never trusted
@@ -41,9 +41,9 @@ export function parsePack(text: string): Pack {
   } catch {
     throw new Error('This is not a pack file: it is not JSON.')
   }
-  if (d?.pf === undefined) throw new Error('This is not a pack file: it has no "pf" version.')
-  if (d.pf !== 1) throw new Error(`This pack is version ${d.pf}; this app reads version 1. Update the app.`)
-  only(d, ['pf', 'id', 'title', 'by', 'about', 'licence', 'kind', 'warmup', 'items'], 'The pack')
+  if (d?.pth === undefined) throw new Error('This is not a pack file: it has no "pth" version.')
+  if (d.pth !== 1) throw new Error(`This pack is version ${d.pth}; this app reads version 1. Update the app.`)
+  only(d, ['pth', 'id', 'title', 'by', 'about', 'licence', 'kind', 'warmup', 'items'], 'The pack')
   if (typeof d.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.id)) throw new Error('"id" must be lower-case letters, digits and dashes, up to 64.')
   text1(d, 'title', LIMIT.title, 'The pack', true)
   text1(d, 'by', LIMIT.by, 'The pack', true)

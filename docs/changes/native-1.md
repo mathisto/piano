@@ -1,6 +1,6 @@
 # Native 1: menu bar, practice reminder, Dynamic Type, pack files (1 Nov 2026)
 
-Horizon decisions 29, 31 and 32 (`docs/research/horizon.md` sections 4.2 to 4.4), and the `.pfpack` open-in route for the Studies work. Built and checked in the iPad Pro 13-inch (M5) simulator (iPadOS 26.0 and 26.3 runtimes) and the browser; nothing run on the physical iPad.
+Horizon decisions 29, 31 and 32 (`docs/research/horizon.md` sections 4.2 to 4.4), and the `.pthpack` open-in route for the Studies work. Built and checked in the iPad Pro 13-inch (M5) simulator (iPadOS 26.0 and 26.3 runtimes) and the browser; nothing run on the physical iPad.
 
 ## The menu bar (decision 31)
 
@@ -26,19 +26,19 @@ Horizon decisions 29, 31 and 32 (`docs/research/horizon.md` sections 4.2 to 4.4)
 - **Still rough at 200%, not fixed:** the Learn start card in landscape at 820 px tall is cramped and scrolls inside itself (the "Show" row can be cut at the side); in portrait the card spills a little over the on-screen keys; Theory's level pick sits tight under its line. **Larger Text is therefore not claimed.** The staff and the falling notes do not scale by design.
 - Not done: the Newsreader names are scaled by the same ratio and have not had their own check (the system-font plan in `horizon.md` 4.4 said they might need one).
 
-## `.pfpack` files open the app
+## `.pthpack` files open the app
 
-- `Info.plist` exports the type **`io.mattkelly.piano.pack`** (conforms to `public.json`, extension `pfpack`, mime `application/vnd.piano-forte.pack+json`) and lists it as a document type at rank Owner, so Mail, Messages, AirDrop and Files offer "Open in Piano Forte" for a pack, and a pack is still readable as JSON.
+- `Info.plist` exports the type **`io.mattkelly.pagetohand.pack`** (conforms to `public.json`, extension `pthpack`, mime `application/vnd.page-to-hand.pack+json`) and lists it as a document type at rank Owner, so Mail, Messages, AirDrop and Files offer "Open in Page to Hand" for a pack, and a pack is still readable as JSON.
 - `public.json` itself is **not** registered as a document type: it would put the app in the share sheet of every JSON file, and the JS handler would answer each with "not a MIDI or MusicXML file" (and our own backups are `.json` too). Add it only with a JS side that recognises a plain JSON file.
 - **The route is the existing open-in path, unchanged:** `capacitorOpenURL` in `PianoNative.swift` reads the file (in place, security-scoped) and notifies the page with the plugin event
 
 ```
 CoreMidi event "file":  { name: string, data: string }
-  name: the file's name with its extension, e.g. "Chopin preludes.pfpack"
+  name: the file's name with its extension, e.g. "Chopin preludes.pthpack"
   data: the file's bytes, base64
 ```
 
-  `src/native-app.ts` turns it into `new File([bytes], name)` and calls `importFiles([file])` (`src/app/library.ts`), exactly as for a dropped or picked file. **The Studies importer reads the pack with `file.text()` and must accept the `.pfpack` extension in `importFiles`**, whose extension check currently answers "… is not a MIDI or MusicXML file" for it; that is the only change needed there. The event is held until the page listens (a cold start from a pack works).
+  `src/native-app.ts` turns it into `new File([bytes], name)` and calls `importFiles([file])` (`src/app/library.ts`), exactly as for a dropped or picked file. **The Studies importer reads the pack with `file.text()` and must accept the `.pthpack` extension in `importFiles`**, whose extension check currently answers "… is not a MIDI or MusicXML file" for it; that is the only change needed there. The event is held until the page listens (a cold start from a pack works).
 
 ## Check on the iPad
 
@@ -46,5 +46,5 @@ CoreMidi event "file":  { name: string, data: string }
 2. ⌘1 to ⌘7 switch tabs; ⌥⌘, opens Settings; ⌘↩, ⌘B, ⌘[ and ⌘] work in a piece; ⌥⌘M hides the controls. Then turn Settings > Advanced > Keyboard shortcuts **off** and check the menu commands still work.
 3. **Reminder:** Settings > Reminder > On asks for permission once; allow it, set a time two minutes ahead, leave the app (the Home gesture) and wait: one note, "Time for the piano", "10 minutes? Next up: …". Practise a minute, leave again: nothing the rest of that day. Turn it Off: none. Deny the permission once (iPadOS Settings > Piano Forte > Notifications off) and check the line under the row.
 4. **Dynamic Type:** iPadOS Settings > Display & Brightness > Text Size, or Control Center > Text Size for this app only, with Larger Accessibility Sizes. Switch back to the app: the text grows without a relaunch. Look at Today, Songs, Read, Settings and a piece's start card at the largest size; the top bar stays at about 110%.
-5. **A pack:** AirDrop or Mail a `.pfpack` file (rename a JSON file) to the iPad: "Piano Forte" is offered, and the app opens. Until the Studies importer lands it shows the "not a MIDI or MusicXML file" line on Songs; that proves the route. Also check a `.mid` and a `.musicxml` still open as before.
+5. **A pack:** AirDrop or Mail a `.pthpack` file (rename a JSON file) to the iPad: "Page to Hand" is offered, and the app opens. Also check a `.mid` and a `.musicxml` still open as before.
 6. The system Settings item (⌘,): note what it opens in iPadOS Settings (there is no Settings.bundle, so Piano Forte's page may only show Notifications and Bluetooth).

@@ -21,7 +21,7 @@ interface Listed { id: string; title: string; by: string; about?: string; licenc
 
 /** The packs that come with the app: the files in src/packs, read by the same parser as any other. */
 const ORDER = ['hanon-warmup', 'burgmuller-op100', 'czerny-op599', 'czerny-op821', 'czerny-op840', 'czerny-op299', 'clementi-op42', 'schumann-op68', 'anna-magdalena']
-export const FIRST: Pack[] = Object.values(import.meta.glob('../packs/*.pfpack', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)
+export const FIRST: Pack[] = Object.values(import.meta.glob('../packs/*.pthpack', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)
   .map(parsePack)
   .sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
 
@@ -77,7 +77,7 @@ export async function mount(el: HTMLElement, where_: 'technique' | 'songs'): Pro
     return `<div class="prow${w.go ? '' : ' done'}"><div class="pwho"><b><span class="pn">${esc(r.pack.title)}</span>${r === lit ? ' <span class="tag next">Next</span>' : ''}</b><span>${esc(w.line)}</span></div>
       <div class="pact"><button class="btn ghost" data-pk-list="${esc(r.pack.id)}" aria-label="All ${n} in ${esc(r.pack.title)}">All ${n}</button>${w.go ? `<button class="btn${r === lit ? ' primary' : ' ghost'}" data-pk-go="${esc(r.pack.id)}" aria-label="Start ${esc(w.go.title)}, ${esc(r.pack.title)}">${icon('play')}Start</button>` : ''}</div></div>`
   }
-  const bring = `<div class="prow"><div class="pwho"><b>Bring a pack</b><span>A .pfpack file. A pack link adds its pack when you open it.</span></div><div class="pact"><button class="btn ghost" data-pk-file>${icon('plus')}Choose file</button><input type="file" accept=".pfpack,.json,application/json" hidden data-pk-input></div></div>`
+  const bring = `<div class="prow"><div class="pwho"><b>Bring a pack</b><span>A .pthpack file. A pack link adds its pack when you open it.</span></div><div class="pact"><button class="btn ghost" data-pk-file>${icon('plus')}Choose file</button><input type="file" accept=".pthpack,.json,application/vnd.page-to-hand.pack+json,application/json" hidden data-pk-input></div></div>`
   const browse = `<div class="prow"><div class="pwho"><b>Page to Hand packs</b><span>Checked practice plans you can add or share.</span></div><div class="pact"><button class="btn ghost" data-pk-browse>Browse</button></div></div>`
   el.querySelector('.packs')?.remove()
   el.querySelector('#pkChip')?.remove()
@@ -204,8 +204,8 @@ async function listed(): Promise<Listed[]> {
   const res = await fetch(packRoot() + 'index.json')
   if (!res.ok) throw new Error('Page to Hand packs could not be loaded. Check the connection, then try again.')
   const d = await res.json()
-  if (d?.pf !== 1 || !Array.isArray(d.packs)) throw new Error('The Page to Hand pack index is damaged. Try again later.')
-  const ok = (p: any): p is Listed => typeof p?.id === 'string' && typeof p.title === 'string' && typeof p.by === 'string' && (p.about === undefined || typeof p.about === 'string') && ['CC0-1.0', 'CC-BY-4.0'].includes(p.licence) && Number.isInteger(p.items) && /^[a-z0-9-]+\.pfpack$/.test(p.file)
+  if (d?.pth !== 1 || !Array.isArray(d.packs)) throw new Error('The Page to Hand pack index is damaged. Try again later.')
+  const ok = (p: any): p is Listed => typeof p?.id === 'string' && typeof p.title === 'string' && typeof p.by === 'string' && (p.about === undefined || typeof p.about === 'string') && ['CC0-1.0', 'CC-BY-4.0'].includes(p.licence) && Number.isInteger(p.items) && /^[a-z0-9-]+\.pthpack$/.test(p.file)
   if (!d.packs.every(ok)) throw new Error('The Page to Hand pack index is damaged. Try again later.')
   return d.packs
 }
@@ -238,9 +238,9 @@ async function browsePacks() {
   }
 }
 
-/** A .pfpack or .json file: the Choose file button, a drop, or a file opened from Mail, AirDrop or Files on the iPad (src/app/library.ts routes them here). */
+/** A .pthpack or .json file: the Choose file button, a drop, or a file opened from Mail, AirDrop or Files on the iPad (src/app/library.ts routes them here). */
 export async function fromFile(f: File) {
-  if (!/\.(pfpack|json)$/i.test(f.name)) throw new Error(`${f.name} is not a MIDI, MusicXML or pack file. Add a .mid, .musicxml, .mxl or .pfpack file.`)
+  if (!/\.(pthpack|json)$/i.test(f.name)) throw new Error(`${f.name} is not a MIDI, MusicXML or pack file. Add a .mid, .musicxml, .mxl or .pthpack file.`)
   try {
     await keep(parsePack(await f.text()), 'file')
   } catch (e) {
@@ -262,7 +262,7 @@ export async function fromLink(frag = location.hash) {
 /** Send a pack on: as a file through the share sheet (or a download), or as a link that carries the whole pack. */
 async function share(p: Pack, how: 'file' | 'link') {
   const say = (s: string) => ($('#pkSay').textContent = s)
-  if (how === 'file') return hooks.shareFile(new File([JSON.stringify(p, null, 1) + '\n'], `${p.id}.pfpack`, { type: 'application/json' }))
+  if (how === 'file') return hooks.shareFile(new File([JSON.stringify(p, null, 1) + '\n'], `${p.id}.pthpack`, { type: 'application/vnd.page-to-hand.pack+json' }))
   const site = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : 'https://pianoforte.mattkelly.io/' // the iPad app's own address opens nothing elsewhere
   const url = `${site}#${await packFragment(p)}`
   if (navigator.share) {

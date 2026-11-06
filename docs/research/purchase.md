@@ -42,7 +42,7 @@ Ownership is made concrete:
 - No Piano Forte login, activation key, device limit, receipt server or periodic entitlement check exists.
 - The installed shell, bundled material and saved library pieces work offline. New optional catalogue downloads need the catalogue host once, then remain local.
 - The public repository, open score licences and portable backup format remain the protection against a service rug-pull.
-- Sharing a `.pfpack` remains free and never carries paid music.
+- Sharing a `.pthpack` remains free and never carries paid music.
 
 ## Copy at launch
 

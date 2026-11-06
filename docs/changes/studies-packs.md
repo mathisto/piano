@@ -4,11 +4,11 @@ Phase K1 and most of K2 of `docs/research/horizon.md` (section 3), with the owne
 
 ## The format
 
-A pack is a small JSON text file, `.pfpack` (a `.json` is read too). It **names** things the app already has and never carries music, so it cannot carry a licence problem or code. `src/pack.ts` reads it (`parsePack`) and refuses anything it does not know, with the item number and the field in the message.
+A pack is a small JSON text file, `.pthpack` (a `.json` is read too). It **names** things the app already has and never carries music, so it cannot carry a licence problem or code. `src/pack.ts` reads it (`parsePack`) and refuses anything it does not know, with the item number and the field in the message.
 
 ```json
 {
- "pf": 1,
+ "pth": 1,
  "id": "week-one",
  "title": "Week one",
  "by": "Ms Lee",
@@ -25,7 +25,7 @@ A pack is a small JSON text file, `.pfpack` (a `.json` is read too). It **names*
 
 | Field | | |
 |---|---|---|
-| `pf` | required | the format version, 1; a newer one says "Update the app" |
+| `pth` | required | the format version, 1; a newer one says "Update the app" |
 | `id` | required | lower-case letters, digits and dashes, up to 64: progress and a re-import go by it; an app pack's id is refused |
 | `title`, `by` | required | up to 80 characters; `by` is shown as written, never trusted |
 | `about` | | up to 300 |
@@ -44,7 +44,7 @@ Text holding a web address is refused; every string reaches the page through `es
 
 ## The packs that come with the app
 
-`src/packs/*.pfpack`, read by the same parser (`import.meta.glob`, in the lazy chunk). Generated from the current corpus catalogue; `src/pack.test.ts` checks every id against it when one is on the machine (`LIBRARY_CATALOG`, default `.cache/library/out-src1/catalog.json`).
+`src/packs/*.pthpack`, read by the same parser (`import.meta.glob`, in the lazy chunk). Generated from the current corpus catalogue; `src/pack.test.ts` checks every id against it when one is on the machine (`LIBRARY_CATALOG`, default `.cache/library/out-src1/catalog.json`).
 
 | Pack | Where | Items | Notes |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Text holding a web address is refused; every string reaches the page through `es
 
 ## In and out
 
-- **By file**: Bring a pack, Add files on Songs, a drop anywhere, and a file opened from Mail, AirDrop or Files on the iPad: the native `file` event already hands every opened file to `importFiles` (`src/native-app.ts`), which now sends anything that is not MIDI or MusicXML to the pack reader; a `.pfpack` or `.json` that is not a pack says so. The iPad document type for `.pfpack` is the native branch's.
+- **By file**: Bring a pack, Add files on Songs, a drop anywhere, and a file opened from Mail, AirDrop or Files on the iPad: the native `file` event already hands every opened file to `importFiles` (`src/native-app.ts`), which now sends anything that is not MIDI or MusicXML to the pack reader; a `.pthpack` or `.json` that is not a pack says so. The iPad document type for `.pthpack` is the native branch's.
 - **By link**: `https://pianoforte.mattkelly.io/#pack=<base64url(deflate-raw(JSON))>`. The fragment never reaches a server and nothing is fetched (the CSP allows only the site itself). Read at boot and on `hashchange`, then taken off the address. The example above makes a link of about 400 characters (its fragment is 357); inflation is capped at 64 KB.
 - **Share**: as a file through the share sheet (or a download), as a link through the share sheet where there is one, else copied ("Link copied."; over 2,000 characters it says a file is safer), else shown in a field to copy by hand. The iPad app shares the site's address, not its own.
 - **Kept** under `pack:<id>`: a pack you brought (`pack`, `from`, `added`) and, for any pack, `opened` (when you last started something in it). In the export (`EXTRA` in `src/backup.ts`), merged on import (the file's pack, the later `opened`), and removed by Delete all data.

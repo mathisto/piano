@@ -6,7 +6,7 @@ Piano Forte now has a small, checked public pack shelf without accounts or a mar
 
 ## What changed
 
-- `public/packs/` holds one `.pfpack` file per plan, a deterministic `index.json` and a plain download page. The first plans are Technique first steps (nine five-finger and scale exercises) and Reading foundations (all eighteen Read stages in order).
+- `public/packs/` holds one `.pthpack` file per plan, a deterministic `index.json` and a plain download page. The first plans are Technique first steps (nine five-finger and scale exercises) and Reading foundations (all eighteen Read stages in order).
 - `npm run packs:check` parses every file with the app's real validator, checks unique ids, licences and catalogue or stage references, and refuses a stale index or changed hash. The Packs GitHub Action runs the same check against the live catalogue for every relevant pull request and main push.
 - Technique and Songs keep the existing plan rows. Their final Piano Forte packs row opens the existing sheet; Add fetches one same-origin file and passes it through `parsePack` again before storing it. A bad index or file produces one status line. File and inline-link sharing remain independent of the index.
 - The iPad target now carries `applinks:pianoforte.mattkelly.io`. The association file admits only root URLs with a `pack=` fragment; native and TypeScript handlers validate HTTPS, exact host, root path and fragment again, then route through the existing compressed-pack parser. Capacitor's scene proxy already preserves a cold-start universal link until plugins load.

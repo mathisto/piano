@@ -1,5 +1,5 @@
 {
- "pf": 1,
+ "pth": 1,
  "packs": [
   {
    "id": "reading-foundations",
@@ -8,8 +8,8 @@
    "about": "Landmarks, staff notes, ledger lines and both clefs in order.",
    "licence": "CC0-1.0",
    "items": 18,
-   "file": "reading-foundations.pfpack",
-   "sha256": "0a85849312ec7ecab39b1d767fd308d0d5849784afefbf73aa35da31a2f294af"
+   "file": "reading-foundations.pthpack",
+   "sha256": "a2ccb0a5825b8ed809203686a24c61dec8dbeef5ef974edb56b5afbaaf5a30cc"
   },
   {
    "id": "technique-first-steps",
@@ -18,8 +18,8 @@
    "about": "Five-finger patterns, then C, G, D and F major scales.",
    "licence": "CC0-1.0",
    "items": 9,
-   "file": "technique-first-steps.pfpack",
-   "sha256": "afe586868ae467352ae56b2285e34ad0c0095f7c45655a24f840b6ab283233d0"
+   "file": "technique-first-steps.pthpack",
+   "sha256": "568d7b73ec85cd00e88217df07896816bb4d8eb3e4ed7739ea7860d5e6fb5406"
   }
  ]
 }

@@ -63,7 +63,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         notifyListeners("shortcut", data: ["action": action.rawValue], retainUntilConsumed: true)
     }
 
-    /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Page to Hand"). Capacitor
+    /// A MIDI, MusicXML or pack (.pthpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Page to Hand"). Capacitor
     /// posts it, on a cold start once the plugins are loaded; the page may not be listening yet, so the event waits for it. The event:
     /// `file` with { name: the file's name with its extension, data: its bytes in base64 } (src/native-app.ts makes a File of it).
     override public func load() {

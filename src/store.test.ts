@@ -80,7 +80,7 @@ describe('export and import', () => {
   })
 
   it('carries packs: an imported pack and when each was opened, merged, and Clear all data takes them', async () => {
-    const mine = { pf: 1, id: 'mine', title: 'Mine', by: 'Me', items: [{ read: 't-land' }] }
+    const mine = { pth: 1, id: 'mine', title: 'Mine', by: 'Me', items: [{ read: 't-land' }] }
     db.set('pack:mine', { pack: mine, from: 'link', added: 1, opened: 5 })
     db.set('pack:hanon-warmup', { opened: 9 })
     const file = await backup.exportAll()

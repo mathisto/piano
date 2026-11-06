@@ -779,7 +779,7 @@ const packsFlow = () => fresh({
     await axe(page, 'technique with studies', '#technique')
   },
   async '25b Packs: a link adds a pack and opens its list, its first item starts with note names off; a file adds one too; both are kept'(page) {
-    const frag = await ev(page, () => import('/src/pack.ts').then((m) => m.packFragment({ pf: 1, id: 'teacher', title: 'Week one', by: 'Ms Lee', items: [{ piece: 'mutopia-647', note: 'Left hand alone first.', rate: 0.7, view: { names: false } }, { read: 't-land' }, { piece: 'not-here' }] })))
+    const frag = await ev(page, () => import('/src/pack.ts').then((m) => m.packFragment({ pth: 1, id: 'teacher', title: 'Week one', by: 'Ms Lee', items: [{ piece: 'mutopia-647', note: 'Left hand alone first.', rate: 0.7, view: { names: false } }, { read: 't-land' }, { piece: 'not-here' }] })))
     await page.goto(`${URL_}#${frag}`)
     await page.waitForSelector('dialog#pack[open] #pkTitle')
     ok((await text(page, '#pkTitle')) === 'Week one' && /Added from a link/.test(await text(page, '#pkSay')), await text(page, 'dialog#pack'))
@@ -793,7 +793,7 @@ const packsFlow = () => fresh({
     await leave(page, 'library')
     await page.waitForSelector('#pkChip[aria-expanded=true]')
     ok(/Week one/.test(await text(page, '#pkSongs')), 'the pack is not on Songs')
-    await page.setInputFiles('#pkSongs [data-pk-input]', { name: 'week-two.pfpack', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ pf: 1, id: 'week-two', title: 'Week two', by: 'Ms Lee', kind: 'study', items: [{ drill: { pattern: 'five', tonic: 0, dyn: 'soft', hands: 'L', bpm: 60 } }] })) })
+    await page.setInputFiles('#pkSongs [data-pk-input]', { name: 'week-two.pthpack', mimeType: 'application/vnd.page-to-hand.pack+json', buffer: Buffer.from(JSON.stringify({ pth: 1, id: 'week-two', title: 'Week two', by: 'Ms Lee', kind: 'study', items: [{ drill: { pattern: 'five', tonic: 0, dyn: 'soft', hands: 'L', bpm: 60 } }] })) })
     await page.waitForSelector('#technique.on')
     await page.waitForSelector('dialog#pack[open]')
     ok((await text(page, '#pkTitle')) === 'Week two', await text(page, '#pkTitle'))

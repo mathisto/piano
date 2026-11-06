@@ -145,7 +145,7 @@ Decision 14 put the studies under Technique, off the piece ladder. The owner now
 
 ```jsonc
 {
-  "pf": 1,                                  // format version; the importer sniffs for it
+  "pth": 1,                                  // format version; the importer sniffs for it
   "id": "burgmuller-op100",                 // stable; progress is stored under it
   "title": "Burgmüller: 25 Studies, Op. 100",
   "by": "Piano Forte",                      // free text, shown, never trusted
@@ -200,7 +200,7 @@ All public domain or generated; the catalogue's per-piece licence and the pack l
 
 ### 3.6 Import, discovery, moderation
 
-- **By file.** `*.pack.json` from Files, Mail or a drop on Songs. The iPad's `file` listener (`src/native-app.ts:54`) already routes opened files into `importFiles`; sniff for `"pf"` before the song importer.
+- **By file.** `*.pack.json` from Files, Mail or a drop on Songs. The iPad's `file` listener (`src/native-app.ts:54`) already routes opened files into `importFiles`; sniff for `"pth"` before the song importer.
 - **By link.** `https://pianoforte.mattkelly.io/#pack=<base64url(deflate(json))>`: the whole pack rides in the fragment, which never reaches a server; the native `CompressionStream` does the deflate. A 12-item pack is about 400 bytes (INF), small enough for a text message. **Links never fetch a third-party URL:** the page's CSP allows `connect-src` only to itself and pianoforte.mattkelly.io (`index.html:6`, checked), and widening it to GitHub or gists would be a new security surface for no gain over the inline link.
 - **The index.** A `packs/` folder in the public repo, one file per pack, deployed to `pianoforte.mattkelly.io/packs/` with an `index.json`, read by the app (already inside the CSP). Submit by pull request. CI checks every `piece` id exists, every `drill` validates, text lengths hold, no URLs in text, the list licence is CC0 or CC BY. A human reads the title and the notes (Mutopia's model, at hobby scale). The index is a convenience, not a gate: a pack can travel as a file or a link without it.
 - **Shown origin.** "Piano Forte" only for packs in the bundle or the repo index; any other shows "From a file" or "From a link". No signing: a signature on a no-account app proves only "the same key as before" (INF).
