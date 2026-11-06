@@ -20,7 +20,7 @@ A practice tool for a piano or MIDI keyboard you already own. Any MIDI or MusicX
 
 ## Positioning
 
-Open, free, no-account, in-browser. Combines what is split across other tools: Synthesia-style falling notes from arbitrary files, learn-oriented controls (wait mode, tempo, loop, hands separate), sight-reading drills in the spirit of sightreading.training, scale fingering, theory and ear trainers, and read-through of real pieces. Free with no subscription and no ads, which the Credits and Set up sheets say. Not a walled catalog like Simply Piano or Flowkey; not desktop-only like Synthesia.
+Open, no-account and free in the browser; a one-time paid download in the App Store. Combines what is split across other tools: Synthesia-style falling notes from arbitrary files, learn-oriented controls (wait mode, tempo, loop, hands separate), sight-reading drills in the spirit of sightreading.training, scale fingering, theory and ear trainers, and read-through of real pieces. No subscription or ads. Credits and Set up name the model for the platform they are running on. Not a walled catalog like Simply Piano or Flowkey; not desktop-only like Synthesia.
 
 ## Operating Context
 
@@ -72,7 +72,7 @@ Beliefs the evidence does not support are not built on: more minutes alone, lear
 3. Friendly to a learner: training wheels (note names, wait mode, slow tempo) are on by default and fade as mastery grows.
 4. Timing honesty: calibrate for the real chain (keyboard, USB/BLE, audio, display) and be explicit about what is measured.
 5. Owner-controlled and open: no account, and nothing we run or can read. Files and progress stay on the device unless the player chooses a folder they control; nothing copyrighted ships, and every library score is credited under its own licence.
-6. Free: no subscription, no ads, no account, and the app says so.
+6. Ownership first: free in the browser; one paid App Store download owns the iPad and Designed-for-iPad Mac app. No subscription, ads, account, StoreKit or in-app paywall, and each platform says so.
 7. Skill over points: reward information (your own trend, mastery that can fall, a weekly goal, a quiet day streak), never points, ranks, lives or leaderboards. Effort only goes up; nothing is locked; a recommended plan is a default, not a gate.
 8. Evidence-led: choices cite research or say they are bets; features that measure (touch, timing) are framed as measurement.
 

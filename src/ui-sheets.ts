@@ -1,6 +1,7 @@
 if (import.meta.env.MODE !== 'test') void import('./sync') // this sheet bundle is preloaded at idle; sync then starts without joining boot JS
-import { FREE, KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
+import { KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
 import { icon } from './icons'
+import { native } from './native-midi'
 import { settings } from './settings'
 import { COMFORT, density } from './song'
 import type { Report, Selection, TrackInfo } from './midi-tracks'
@@ -18,10 +19,12 @@ const SOUNDS = [
 // on escaped text; the iPad app hands _blank to the system browser. "Licence: CC BY 3.0 (url)" links the licence's name, a bare URL shows its site
 const a = (u: string, t: string) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`
 const links = (s: string) => s.replace(/Licence: ([^\n]+?) \((https?:\/\/[^\s)]+)\)/g, (_, n, u) => `Licence: ${a(u, n)}`).replace(/(?<!href=")https?:\/\/[^\s)<]+/g, (u) => a(u, new URL(u.replace(/&amp;/g, '&')).hostname))
+export const ownershipCopy = (inApp = native) =>
+  inApp ? 'One purchase. Everything included. No subscription, ads or account.' : 'Free in your browser. No subscription, ads or account.'
 /** Credits: the sounds, then the scores you have played or saved (blocks), and where the full list of score licences lives. */
 export function creditsDialog(blocks: string[], licences: { app: string; corpus: string }, after: (i: number) => string = () => '') {
   return `<header><h2>Credits</h2><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
-    <div class="body"><p class="fine free">${FREE} ${a(SUPPORT_URL, 'Support')} · ${a(PRIVACY_URL, 'Privacy')}</p><h3>Sounds</h3>
+    <div class="body"><p class="fine free">${ownershipCopy()} ${a(SUPPORT_URL, 'Support')} · ${a(PRIVACY_URL, 'Privacy')}</p><h3>Sounds</h3>
     <div class="credlist">${SOUNDS.map((t) => `<pre>${links(esc(t))}</pre>`).join('')}</div><h3>Icons</h3>
     <div class="credlist"><pre>${links(esc('Lucide, by Lucide Contributors (lucide.dev)\nLicence: ISC (https://github.com/lucide-icons/lucide/blob/main/LICENSE)'))}</pre></div>
     <h3>Scores</h3><p class="fine">Public domain or openly licensed, each under its own licence. Every score and its licence: ${a(licences.app, 'pieces in the app')}, ${a(licences.corpus, 'the whole library')}.</p>
@@ -40,7 +43,7 @@ export function setupDialog(midi: string, connected: boolean, delay: number, pai
       <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span><span class="needs" data-needs${connected ? ' hidden' : ''}>Needs a keyboard: connect one first.</span></div><div class="pact"><button class="btn ghost" id="suDelay" data-needs${connected ? '' : ' disabled'}>Calibrate</button></div></div>
       <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>
     </div></div>
-    <footer><span class="fine free">${FREE}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
+    <footer><span class="fine free">${ownershipCopy()}</span><span class="grow"></span><button class="btn primary" data-close autofocus>Done</button></footer>`
 }
 
 // ---------- choosing the tracks of a MIDI file ----------

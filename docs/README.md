@@ -38,7 +38,8 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/app-shortcuts.md`: two native App Shortcuts for Today's next practice unit and the Sight Run builder, routed through the existing page logic across warm and cold launches.
 - `changes/designed-for-ipad.md`: signed Designed-for-iPad build and Mac launch validation, responsive window and persistence checks, and the native menu/document fixes the run exposed.
 - `changes/purchase-design.md`: the researched ownership-first paid-download recommendation, price/economics check, support/privacy contract and App Store launch gates; no runtime or store state changed.
-- `changes/support-privacy.md`: static public Support and Privacy pages, in-app links and the support-mail destination; paid-launch copy remains gated on the owner decision.
+- `changes/support-privacy.md`: static public Support and Privacy pages, in-app links and the support-mail destination.
+- `changes/platform-copy.md`: platform-specific ownership copy for the paid app and free browser edition, with no paywall or boot-budget increase.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**

@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { library } from './library-view'
 import type { Row } from './ui'
-import { creditsDialog, setupDialog } from './ui-sheets'
+import { creditsDialog, ownershipCopy, setupDialog } from './ui-sheets'
 import { drawer } from './ui-drawer'
 
 it('a catalogue id cannot break out of its data attribute', () => {
@@ -25,6 +25,11 @@ it('first-run Set up makes own-file import a direct action', () => {
   expect(html).toContain('Five steps')
   expect(html).toContain('Bring your own MIDI or MusicXML')
   expect(html).toContain('id="suFiles"')
+})
+
+it('ownership copy matches the paid app and free browser models', () => {
+  expect(ownershipCopy(true)).toBe('One purchase. Everything included. No subscription, ads or account.')
+  expect(ownershipCopy(false)).toBe('Free in your browser. No subscription, ads or account.')
 })
 
 it('Settings and Credits expose public Support and Privacy links', () => {

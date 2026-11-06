@@ -132,7 +132,6 @@ export function userRows(stored: Stored[], prog: Map<string, Progress>, lens: Ma
 export const meter = (pct: number, solid: boolean, label: string, fluent?: number) =>
   `<div class="meter${solid ? (fluent === undefined ? ' solid' : ' tier') : ''}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct * 100)}"${solid && fluent !== undefined ? ` aria-valuetext="Solid, ${Math.round(fluent * 100)}% fluent"` : ''}><i style="width:${Math.round(pct * 100)}%"></i>${solid && fluent !== undefined ? `<i class="fl" style="width:${Math.round(fluent * 100)}%"></i>` : ''}</div>`
 export const CLEFS = { treble: 'Treble', bass: 'Bass', grand: 'Grand staff' } as const
-export const FREE = 'Free, no subscription, no ads, no account.'
 export const KEY_TOUCH_HINT = "Match your keyboard's own key touch setting. Each run is labelled with it. On Fixed every note arrives equally loud, so evenness is not judged." // it is only logged, and Fixed silences evenness (coach.ts)
 export const keyTouchSelect = (id: string) => `<select id="${id}" aria-label="Key touch">${KEY_TOUCH.map((k) => `<option${k === settings.keyTouch ? ' selected' : ''}>${k}</option>`).join('')}</select>`
 
