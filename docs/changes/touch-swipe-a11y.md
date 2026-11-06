@@ -23,6 +23,8 @@ Sources: [Apple design tips](https://developer.apple.com/design/tips/), [Apple V
 - End-to-end feature 14 activates a complete Theory chord through synthetic button clicks, verifies note names did not toggle, and answers a Scale Quiz by direct touchscreen taps.
 - The Songs end-to-end flow verifies both scrubber drag and the tap/menu route produce exact A–B loops before completing the practice chain.
 - Light portrait, dark landscape and the accessibility tree were inspected. The tree exposes the on-screen piano as named note buttons and the loop action with its current start/end state.
+- The complete suite passes: 83 test files and 1,062 tests, with one file and four tests skipped; the default end-to-end run passes 49 of 49 features. The 223,000-byte boot budget is unchanged.
+- Runtime `9ad07041` is live and matches local and GitHub `main`. App Store Connect accepted TestFlight build 693 and began processing it.
 
 ## Check on the iPad
 
