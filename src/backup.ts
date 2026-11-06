@@ -7,7 +7,7 @@ import { KEEP } from './take'
 export async function exportAll() {
   const prog = Object.fromEntries(await allProgress())
   const songs = (await listSongs()).map((s) => ({ ...s, bytes: b64(s.bytes) }))
-  return JSON.stringify({ version: 1, progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), extra: await getExtra(), songs, settings: settingsText() }, null, 1)
+  return JSON.stringify({ version: 1, at: Date.now(), progress: prog, reading: await getDrill(), touch: await getTouch(), practice: await getPractice(), technique: await getTech(), runs: await getRuns(), scales: await getScales(), theory: await getTheory(), history: await getHistory(), coach: await getCoach(), extra: await getExtra(), songs, settings: settingsText() }, null, 1)
 }
 const settingsText = () => {
   try {
@@ -97,12 +97,14 @@ const mergeExtra = (k: string, a: any, b: any): unknown =>
   : b
 const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === 'object' ? 'object' : '')
 
-/** Reads back what exportAll wrote, merged into what is here (above); the settings in the file replace these. What was here first is kept under `backup:last`. */
-export const importAll = (text: string) =>
-  serial(async () => {
-    const d = JSON.parse(text)
-    if (d?.version !== 1) throw new Error('This file is not a Piano Forte export. Choose a file saved with Export.')
-    await set('backup:last', await exportAll()) // the one before the last import, to undo it by hand
+type Export = Rec & { version: number; at?: number }
+const readExport = (text: string): Export => {
+  const d = JSON.parse(text)
+  if (d?.version !== 1) throw new Error('This file is not a Piano Forte export. Choose a file saved with Export.')
+  return d
+}
+
+async function mergeExport(d: Export, settings: boolean) {
     for (const [id, p] of Object.entries(d.progress ?? {}) as [string, Progress][]) {
       if (!Array.isArray(p?.heat)) continue
       const had = await get<Progress>(`prog:${id}`)
@@ -124,9 +126,31 @@ export const importAll = (text: string) =>
         /* not base64 or not readable music: that song is skipped */
       }
     }
-    try {
+    if (settings) try {
       if (typeof d.settings === 'string') localStorage.setItem('piano.settings', d.settings)
-    } catch {
-      /* no localStorage: the settings in the file are skipped */
+    } catch { /* no localStorage: the settings in the file are skipped */ }
+}
+
+/** Merges several device exports oldest first, keeping one local recovery point. Invalid peer files are skipped. Device settings never travel through sync. */
+export const importMany = (texts: string[]) =>
+  serial(async () => {
+    const good: Export[] = []
+    let skipped = 0
+    for (const text of texts) {
+      try { good.push(readExport(text)) } catch { skipped++ }
     }
+    good.sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0))
+    if (good.length) {
+      await set('backup:last', await exportAll())
+      for (const d of good) await mergeExport(d, false)
+    }
+    return { merged: good.length, skipped }
+  })
+
+/** Reads back what exportAll wrote, merged into what is here; the settings in this explicit backup replace these. */
+export const importAll = (text: string) =>
+  serial(async () => {
+    const d = readExport(text)
+    await set('backup:last', await exportAll())
+    await mergeExport(d, true)
   })

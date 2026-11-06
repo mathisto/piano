@@ -17,6 +17,8 @@ import { leave } from './play'
 import { startCalibration } from './calibration'
 import { startTouchCal } from './technique-ui'
 
+const backup = () => import('../backup')
+
 /** The drawer holds focus and the screen reader: the page and the bar behind it are inert, but the Settings button (it closes the drawer) and the main landmark stay. The keyboard still plays. */
 const behind = (on: boolean) => document.querySelectorAll<HTMLElement>('#main > section, .bar > :not(#settingsBtn)').forEach((e) => (e.inert = on))
 
@@ -116,16 +118,17 @@ async function openDrawer() {
     lens.clear()
   }, 'change')
   if (native) void import('../native-reminder').then((m) => m.wireReminder(d))
+  void import('../sync').then((m) => m.wireSync(d))
   $('#sCredits', d).onclick = () => void openCredits()
   $('#sSetup', d).onclick = openSetup
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
-    await shareFile(new File([await store.exportAll()], 'piano-forte-backup.json', { type: 'application/json' }))
+    await shareFile(new File([await (await backup()).exportAll()], 'piano-forte-backup.json', { type: 'application/json' }))
   }
   $('#sSummary', d).onclick = async () => {
     const { buildSummary } = await import('../report')
     const titles: Record<string, string> = Object.fromEntries([...STARTERS.map((s) => [s.spec.id, s.spec.title]), ...(await store.listSongs()).map((s) => [s.id, s.title]), ...lib.catalog.pieces.map((p) => [`lib:${p.id}`, p.title])])
-    await shareFile(new File([buildSummary(JSON.parse(await store.exportAll()), titles)], 'piano-practice-summary.txt', { type: 'text/plain' }))
+    await shareFile(new File([buildSummary(JSON.parse(await (await backup()).exportAll()), titles)], 'piano-practice-summary.txt', { type: 'text/plain' }))
   }
   const file = $<HTMLInputElement>('#sFile', d)
   $('#sImport', d).onclick = () => file.click()
@@ -133,7 +136,7 @@ async function openDrawer() {
     const f = file.files?.[0]
     if (!f) return
     try {
-      await store.importAll(await f.text())
+      await (await backup()).importAll(await f.text())
       location.reload()
     } catch (e) {
       say((e as Error).message)
