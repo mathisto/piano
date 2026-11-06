@@ -252,6 +252,18 @@ async function mainFlow() {
     await ev(page, () => (window.__piano.key(60, 0.5), window.__piano.up(60))) // only an error can fail this
   })
 
+  await feature('0c App Shortcuts: Sight Run and today\'s next item use the existing routes', page, async () => {
+    await ev(page, () => dispatchEvent(new CustomEvent('native-shortcut', { detail: 'sight-run' })))
+    await page.waitForSelector('#read.on #rStart')
+    await ev(page, () => dispatchEvent(new CustomEvent('native-shortcut', { detail: 'practice' })))
+    await page.waitForTimeout(1000)
+    ok(!page.errs.length, page.errs.join(' | '))
+    const shortcutState = await ev(page, () => ({ phase: window.__piano.game.phase, play: !!document.querySelector('#play.on') }))
+    ok(shortcutState.phase === 'ready' && shortcutState.play, `practice shortcut state ${JSON.stringify(shortcutState)}`)
+    // The shortcut stops on the ordinary ready card; it never starts playing by itself.
+    await leave(page, 'read')
+  })
+
   await feature('1 Read: a stage set, then Another set', page, async () => {
     await nav(page, 'read')
     await page.click('#read table.stages tr.open td.name')

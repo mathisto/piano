@@ -31,7 +31,7 @@ import { openTracks, showLibrary } from './app/library'
 import { endFeatures, leave, listenTo, openById, openLibrary, openSong, stageCode } from './app/play'
 import { readThrough } from './app/readthrough-ui'
 import { runFinish, startDrill } from './app/drill'
-import { showRead } from './app/read'
+import { openSightRun, showRead } from './app/read'
 import './app/results' // nothing names it: it registers hooks.onDone
 import { memorise, theory, theoryUi } from './app/lazy'
 import { showScales } from './app/scales-ui'
@@ -76,6 +76,25 @@ async function showSection(name: Section, err = '') {
   if (lost() && !$(`#${id}`).querySelector('.lost')) $(`#${id}`).insertAdjacentHTML('afterbegin', notice('This browser is not letting the app save. What you do now is gone when you close this tab.', '', ' lost')) // a page that keeps its content between visits gets it once
 }
 Object.assign(hooks, { showSection })
+
+// App Shortcuts can arrive before a cold launch has read the local record. Queue them until Today is real, then use the
+// same next-unit and page code as the UI. They never create a second practice plan or start playing without a ready card.
+let appReady!: () => void
+const readyForShortcut = new Promise<void>((resolve) => (appReady = resolve))
+let shortcutQueue = Promise.resolve()
+addEventListener('native-shortcut', (event) => {
+  const action = (event as CustomEvent<'practice' | 'sight-run'>).detail
+  shortcutQueue = shortcutQueue
+    .then(() => readyForShortcut)
+    .then(async () => {
+      if (action === 'practice') await (await hooks.next()).start()
+      else if (action === 'sight-run') {
+        openSightRun()
+        await showSection('read')
+      }
+    })
+    .catch((e) => console.error('App Shortcut', e))
+})
 
 // the Help sheet's text loads with the other sheets: whoever opens it (the drawer, the ? key) sees its title at once
 new MutationObserver(() => {
@@ -170,6 +189,7 @@ void (async () => {
     if ($('#library').classList.contains('on')) void showLibrary()
   })
   await showSection('today')
+  appReady()
   // Today is up: fetch what a first tap wants while the app is idle, so a piece or a tab opens without waiting on the network
   ;(window.requestIdleCallback ?? setTimeout)(() => void Promise.all([stageCode(), theory(), import('./library-view'), import('./midi-tracks'), import('./musicxml'), import('./ui-views'), import('./ui-sheets')]).catch(() => {}))
   updateChip()
