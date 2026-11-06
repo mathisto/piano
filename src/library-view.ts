@@ -4,6 +4,7 @@ import { catalog, gradeOf, local, net, piece, pieceBytes, retry, search, searchI
 import { active, counts, type FacetId, FORMS, label, LANES, LENGTHS, KEYS, meets, NOTES, PERIODS, type Lane, type Sel, type Value, values, ways } from './facets'
 import type { Piece } from './catalog-types'
 import { licenceName } from './credits'
+import { type DamagedSong, wireRecovery } from './recovery'
 import type { Song } from './song'
 import type { Progress } from './store'
 import { coverHtml, drawCovers, keep, paint, pieceMeta, surname } from './cover'
@@ -299,10 +300,15 @@ function table(caption: string, rows: Row[], empty: string) {
     <tbody>${body}</tbody></table>`
 }
 
-export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '') {
+export function library(el: HTMLElement, starters: Row[], mine: Row[], err = '', damaged: DamagedSong[] = [], redraw?: () => void) {
+  const bad = damaged.length === 1 ? `${damaged[0].title} could not be read, so it was skipped.` : `${damaged.length} files could not be read, so they were skipped.`
   el.innerHTML = `
-    ${head('Songs', `<label class="btn" style="cursor:pointer">${icon('plus')}Add files<input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pfpack,audio/midi" multiple hidden></label>`)}
+    ${head('Songs', `<button class="btn" id="addFiles">${icon('plus')}Add files</button><input id="file" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pfpack,audio/midi" multiple hidden>`, 'Bring your own MIDI or MusicXML. Files stay on this device.')}
     <p class="err" role="alert" id="drop">${esc(err)}</p>
+    ${damaged.length ? notice(bad, `<button class="btn ghost" data-forget-damaged>Remove damaged ${damaged.length === 1 ? 'copy' : 'copies'}</button>`) : ''}
     ${table('Starter pieces', starters, '')}
     ${table('Your files', mine, noMusic('Add a MIDI or MusicXML file, or drop one anywhere on this page.'))}`
+  const add = el.querySelector?.('#addFiles') as HTMLButtonElement | undefined
+  if (add) add.onclick = () => el.querySelector<HTMLInputElement>('#file')!.click()
+  if (redraw) wireRecovery(el, damaged, redraw)
 }

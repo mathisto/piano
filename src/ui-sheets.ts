@@ -27,12 +27,13 @@ export function creditsDialog(blocks: string[], licences: { app: string; corpus:
 }
 
 
-/** First run, and Settings > Set up: four checks, each one skippable; the sheet is a list, not a wizard. */
+/** First run, and Settings > Set up: five useful starts, each one skippable; the sheet is a list, not a wizard. */
 export function setupDialog(midi: string, connected: boolean, delay: number, pair = '') {
   const e = settings.edges ?? DEFAULT_EDGES
-  return `<header><div><h2>Set up</h2><p>Four checks. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
+  return `<header><div><h2>Set up</h2><p>Five steps. Skip any of them.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header>
     <div class="body"><div class="plan">
       <div class="prow">${noKeyboardArt()}<div class="pwho"><b>Keyboard</b><span id="suMidi">${esc(midi)}</span></div><div class="pact"><button class="btn" id="suConnect"${connected ? ' hidden' : ''}>Connect</button>${pair}</div></div>
+      <div class="prow"><div class="pwho"><b>Your music</b><span>Bring your own MIDI or MusicXML. Files stay on this device.</span></div><div class="pact"><button class="btn" id="suAddFiles">${icon('plus')}Add files</button><input id="suFiles" type="file" accept=".mid,.midi,.musicxml,.xml,.mxl,.pfpack,audio/midi" multiple hidden></div></div>
       <div class="prow"><div class="pwho"><b>Touch range</b><span>${settings.edges ? 'Yours' : 'Default'}: soft to ${e.soft}, hard from ${e.hard}</span><span class="needs" data-needs${connected ? ' hidden' : ''}>Needs a keyboard: connect one first.</span></div><div class="pact"><button class="btn ghost" id="suTouch" data-needs${connected ? '' : ' disabled'}>Set touch range</button></div></div>
       <div class="prow"><div class="pwho"><b>Delay</b><span>${delay} ms</span><span class="needs" data-needs${connected ? ' hidden' : ''}>Needs a keyboard: connect one first.</span></div><div class="pact"><button class="btn ghost" id="suDelay" data-needs${connected ? '' : ' disabled'}>Calibrate</button></div></div>
       <div class="prow"><div class="pwho"><b>Key touch</b><span>${KEY_TOUCH_HINT}</span></div><div class="pact">${keyTouchSelect('suKeyTouch')}</div></div>

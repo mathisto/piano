@@ -12,7 +12,7 @@ import { $, keepFocus } from '../ui'
 import { esc } from '../util'
 import { current, game, highway, hooks, say, sheets } from './state'
 import { connectMidi, midiLine, midiState, PAIR, updateChip } from './banner'
-import { lens, shareFile } from './library'
+import { importFiles, lens, shareFile } from './library'
 import { leave } from './play'
 import { startCalibration } from './calibration'
 import { startTouchCal } from './technique-ui'
@@ -227,6 +227,15 @@ export async function openSetup() {
     f()
   }
   $('#suConnect', d).onclick = () => void connectMidi()
+  const files = $<HTMLInputElement>('#suFiles', d)
+  $('#suAddFiles', d).onclick = () => files.click()
+  files.onchange = async (e) => {
+    const files = [...((e.target as HTMLInputElement).files ?? [])]
+    if (!files.length) return
+    d.close()
+    if (current) leave()
+    await importFiles(files)
+  }
   $('#suTouch', d).onclick = away(() => startTouchCal(openSetup)) // and back here when it is done
   $('#suDelay', d).onclick = away(() => void startCalibration(openSetup))
   $<HTMLSelectElement>('#suKeyTouch', d).onchange = (e) => {

@@ -1287,7 +1287,8 @@ const sheetsFlow = async () => {
 
       await page.click('#sSetup') // closes the drawer, then the sheet
       await sheet(page, 'setup')
-      ok(/Four checks/.test(await text(page, '#setup')) && (await page.$$('#setup .prow')).length === 4, 'Set up: not the four rows')
+      ok(/Five steps/.test(await text(page, '#setup')) && (await page.$$('#setup .prow')).length === 5, 'Set up: not the five rows')
+      ok(await page.$('#suFiles'), 'Set up: own-file import is missing')
       await axe(page, 'Set up from Settings', '#setup')
       await shut(page, 'setup', 'footer [data-close]', '#settingsBtn') // Done
 
@@ -1302,6 +1303,19 @@ const sheetsFlow = async () => {
       await page.click('#tkCancel')
       await wait(page, () => !document.querySelector('dialog#tracks[open]'))
       ok(await ev(page, () => document.activeElement?.matches('#library button[data-more]')), 'Options: focus did not return to the Options button')
+
+      await ev(page, async () => {
+        await window.__e2e.idb('song:broken', { id: 'broken', title: 'Broken score', added: 1, kind: 'midi' })
+        await window.__e2e.idb('prog:broken', { plays: 2, last: 1, heat: [] })
+      })
+      await nav(page, 'today')
+      await nav(page, 'songs')
+      await wait(page, () => /Broken score could not be read, so it was skipped/.test(document.querySelector('#library')?.textContent))
+      ok(!(await page.$('#library tr[data-open=broken]')), 'damaged file stayed playable')
+      await page.click('[data-forget-damaged]')
+      await wait(page, () => !document.querySelector('[data-forget-damaged]'))
+      const recovered = await ev(page, async () => ({ song: await window.__e2e.idb('song:broken'), progress: await window.__e2e.idb('prog:broken') }))
+      ok(recovered.song === undefined && recovered.progress?.plays === 2, 'narrow recovery removed practice history or kept the damaged bytes')
     },
   })
 
