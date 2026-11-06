@@ -47,7 +47,7 @@ describe('progress heat and the bar count', () => {
 })
 
 describe('export and import', () => {
-  const song = { id: 'abc', title: 'Mine', bytes: new Uint8Array([77, 84, 104, 100, 0, 255]).buffer, added: 5, kind: 'midi' as const, pick: { tracks: [1], hands: {} } }
+  const song = { id: 'abc', title: 'Mine', bytes: Uint8Array.from(readFileSync(new URL('../public/library/mutopia-2080.mid', import.meta.url))).buffer, added: 5, kind: 'midi' as const, pick: { tracks: [1], hands: {} } }
 
   it('carries imported songs, and an import merges instead of overwriting', async () => {
     db.set('song:abc', song)
@@ -94,6 +94,23 @@ describe('export and import', () => {
 
   it('refuses what is not an export', async () => {
     await expect(store.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
+  })
+
+  it('skips an unreadable song in a backup before it reaches the library', async () => {
+    const bytes = Buffer.from('not music').toString('base64')
+    await store.importAll(JSON.stringify({ version: 1, songs: [{ id: 'bad', title: 'Broken', bytes, added: 1, kind: 'midi' }] }))
+    expect(await store.listSongs()).toEqual([])
+    expect([...db.keys()].filter((k) => k === 'song:bad')).toEqual([])
+  })
+
+  it('names a malformed local song for recovery, and forgetting it keeps its practice history', async () => {
+    db.set('song:bad', { id: 'wrong', title: 'Broken' })
+    db.set('prog:bad', { plays: 2, last: 1, heat: [] })
+    const recovery = await import('./recovery')
+    expect(await recovery.songRecords()).toEqual({ songs: [], damaged: [{ id: 'bad', title: 'Broken' }] })
+    await recovery.forgetDamagedSong('bad')
+    expect(db.has('song:bad')).toBe(false)
+    expect(db.has('prog:bad')).toBe(true)
   })
 
   it('the same file imported again keeps its track choice', async () => {

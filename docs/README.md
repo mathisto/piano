@@ -30,6 +30,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/recorder.md`: takes, Listen back, Compare with last time and the Ghost.
 - `changes/paced.md`: paced Sight Run (a steady beat, cards scored on the beat, the offered tempo).
 - `changes/report.md`: Report a problem on library pieces and the practice summary.
+- `changes/import-recovery.md`: own-file import in first-run Set up and at the top of Songs; unreadable local and backup songs are skipped and recoverable without deleting their practice history.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**

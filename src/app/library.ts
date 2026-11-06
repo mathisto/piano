@@ -12,27 +12,11 @@ import { chunkFailed, current, hooks, sheets, starters } from './state'
 export const lens = new Map<string, { bars: number; len: number; tracks?: { all: number; used: number } }>()
 
 export async function libraryData() {
-  const [stored, prog, { keep, pieceMeta, starterMeta, fileMeta, metaOf }] = await Promise.all([store.listSongs(), store.allProgress(), cover()])
-  for (const s of stored) {
-    if (!lens.has(s.id)) {
-      try {
-        const song = await store.toSong(s, settings.split)
-        let tracks
-        if (s.kind !== 'xml') {
-          const { autoSelect, inspectMidi } = await import('../midi-tracks') // loaded by toSong above
-          const r = inspectMidi(s.bytes)
-          tracks = { all: r.tracks.filter((t) => !t.percussion).length, used: (s.pick ?? autoSelect(r)).tracks.length }
-        }
-        lens.set(s.id, { bars: song.bars.length, len: song.end, tracks })
-        keep(s.id, song)
-      } catch {
-        lens.set(s.id, { bars: 0, len: 0 })
-      }
-    }
-  }
+  const [recovery, prog, { keep, pieceMeta, starterMeta, fileMeta, metaOf }] = await Promise.all([import('../recovery'), store.allProgress(), cover()])
+  const { readable, damaged } = await recovery.readableSongs(settings.split, lens, keep)
   starters.forEach((song) => keep(song.id, song))
   const starts = starterRows(STARTERS, starters, prog, starterMeta)
-  const mine = userRows(stored, prog, lens, (s) => fileMeta(s.kind, s.title, s.added))
+  const mine = userRows(readable, prog, lens, (s) => fileMeta(s.kind, s.title, s.added))
   for (const r of mine) metaOf.set(r.id, r.cover)
   // one row carries the lamp: the piece you played last, or the first warm-up if you have not played yet
   const libRows: Row[] = [...prog.keys()].flatMap((k) => {
@@ -40,14 +24,14 @@ export async function libraryData() {
     return p ? [{ id: `lib:${p.id}`, title: p.title, sub: `${lib.catalog.composers[p.composer]?.name} · Level ${lib.gradeOf(p)}`, bars: p.bars, len: p.sec, prog: prog.get(k), user: false, cover: pieceMeta(p, lib.catalog.composers[p.composer]?.name) }] : []
   })
   const last = [...starts, ...mine, ...libRows].filter((r) => r.prog?.last).sort((a, b) => b.prog!.last - a.prog!.last)[0] ?? starts[0]
-  return { starts, mine, last, all: [...starts, ...mine, ...libRows] }
+  return { starts, mine, damaged, last, all: [...starts, ...mine, ...libRows] }
 }
 
 export async function showLibrary(err = '') {
-  const [{ starts, mine, last }, l] = await Promise.all([libraryData(), hooks.lamp('song')])
+  const [{ starts, mine, damaged, last }, l] = await Promise.all([libraryData(), hooks.lamp('song')])
   last.cont = true // the lamp if the head's Start did not load
   const [{ library, mountLibrary }, prog] = await Promise.all([import('../library-view'), store.allProgress()]) // the page's code: fetched at idle after boot, so usually here already
-  library($('#library'), starts, mine, err)
+  library($('#library'), starts, mine, err, damaged, showLibrary)
   await (await import('./pack-ui')).mount($('#library'), 'songs') // the Packs chip and its list
   l?.($('#library')) // the head's Start: the piece in play and its next step, the read-through or the piece due; the row's Learn steps down
   ;(await cover()).drawCovers($('#library'))

@@ -1,7 +1,7 @@
 // Export and import (Settings > Options): the whole record as one JSON file, songs included, and an import merged into what this browser has.
 import { get, keys, set } from './kv'
 import type { PaceMemo } from './paced'
-import { allProgress, getCoach, getDrill, getHistory, getPractice, getRuns, getScales, getTech, getTheory, getTouch, HISTORY_KEEP, listSongs, type Progress, type Runs, serial, TOUCH_KEEP } from './store'
+import { allProgress, getCoach, getDrill, getHistory, getPractice, getRuns, getScales, getTech, getTheory, getTouch, HISTORY_KEEP, listSongs, type Progress, type Runs, serial, type Stored, toSong, TOUCH_KEEP } from './store'
 import { KEEP } from './take'
 
 export async function exportAll() {
@@ -115,11 +115,13 @@ export const importAll = (text: string) =>
     }
     for (const [k, v] of Object.entries(d.extra ?? {})) if (EXTRA.test(k)) await set(k, mergeExtra(k, await get(k), v)) // only the small records exportAll writes, never a song or the catalogue
     for (const s of Array.isArray(d.songs) ? d.songs : []) {
-      if (typeof s?.id !== 'string' || typeof s.title !== 'string' || typeof s.bytes !== 'string' || (await get(`song:${s.id}`))) continue // one already here is the same file (the id is its hash)
+      if (typeof s?.id !== 'string' || typeof s.title !== 'string' || typeof s.bytes !== 'string' || (s.kind !== undefined && s.kind !== 'midi' && s.kind !== 'xml') || (await get(`song:${s.id}`))) continue // one already here is the same file (the id is its hash)
       try {
-        await set(`song:${s.id}`, { ...s, bytes: unb64(s.bytes), added: Number(s.added) || Date.now() })
+        const song = { ...s, bytes: unb64(s.bytes), added: Number(s.added) || Date.now() } as Stored
+        await toSong(song, 60) // an export can be hand-edited or cut short: never put bytes into the library before the real importer accepts them
+        await set(`song:${s.id}`, song)
       } catch {
-        /* not base64: that song is skipped */
+        /* not base64 or not readable music: that song is skipped */
       }
     }
     try {
