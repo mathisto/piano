@@ -69,6 +69,13 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             guard let data = try? Data(contentsOf: url) else { return }
             self?.notifyListeners("file", data: ["name": url.lastPathComponent, "data": data.base64EncodedString()], retainUntilConsumed: true)
         }
+        // A shared pack link: Associated Domains admits only this fragment, and the page validates both the URL and the pack again.
+        NotificationCenter.default.addObserver(forName: .capacitorOpenUniversalLink, object: nil, queue: .main) { [weak self] note in
+            guard let url = (note.object as? [String: Any])?["url"] as? URL,
+                  url.scheme == "https", url.host == "pianoforte.mattkelly.io", url.path == "/",
+                  url.fragment?.hasPrefix("pack=") == true else { return }
+            self?.notifyListeners("link", data: ["url": url.absoluteString], retainUntilConsumed: true)
+        }
         // the system text size changed (Settings, Control Center): the page rescales its type (textSize below)
         NotificationCenter.default.addObserver(forName: UIContentSizeCategory.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.notifyListeners("textSize", data: ["category": UIApplication.shared.preferredContentSizeCategory.rawValue])

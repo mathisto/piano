@@ -15,6 +15,7 @@ interface Native {
   addListener(event: 'sources', cb: (d: { sources: Source[] }) => void): Promise<unknown>
   addListener(event: 'menu', cb: (d: { key: string }) => void): Promise<unknown>
   addListener(event: 'file', cb: (d: { name: string; data: string }) => void): Promise<unknown>
+  addListener(event: 'link', cb: (d: { url: string }) => void): Promise<unknown>
   addListener(event: 'textSize', cb: (d: { category: string }) => void): Promise<unknown>
   addListener(event: 'interrupt', cb: () => void): Promise<unknown>
   addListener(event: 'm', cb: (d: { id: string; d: number[][] }) => void): Promise<unknown> // [host ms, status, data1, data2]
@@ -27,6 +28,16 @@ export function offsetOf(samples: [number, number, number][]): number | undefine
 }
 
 const n = registerPlugin<Native>('CoreMidi')
+
+/** Only the one universal-link action the app owns; the pack parser still validates its payload. */
+export function packLink(value: string): string | undefined {
+  try {
+    const u = new URL(value)
+    return u.protocol === 'https:' && u.hostname === 'pianoforte.mattkelly.io' && u.pathname === '/' && /^#pack=[\w-]+$/.test(u.hash) ? u.hash : undefined
+  } catch {
+    return undefined
+  }
+}
 
 // Apple's body sizes by content size category (Dynamic Type), in points
 const BODY: Record<string, number> = { XS: 14, S: 15, M: 16, L: 17, XL: 19, XXL: 21, XXXL: 23, AccessibilityM: 28, AccessibilityL: 33, AccessibilityXL: 40, AccessibilityXXL: 47, AccessibilityXXXL: 53 }
@@ -60,6 +71,11 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   void n.addListener('sources', (d) => sync(d.sources))
   // opened from Files, Mail or AirDrop: into the library as a dropped file goes
   void n.addListener('file', (d) => void import('./app/library').then((l) => l.importFiles([new File([Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0))], d.name)])))
+  // a Messages or Mail universal link: one validated pack fragment, through the same parser as a web link
+  void n.addListener('link', ({ url }) => {
+    const fragment = packLink(url)
+    if (fragment) void import('./app/pack-ui').then((p) => p.fromLink(fragment))
+  })
   // the menu bar: one of the page's own keys (src/app/input.ts; src/menu.test.ts keeps the two lists together)
   void n.addListener('menu', ({ key }) => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })))
   // the system text size: one root scale for the type (src/style.css), the staff and the highway keep their own zoom

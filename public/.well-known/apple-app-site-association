@@ -1,0 +1,12 @@
+{
+ "applinks": {
+  "details": [
+   {
+    "appIDs": ["TC8XUVBATG.io.mattkelly.piano"],
+    "components": [
+     { "/": "/", "#": "pack=*", "comment": "Open Piano Forte pack links" }
+    ]
+   }
+  ]
+ }
+}
