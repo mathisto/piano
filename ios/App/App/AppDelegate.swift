@@ -18,14 +18,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// The menu bar (and the list a held ⌘ shows). A command hands the page the key it already handles (src/app/input.ts, which
     /// src/menu.test.ts checks this list against), as a ⌘ form because a bare key cannot be a menu shortcut without being taken from
     /// text fields and dialogs. The same keys work as they are on the web. HIG: the tabs are View items, and the app's own settings
-    /// sit beneath the system's "Piano Forte Settings…" (⌘, , checked in the simulator: it opens the app's page in iPadOS Settings).
+    /// sit beneath the system's "Page to Hand Settings…" (⌘, , checked in the simulator: it opens the app's page in iPadOS Settings).
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }
         let key = { (title: String, input: String, mods: UIKeyModifierFlags, page: String) in
             UIKeyCommand(title: title, action: #selector(PianoViewController.pageKey(_:)), input: input, modifierFlags: mods, propertyList: page)
         }
-        // WKWebView contributes rich-text commands that Piano Forte does not support; on "Designed for iPad" they collide with
+        // WKWebView contributes rich-text commands that Page to Hand does not support; on "Designed for iPad" they collide with
         // the app's Metronome, Next View and Zoom Out shortcuts.
         builder.remove(menu: .format)
         let settings = key("In-App Settings…", ",", [.command, .alternate], ",")

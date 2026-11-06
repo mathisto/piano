@@ -63,7 +63,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         notifyListeners("shortcut", data: ["action": action.rawValue], retainUntilConsumed: true)
     }
 
-    /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Piano Forte"). Capacitor
+    /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Page to Hand"). Capacitor
     /// posts it, on a cold start once the plugins are loaded; the page may not be listening yet, so the event waits for it. The event:
     /// `file` with { name: the file's name with its extension, data: its bytes in base64 } (src/native-app.ts makes a File of it).
     override public func load() {
@@ -124,7 +124,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async { call.resolve(["category": UIApplication.shared.preferredContentSizeCategory.rawValue]) }
     }
 
-    /// The page's whole record (Settings' export) into Documents, which Files shows as On My iPad > Piano Forte: one file a day,
+    /// The page's whole record (Settings' export) into Documents, which Files shows as On My iPad > Page to Hand: one file a day,
     /// the last seven kept, so a record lost inside the web view cannot overwrite every good copy. Import reads one back.
     @objc func saveBackup(_ call: CAPPluginCall) {
         guard let text = call.getString("text") else { return call.reject("No text") }
@@ -132,8 +132,14 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             let fm = FileManager.default
             let dir = try fm.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             let day = ISO8601DateFormatter.string(from: Date(), timeZone: .current, formatOptions: [.withFullDate])
-            try text.write(to: dir.appendingPathComponent("Piano Forte \(day).json"), atomically: true, encoding: .utf8)
-            let old = try fm.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("Piano Forte ") && $0.hasSuffix(".json") }.sorted().dropLast(7)
+            try text.write(to: dir.appendingPathComponent("Page to Hand \(day).json"), atomically: true, encoding: .utf8)
+            let recovery = try fm.contentsOfDirectory(atPath: dir.path).filter {
+                ($0.hasPrefix("Page to Hand ") || $0.hasPrefix("Piano Forte ")) && $0.hasSuffix(".json")
+            }
+            let old = recovery.sorted {
+                let left = String($0.suffix(15)), right = String($1.suffix(15))
+                return left == right ? $0.hasPrefix("Piano Forte ") : left < right
+            }.dropLast(7)
             for name in old { try? fm.removeItem(at: dir.appendingPathComponent(name)) }
             call.resolve()
         } catch {
@@ -141,11 +147,11 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// The app's Documents container appears in Files as iCloud Drive > Piano Forte. URL lookup can block while iCloud starts, so none of it runs on the main thread.
+    /// The app's Documents container appears in Files as iCloud Drive > Page to Hand. URL lookup can block while iCloud starts, so none of it runs on the main thread.
     private static func iCloudDocuments() throws -> URL {
         guard FileManager.default.ubiquityIdentityToken != nil,
               let root = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.io.mattkelly.piano") else {
-            throw NSError(domain: "PianoForte", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud Drive is not available. Turn it on in iPad Settings, then try again."])
+            throw NSError(domain: "PageToHand", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud Drive is not available. Turn it on in iPad Settings, then try again."])
         }
         let documents = root.appendingPathComponent("Documents", isDirectory: true)
         try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true, attributes: nil)
@@ -170,7 +176,10 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         if syncQuery != nil { return call.reject("A sync is already running.") }
         let query = NSMetadataQuery()
         query.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
-        query.predicate = NSPredicate(format: "%K BEGINSWITH %@ AND %K ENDSWITH %@", NSMetadataItemFSNameKey, "Piano Forte Sync ", NSMetadataItemFSNameKey, ".json")
+        query.predicate = NSPredicate(
+            format: "(%K BEGINSWITH %@ OR %K BEGINSWITH %@) AND %K ENDSWITH %@",
+            NSMetadataItemFSNameKey, "Page to Hand Sync ", NSMetadataItemFSNameKey, "Piano Forte Sync ", NSMetadataItemFSNameKey, ".json"
+        )
         syncQuery = query
         syncObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: .main) { [weak self, weak query] _ in
             guard let self, let query else { return }
@@ -222,7 +231,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func syncWrite(_ call: CAPPluginCall) {
         guard let name = call.getString("name"), let text = call.getString("text"),
-              name.hasPrefix("Piano Forte Sync "), name.hasSuffix(".json"), !name.contains("/") else {
+              name.hasPrefix("Page to Hand Sync "), name.hasSuffix(".json"), !name.contains("/") else {
             return call.reject("Invalid sync file.")
         }
         DispatchQueue.global(qos: .utility).async {

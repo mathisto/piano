@@ -71,7 +71,7 @@ const mins = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m 
 /** A plain-text report for a teacher: what was practised, how accurately, what is solid and what is weak. `titles` maps song ids to names. */
 export function buildSummary(d: SummaryData, titles: Record<string, string> = {}, now = new Date()): string {
   const today = dayNum(now)
-  const out: string[] = ['# Piano practice summary', `Written ${dayKey(now)} by Piano Forte. Accuracy is the share of notes or answers right in a session.`]
+  const out: string[] = ['# Piano practice summary', `Written ${dayKey(now)} by Page to Hand. Accuracy is the share of notes or answers right in a session.`]
   const section = (name: string, ...lines: string[]) => out.push('', `## ${name}`, ...lines)
 
   const days = Object.entries(d.practice ?? {}).filter(([, s]) => s > 0).sort(([a], [b]) => (a < b ? -1 : 1))

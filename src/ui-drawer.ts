@@ -54,7 +54,7 @@ export function drawer(el: HTMLElement, inputs: Input[]) {
   }
   <h3 class="sgh">Your data</h3>
   <div class="sgroup">
-    ${row('Sync', `<div class="inl"><button class="btn sm" id="sSync">${native ? 'Use iCloud Drive' : 'Choose folder'}</button><button class="btn sm ghost" id="sSyncStop" hidden>Stop</button></div>`, `${native ? 'Progress, pieces and packs merge through Piano Forte in iCloud Drive. Keyboard and display settings stay on this iPad.' : 'Progress, pieces and packs merge through the folder you choose. Keyboard and display settings stay on this device.'} <span id="sSyncStatus" role="status"></span>`)}
+    ${row('Sync', `<div class="inl"><button class="btn sm" id="sSync">${native ? 'Use iCloud Drive' : 'Choose folder'}</button><button class="btn sm ghost" id="sSyncStop" hidden>Stop</button></div>`, `${native ? 'Progress, pieces and packs merge through Page to Hand in iCloud Drive. Keyboard and display settings stay on this iPad.' : 'Progress, pieces and packs merge through the folder you choose. Keyboard and display settings stay on this device.'} <span id="sSyncStatus" role="status"></span>`)}
     ${row('Backup', `<div class="inl"><button class="btn sm" id="sExport">Export</button><button class="btn sm" id="sImport">Import</button><span class="pop">${rowMenu('Data', '<button class="btn ghost" id="sSummary">Summary for a teacher</button><button class="btn ghost" id="sClear">Delete all data</button>')}</span><input id="sFile" type="file" accept="application/json,.json" hidden></div>`, 'Export saves progress, settings and files in one backup. Import merges it here or on another device.')}
   </div>
   <details><summary>Advanced</summary>

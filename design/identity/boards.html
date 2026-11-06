@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Piano Forte identity boards</title>
+<title>Page to Hand identity boards</title>
 <style>
   @font-face { font-family: Newsreader; src: url('./fonts/Newsreader-Variable.ttf') format('truetype'); font-weight: 200 800; font-style: normal; }
   @font-face { font-family: Bravura; src: url('../../src/assets/bravura.woff2') format('woff2'); font-weight: 400; font-style: normal; }
@@ -126,7 +126,7 @@
 <body>
 
 <section class="board" id="icon-system">
-  <div class="eyebrow">Piano Forte · Urtext identity</div>
+  <div class="eyebrow">Page to Hand · Urtext identity</div>
   <h1>The Pause / Lid</h1>
   <p class="lede">A fermata reduced to two engraved masses. The upper arc carries the physical authority of a concert-grand lid; the dot is the player’s single, deliberate action.</p>
   <div class="mode-caption"><strong>App icon</strong><span>Four appearances · no baked mask</span></div>
@@ -217,7 +217,7 @@
 </section>
 
 <section class="board" id="identity-sheet">
-  <div class="eyebrow">Piano Forte · final identity sheet</div>
+  <div class="eyebrow">Page to Hand · final identity sheet</div>
   <h1>Urtext, made playable</h1>
   <div class="identity-layout">
     <div>
@@ -236,7 +236,7 @@
     </div>
     <div class="identity-covers" id="identity-covers"></div>
   </div>
-  <div class="footer-note"><span>Newsreader · Bravura · system sans</span><span>Version 1 · 1 November 2026</span></div>
+  <div class="footer-note"><span>Newsreader · Bravura · system sans</span><span>Version 2 · 6 November 2026</span></div>
 </section>
 
 <script>
@@ -269,7 +269,7 @@ document.querySelector('#size-tests').innerHTML=[29,40,60,120].map(s=>`<div clas
 const surfaces=[
   ['nocturne','Nocturne',C.white],['matinee','Matinée',C.ink],['paper','Score paper',C.ink]
 ];
-document.querySelector('#mark-surfaces').innerHTML=surfaces.map(([cls,label,col])=>`<div class="mark-surface ${cls}"><div class="panel-title">${label}</div><div class="lockup"><div class="mark">${markSvg(col)}</div><div class="wordmark">Piano Forte</div></div><div class="small-note">One colour · 24–32 px mark</div></div>`).join('');
+document.querySelector('#mark-surfaces').innerHTML=surfaces.map(([cls,label,col])=>`<div class="mark-surface ${cls}"><div class="panel-title">${label}</div><div class="lockup"><div class="mark">${markSvg(col)}</div><div class="wordmark">Page to Hand</div></div><div class="small-note">One colour · 24–32 px mark</div></div>`).join('');
 document.querySelector('#favicons').innerHTML=[16,32,180].map(s=>`<div class="fav-wrap"><div class="fav" style="width:${s}px;height:${s}px">${markSvg(C.ink,C.paper)}</div><span>${s}</span></div>`).join('')+`<div class="fav-wrap"><div class="fav" style="width:132px;height:132px">${markSvg(C.ink,C.paper)}</div><span>512 maskable · preview</span></div>`;
 
 function staffLines(y,w=100){return [0,1,2,3,4].map(i=>`<line x1="0" x2="${w}" y1="${y+i*8}" y2="${y+i*8}"/>`).join('')}
@@ -339,7 +339,7 @@ const empties=[
 document.querySelector('#empty-grid').innerHTML=empties.flatMap(([t,p,svg])=>['dark','light'].map(mode=>`<div class="empty-card ${mode}"><div class="empty-paper">${svg}</div><div class="empty-copy"><h2>${t}</h2><p>${p}</p></div></div>`)).join('');
 
 document.querySelector('#identity-icons').innerHTML=appearance.map(([k,label])=>`<div><div class="icon-square">${iconSvg(k)}</div><div class="icon-label">${label}</div></div>`).join('');
-document.querySelector('#identity-lockup').innerHTML=`<div class="lockup"><div class="mark">${markSvg(C.white)}</div><div class="wordmark">Piano Forte</div></div>`;
+document.querySelector('#identity-lockup').innerHTML=`<div class="lockup"><div class="mark">${markSvg(C.white)}</div><div class="wordmark">Page to Hand</div></div>`;
 document.querySelector('#identity-covers').innerHTML=coverHTML(pieces[0])+coverHTML(pieces[2]);
 </script>
 </body>

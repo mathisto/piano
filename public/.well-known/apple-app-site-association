@@ -4,7 +4,7 @@
    {
     "appIDs": ["TC8XUVBATG.io.mattkelly.piano"],
     "components": [
-     { "/": "/", "#": "pack=*", "comment": "Open Piano Forte pack links" }
+     { "/": "/", "#": "pack=*", "comment": "Open Page to Hand pack links" }
     ]
    }
   ]

@@ -26,7 +26,7 @@ const piece = (await fetched('/corpus/p/test.mid')) === 200
 await ctx.setOffline(true)
 await page.reload()
 check('offline reload boots on Today', await page.waitForSelector('#today.on', { timeout: 10000 }).then(() => true, () => false))
-check('offline: the shell is the same page, not the browser error page', (await page.title()) === 'Piano Forte')
+check('offline: the shell is the same page, not the browser error page', (await page.title()) === 'Page to Hand')
 await page.click('label:has(input[value=songs])')
 await page.waitForSelector('tr.open[data-open]')
 await page.click('tr.open[data-open] >> nth=0')

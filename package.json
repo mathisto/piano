@@ -1,5 +1,5 @@
 {
-  "name": "piano-forte",
+  "name": "page-to-hand",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "vitest run",
     "ios": "npm run build && cap sync ios && cap open ios",
     "ios:sync": "npm run build && cap sync ios",
-    "ios:beta": "npm run ios:sync && cd ios/App && rm -rf ../build && xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -derivedDataPath ../DerivedData -archivePath ../build/PianoForte.xcarchive -allowProvisioningUpdates -quiet archive && xcodebuild -exportArchive -archivePath ../build/PianoForte.xcarchive -exportOptionsPlist ../ExportOptions.plist -exportPath ../build -allowProvisioningUpdates",
+    "ios:beta": "npm run ios:sync && cd ios/App && rm -rf ../build && xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -derivedDataPath ../DerivedData -archivePath ../build/PageToHand.xcarchive -allowProvisioningUpdates -quiet archive && xcodebuild -exportArchive -archivePath ../build/PageToHand.xcarchive -exportOptionsPlist ../ExportOptions.plist -exportPath ../build -allowProvisioningUpdates",
     "packs:index": "node scripts/packs-index.mjs",
     "packs:check": "node scripts/packs-index.mjs --check && vitest run src/public-packs.test.ts",
     "library:fetch": "node scripts/fetch-library.mjs",

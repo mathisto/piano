@@ -685,7 +685,7 @@ const manifestFlow = () => fresh({
     const cdp = await page.context().newCDPSession(page)
     const [{ errors, manifest, url }, { installabilityErrors }] = await Promise.all([cdp.send('Page.getAppManifest'), cdp.send('Page.getInstallabilityErrors')])
     ok(url.endsWith('/manifest.json') && errors.length === 0, JSON.stringify({ url, errors }))
-    ok(manifest.name === 'Piano Forte' && manifest.display === 'kStandalone' && manifest.id === URL_ && manifest.scope === URL_ && manifest.startUrl === URL_, JSON.stringify(manifest))
+    ok(manifest.name === 'Page to Hand' && manifest.display === 'kStandalone' && manifest.id === URL_ && manifest.scope === URL_ && manifest.startUrl === URL_, JSON.stringify(manifest))
     ok(manifest.icons.map((i) => i.sizes).join() === '192x192,512x512', JSON.stringify(manifest.icons))
     const real = installabilityErrors.filter((e) => e.errorId !== 'in-incognito') // every headless Chrome context is incognito; it cannot be installed by definition
     ok(real.length === 0, JSON.stringify(real))
@@ -809,7 +809,7 @@ const packsFlow = () => fresh({
     await axe(page, 'public pack index', 'dialog#pack')
     await page.click('dialog#pack [data-pk-add=technique-first-steps]')
     await page.waitForSelector('dialog#pack[open] footer .primary')
-    ok((await text(page, '#pkTitle')) === 'Technique first steps' && /Added from Piano Forte/.test(await text(page, '#pkSay')), await text(page, 'dialog#pack'))
+    ok((await text(page, '#pkTitle')) === 'Technique first steps' && /Added from Page to Hand/.test(await text(page, '#pkSay')), await text(page, 'dialog#pack'))
     await page.click('dialog#pack footer .primary')
     await ready(page)
     const s = await ev(page, () => ({ id: window.__piano.game.song.id, mode: window.__piano.game.mode }))
@@ -871,7 +871,7 @@ const shellFlow = () => fresh({
     await page.keyboard.press('ArrowRight')
     ok(await focusIn('#drawer'), 'focus left the drawer after Sound')
     await page.keyboard.press('Escape')
-    // Escape mid-run pauses, the next one leaves, to Songs (opened there), and the PF button is Today again
+    // Escape mid-run pauses, the next one leaves, to Songs (opened there), and the brand button is Today again
     // Play pressed while a Notes shown choice reloads the piece: the run keeps going on the notes it started with
     await page.evaluate(() => (document.activeElement.blur(), document.querySelector('#ready input[name=level][value="4"]').click(), window.__piano.game.toggle()))
     await wait(page, () => ['countin', 'playing'].includes(window.__piano.game.phase))
@@ -881,7 +881,7 @@ const shellFlow = () => fresh({
     ok(await ev(page, () => window.__piano.game.phase === 'paused' && document.querySelector('#play.on')), 'the first Escape did not pause')
     await page.keyboard.press('Escape')
     await wait(page, () => document.querySelector('#library.on'))
-    ok((await page.getAttribute('#brand', 'aria-label')) === 'Piano Forte: Today', 'PF still says leave this piece')
+    ok((await page.getAttribute('#brand', 'aria-label')) === 'Page to Hand: Today', 'brand still says leave this piece')
     // opened from Today, back to Today
     await nav(page, 'today')
     await ev(page, () => window.__piano.open(0, 'learn'))

@@ -6,7 +6,8 @@ import { native } from './native-midi'
 
 const ENABLED = 'sync:enabled'
 const FOLDER = 'sync:folder'
-const PREFIX = 'Piano Forte Sync '
+const PREFIX = 'Page to Hand Sync '
+const OLD_PREFIX = 'Piano Forte Sync '
 const LAST = 'piano.sync-last'
 
 interface SyncNative {
@@ -57,7 +58,7 @@ const deviceId = () => {
   }
 }
 const ownName = () => `${PREFIX}${deviceId()}.json`
-const isSyncFile = (name: string) => name.startsWith(PREFIX) && name.endsWith('.json')
+const isSyncFile = (name: string) => (name.startsWith(PREFIX) || name.startsWith(OLD_PREFIX)) && name.endsWith('.json')
 const lastMessage = () => {
   try {
     const at = Number(localStorage.getItem(LAST))

@@ -78,7 +78,7 @@ export async function mount(el: HTMLElement, where_: 'technique' | 'songs'): Pro
       <div class="pact"><button class="btn ghost" data-pk-list="${esc(r.pack.id)}" aria-label="All ${n} in ${esc(r.pack.title)}">All ${n}</button>${w.go ? `<button class="btn${r === lit ? ' primary' : ' ghost'}" data-pk-go="${esc(r.pack.id)}" aria-label="Start ${esc(w.go.title)}, ${esc(r.pack.title)}">${icon('play')}Start</button>` : ''}</div></div>`
   }
   const bring = `<div class="prow"><div class="pwho"><b>Bring a pack</b><span>A .pfpack file. A pack link adds its pack when you open it.</span></div><div class="pact"><button class="btn ghost" data-pk-file>${icon('plus')}Choose file</button><input type="file" accept=".pfpack,.json,application/json" hidden data-pk-input></div></div>`
-  const browse = `<div class="prow"><div class="pwho"><b>Piano Forte packs</b><span>Checked practice plans you can add or share.</span></div><div class="pact"><button class="btn ghost" data-pk-browse>Browse</button></div></div>`
+  const browse = `<div class="prow"><div class="pwho"><b>Page to Hand packs</b><span>Checked practice plans you can add or share.</span></div><div class="pact"><button class="btn ghost" data-pk-browse>Browse</button></div></div>`
   el.querySelector('.packs')?.remove()
   el.querySelector('#pkChip')?.remove()
   const list = `<div class="plan">${mine.map(row).join('')}${bring}${browse}</div>`
@@ -191,7 +191,7 @@ async function start(r: Rec, x: Row) {
 async function keep(p: Pack, from: Exclude<From, 'app'>) {
   if (FIRST.some((f) => f.id === p.id)) throw new Error(`It has the same id as "${FIRST.find((f) => f.id === p.id)!.title}", which comes with the app. Give it an id of its own.`)
   await store.edit<object>(`pack:${p.id}`, {}, (v) => ({ ...v, pack: p, from, added: Date.now() }))
-  said = from === 'index' ? 'Added from Piano Forte.' : from === 'link' ? 'Added from a link.' : 'Added from a file.'
+  said = from === 'index' ? 'Added from Page to Hand.' : from === 'link' ? 'Added from a link.' : 'Added from a file.'
   await hooks.showSection(page(p))
   if (page(p) === 'songs' && !songsOpen) $('#pkChip')?.click()
   await sheet(p.id)
@@ -202,17 +202,17 @@ const packRoot = () => (/^https?:$/.test(location.protocol) ? location.origin : 
 /** The public index is a convenience, never authority: every downloaded file still goes through parsePack. */
 async function listed(): Promise<Listed[]> {
   const res = await fetch(packRoot() + 'index.json')
-  if (!res.ok) throw new Error('Piano Forte packs could not be loaded. Check the connection, then try again.')
+  if (!res.ok) throw new Error('Page to Hand packs could not be loaded. Check the connection, then try again.')
   const d = await res.json()
-  if (d?.pf !== 1 || !Array.isArray(d.packs)) throw new Error('The Piano Forte pack index is damaged. Try again later.')
+  if (d?.pf !== 1 || !Array.isArray(d.packs)) throw new Error('The Page to Hand pack index is damaged. Try again later.')
   const ok = (p: any): p is Listed => typeof p?.id === 'string' && typeof p.title === 'string' && typeof p.by === 'string' && (p.about === undefined || typeof p.about === 'string') && ['CC0-1.0', 'CC-BY-4.0'].includes(p.licence) && Number.isInteger(p.items) && /^[a-z0-9-]+\.pfpack$/.test(p.file)
-  if (!d.packs.every(ok)) throw new Error('The Piano Forte pack index is damaged. Try again later.')
+  if (!d.packs.every(ok)) throw new Error('The Page to Hand pack index is damaged. Try again later.')
   return d.packs
 }
 
 async function browsePacks() {
   const d = sheetEl()
-  d.innerHTML = `<header><div><h2 id="pkTitle">Piano Forte packs</h2><p>Checked practice plans.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header><div class="body"><p class="fine pksay" id="pkSay" role="status">Loading…</p></div>`
+  d.innerHTML = `<header><div><h2 id="pkTitle">Page to Hand packs</h2><p>Checked practice plans.</p></div><button class="btn icon ghost" data-close aria-label="Close">${icon('x')}</button></header><div class="body"><p class="fine pksay" id="pkSay" role="status">Loading…</p></div>`
   if (!d.open) d.showModal()
   try {
     const [ps, recs] = await Promise.all([listed(), all()])

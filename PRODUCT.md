@@ -4,7 +4,7 @@
 
 ## Platform
 
-web, plus an iPad app (Capacitor web view with a CoreMIDI plugin, developer install). The iPad is the main screen, landscape or portrait on the music stand; narrow windows (split view) reflow rather than being refused.
+web, plus a TestFlight iPad app (Capacitor web view with a CoreMIDI plugin). The iPad is the main screen, landscape or portrait on the music stand; narrow windows (split view) reflow rather than being refused.
 
 ## Stack
 
@@ -45,18 +45,19 @@ Open, no-account and free in the browser; a one-time paid download in the App St
 - Sound: sampled grand piano plus five lazy-loaded instruments; the keyboard's own speakers by default.
 - Local only: progress, settings, practice time, imported songs and the last three runs of each piece in IndexedDB, JSON export and import. No accounts, no cloud.
 - Web MIDI called directly in browsers; the iPad app reaches CoreMIDI through a small plugin that fakes the same API.
-- Deploys to pianoforte.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano` (the app is Piano Forte, PF for short: a play on "pianoforte", and on finding your forte).
+- Deploys to pianoforte.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy until the Page to Hand domain cutover. Public GitHub repo `piano`; the bundle ID and storage keys keep their existing technical names so installed builds retain their data.
 - Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them).
 
 ## Brand Commitments
 
 - Visual direction is Urtext (user-pinned 2026-11-01, replacing the neon cabinet): an engraving house's dark ink on warm paper with a concert grand's precision and native iPadOS; Nocturne (dark) and Matinée (light) modes; one brass lamp for "play this, now"; Newsreader for what is announced and the names of music, the system font for the rest (`docs/research/urtext.md`). The arcade scoring went in October 2026: no points, ranks, lives, combos or fireworks.
+- The name is Page to Hand: the score moves from notation on the page, through understanding, into the player's hands. It names the learning transition rather than the instrument, while App Store metadata says piano and sight-reading plainly.
 - Sheet music must stay clearly readable. The staff is the learning objective; effects must never fight it.
 - Binding anti-goals: not a kids' game, not a sterile music app, effects never obscure notation, no strobing or excess flash.
 
 ## Evidence on Hand
 
-No existing assets, brand, copy, or song content. Nothing to fabricate from; starter songs and library scores must come from verified public-domain or openly licensed sources. Pieces have no illustrations: the AI-generated covers were removed on 2026-10-31 as slop. A cover is each piece's own opening bars engraved on paper, with the composer and catalogue number above and the title below (`src/cover.ts`).
+The Pause / Lid identity, Urtext palette, Newsreader/Bravura type system and opening-bars cover grammar are established sources of truth. Starter songs and library scores still come only from verified public-domain or openly licensed sources. Pieces have no illustrations: the AI-generated covers were removed on 2026-10-31 as slop. A cover is each piece's own opening bars engraved on paper, with the composer and catalogue number above and the title below (`src/cover.ts`).
 
 The product follows evidence, kept in docs/research/ and docs/STRATEGY.md. The sources by name:
 - Learning science: a review of practice research (testing and spacing are strong; "guidance hypothesis" says live feedback helps now and can cap learning later, so marks fade and some runs are unaided); Duke, Simmons and Cash 2009 for stop, isolate, slow, repeat and put back; Mishra 2014 (sight-reading grows with volume of new easy music, so Read through points at real pieces); Silverman and Barasch 2023 (streaks with repair or freeze); Hanus and Fox 2015 and Deci 1999 (points and expected rewards do not raise intrinsic motivation).

@@ -1,6 +1,8 @@
-# Piano Forte identity specification
+# Page to Hand identity specification
 
 ## Direction
+
+**Page to Hand** names the product's core motion: notation on the page becomes understood movement in the player's hands. The wordmark remains plain title case so the name reads as an editorial promise, not a slogan.
 
 The selected mark is **The Pause / Lid**: a fermata reduced to an arch and a dot. It is immediately musical, but avoids the generic treble-clef category. The arch also recalls the raised lid of a concert grand without drawing a piano. The result is calm, adult, edition-like, and unusually legible at 29 px.
 

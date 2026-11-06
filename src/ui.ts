@@ -31,7 +31,7 @@ export function keepFocus<T>(root: Element, render: () => T): T {
 export function skeleton(app: HTMLElement) {
   app.innerHTML = `
   <header class="bar">
-    <button class="brand" id="brand" aria-label="Piano Forte: Today"><svg viewBox="160 362 704 360" width="36" height="18" fill="currentColor" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><span class="wordmark" aria-hidden="true">Piano Forte</span></button>
+    <button class="brand" id="brand" aria-label="Page to Hand: Today"><svg viewBox="160 362 704 360" width="36" height="18" fill="currentColor" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><span class="wordmark" aria-hidden="true">Page to Hand</span></button>
     <button class="btn ghost" id="stagesBtn" hidden>${icon('back')}<span></span></button>
     <nav class="seg" id="nav" aria-label="Sections">
       ${(['today', 'songs', 'read', 'scales', 'theory', 'technique', 'progress'] as const).map((v, i) => `<label><input type="radio" name="nav" value="${v}"${i ? '' : ' checked'}><span>${icon(v)}<em>${v[0].toUpperCase() + v.slice(1)}</em></span></label>`).join('')}

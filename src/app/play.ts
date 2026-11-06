@@ -111,13 +111,13 @@ export async function openSong(base: Song, mode: Mode, paced = false, ticket = n
   if (stale()) return false
   setCurrent({ song, base, level, heat: prog.heat })
   $('#title').textContent = song.title
-  document.title = `${song.title} · Piano Forte`
+  document.title = `${song.title} · Page to Hand`
   const bb = $('#stagesBtn') // the way back, named for where it goes (a drill's button is set by its code: All stages, Finish)
   bb.hidden = false
   if (mode === 'read') bb.removeAttribute('aria-label')
   else (bb.querySelector('span')!.textContent = backName()), bb.setAttribute('aria-label', `Back to ${backName()}`)
   document.body.classList.toggle('reading', mode === 'read')
-  $('#brand').setAttribute('aria-label', 'Piano Forte: leave this piece')
+  $('#brand').setAttribute('aria-label', 'Page to Hand: leave this piece')
   if (mode !== 'read') ($(`input[name=mode][value=${mode}]`) as HTMLInputElement).checked = true
   $('#modeSeg').hidden = mode === 'read'
   $('#play').classList.toggle('drill', mode === 'read')
@@ -147,7 +147,7 @@ export function leave() {
   $('#stagesBtn').hidden = true
   document.body.classList.remove('reading')
   $('#play').classList.remove('drill')
-  $('#brand').setAttribute('aria-label', 'Piano Forte: Today')
+  $('#brand').setAttribute('aria-label', 'Page to Hand: Today')
   history.replaceState(null, '', location.pathname)
   store.offered() // a lamp or Continue left before its run ended: the next run is the player's own pick
   return hooks.showSection(to).then(() => {

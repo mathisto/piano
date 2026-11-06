@@ -9,7 +9,7 @@ it('publishes durable support contact and recovery guidance', () => {
   expect(SUPPORT_URL).toBe('https://pianoforte.mattkelly.io/support/')
   expect(html).toContain(SUPPORT_EMAIL)
   expect(html).toContain('Backup → Export')
-  expect(html).toContain('Piano Forte does not send your practice history or files')
+  expect(html).toContain('Page to Hand does not send your practice history or files')
   expect(html).not.toContain('github.com/mathisto/piano/issues')
 })
 

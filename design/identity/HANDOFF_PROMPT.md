@@ -1,4 +1,4 @@
-You are implementing the approved Piano Forte visual identity in the existing iPad-first app. Work directly in this repository:
+You are implementing the approved Page to Hand visual identity in the existing iPad-first app. Work directly in this repository:
 
 `/Users/mathisto/projects/piano-roller`
 
@@ -6,7 +6,7 @@ Do not redesign the identity. The design direction has already been selected and
 
 ## Product and technical context
 
-- Product: **Piano Forte**, an adult piano-practice app.
+- Product: **Page to Hand**, an adult piano-practice app.
 - Primary device: iPad in landscape, normally read from 60–90 cm away.
 - Runtime: TypeScript + Vite inside a Capacitor WKWebView.
 - iOS app ID: `io.mattkelly.piano`.

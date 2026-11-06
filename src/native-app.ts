@@ -110,7 +110,7 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   void syncClock(n).catch(() => {}) // no offset yet: arrival times
   setInterval(() => void syncClock(n).catch(() => {}), 30_000)
 
-  // the record to Files (On My iPad > Piano Forte) half a minute after the last save, or on leaving the app with one pending
+  // the record to Files (On My iPad > Page to Hand) half a minute after the last save, or on leaving the app with one pending
   let timer = 0
   const backup = () => {
     clearTimeout(timer)

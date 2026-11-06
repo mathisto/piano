@@ -3,7 +3,7 @@
 Everything below was built and checked in headless Chrome only. Each line says what you should see or hear; anything else is a bug worth telling me about (say the line number).
 
 ## Before you start
-1. Open Piano Forte on the iPad, FP-10 on, Bluetooth connected. The top bar's MIDI chip should name "FP-10 Bluetooth".
+1. Open Page to Hand on the iPad, FP-10 on, Bluetooth connected. The top bar's MIDI chip should name "FP-10 Bluetooth".
 2. Settings, Sound on. Silent switch off.
 
 ## Sound and keys (2 min)
@@ -38,7 +38,7 @@ Everything below was built and checked in headless Chrome only. Each line says w
 17. Listen back to a take, go to the Home Screen, come back: Listen back has stopped, with no burst of notes.
 18. Long press on a link in Credits: no web page preview, nothing lifts out to drag.
 19. Cold launch: a plain dark screen, no white flash, then Today.
-20. Windowed mode (Stage Manager or windowed apps): do the window controls at the top left cover the PF mark? Turn on Low Power Mode and play a run: the falling notes are expected to look less smooth (WebKit runs animation at 30 fps there).
+20. Windowed mode (Stage Manager or windowed apps): do the window controls at the top left cover the Pause / Lid mark? Turn on Low Power Mode and play a run: the falling notes are expected to look less smooth (WebKit runs animation at 30 fps there).
 
 ## Report
 Tell me line numbers that were wrong, plus anything that looked cramped or sounded odd. Nothing else needs doing.

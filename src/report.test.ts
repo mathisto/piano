@@ -93,7 +93,7 @@ describe('practice summary', () => {
 
   it('turns the fixture into the expected text', () => {
     expect(buildSummary(data, { 'lib:a': 'Melodie', 'lib:b': 'Minuet' }, now)).toBe(`# Piano practice summary
-Written 2026-10-27 by Piano Forte. Accuracy is the share of notes or answers right in a session.
+Written 2026-10-27 by Page to Hand. Accuracy is the share of notes or answers right in a session.
 
 ## Practice
 - Period: 2026-09-01 to 2026-10-27

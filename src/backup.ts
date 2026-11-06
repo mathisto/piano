@@ -100,7 +100,7 @@ const kindOf = (v: unknown) => (Array.isArray(v) ? 'array' : v && typeof v === '
 type Export = Rec & { version: number; at?: number }
 const readExport = (text: string): Export => {
   const d = JSON.parse(text)
-  if (d?.version !== 1) throw new Error('This file is not a Piano Forte export. Choose a file saved with Export.')
+  if (d?.version !== 1) throw new Error('This file is not a Page to Hand export. Choose a file saved with Export.')
   return d
 }
 

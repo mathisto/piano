@@ -94,7 +94,7 @@ describe('export and import', () => {
   })
 
   it('refuses what is not an export', async () => {
-    await expect(backup.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
+    await expect(backup.importAll('{"version":2}')).rejects.toThrow('This file is not a Page to Hand export. Choose a file saved with Export.')
   })
 
   it('merges valid sync files, skips a damaged peer, and leaves this device settings alone', async () => {

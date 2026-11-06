@@ -123,7 +123,7 @@ async function openDrawer() {
   $('#sSetup', d).onclick = openSetup
   $('#sHelp', d).onclick = () => ($('#help') as HTMLDialogElement).showModal()
   $('#sExport', d).onclick = async () => {
-    await shareFile(new File([await (await backup()).exportAll()], 'piano-forte-backup.json', { type: 'application/json' }))
+    await shareFile(new File([await (await backup()).exportAll()], 'page-to-hand-backup.json', { type: 'application/json' }))
   }
   $('#sSummary', d).onclick = async () => {
     const { buildSummary } = await import('../report')

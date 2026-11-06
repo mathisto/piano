@@ -478,7 +478,7 @@ export function kernToMusicXml(src: string, rights?: string): Kern {
   const score = (...parts: [string, string, string][]) => `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-${refs.OTL ? `<work><work-title>${esc(refs.OTL)}</work-title></work>\n` : ''}<identification>${refs.COM ? `<creator type="composer">${esc(refs.COM)}</creator>` : ''}${rights ? `<rights>${esc(rights)}</rights>` : ''}<encoding><software>Piano Forte src/kern.ts</software></encoding></identification>
+${refs.OTL ? `<work><work-title>${esc(refs.OTL)}</work-title></work>\n` : ''}<identification>${refs.COM ? `<creator type="composer">${esc(refs.COM)}</creator>` : ''}${rights ? `<rights>${esc(rights)}</rights>` : ''}<encoding><software>Page to Hand src/kern.ts</software></encoding></identification>
 <part-list>${parts.map(([id, name]) => `<score-part id="${id}"><part-name>${name}</part-name></score-part>`).join('')}</part-list>
 ${parts.map(([id, , ms]) => `<part id="${id}">\n${ms}\n</part>`).join('\n')}
 </score-partwise>

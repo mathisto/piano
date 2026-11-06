@@ -31,7 +31,7 @@ enum PianoShortcutRouter {
 @available(iOS 16.0, *)
 struct StartTodaysPracticeIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Today's Practice"
-    static let description = IntentDescription("Open the next item in today's Piano Forte practice plan.")
+    static let description = IntentDescription("Open the next item in today's Page to Hand practice plan.")
     static let openAppWhenRun = true
 
     @available(iOS 26.0, *)
@@ -46,7 +46,7 @@ struct StartTodaysPracticeIntent: AppIntent {
 @available(iOS 16.0, *)
 struct OpenSightRunIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Sight Run"
-    static let description = IntentDescription("Open the Piano Forte Sight Run builder.")
+    static let description = IntentDescription("Open the Page to Hand Sight Run builder.")
     static let openAppWhenRun = true
 
     @available(iOS 26.0, *)
@@ -59,7 +59,7 @@ struct OpenSightRunIntent: AppIntent {
 }
 
 @available(iOS 16.0, *)
-struct PianoForteShortcuts: AppShortcutsProvider {
+struct PageToHandShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: StartTodaysPracticeIntent(),

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Piano Forte</string>
+        <string>Page to Hand</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -57,7 +57,7 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Piano Forte pack</string>
+			<string>Page to Hand pack</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
@@ -74,7 +74,7 @@
 			<key>UTTypeIdentifier</key>
 			<string>io.mattkelly.piano.pack</string>
 			<key>UTTypeDescription</key>
-			<string>Piano Forte pack</string>
+			<string>Page to Hand pack</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.json</string>
@@ -138,7 +138,7 @@
 		</dict>
 	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Piano Forte connects to Bluetooth MIDI keyboards.</string>
+	<string>Page to Hand connects to Bluetooth MIDI keyboards.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.io.mattkelly.piano</key>
@@ -146,7 +146,7 @@
 			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
 			<true/>
 			<key>NSUbiquitousContainerName</key>
-			<string>Piano Forte</string>
+			<string>Page to Hand</string>
 			<key>NSUbiquitousContainerSupportedFolderLevels</key>
 			<string>Any</string>
 		</dict>

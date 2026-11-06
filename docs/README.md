@@ -40,6 +40,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/purchase-design.md`: the researched ownership-first paid-download recommendation, price/economics check, support/privacy contract and App Store launch gates; no runtime or store state changed.
 - `changes/support-privacy.md`: static public Support and Privacy pages, in-app links and the support-mail destination.
 - `changes/platform-copy.md`: platform-specific ownership copy for the paid app and free browser edition, with no paywall or boot-budget increase.
+- `changes/page-to-hand.md`: the cleared Page to Hand rename across web and iPad, with old data, Apple identifiers, pack links and the live origin preserved for compatibility.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**

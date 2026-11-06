@@ -31,7 +31,7 @@ export function wireReminder(d: HTMLElement) {
   const at = d.querySelector<HTMLInputElement>('#sRemindAt')
   const note = d.querySelector<HTMLElement>('#sRemindNote')
   if (!at || !note) return
-  const denied = 'Notifications are off for Piano Forte. Turn them on in iPad Settings > Notifications, then try again.'
+  const denied = 'Notifications are off for Page to Hand. Turn them on in iPad Settings > Notifications, then try again.'
   const minutes = () => Number(at.value.slice(0, 2)) * 60 + Number(at.value.slice(3))
   if (settings.remind !== undefined) void LocalNotifications.checkPermissions().then((p) => p.display !== 'granted' && (note.textContent = denied))
   d.querySelectorAll<HTMLInputElement>('input[name=remind]').forEach((r) => {

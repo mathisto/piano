@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // the local CoreMidi plugin (ios/App/App/PianoNative.swift) and src/native-midi.ts.
 const config: CapacitorConfig = {
   appId: 'io.mattkelly.piano',
-  appName: 'Piano Forte',
+  appName: 'Page to Hand',
   webDir: 'dist',
   // allowsLinkPreview: a long press on a link (Credits, Report a problem) shows no web page preview.
   // No backgroundColor: it is one colour for both modes. PianoViewController sets the web view's from the "Ground" colour asset (dark and light), as the launch storyboard does.

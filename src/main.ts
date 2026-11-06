@@ -56,7 +56,7 @@ async function showSection(name: Section, err = '') {
   view(id)
   const el = $(`#${id}`)
   const title = name[0].toUpperCase() + name.slice(1)
-  document.title = name === 'today' ? 'Piano Forte' : `${title} · Piano Forte` // the tab and the screen reader name the page
+  document.title = name === 'today' ? 'Page to Hand' : `${title} · Page to Hand` // the tab and the screen reader name the page
   if (name !== 'today' && !el.firstChild) el.innerHTML = `<div class="lib-head wait"><h1>${title}</h1></div><p class="note loading wait">Loading…</p>` // a first visit on a slow link: the page's title now, a quiet line after a moment, its body when the code arrives
   try {
     if (name === 'today') await showToday()

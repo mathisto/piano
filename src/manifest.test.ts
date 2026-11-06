@@ -10,12 +10,12 @@ const size = (file: string) => {
 }
 const sha = (file: string) => createHash('sha256').update(read(file)).digest('hex')
 
-test('the web manifest is a stable standalone app rooted at Piano Forte', () => {
+test('the web manifest is a stable standalone app rooted at Page to Hand', () => {
   const manifest = JSON.parse(read('public/manifest.json').toString())
   expect(manifest).toEqual({
     id: '/',
-    name: 'Piano Forte',
-    short_name: 'Piano Forte',
+    name: 'Page to Hand',
+    short_name: 'Page to Hand',
     description: 'A calm piano practice room for real keyboards and your own music. No account, ads or subscription.',
     lang: 'en',
     dir: 'ltr',

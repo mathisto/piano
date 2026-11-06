@@ -27,5 +27,5 @@ test('every public pack item resolves against this app and the live catalogue', 
 
 test('the association file opens only pack fragments in the signed app', () => {
   const aasa = JSON.parse(readFileSync('public/.well-known/apple-app-site-association', 'utf8'))
-  expect(aasa.applinks.details).toEqual([{ appIDs: ['TC8XUVBATG.io.mattkelly.piano'], components: [{ '/': '/', '#': 'pack=*', comment: 'Open Piano Forte pack links' }] }])
+  expect(aasa.applinks.details).toEqual([{ appIDs: ['TC8XUVBATG.io.mattkelly.piano'], components: [{ '/': '/', '#': 'pack=*', comment: 'Open Page to Hand pack links' }] }])
 })

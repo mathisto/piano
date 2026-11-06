@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib'
 
-export const UA = 'piano-forte-library-fetch/0.1 (+https://pianoforte.mattkelly.io; themattkellyshow@gmail.com)'
+export const UA = 'page-to-hand-library-fetch/0.1 (+https://pianoforte.mattkelly.io; themattkellyshow@gmail.com)'
 export const sha = (b) => createHash('sha256').update(b).digest('hex')
 export const fail = (id, msg) => {
   throw new Error(`${id}: ${msg}`)
