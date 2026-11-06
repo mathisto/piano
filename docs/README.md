@@ -33,6 +33,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/import-recovery.md`: own-file import in first-run Set up and at the top of Songs; unreadable local and backup songs are skipped and recoverable without deleting their practice history.
 - `changes/folder-sync.md`: opt-in owner-controlled folder sync across iPad and Chrome: one file per installation, monotonic backup merge, iCloud placeholder download, per-device settings, permission and recovery states.
 - `changes/public-packs.md`: the checked public pack index and contribution gate, generated Technique and Read plans, in-app browsing, and iPad universal-link routing for shared packs.
+- `changes/web-manifest.md`: the installable Chrome/Edge web app, generated maskable identity icons, standalone app identity and offline-cached startup assets.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**

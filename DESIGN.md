@@ -414,7 +414,7 @@ Each component: anatomy, then states. Every interactive state shares one focus r
 The identity (`design/identity/SPEC.md`, approved 1 Nov 2026) is a fermata reduced to one arch and one dot; the arch also reads as the raised lid of a concert grand. Geometry on a 1024 grid: arch `M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z`, dot at (512, 638) r 76. Never redraw it; copy the path.
 - **In the bar**: the symbol in `currentColor` (Ink on Nocturne, Matinée Ink on Matinée), 36x18 cropped to its bounds, in a 44px-tall button back to Today. From 1180px wide, off the play screen, the wordmark "Piano Forte" follows it: Newsreader optical size 60, 540, -0.012em, 21px, a gap of 0.36 of the mark's width. Narrower, or on the play screen (the song's title takes the bar), the symbol alone.
 - **App icon**: ink #161513 on paper #fbf8f1, full bleed, no baked corners (`ios/App/App/Assets.xcassets/AppIcon.appiconset`): default, a dark appearance (#efece4 on #13161c) and a tinted one (white on black, which iOS recolours). The clear appearance of iOS 26 needs an Icon Composer `.icon` file, not built yet (ROADMAP).
-- **Web**: `public/favicon.svg` (the default icon), `apple-touch-icon.png` (180), `icon-512.png` (maskable, unused until there is a manifest).
+- **Web**: `public/favicon.svg` (the default icon), `apple-touch-icon.png` (180), and generated 192 and 512 px maskable icons. `manifest.json` installs the root app as **Piano Forte** in a standalone window; it does not lock orientation. The static manifest background is paper #fbf8f1, while the page's theme-colour metadata follows the current appearance.
 - Amber and slate blue are never part of the identity: amber stays "play this, now", blue stays selection.
 
 ### Staff zoom

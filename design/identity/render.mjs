@@ -59,8 +59,10 @@ for (const size of [16, 32, 180]) {
   await faviconPage.screenshot({ path: path.join(output, `favicon-${size}.png`) });
   await faviconPage.close();
 }
-const maskablePage = await browser.newPage({ viewport: { width: 512, height: 512 }, deviceScaleFactor: 1 });
-await maskablePage.goto(pathToFileURL(path.join(output, 'web-maskable-512.svg')).href, { waitUntil: 'load' });
-await maskablePage.screenshot({ path: path.join(output, 'web-maskable-512.png') });
-await maskablePage.close();
+for (const size of [192, 512]) {
+  const maskablePage = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
+  await maskablePage.goto(pathToFileURL(path.join(output, 'web-maskable-512.svg')).href, { waitUntil: 'load' });
+  await maskablePage.screenshot({ path: path.join(output, `web-maskable-${size}.png`) });
+  await maskablePage.close();
+}
 await browser.close();
