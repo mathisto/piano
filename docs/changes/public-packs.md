@@ -20,10 +20,11 @@ Piano Forte now has a small, checked public pack shelf without accounts or a mar
 
 ## Verification
 
-- `npm run packs:check`, the pack and native focused tests, TypeScript and the production build pass. The built association file is valid JSON at the required extensionless path.
+- `npm run packs:check`, 1,060 unit tests, TypeScript, the production build and a native simulator compile pass. The unchanged 223,000-byte boot-JS gate passes.
 - End-to-end feature 25c browses the public index, passes its sheet through axe, adds the generated Technique plan, starts its first exercise and verifies its stored origin.
 - The UI is checked in both themes at 1180×820, 820×1180 and 390×844 before release. The Impeccable detector's standalone-page findings were inspected: its named Newsreader font was corrected to the documented family and size; the remaining Matinée colours are the exact documented Ground, Line and Accent tokens rather than palette drift.
-- Apple requires the extensionless association file over HTTPS with no redirects, and says its CDN can take 24 hours to request it and installed devices may check weekly. Live origin, Apple CDN, signed-entitlement and device verification are release checks. Sources: [Supporting associated domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains), [Supporting universal links in your app](https://developer.apple.com/documentation/xcode/supporting-universal-links-in-your-app), [TN3155](https://developer.apple.com/documentation/technotes/tn3155-debugging-universal-links).
+- The merged release passed all 48 end-to-end browser journeys. Local main, GitHub main and live `version.txt` matched runtime commit `6012c2f4` after deployment; the live index matched the checked file byte for byte.
+- The origin serves the extensionless association file directly over HTTPS. Apple's CDN returned the same 201-byte body as `application/json` with `Apple-Origin-Format: json`. The signed archive contains the exact associated-domain entitlement, its profile authorizes the capability, and TestFlight build 687 uploaded successfully. The remaining proof is the device tap below. Sources: [Supporting associated domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains), [Supporting universal links in your app](https://developer.apple.com/documentation/xcode/supporting-universal-links-in-your-app), [TN3155](https://developer.apple.com/documentation/technotes/tn3155-debugging-universal-links).
 
 ## Check on the iPad
 
