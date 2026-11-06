@@ -92,6 +92,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/grader-logical-staves.md`: records completion of the seven-row refusal profile and a reusable source-structure correction without publishing the private mechanism, constants or results.
 - `changes/grader-beam-lanes.md`: records the independent ordinary/grace beam law, its notation correction and the remaining representation boundaries without publishing the private mechanism, constants or results.
 - `changes/grader-staff-layout.md`: records closure of the zero-time staff-layout parser barrier and the next strict notation boundary without publishing the private mechanism, constants or results.
+- `changes/grader-glissando.md`: records exact glissando representation and its fail-closed performance boundary without publishing the private mechanism, constants or results.
 - `changes/grader-op20-endpoints.md`: records the private closure of the final unmatched-tie source and the next structural clusters without publishing the grading mechanism.
 - `changes/regrade-g1-anchors.md`: the G1 owner-review gate: 80 live catalogue pieces matched to published Henle 1–9 levels, seven current ABRSM placements, exact identity validation and collection-grouped holdout required before the model.
 - `changes/regrade-g1-anchor-expansion.md`: 20 approved exact-work additions broaden the G1 table to 100 anchors; grouped holdout exposed the planned fit as below its unchanged release gate, so no grade changed.
