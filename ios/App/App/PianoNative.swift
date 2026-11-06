@@ -41,6 +41,9 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setAppearance", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "now", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveBackup", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncAvailable", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncRead", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncWrite", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "textSize", returnType: CAPPluginReturnPromise),
     ]
 
@@ -52,6 +55,8 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     private var sources: [[String: Any]] = []
     private(set) var playing = false // a run counts in, plays or waits (setPlaying)
     private var lastKey = -Double.infinity // uptime ms of the last message from a keyboard
+    private var syncQuery: NSMetadataQuery?
+    private var syncObserver: NSObjectProtocol?
 
     /// A MIDI, MusicXML or pack (.pfpack, Info.plist) file opened from Files, Mail, Messages or AirDrop ("Open in Piano Forte"). Capacitor
     /// posts it, on a cold start once the plugins are loaded; the page may not be listening yet, so the event waits for it. The event:
@@ -117,6 +122,106 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve()
         } catch {
             call.reject(error.localizedDescription)
+        }
+    }
+
+    /// The app's Documents container appears in Files as iCloud Drive > Piano Forte. URL lookup can block while iCloud starts, so none of it runs on the main thread.
+    private static func iCloudDocuments() throws -> URL {
+        guard FileManager.default.ubiquityIdentityToken != nil,
+              let root = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.io.mattkelly.piano") else {
+            throw NSError(domain: "PianoForte", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud Drive is not available. Turn it on in iPad Settings, then try again."])
+        }
+        let documents = root.appendingPathComponent("Documents", isDirectory: true)
+        try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true, attributes: nil)
+        return documents
+    }
+
+    @objc func syncAvailable(_ call: CAPPluginCall) {
+        DispatchQueue.global(qos: .utility).async {
+            call.resolve(["available": (try? Self.iCloudDocuments()) != nil])
+        }
+    }
+
+    /// Metadata search sees files that exist on another device but are still placeholders here. Each is explicitly downloaded before its coordinated read.
+    @objc func syncRead(_ call: CAPPluginCall) {
+        DispatchQueue.global(qos: .utility).async {
+            do { _ = try Self.iCloudDocuments() } catch { return call.reject(error.localizedDescription) }
+            DispatchQueue.main.async { self.startSyncQuery(call) }
+        }
+    }
+
+    private func startSyncQuery(_ call: CAPPluginCall) {
+        if syncQuery != nil { return call.reject("A sync is already running.") }
+        let query = NSMetadataQuery()
+        query.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
+        query.predicate = NSPredicate(format: "%K BEGINSWITH %@ AND %K ENDSWITH %@", NSMetadataItemFSNameKey, "Piano Forte Sync ", NSMetadataItemFSNameKey, ".json")
+        syncQuery = query
+        syncObserver = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: .main) { [weak self, weak query] _ in
+            guard let self, let query else { return }
+            self.finishSyncQuery(query, call)
+        }
+        guard query.start() else {
+            clearSyncQuery(query)
+            return call.reject("iCloud Drive could not be read. Try again.")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self, weak query] in
+            guard let self, let query, self.syncQuery === query else { return }
+            self.finishSyncQuery(query, call)
+        }
+    }
+
+    private func clearSyncQuery(_ query: NSMetadataQuery) {
+        query.stop()
+        if let observer = syncObserver { NotificationCenter.default.removeObserver(observer) }
+        syncObserver = nil
+        syncQuery = nil
+    }
+
+    private func finishSyncQuery(_ query: NSMetadataQuery, _ call: CAPPluginCall) {
+        guard syncQuery === query else { return }
+        query.disableUpdates()
+        let urls = query.results.compactMap { ($0 as? NSMetadataItem)?.value(forAttribute: NSMetadataItemURLKey) as? URL }
+        clearSyncQuery(query)
+        DispatchQueue.global(qos: .utility).async {
+            let fm = FileManager.default
+            let coordinator = NSFileCoordinator()
+            var files: [[String: String]] = []
+            for url in urls {
+                try? fm.startDownloadingUbiquitousItem(at: url)
+                for _ in 0..<40 {
+                    let status = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]).ubiquitousItemDownloadingStatus
+                    if status == .current || status == nil { break }
+                    Thread.sleep(forTimeInterval: 0.25)
+                }
+                var coordinationError: NSError?
+                var text: String?
+                coordinator.coordinate(readingItemAt: url, options: [], error: &coordinationError) { coordinated in
+                    text = try? String(contentsOf: coordinated, encoding: .utf8)
+                }
+                if let text { files.append(["name": url.lastPathComponent, "text": text]) }
+            }
+            call.resolve(["files": files])
+        }
+    }
+
+    @objc func syncWrite(_ call: CAPPluginCall) {
+        guard let name = call.getString("name"), let text = call.getString("text"),
+              name.hasPrefix("Piano Forte Sync "), name.hasSuffix(".json"), !name.contains("/") else {
+            return call.reject("Invalid sync file.")
+        }
+        DispatchQueue.global(qos: .utility).async {
+            do {
+                let url = try Self.iCloudDocuments().appendingPathComponent(name)
+                let coordinator = NSFileCoordinator()
+                var coordinationError: NSError?
+                var writeError: Error?
+                coordinator.coordinate(writingItemAt: url, options: .forReplacing, error: &coordinationError) { coordinated in
+                    do { try text.write(to: coordinated, atomically: true, encoding: .utf8) } catch { writeError = error }
+                }
+                if let coordinationError { throw coordinationError }
+                if let writeError { throw writeError }
+                call.resolve()
+            } catch { call.reject(error.localizedDescription) }
         }
     }
 

@@ -1,3 +1,4 @@
+if (import.meta.env.MODE !== 'test') void import('./sync') // this sheet bundle is preloaded at idle; sync then starts without joining boot JS
 import { FREE, KEY_TOUCH_HINT, keyTouchSelect, rowMenu } from './ui'
 import { icon } from './icons'
 import { settings } from './settings'

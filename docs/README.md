@@ -31,6 +31,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/paced.md`: paced Sight Run (a steady beat, cards scored on the beat, the offered tempo).
 - `changes/report.md`: Report a problem on library pieces and the practice summary.
 - `changes/import-recovery.md`: own-file import in first-run Set up and at the top of Songs; unreadable local and backup songs are skipped and recoverable without deleting their practice history.
+- `changes/folder-sync.md`: opt-in owner-controlled folder sync across iPad and Chrome: one file per installation, monotonic backup merge, iCloud placeholder download, per-device settings, permission and recovery states.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**

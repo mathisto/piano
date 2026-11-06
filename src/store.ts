@@ -228,13 +228,9 @@ export async function getTech(): Promise<TechStats> {
 
 export const saveTech = (f: (s: TechStats) => TechStats) => edit<TechStats>('tech:stats', {}, f)
 
-/** Export and import are a Settings button away, not boot JS (src/backup.ts). */
-export const exportAll = async () => (await import('./backup')).exportAll()
-export const importAll = async (text: string) => (await import('./backup')).importAll(text)
-
 export const clearAll = () =>
   serial(async () => {
-    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup|pack):/.test(String(k))) await del(k)
+    for (const k of await keys()) if (/^(song|prog|drill|touch|practice|plan|tech|simp|snap|run|scale|theory|history|log|coach|take|backup|pack|sync):/.test(String(k))) await del(k)
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith('piano.')) localStorage.removeItem(k) // settings, the first-run and help flags, tips, ghost: a clean start
     } catch {

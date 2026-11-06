@@ -2,7 +2,6 @@
 // clock, the menu bar's commands, files opened from other apps, the sound taken away, a daily backup to Files, the system text
 // size and the practice reminder.
 import { registerPlugin, SystemBars, SystemBarType } from '@capacitor/core'
-import { onWrite } from './kv'
 import type { Port, Source } from './native-midi'
 
 interface Native {
@@ -91,15 +90,15 @@ export function connect(inputs: Map<string, Port>, sync: (list: Source[]) => voi
   const backup = () => {
     clearTimeout(timer)
     timer = 0
-    void import('./store')
+    void import('./backup')
       .then((s) => s.exportAll())
       .then((text) => n.saveBackup({ text }))
       .catch((e) => console.warn('Backup to Files', e))
   }
-  onWrite(() => {
+  void import('./sync').then((m) => m.nativeWrites(() => {
     clearTimeout(timer)
     timer = window.setTimeout(backup, 30_000)
-  })
+  }))
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'hidden') return
     if (timer) backup()

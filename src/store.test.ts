@@ -15,6 +15,7 @@ const ls = new Map<string, string>()
 vi.stubGlobal('localStorage', { getItem: (k: string) => ls.get(k) ?? null, setItem: (k: string, v: string) => ls.set(k, v), removeItem: (k: string) => ls.delete(k) })
 
 const store = await import('./store')
+const backup = await import('./backup')
 beforeEach(() => db.clear())
 
 describe('writes that read first', () => {
@@ -56,7 +57,7 @@ describe('export and import', () => {
     db.set('history:log', [{ ts: 1, kind: 'read', label: 'a', acc: 1 }])
     db.set('drill:stats', { c4: { n: 10, clean: 0.9, rt: 900 }, d4: { n: 1, clean: 0, rt: 3000 } })
     db.set('prog:x', { plays: 4, last: 100, heat: [1], best: { score: 9, acc: 0.95, grade: 'A' }, memStage: 2, memDay: 3 })
-    const file = await store.exportAll()
+    const file = await backup.exportAll()
 
     // this browser moves on after the export
     db.clear()
@@ -65,7 +66,7 @@ describe('export and import', () => {
     db.set('history:log', [{ ts: 1, kind: 'read', label: 'a', acc: 1 }, { ts: 2, kind: 'run', label: 'b', acc: 1 }])
     db.set('drill:stats', { c4: { n: 3, clean: 0.5, rt: 1000 }, d4: { n: 6, clean: 0.8, rt: 1200 } })
     db.set('prog:x', { plays: 2, last: 200, heat: [0, 3], best: { score: 5, acc: 0.7, grade: 'C' } })
-    await store.importAll(file)
+    await backup.importAll(file)
 
     expect(db.get('plan:d')).toEqual(['run', 'read'])
     expect(db.get('practice:days')).toEqual({ d: 90, e: 10 })
@@ -82,10 +83,10 @@ describe('export and import', () => {
     const mine = { pf: 1, id: 'mine', title: 'Mine', by: 'Me', items: [{ read: 't-land' }] }
     db.set('pack:mine', { pack: mine, from: 'link', added: 1, opened: 5 })
     db.set('pack:hanon-warmup', { opened: 9 })
-    const file = await store.exportAll()
+    const file = await backup.exportAll()
     db.clear() // this browser opened the Hanon pack later, and never had the other
     db.set('pack:hanon-warmup', { opened: 12 })
-    await store.importAll(file)
+    await backup.importAll(file)
     expect(db.get('pack:mine')).toEqual({ pack: mine, from: 'link', added: 1, opened: 5 })
     expect(db.get('pack:hanon-warmup')).toEqual({ opened: 12 })
     await store.clearAll()
@@ -93,12 +94,23 @@ describe('export and import', () => {
   })
 
   it('refuses what is not an export', async () => {
-    await expect(store.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
+    await expect(backup.importAll('{"version":2}')).rejects.toThrow('This file is not a Piano Forte export. Choose a file saved with Export.')
+  })
+
+  it('merges valid sync files, skips a damaged peer, and leaves this device settings alone', async () => {
+    ls.set('piano.settings', 'this device')
+    const a = JSON.stringify({ version: 1, at: 2, practice: { b: 20 }, settings: 'other device' })
+    const b = JSON.stringify({ version: 1, at: 1, practice: { a: 10 } })
+    const result = await (await import('./backup')).importMany([a, '{bad', b])
+    expect(result).toEqual({ merged: 2, skipped: 1 })
+    expect(db.get('practice:days')).toEqual({ a: 10, b: 20 })
+    expect(ls.get('piano.settings')).toBe('this device')
+    expect(db.has('backup:last')).toBe(true)
   })
 
   it('skips an unreadable song in a backup before it reaches the library', async () => {
     const bytes = Buffer.from('not music').toString('base64')
-    await store.importAll(JSON.stringify({ version: 1, songs: [{ id: 'bad', title: 'Broken', bytes, added: 1, kind: 'midi' }] }))
+    await backup.importAll(JSON.stringify({ version: 1, songs: [{ id: 'bad', title: 'Broken', bytes, added: 1, kind: 'midi' }] }))
     expect(await store.listSongs()).toEqual([])
     expect([...db.keys()].filter((k) => k === 'song:bad')).toEqual([])
   })
@@ -149,11 +161,11 @@ describe('the attempt log', () => {
     expect([...db.keys()].sort()).toEqual(['log:cards:2026-01', 'log:cards:2026-02'])
     await store.logHistory({ ts: 5, kind: 'song', label: 'Minuet', acc: 0.9, id: 'song:minuet', notes: 0.94, ok: true, as: 1, rate: 0.7, sp: 22 })
     await store.edit<{ ts: number }[]>('history:log', [], (l) => l.map((e) => ({ ...e, then: 'a' })))
-    const file = await store.exportAll()
+    const file = await backup.exportAll()
 
     db.clear() // this browser moved on: another January card, one in common, and a March
     await store.logCards([{ ts: jan + 1, k: 'b', y: 0, rt: 2100, got: [62] }, { ts: jan + 2, k: 'd', y: 1, rt: 900 }, { ts: Date.UTC(2026, 2, 1), k: 'e', y: 1, rt: 700 }])
-    await store.importAll(file)
+    await backup.importAll(file)
     const ts = (m: string) => (db.get(`log:cards:${m}`) as { ts: number }[]).map((c) => c.ts)
     expect(ts('2026-01')).toEqual([jan, jan + 1, jan + 2])
     expect(ts('2026-02')).toEqual([feb])

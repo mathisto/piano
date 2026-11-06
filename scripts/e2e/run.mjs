@@ -1271,6 +1271,9 @@ const sheetsFlow = async () => {
     async '22 Sheets: Credits, Set up and Options open from Settings, close with focus back, axe clean'(page) {
       await page.click('#settingsBtn')
       await page.waitForSelector('#drawer:not([hidden])')
+      await page.waitForSelector('#sSync')
+      ok(await page.$('#sSync') && await page.$('#sSyncStatus[role=status]') && /Progress, pieces and packs merge through the folder you choose/.test(await text(page, '#drawer')), 'Settings: folder sync row or its scope is missing')
+      ok(/Export saves progress, settings and files in one backup/.test(await text(page, '#drawer')), 'Settings: manual backup recovery is missing')
       await page.click('#sCredits')
       await sheet(page, 'credits')
       const c = await text(page, '#credits')

@@ -71,7 +71,7 @@ Beliefs the evidence does not support are not built on: more minutes alone, lear
 2. Notation is sacred: colour and glow are for state and feedback, the staff stays calm and legible.
 3. Friendly to a learner: training wheels (note names, wait mode, slow tempo) are on by default and fade as mastery grows.
 4. Timing honesty: calibrate for the real chain (keyboard, USB/BLE, audio, display) and be explicit about what is measured.
-5. Local and open: no accounts, user files stay in the browser, nothing copyrighted ships, every library score is credited under its own licence.
+5. Owner-controlled and open: no account, and nothing we run or can read. Files and progress stay on the device unless the player chooses a folder they control; nothing copyrighted ships, and every library score is credited under its own licence.
 6. Free: no subscription, no ads, no account, and the app says so.
 7. Skill over points: reward information (your own trend, mastery that can fall, a weekly goal, a quiet day streak), never points, ranks, lives or leaderboards. Effort only goes up; nothing is locked; a recommended plan is a default, not a gate.
 8. Evidence-led: choices cite research or say they are bets; features that measure (touch, timing) are framed as measurement.

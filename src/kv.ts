@@ -7,7 +7,7 @@ const mem = new Map<string, unknown>() // writes IndexedDB refused, read back be
 let failed = false
 
 let wrote: (() => void) | undefined
-/** Called after each write of the player's record (not a cached copy): the iPad app's backup to Files (src/native-midi.ts). */
+/** Called after each write of the player's record (not a cached copy). */
 export const onWrite = (f: () => void) => (wrote = f)
 
 /** True once a write has been refused: what was done since will not survive closing the tab. */

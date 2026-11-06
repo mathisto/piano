@@ -133,6 +133,18 @@
 	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Piano Forte connects to Bluetooth MIDI keyboards.</string>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.io.mattkelly.piano</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>Piano Forte</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
