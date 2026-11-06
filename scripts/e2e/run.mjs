@@ -1330,7 +1330,7 @@ const sheetsFlow = async () => {
       await page.click('#sCredits')
       await sheet(page, 'credits')
       const c = await text(page, '#credits')
-      ok(c.includes('Free, no subscription, no ads, no account.'), 'Credits: no free line')
+      ok(c.includes('Free in your browser. No subscription, ads or account.'), 'Credits: no browser ownership line')
       ok((await page.$$('#credits .credlist pre')).length >= 4 && /Salamander/.test(c) && /Wurlitzer/.test(c) && /Versilian/.test(c) && /MuseScore_General/.test(c), 'Credits: the four sounds blocks are not all there')
       const links = await page.$$eval('#credits a', (a) => a.map((x) => [x.target, x.rel, x.href]))
       ok(links.length >= 6 && links.every(([t, r, h]) => t === '_blank' && /noopener/.test(r) && /^https?:/.test(h)), `Credits: links ${JSON.stringify(links.filter(([t, r]) => t !== '_blank' || !/noopener/.test(r)))}`)
