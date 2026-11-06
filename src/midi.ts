@@ -7,6 +7,7 @@ export interface MidiMsg {
   v: number // 0..1
   ts: number // performance.now() clock
   virtual?: boolean // from the computer keyboard or the on-screen keys, not a piano
+  assistive?: boolean // activated as a button: allow time to move VoiceOver to the next chord note
 }
 
 export interface Input {

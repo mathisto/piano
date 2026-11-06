@@ -553,7 +553,7 @@ async function songsFlow() {
       const r = document.querySelector('#scrub').getBoundingClientRect()
       const s = window.__piano.game.song
       const at = (b) => r.left + ((s.bars[b].t0 + s.bars[b].t1) / 2 / s.end) * r.width
-      return { a: at(0), b: at(1), y: r.top + r.height / 2 }
+      return { a: at(0), b: at(1), c: at(2), y: r.top + r.height / 2 }
     })
     await page.mouse.move(x.a, x.y)
     await page.mouse.down()
@@ -561,8 +561,18 @@ async function songsFlow() {
     await page.mouse.up()
     const b0 = await ev(page, () => window.__piano.game.loop?.b)
     ok(b0, 'dragging the scrubber made no loop')
+    await page.click('#loopClear')
+    await page.mouse.click(x.a, x.y)
+    await page.click('#aidsBtn')
+    await page.click('#loopPick')
+    ok(/Loop start: bar 1/.test(await text(page, '#banner')), 'the tap alternative did not set the loop start')
+    await page.mouse.click(x.c, x.y)
+    await page.click('#aidsBtn')
+    await page.click('#loopPick')
+    const picked = await ev(page, () => ({ a: window.__piano.game.loop?.a, b: window.__piano.game.loop?.b, bars: window.__piano.game.song.bars }))
+    ok(picked.a === picked.bars[0].t0 && picked.b === picked.bars[2].t1, `two taps did not loop bars 1 to 3: ${picked.a}–${picked.b}`)
     await page.click('#go')
-    await ev(page, (b0) => window.__e2e.follow(`g.loop && g.loop.b > ${b0}`, 120000), b0)
+    await ev(page, (end) => window.__e2e.follow(`g.loop && g.loop.b > ${end}`, 120000), picked.b)
     ok(/Clean three times/.test(await text(page, '#banner')), 'no fix-it message')
     await leave(page, 'library')
   })
@@ -954,22 +964,23 @@ const fluentFlow = () => fresh({
 const oskFlow = () => fresh({
   async '14 On-screen keys: Theory chord and Scales quiz by touch'(page) {
     const tap = async (p) => {
-      const at = await page.$eval(`#osk i[data-p="${p}"]`, (e) => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * (e.classList.contains('b') ? 0.4 : 0.85) } })
+      const at = await page.$eval(`#osk button[data-p="${p}"]`, (e) => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * (e.classList.contains('b') ? 0.4 : 0.85) } })
       await page.touchscreen.tap(at.x, at.y)
     }
     await nav(page, 'theory')
     ok(await page.isHidden('#osk'), 'keys shown on the Theory menu')
     await page.click('button[data-trainer=chords]')
-    await page.waitForSelector('#osk:not([hidden]) i[data-p="60"]')
+    await page.waitForSelector('#osk:not([hidden]) button[data-p="60"]')
     const pcs = await ev(page, () => window.__piano.theory().cards[0].steps[0].pcs)
-    for (const pc of pcs) await tap(60 + pc)
+    for (const pc of pcs) await page.$eval(`#osk button[data-p="${60 + pc}"]`, (e) => e.click()) // detail 0: the VoiceOver/keyboard activation path
+    ok((await page.getAttribute('#osk .osk-names', 'aria-pressed')) === 'false', 'playing a key toggled note names')
     await wait(page, () => window.__piano.theory()?.answered, undefined, 5000)
     ok((await ev(page, () => window.__piano.theory().answered)) === 'ok', `chord ${pcs} by touch was judged a miss`)
     await page.click('#thMenu')
     await wait(page, () => document.querySelector('#osk').hidden)
     await nav(page, 'scales')
     await page.click('label:has(input[name=scaleTab][value=quiz])')
-    await page.waitForSelector('#osk:not([hidden]) i[data-p="60"]')
+    await page.waitForSelector('#osk:not([hidden]) button[data-p="60"]')
     for (let p = 60; p < 72 && !(await page.$('#qNext')); p++) await tap(p)
     ok(await page.$('#qNext'), 'the quiz card took no answer by touch')
   },

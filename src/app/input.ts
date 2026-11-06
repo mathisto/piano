@@ -24,7 +24,7 @@ export const fromKeyboard = (m: MidiMsg) => {
     const sound = () => (settings.sound || m.virtual) && audio.noteOn(m.p, m.v, true) // the screen and computer keys have no speaker of their own
     if (theoryUi?.theoryOpen()) {
       sound()
-      theoryUi.theoryNote(m.p, m.ts)
+      theoryUi.theoryNote(m.p, m.ts, m.assistive ? 4000 : undefined)
       return // the trainer owns the keyboard while a card is open
     }
     if (quizOpen()) {
