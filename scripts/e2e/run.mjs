@@ -766,6 +766,23 @@ const packsFlow = () => fresh({
     const idb = (await ev(page, () => window.__e2e.snapshot())).idb
     ok(JSON.parse(idb['pack:teacher']).from === 'link' && JSON.parse(idb['pack:week-two']).pack.title === 'Week two', Object.keys(idb).filter((k) => k.startsWith('pack:')).join())
   },
+  async '25c Packs: the checked index adds a generated exercise pack and starts its first exercise'(page) {
+    await nav(page, 'technique')
+    await page.click('#technique [data-pk-browse]')
+    await page.waitForSelector('dialog#pack[open] [data-pk-add=technique-first-steps]')
+    ok(/Reading foundations/.test(await text(page, 'dialog#pack')) && /Technique first steps/.test(await text(page, 'dialog#pack')), await text(page, 'dialog#pack'))
+    await axe(page, 'public pack index', 'dialog#pack')
+    await page.click('dialog#pack [data-pk-add=technique-first-steps]')
+    await page.waitForSelector('dialog#pack[open] footer .primary')
+    ok((await text(page, '#pkTitle')) === 'Technique first steps' && /Added from Piano Forte/.test(await text(page, '#pkSay')), await text(page, 'dialog#pack'))
+    await page.click('dialog#pack footer .primary')
+    await ready(page)
+    const s = await ev(page, () => ({ id: window.__piano.game.song.id, mode: window.__piano.game.mode }))
+    ok(s.id.startsWith('tech:five:0:') && s.mode === 'perform', JSON.stringify(s))
+    await leave(page, 'technique')
+    const idb = (await ev(page, () => window.__e2e.snapshot())).idb
+    ok(JSON.parse(idb['pack:technique-first-steps']).from === 'index', idb['pack:technique-first-steps'])
+  },
 }, {}, async (ctx) => {
   const sha = createHash('sha256').update(hanonBytes).digest('hex')
   const hanon = { id: 'mutopia-2037-1', title: 'The Virtuoso Pianist (Part I): Movement 1', composer: 0, fifths: 0, bars: 8, sec: 20, bpm: 100, notes: 64, lo: 48, hi: 79, tracks: 1, kind: 'study', grade: 4, gradeWhy: [], tags: ['technique'], source: 'mutopia', sourceUrl: 'https://www.mutopiaproject.org/', licenceEvidence: 'e2e', licence: 0, edition: 'e2e', quality: 1, flags: [], format: 'midi', file: 'p/hanon1.mid', bytes: hanonBytes.length, sha256: sha }

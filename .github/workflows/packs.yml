@@ -1,0 +1,31 @@
+name: Packs
+on:
+  pull_request:
+    paths:
+      - 'public/packs/**'
+      - 'src/pack.ts'
+      - 'src/public-packs.test.ts'
+      - 'scripts/packs-index.mjs'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'public/packs/**'
+      - 'src/pack.ts'
+      - 'src/public-packs.test.ts'
+      - 'scripts/packs-index.mjs'
+      - 'package.json'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: curl -fsSL https://pianoforte.mattkelly.io/corpus/catalog.json -o /tmp/piano-catalog.json
+      - run: npm run packs:check
+        env:
+          LIBRARY_CATALOG: /tmp/piano-catalog.json

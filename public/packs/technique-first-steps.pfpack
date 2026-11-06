@@ -1,0 +1,20 @@
+{
+ "pf": 1,
+ "id": "technique-first-steps",
+ "title": "Technique first steps",
+ "by": "Piano Forte",
+ "about": "Five-finger patterns, then C, G, D and F major scales.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  { "drill": { "pattern": "five", "tonic": 0, "dyn": "even", "hands": "R", "bpm": 56 }, "title": "C five-finger, right hand" },
+  { "drill": { "pattern": "five", "tonic": 0, "dyn": "even", "hands": "L", "bpm": 56 }, "title": "C five-finger, left hand" },
+  { "drill": { "pattern": "five", "tonic": 0, "dyn": "even", "hands": "both", "bpm": 56 }, "title": "C five-finger, both hands" },
+  { "drill": { "pattern": "scale", "tonic": 0, "dyn": "even", "hands": "R", "bpm": 60 }, "title": "C major, right hand" },
+  { "drill": { "pattern": "scale", "tonic": 0, "dyn": "even", "hands": "L", "bpm": 60 }, "title": "C major, left hand" },
+  { "drill": { "pattern": "scale", "tonic": 0, "dyn": "even", "hands": "both", "bpm": 60 }, "title": "C major, both hands" },
+  { "drill": { "pattern": "scale", "tonic": 7, "dyn": "even", "hands": "both", "bpm": 60 }, "title": "G major, both hands" },
+  { "drill": { "pattern": "scale", "tonic": 2, "dyn": "even", "hands": "both", "bpm": 60 }, "title": "D major, both hands" },
+  { "drill": { "pattern": "scale", "tonic": 5, "dyn": "even", "hands": "both", "bpm": 60 }, "title": "F major, both hands" }
+ ]
+}

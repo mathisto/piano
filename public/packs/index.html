@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Packs · Piano Forte</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, system-ui, sans-serif; color: light-dark(#181715, #f4f2ed); background: light-dark(#f3efe6, #0c0e12) }
+    body { margin: 0 auto; max-width: 760px; padding: 48px clamp(20px, 6vw, 64px) 80px; line-height: 1.5 }
+    h1, h2 { font-family: "Newsreader Variable", Iowan Old Style, Georgia, serif; font-weight: 560 }
+    h1 { font-size: 44px; margin: 0 0 8px } h2 { font-size: 20px; margin: 0 }
+    p { color: light-dark(#524f49, #a6abb8); max-width: 65ch }
+    ul { list-style: none; padding: 0; margin: 32px 0; border-block: 1px solid light-dark(#c7c0b3, #363d4e) }
+    li { padding: 18px 0; border-top: 1px solid light-dark(#e2ddd2, #262a33) } li:first-child { border: 0 }
+    li p { margin: 4px 0 12px }
+    a { color: light-dark(#0058d0, #78a9ff); text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center }
+    a:focus-visible { outline: 2px solid light-dark(#0058d0, #78a9ff); outline-offset: 2px }
+    .back { margin-bottom: 32px }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">Piano Forte</a>
+  <main>
+    <h1>Packs</h1>
+    <p>Small practice plans you can keep, inspect and share. They name music and exercises already in Piano Forte; they contain no score files.</p>
+    <ul id="packs"><li>Loading…</li></ul>
+    <p>To contribute one, add a validated <code>.pfpack</code> file by pull request. CC0 and CC BY lists are accepted.</p>
+  </main>
+  <script type="module">
+    const list = document.querySelector('#packs')
+    try {
+      const { packs } = await fetch('./index.json').then(r => { if (!r.ok) throw Error(); return r.json() })
+      list.replaceChildren(...packs.map(p => {
+        const li = document.createElement('li'), h = document.createElement('h2'), about = document.createElement('p'), a = document.createElement('a')
+        h.textContent = p.title; about.textContent = `${p.about} · ${p.items} items · ${p.licence === 'CC0-1.0' ? 'CC0' : 'CC BY'}`
+        a.href = p.file; a.download = p.file; a.textContent = 'Download pack'; li.append(h, about, a); return li
+      }))
+    } catch { list.textContent = 'The pack index could not be loaded. Try again.' }
+  </script>
+</body>
+</html>

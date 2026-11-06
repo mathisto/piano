@@ -1,0 +1,29 @@
+{
+ "pf": 1,
+ "id": "reading-foundations",
+ "title": "Reading foundations",
+ "by": "Piano Forte",
+ "about": "Landmarks, staff notes, ledger lines and both clefs in order.",
+ "licence": "CC0-1.0",
+ "kind": "study",
+ "items": [
+  { "read": "t-land" },
+  { "read": "t-five" },
+  { "read": "t-oct" },
+  { "read": "t-anch" },
+  { "read": "t-staff" },
+  { "read": "t-led1" },
+  { "read": "t-led2" },
+  { "read": "t-high" },
+  { "read": "b-land" },
+  { "read": "b-five" },
+  { "read": "b-oct" },
+  { "read": "b-anch" },
+  { "read": "b-staff" },
+  { "read": "b-led1" },
+  { "read": "b-led2" },
+  { "read": "b-low" },
+  { "read": "mixed" },
+  { "read": "grand" }
+ ]
+}
