@@ -22,7 +22,8 @@ Sources: [Apple: Bring your app's core features to users with App Intents](https
 - Xcode's App Intents metadata processor extracted exactly two discoverable actions, four spoken phrases, foreground launch behavior, titles and symbols from an iOS 15 deployment target build.
 - End-to-end feature 0c invokes the same browser event as the native bridge. It verifies Sight Run opens its builder and Today's Practice reaches a ready play screen without starting the run.
 - Unit tests reject every native action id except `practice` and `sight-run`.
-- The complete unit, build and end-to-end suites are run before release; the 223,000-byte boot budget is unchanged.
+- The complete suite passes: 83 test files and 1,063 tests, with one file and four tests skipped; the default end-to-end run passes 50 of 50 features. Boot is 222,030 bytes under the unchanged 223,000-byte gate.
+- Runtime `4fade04` is live and matches GitHub `main`. App Store Connect accepted TestFlight build 696 and began processing it.
 
 ## Check on the iPad
 
