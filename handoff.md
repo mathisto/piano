@@ -5,7 +5,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
 - Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: the owner superseded the proposed trained grading model. G1 is a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its bounded private notation program is complete and independently sealed on macOS and `lovelace`. The final checkpoint improves strict acquisition coverage but reaches an independent timing uncertainty, so readiness, predictions and development results do not change. The larger development sample still fails the fixed release gate; G1 is frozen as private research, the holdout remains sealed and no grade, grader code or fingering artifact has shipped. Resume only for a separately justified mechanism with a measured correctness or result-coverage gain. The private mechanism, constants and detailed results remain only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. Primary work is launch readiness: web manifest, touch/accessibility, support/purchase and real-user iPad validation. Import/recovery, folder sync and the checked public pack shelf are shipped. Runtime commit `6012c2f4` is live and uploaded as TestFlight build 687.
+- Current state: the owner superseded the proposed trained grading model. G1 is a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its bounded private notation program is complete and independently sealed on macOS and `lovelace`. The final checkpoint improves strict acquisition coverage but reaches an independent timing uncertainty, so readiness, predictions and development results do not change. The larger development sample still fails the fixed release gate; G1 is frozen as private research, the holdout remains sealed and no grade, grader code or fingering artifact has shipped. Resume only for a separately justified mechanism with a measured correctness or result-coverage gain. The private mechanism, constants and detailed results remain only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. Primary work is launch readiness: touch/accessibility, App Intents, support/purchase and real-user iPad validation. Import/recovery, folder sync, the checked public pack shelf and the installable web manifest are shipped. Runtime commit `2e497bfa` is live and uploaded as TestFlight build 690.
 
 ## 1. Read these first, in this order
 
@@ -38,7 +38,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
 - Unit tests: `npx vitest run` (1,056 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
-- End-to-end: `npm run e2e` (48 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
+- End-to-end: `npm run e2e` (49 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
 - Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 221,285 bytes: sync, backup, Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.
 - `src/docs.test.ts`: every `docs/changes/*.md` must be listed in `docs/README.md`, and DESIGN.md front-matter colours must exist in the CSS.
@@ -63,7 +63,7 @@ You are picking up Piano Forte, a piano-learning app for adults on real MIDI key
 - One git worktree per branch: `git worktree add ../piano-wt-<name> -b feature/<name>`, then `ln -s /Users/mathisto/projects/piano-roller/node_modules ../piano-wt-<name>/node_modules`. Agents never run `npm i`. Merge into `main` one at a time, run unit tests + full e2e on `main` after each merge, then deploy.
 - Frequent merge-conflict spots: `src/bundle.test.ts` (the lazy list: keep both sides' entries), `src/app/state.ts` (the `hooks` type: keep both), `src/settings.ts` migrations, `src/ui-drawer.ts`, `DESIGN.md`, `docs/README.md`, `ROADMAP.md`.
 
-## 4. What this session shipped (runtime live through TestFlight build 687)
+## 4. What this session shipped (runtime live through TestFlight build 690)
 
 In order. Each line points to its change note in `docs/changes/`.
 
@@ -176,6 +176,7 @@ In order. Each line points to its change note in `docs/changes/`.
 107. Launch import and recovery (`import-recovery.md`): first-run Set up and Songs directly offer MIDI/MusicXML import; restored songs are parsed before storage; Songs skips and reports an unreadable local file; recovery removes only the bad bytes and keeps its practice history for a clean re-import. The recovery path stays lazy and the boot budget is unchanged. `REPORT_TO` remains the only unfinished T1 trap fix.
 108. Owner-controlled folder sync (`folder-sync.md`): every installation writes one backup file and merges the others through the existing monotonic import law. The iPad uses Piano Forte's iCloud Drive Documents container; Chrome and Edge use a player-chosen folder. Progress, pieces and packs travel; keyboard, sound, display and other device settings do not. The web release is live at `84533dc`; the signed App Store profile carries the iCloud and ubiquity containers, and TestFlight build 683 uploaded successfully.
 109. Public packs (`public-packs.md`): a deterministic public index and CI gate validate CC0 / CC BY pack files against the real parser and live catalogue. Technique and Songs browse the shelf; two CC0 generated plans cover first Technique exercises and the Read sequence. The signed iPad app routes only exact Piano Forte pack universal links through the existing parser. The origin and Apple's CDN return the exact association, runtime `6012c2f4` is live and TestFlight build 687 uploaded successfully.
+110. Installable web app (`web-manifest.md`): one stable root manifest, approved 192/512 maskable Pause / Lid icons and an expanded offline identity precache make the live site installable from Chrome or Edge on a Mac without a custom install prompt or forced orientation. Production serves the manifest as `application/json`; live Chrome reports no manifest or installability errors after the headless-incognito exception. Runtime `2e497bfa` is live and TestFlight build 690 uploaded successfully.
 
 Research reports behind the plans (raw, for depth) were in a temporary session folder and may be gone; the plans in `docs/research/` contain their substance and sources.
 
@@ -209,6 +210,7 @@ On 2 Nov 2026 the owner also locked the library-fingering direction: source fing
    - phase 4: Progress's Where it goes wrong / Open map / Practise these and Stuck cards; a two-low-run step-back reason; repeated bar timing says `2 of your 3` or `all 3`;
    - sync: Settings > Your data shows Use iCloud Drive; Files shows Piano Forte with one device file; a Mac Chrome folder sync carries progress, pieces and packs but not appearance, sound or delay; denied iCloud still leaves Backup > Export usable;
    - packs: Browse adds Technique first steps and Reading foundations; a shared link tapped from Notes with the app closed opens its pack list; the saved generated pack still runs offline;
+   - Mac install: Chrome offers Install Piano Forte; the standalone window uses the approved icon, keeps local progress and Appearance after relaunch, opens offline after one online visit and resizes from narrow to wide without an orientation lock;
    - the FP-10 MIDI-out click test (console snippet in `docs/changes/beatpulse.md`).
 
 ## 7. What to do next, in order
@@ -224,7 +226,7 @@ Do each runtime change as its own branch, with its tests, its `docs/changes/` no
    - T1 trap fixes: own-file discovery and damaged-record recovery are done (`docs/changes/import-recovery.md`); `REPORT_TO` for Report a problem still needs the owner's support address.
    - A5 owner-controlled folder sync is done (`docs/changes/folder-sync.md`), live at `84533dc` and uploaded as TestFlight 683. Its real iCloud/Chrome propagation still needs the owner device check above.
    - **Done:** K2 rest: checked public `packs/` shelf, generated Technique and Read plans, in-app browsing and universal-link routing; runtime `6012c2f4`, TestFlight 687. The real tap remains in the owner device checklist.
-   - A web manifest (installable in Chrome on a Mac).
+   - **Done:** installable web manifest, approved 192/512 maskable icons and offline identity precache; runtime `2e497bfa`, TestFlight 690. The actual Mac install remains in the owner checklist.
    - Touch and swipe gestures review (the owner asked for more attention to touch UI).
    - A6 App Intents / Shortcuts. X2: test "Designed for iPad" on the owner's Mac (Xcode lists "My Mac (Designed for iPad)") only after sync exists.
    - Close touch, VoiceOver, support, purchase and real-user iPad validation before adding another research subsystem.

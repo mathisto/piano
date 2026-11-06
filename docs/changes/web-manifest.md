@@ -19,10 +19,11 @@ Piano Forte can now be installed from Chrome or Edge on a Mac as its own standal
 
 ## Verification
 
-- `src/manifest.test.ts` fixes the manifest contract, PNG dimensions and identity-output hashes. The boot-JS budget and service-worker unit tests pass.
-- Chrome's DevTools protocol parses the production build with no manifest errors, resolves the standalone root identity and both icons, and reports no installability error beyond the unavoidable incognito status of a headless test context. End-to-end feature 27 preserves that check.
+- `src/manifest.test.ts` fixes the manifest contract, PNG dimensions and identity-output hashes. The complete suite passes: 83 files and 1,062 tests, with one file and four tests skipped. The 223,000-byte boot-JS budget is unchanged.
+- Chrome's DevTools protocol parses both the production build and the live site with no manifest errors, resolves the standalone root identity and both icons, and reports no installability error after ignoring only the unavoidable incognito status of the headless test context. End-to-end feature 27 preserves that check; the full default run passes 49 of 49 features.
 - The production Caddy binary serves the manifest as `application/json` and both icon files as PNG. The built service worker names every startup asset in its precache.
 - The offline production check passes: the worker controls the page, an offline reload opens Today, lazy song chunks open, and a server 502 falls back to the cached shell.
+- Runtime `2e497bfa` is live and byte-matches the local and GitHub revisions. App Store Connect accepted TestFlight build 690 and began processing it.
 - Current manifest and install guidance: [W3C Web Application Manifest](https://www.w3.org/TR/appmanifest/), [Chrome install criteria](https://web.dev/articles/install-criteria), [Chrome manifest guidance](https://web.dev/articles/add-manifest).
 
 ## Check on the Mac
