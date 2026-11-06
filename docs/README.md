@@ -37,6 +37,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/touch-swipe-a11y.md`: named VoiceOver piano keys, a tap-only A–B loop route, pointer-interruption cleanup and the decision against whole-page swipe navigation.
 - `changes/app-shortcuts.md`: two native App Shortcuts for Today's next practice unit and the Sight Run builder, routed through the existing page logic across warm and cold launches.
 - `changes/designed-for-ipad.md`: signed Designed-for-iPad build and Mac launch validation, responsive window and persistence checks, and the native menu/document fixes the run exposed.
+- `changes/purchase-design.md`: the researched ownership-first paid-download recommendation, price/economics check, support/privacy contract and App Store launch gates; no runtime or store state changed.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
 
 **Read, Scales, Theory, Technique**
@@ -224,6 +225,7 @@ Dated reports behind the decisions; read the ratings before relying on a claim.
 - `research/difficulty-model.md`: the G1 feasibility results across Henle and multi-system labels, the corrected CIPI benchmark and licence boundary, and the whole-score ordinal ensemble design.
 - `research/difficulty-prior-art.md`: what automatic score grading work and patents already cover, the public benchmark protocol, the existing disclosure date and the patent-before-further-publication gate.
 - `research/horizon.md`: the traps and loves of piano apps checked against Piano Forte, a Studies section and a free course format (JSON naming catalogue pieces, generated drills and stages; import by file or link; a repo index), current Apple guidance (Liquid Glass, the menu bar, reminders, Dynamic Type, the icon), and what iPhone, Mac and Apple Watch versions would take (1 Nov 2026): one combined phase list and decisions 23 to 36.
+- `research/purchase.md`: the ownership-first paid-download recommendation, verified $129.99 price anchor and Apple economics, support/privacy contract, exact implementation boundary and App Store launch gates (6 Nov 2026).
 - `research/learning-science.md`: what the evidence says about piano practice.
 - `research/products-and-ux.md`: practice products, rhythm-game design, settings and progression UX.
 - `research/ui-critique.md`: the independent UI critique of 19 Oct 2026, before the overhaul.
