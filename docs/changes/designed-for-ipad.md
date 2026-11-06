@@ -17,6 +17,7 @@ Piano Forte now builds, signs, installs and runs through Xcode's real **My Mac (
 - Clean first launch showed Set up. After Done, Today rendered; Songs showed all eight starters and the 902-piece Pieces lane; Settings opened; the native CoreMIDI bridge started and returned an empty source list with no keyboard attached.
 - The app remained readable and operable at the regular window size and macOS half- and quarter-screen sizes. Relaunch skipped Set up, proving the local first-run state persisted.
 - `npm test`: 84 files and 1,065 tests passed; one file and four tests skipped. `npm run build` passed. All 50 merged end-to-end journeys passed. Boot JavaScript remains 222,030 bytes under the unchanged 223,000-byte gate.
+- Runtime `339bbcef` is live and byte-matched across local `main`, GitHub and the production `version.txt`. The signed 1.0 archive is build 699, retains both App Intents, and uploaded successfully to App Store Connect.
 
 ## Still requires hardware or distribution
 
