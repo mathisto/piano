@@ -1,0 +1,26 @@
+{
+  "locale": "en-US",
+  "name": "Page to Hand",
+  "subtitle": "Piano practice from your score",
+  "promotionalText": "Turn MIDI and MusicXML scores into focused practice with real-keyboard feedback, exact trouble bars, and one clear next step.",
+  "description": "Page to Hand turns the score in front of you into a focused piano-practice session. Bring your own music, play it on a real keyboard, and see exactly what deserves another pass.\n\nPRACTICE YOUR OWN MUSIC\n• Import MIDI, MusicXML, and MXL scores.\n• Work from full notation, falling notes, or both together.\n• Slow the tempo, loop difficult bars, and practise either hand.\n\nPLAY ON A REAL PIANO\n• Connect a USB or Bluetooth MIDI keyboard for immediate note, timing, hold, and touch feedback.\n• Use the on-screen keyboard when your piano is not nearby.\n• Choose Learn mode when you want the music to wait, or Perform when you want an honest run at tempo.\n\nKNOW WHAT TO FIX NEXT\n• See wrong, early, late, and missed notes directly on the score.\n• Review accuracy, timing, holds, and touch without an arcade score.\n• Continue with the hardest bars, a cleaner pass, or the next useful task.\n• Compare like-for-like attempts and recognize a true personal best.\n\nBUILD THE WHOLE SKILL\n• Follow a calm daily plan across sight reading, repertoire, scales, technique, theory, and ear training.\n• Practise with more than 2,300 public-domain and openly licensed scores.\n• Add focused study packs for Hanon, Czerny, Burgmüller, Clementi, Schumann, and more.\n• Memorise a piece as its notation fades bar by bar.\n\nOWN YOUR PRACTICE\nYour scores, history, and settings stay on your device. Sync through Page to Hand in iCloud Drive, export a complete backup, and continue without an account. Page to Hand has no ads and no subscription.\n\nA MIDI keyboard is recommended, not required.",
+  "keywords": "sight reading,MIDI,keyboard,sheet music,scales,technique,MusicXML,metronome,ear training",
+  "urls": {
+    "marketing": "https://pagetohand.com/",
+    "support": "https://pagetohand.com/support/",
+    "privacy": "https://pagetohand.com/privacy/"
+  },
+  "categories": {
+    "primary": "Education",
+    "secondary": "Music"
+  },
+  "pricing": {
+    "model": "Paid download",
+    "usPrice": "$129.99",
+    "inAppPurchases": false,
+    "subscriptions": false
+  },
+  "release": "Manual",
+  "version": "1.0",
+  "copyright": "2026 Matthew Ryan Kelly"
+}

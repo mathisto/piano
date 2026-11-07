@@ -9,6 +9,7 @@ const FOLDER = 'sync:folder'
 const PREFIX = 'Page to Hand Sync '
 const OLD_PREFIX = 'Piano Forte Sync '
 const LAST = 'piano.sync-last'
+const nativeUi = native || (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('platform') === 'ios')
 
 interface SyncNative {
   syncAvailable(): Promise<{ available: boolean }>
@@ -188,7 +189,7 @@ export async function wireSync(root: HTMLElement) {
   const stopButton = root.querySelector<HTMLButtonElement>('#sSyncStop')!
   const status = root.querySelector<HTMLElement>('#sSyncStatus')!
   const render = (s: View) => {
-    button.textContent = s.on ? 'Sync now' : native ? 'Use iCloud Drive' : 'Choose folder'
+    button.textContent = s.on ? 'Sync now' : nativeUi ? 'Use iCloud Drive' : 'Choose folder'
     button.disabled = s.busy || !!s.unsupported
     stopButton.hidden = !s.on
     stopButton.disabled = s.busy

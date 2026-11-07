@@ -378,6 +378,12 @@ The near-black ground, warm ink, printed paper, amber action and slate-blue evid
 
 The Pause / Lid uses the canonical identity geometry without reinterpretation: path `M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z`, with the dot at (512, 638), radius 76. The score, analysis and Today panel are product proof, not interactive controls; their apparent controls are static elements outside the tab order. Every marketing "try" action goes directly to the browser app at `https://app.pagetohand.com/`; the marketing shell, Support and Privacy remain on the public marketing origin. The unreleased iPad offer remains text-only and says Coming soon to the App Store until a real App Store URL exists.
 
+### App Store screenshot campaign
+
+The App Store campaign is a Persuade surface built from truthful product proof. Each 13-inch iPad image is 2752 × 2064 (rendered at 2× from a 1376 × 1032 frame): the brand sits at 52px / 28px, a Newsreader 620 outcome headline at 48px follows, and one system-font 19px sentence supports it. The real app capture begins at 52px / 190px and fills 1272 × 810px, so the product remains the majority of the image; it takes a 15px radius, one quiet outline and a soft offset shadow, never a device mockup or fabricated interface. The frame uses the capture's Nocturne or Matinée ground and ink, and the Pause / Lid geometry stays canonical.
+
+**The Outcome And Proof Rule.** The headline names a learner outcome and the visible app state proves it. The first three images must stand alone as the complete search-result story—plan, play, improve—before import, curriculum and ownership broaden it. Use deterministic states from the current app; never claim or depict AI, private research, unshipped grading or fingering, or any capability the captured UI does not substantiate.
+
 ### Hierarchy
 UI text has three sizes: 13 (label, kbd, fine print, song-row sub-lines), 15 (body, controls, other sub-lines), 18 (row names, ready sentence, result lines). 14 appears in touch-range chips, histogram text and credit blocks (see debt). Newsreader as built uses 19 to 52 plus the stage figures. Full table under Design Grammar.
 - **Display** (Newsreader 500, 44px, 1.1, -0.01em): the page h1 on every page.
