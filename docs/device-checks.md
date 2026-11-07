@@ -3,8 +3,9 @@
 Everything below was built and checked in headless Chrome only. Each line says what you should see or hear; anything else is a bug worth telling me about (say the line number).
 
 ## Before you start
-1. Open Page to Hand on the iPad, FP-10 on, Bluetooth connected. The top bar's MIDI chip should name "FP-10 Bluetooth".
-2. Settings, Sound on. Silent switch off.
+1. In TestFlight, install the build named in `handoff.md` (currently 712). Confirm TestFlight says **Installed** and the Home Screen label says **Page to Hand**. An availability email is not proof that the iPad updated.
+2. Open Page to Hand, FP-10 on, Bluetooth connected. The top bar's MIDI chip should name "FP-10 Bluetooth".
+3. Settings, Sound on. Silent switch off.
 
 ## Sound and keys (2 min)
 1. Play a few keys on the FP-10: the piano sounds with no obvious lag. If late, Settings, Calibrate.

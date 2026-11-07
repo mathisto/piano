@@ -207,6 +207,7 @@ On 2 Nov 2026 the owner also locked the library-fingering direction: source fing
 ## 6. Waiting on the owner
 
 1. Device checks on the iPad (the owner is the only tester; give them a short list with each TestFlight build):
+   - **Preflight:** the connected iPad still reports Piano Forte build 496. Install TestFlight 712 and confirm TestFlight says Installed plus the Home Screen says Page to Hand before crediting any check (`docs/changes/device-check-preflight.md`).
    - results card and Review from the music stand; the ◂ ▸ triangles readable;
    - tap the body of one Read, Scales and Technique row; each should open its visible default action while ⋯ and inner buttons stay independent;
    - Continue's destination line; the first-week Today (about ten Start buttons on day 1: too busy?);
