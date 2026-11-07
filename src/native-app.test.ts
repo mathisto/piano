@@ -21,6 +21,7 @@ it('hands the plugin over in a wrapper: a promise resolved with the bare proxy n
   vi.resetModules()
   const proxy = new Proxy({}, { get: () => () => new Promise(() => {}) }) // like Capacitor's: every property is a method, `then` included
   vi.doMock('@capacitor/core', () => ({ registerPlugin: () => proxy }))
+  vi.doMock('./sync', () => ({ nativeWrites: () => {} }))
   vi.stubGlobal('document', { addEventListener: () => {} })
   const { connect } = await import('./native-app')
   const got = await Promise.race([import('./native-app').then(() => connect(new Map(), () => {})), new Promise((r) => setTimeout(() => r('stuck'), 100))])

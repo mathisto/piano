@@ -8,6 +8,7 @@ it('publishes durable support contact and recovery guidance', () => {
   const html = source('support/index.html')
   expect(SUPPORT_URL).toBe('https://pagetohand.com/support/')
   expect(html).toContain(SUPPORT_EMAIL)
+  expect(html).toContain('subject=Page%20to%20Hand%20support')
   expect(html).toContain('Backup → Export')
   expect(html).toContain('Page to Hand does not send your practice history or files')
   expect(html).not.toContain('github.com/mathisto/piano/issues')

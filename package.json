@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "marketing:share": "node scripts/render-marketing-share.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "ios": "npm run build && cap sync ios && cap open ios",

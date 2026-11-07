@@ -41,6 +41,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/support-privacy.md`: static public Support and Privacy pages, in-app links and the support-mail destination.
 - `changes/platform-copy.md`: platform-specific ownership copy for the paid app and free browser edition, with no paywall or boot-budget increase.
 - `changes/launch-site.md`: the Page to Hand marketing page, canonical domain topology, runtime-origin migration and guarded retirement of the old Piano Forte address.
+- `changes/launch-discovery.md`: canonical and social metadata, reproducible product-proof share card, sitemap/crawler policy and browser-app noindex boundary.
 - `changes/page-to-hand.md`: the cleared Page to Hand rename across web and iPad, with old data, Apple identifiers, pack links and the live origin preserved for compatibility.
 - `changes/page-to-hand-packs.md`: the unreleased pack format renamed outright to `.pthpack`, including its JSON version key, MIME type and Apple document identifier; no Piano Forte compatibility dialect remains.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.
