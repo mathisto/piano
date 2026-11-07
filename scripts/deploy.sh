@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and publish to pianoforte.mattkelly.io (quartz, behind the Cloudflare tunnel).
+# Build and publish Page to Hand to quartz behind the Cloudflare tunnel.
 # One-time server setup (Caddy block, tunnel ingress, DNS) is in the homelab repo: 2026-10-18-piano-site.md
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,5 +23,6 @@ tar -C dist -cf - . | ssh "$HOST" "set -e
   mv $DEST/dist.new $DEST/dist
   ls -dt $DEST/dist.old-* 2>/dev/null | tail -n +4 | xargs -r rm -rf"
 
-curl -fsS -o /dev/null -w "index %{http_code}\n" https://pianoforte.mattkelly.io/
+curl -fsS -o /dev/null -w "app %{http_code}\n" https://app.pagetohand.com/
+curl -fsS -o /dev/null -w "marketing %{http_code}\n" https://pagetohand.com/
 echo "deployed $(cat dist/version.txt | cut -c1-8)"

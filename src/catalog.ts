@@ -8,7 +8,7 @@ import { served } from './net'
 
 /** Where the corpus lives: this origin on the web; the public site inside the iPad app, whose origin is capacitor://localhost (the server sends Access-Control-Allow-Origin *). */
 export const CORPUS: string =
-  import.meta.env?.VITE_CORPUS ?? (/^https?:$/.test(globalThis.location?.protocol ?? '') ? new URL('/corpus/', location.origin).href : 'https://pianoforte.mattkelly.io/corpus/')
+  import.meta.env?.VITE_CORPUS ?? (/^https?:$/.test(globalThis.location?.protocol ?? '') ? new URL('/corpus/', location.origin).href : 'https://app.pagetohand.com/corpus/')
 
 export const gradeOf = (p: Piece) => p.gradeOverride ?? p.grade
 

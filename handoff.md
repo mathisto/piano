@@ -3,9 +3,9 @@
 You are picking up Page to Hand, a piano-learning app for adults on real MIDI keyboards (web + iPad). This file is the complete state at handoff: what exists, how to work here, what the owner has decided, and what to do next, in order. Read it top to bottom once before touching anything.
 
 - Repo: `/Users/mathisto/projects/piano-roller` (GitHub `mathisto/piano`, branch `main`).
-- Live web app: https://pianoforte.mattkelly.io (served from the owner's server "quartz").
+- Public site: https://pagetohand.com; browser app and corpus: https://app.pagetohand.com (served from the owner's server "quartz"). `pianoforte.mattkelly.io` remains live only as a guarded cutover origin until the new TestFlight build is verified.
 - iPad app: Capacitor 8 shell, bundle `io.mattkelly.piano`, Apple team `TC8XUVBATG` (paid Individual account since 31 Oct 2026), shipped as a TestFlight beta.
-- Current state: the owner superseded the proposed trained grading model. G1 is a deterministic, score-only difficulty algorithm: explicit score facts and math, no learned model, with published grades used only for evaluation. Its bounded private notation program is complete and independently sealed on macOS and `lovelace`. The final checkpoint improves strict acquisition coverage but reaches an independent timing uncertainty, so readiness, predictions and development results do not change. The larger development sample still fails the fixed release gate; G1 is frozen as private research, the holdout remains sealed and no grade, grader code or fingering artifact has shipped. Resume only for a separately justified mechanism with a measured correctness or result-coverage gain. The private mechanism, constants and detailed results remain only in the nested local `private-research` repository pending the patent/publication decision; do not copy them into this public repository. Primary work is launch readiness: support/purchase and real-user iPad validation. Import/recovery, folder sync, the checked public pack shelf, the installable web manifest, touch/swipe/VoiceOver, App Shortcuts and “Designed for iPad” Mac validation are shipped. Runtime commit `f5f50fc` is live and uploaded as TestFlight build 705. The owner locked the collision-free replacement name **Page to Hand** on 6 Nov; the Pause / Lid identity stays, visible branding changes, and the Apple identifiers plus old-origin compatibility remain.
+- Current state: deterministic G1 is frozen as private research after its bounded notation program failed the fixed release gate; no grade, grader code or fingering artifact ships. Primary work is launch readiness. Page to Hand now has its approved marketing page and domain topology: `pagetohand.com` for marketing/Support/Privacy, `app.pagetohand.com` for the free browser app and corpus, and `pagetohand.app` redirecting to the public site. Runtime code trusts the new app origin while bundle IDs, iCloud containers and storage keys remain unchanged. The old Piano Forte origin must stay live until the owner verifies the new TestFlight build. App Store DSA review, metadata and real-user iPad validation remain.
 
 ## 1. Read these first, in this order
 
@@ -37,7 +37,7 @@ You are picking up Page to Hand, a piano-learning app for adults on real MIDI ke
 
 ### Build, test, verify
 - Stack: Vite + TypeScript + vitest; PixiJS falling-notes "highway" (`src/highway.ts`), SVG staff (`src/staff.ts`, `src/layout.ts`), app shell in `src/app/*.ts`, shared state in `src/app/state.ts` (with a `hooks` object for calls up the import graph).
-- Unit tests: `npx vitest run` (1,065 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
+- Unit tests: `npx vitest run` (1,073 passing, 4 skipped). Typecheck: `npx tsc --noEmit -p .`.
 - End-to-end: `npm run e2e` (50 features, about 7 minutes, headless Chrome via `playwright-core`). Filter with `E2E_ONLY='^(2b|25) '`. Do NOT edit files while it runs (its dev server reloads). Under heavy machine load a feature can time out; rerun that feature alone before calling it a failure.
 - `playwright-core` and `axe-core` are installed with `--no-save`, so ANY `npm i <pkg>` removes them. After installing anything, run `npm i --no-save playwright-core axe-core`.
 - Boot JS budget: `src/bundle.test.ts`, `BUDGET = 223_000` bytes. NEVER raise it. Boot is 222,100 bytes in the live platform-copy runtime: sync, backup, Memorise, the player profile and repeated-take analysis load on first use. New UI goes in lazy chunks and on the test's `lazy` list.
@@ -46,7 +46,7 @@ You are picking up Page to Hand, a piano-learning app for adults on real MIDI ke
 
 ### Deploy the web app
 - `./scripts/deploy.sh` from a clean, committed tree. It runs the tests, builds, writes `version.txt` and ships to quartz. Never pipe it through `tail` (that hid a failed gate once); check its exit code and its `deployed <sha>` line.
-- Then `git push origin main` and verify all three match: `git rev-parse --short=8 HEAD`, `gh api repos/mathisto/piano/commits/main --jq .sha`, `curl -s https://pianoforte.mattkelly.io/version.txt`.
+- Then `git push origin main` and verify all three match: `git rev-parse --short=8 HEAD`, `gh api repos/mathisto/piano/commits/main --jq .sha`, `curl -s https://app.pagetohand.com/version.txt`. Also verify `pagetohand.com`, `pagetohand.app`, Support/Privacy, the corpus and the retained old origin.
 
 ### iPad / TestFlight
 - TestFlight upload: `npm run ios:beta` (cap sync, archive, upload). The build number is the git commit count, so one upload per commit. Look for `Upload succeeded`.
@@ -240,7 +240,8 @@ Do each runtime change as its own branch, with its tests, its `docs/changes/` no
    - **Done:** X2: the signed app builds, installs and runs through “My Mac (Designed for iPad)”; first-run, Today, Songs, Settings, relaunch persistence and full/half/quarter windows pass. The run also removed compatibility-menu shortcut collisions and completed the document roles (`docs/changes/designed-for-ipad.md`). FP-10 input and App Shortcuts on a distributed Mac build remain owner checks.
    - **Done:** the confirmed $129.99 paid-download/free-browser model now has platform-specific ownership copy with no StoreKit/paywall (`docs/changes/platform-copy.md`); runtime `5ddee84`, TestFlight 705.
    - **Done:** the replacement name Page to Hand cleared the preliminary software/education search and now names the web and iPad product without changing its Pause / Lid identity or compatibility identifiers (`docs/changes/page-to-hand.md`).
-   - **Next:** buy the canonical domain, complete the account-side App Store metadata/DSA gates, and run real-user iPad validation before adding another research subsystem.
+   - **Done:** the canonical domains are owned; the approved launch page and domain topology are built (`docs/changes/launch-site.md`). The new TestFlight build must prove catalogue and pack-link access before the old Piano Forte origin redirects.
+   - **Next:** complete the account-side App Store metadata after the DSA review and run real-user iPad validation before adding another research subsystem.
 7. Player profile (`library-and-profile.md` section 3): R1 habit panel on Progress from `practice:days` now; R3 skills table after about 3 weeks of log; R4/R5 error map and retention after 6 to 12 weeks. Move the streak number off Progress (it stays on Today); add Clear profile beside Clear all data.
 8. Older ROADMAP items still open: 10 (note names by tradition: Do Ré Mi, German H), 11 to 14 (Urtext staff, type, highway and identity leftovers, including the iOS 26 layered icon via Icon Composer), 15 (audit leftovers: several now resolved by phases 2 and 3 and decision 12; re-check and prune), 16 (later ideas).
 
@@ -256,7 +257,7 @@ Do each runtime change as its own branch, with its tests, its `docs/changes/` no
 - The e2e "note: localStorage after Clear still has piano.guide" line is benign (Today writes the guide state again on first boot).
 - Cloudflare injects an analytics beacon into the live site; its SSL error in headless Chrome is not the app's.
 - The app has no MIDI output yet (inputs only, on web and iPad).
-- `.impeccable/design.json` is stale against DESIGN.md (regenerate with the impeccable skill's `document` command if you have it).
+- The Impeccable design sidecar was regenerated with the launch site. Pre-existing document drift remains: DESIGN.md's strict YAML front matter rejects its unquoted colon, its body heading still says `Design System: piano`, and PRODUCT.md's compound Platform value is outside the sidecar schema.
 
 ## 9. Where things live (quick map)
 

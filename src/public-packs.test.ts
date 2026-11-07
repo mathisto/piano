@@ -28,4 +28,6 @@ test('every public pack item resolves against this app and the live catalogue', 
 test('the association file opens only pack fragments in the signed app', () => {
   const aasa = JSON.parse(readFileSync('public/.well-known/apple-app-site-association', 'utf8'))
   expect(aasa.applinks.details).toEqual([{ appIDs: ['TC8XUVBATG.io.mattkelly.piano'], components: [{ '/': '/', '#': 'pack=*', comment: 'Open Page to Hand pack links' }] }])
+  expect(readFileSync('ios/App/App/App.entitlements', 'utf8')).toContain('<string>applinks:app.pagetohand.com</string>')
+  expect(readFileSync('ios/App/App/PianoNative.swift', 'utf8')).toContain('url.host == "app.pagetohand.com"')
 })

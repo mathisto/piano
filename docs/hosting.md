@@ -1,6 +1,6 @@
 # Hosting the big library
 
-The app (`dist/`) and the library corpus are separate on quartz: `/opt/piano/dist` (scripts/deploy.sh) and `/opt/piano/corpus` (scripts/deploy-library.sh). Both sit behind the Cloudflare tunnel and Caddy at pianoforte.mattkelly.io. The corpus is served at `/corpus/`:
+The app (`dist/`) and the library corpus are separate on quartz: `/opt/piano/dist` (scripts/deploy.sh) and `/opt/piano/corpus` (scripts/deploy-library.sh). Both sit behind the Cloudflare tunnel and Caddy at `app.pagetohand.com`. The corpus is served at `/corpus/`:
 
 ```
 /corpus/catalog.json      the catalogue (src/catalog-types.ts); replaced on every publish
@@ -9,13 +9,13 @@ The app (`dist/`) and the library corpus are separate on quartz: `/opt/piano/dis
 /corpus/p/<sha16>.mxl
 ```
 
-The web app fetches `/corpus/` on its own origin. The iPad app's origin is `capacitor://localhost`, so it fetches `https://pianoforte.mattkelly.io/corpus/` and needs CORS. Requests are plain GETs with no custom headers, so there is no preflight; `Access-Control-Allow-Origin *` is enough.
+The web app fetches `/corpus/` on its own origin. The iPad app's origin is `capacitor://localhost`, so it fetches `https://app.pagetohand.com/corpus/` and needs CORS. Requests are plain GETs with no custom headers, so there is no preflight; `Access-Control-Allow-Origin *` is enough.
 
 ## Caddy (applied on quartz 2026-10-27)
 
 The Caddyfile on quartz was edited on 2026-10-27 and the block shape changed: the live site block now holds `handle_path /corpus/*` for the corpus and a `handle { ... }` for the app, with the security `header` block shared above them. The previous Caddyfile is `/etc/caddy/Caddyfile.bak-<stamp>`; restore it if a reload misbehaves. The snippet below is the corpus part.
 
-Inside the existing site block for pianoforte.mattkelly.io, before the app's `file_server`:
+Inside the shared `app.pagetohand.com, pianoforte.mattkelly.io` site block, before the app's `file_server`:
 
 ```
 handle_path /corpus/* {
@@ -33,14 +33,14 @@ handle_path /corpus/* {
 - `handle_path` strips `/corpus`, so the matchers see `/p/...` and `/catalog.json`.
 - `file_server` sends `ETag` and `Last-Modified` and answers `If-None-Match` with 304. `no-cache` makes the browser revalidate the catalogue every time (src/catalog.ts fetches it with `cache: 'no-cache'`), so an unchanged catalogue costs a 304.
 - `encode` compresses `catalog.json` and `LICENSES.md`. MIDI is small and `.mxl` is already a zip, so they go as they are. If the pipeline writes `catalog.json.br`, add `precompressed br zstd gzip` to `file_server` to serve brotli.
-- Reload with `caddy reload` (or `systemctl reload caddy`), then check: `curl -sI https://pianoforte.mattkelly.io/corpus/catalog.json` shows `access-control-allow-origin: *`, `cache-control: no-cache` and an `etag`; a `p/` file shows `immutable`.
+- Reload with `caddy reload` (or `systemctl reload caddy`), then check: `curl -sI https://app.pagetohand.com/corpus/catalog.json` shows `access-control-allow-origin: *`, `cache-control: no-cache` and an `etag`; a `p/` file shows `immutable`.
 
 ## Cloudflare
 
 Two cache rules on the zone (Caching > Cache Rules), in this order:
 
-1. `http.host eq "pianoforte.mattkelly.io" and starts_with(http.request.uri.path, "/corpus/p/")`: Eligible for cache; Edge TTL and Browser TTL "use cache-control header from origin". By default Cloudflare caches `.mid` but not `.mxl`, so the rule is needed for MusicXML.
-2. `http.host eq "pianoforte.mattkelly.io" and http.request.uri.path eq "/corpus/catalog.json"`: Bypass cache, so a publish is visible at once. Cloudflare passes `If-None-Match` through and keeps the ETag (weakened when it recompresses), so revalidation still ends in a 304.
+1. `http.host eq "app.pagetohand.com" and starts_with(http.request.uri.path, "/corpus/p/")`: Eligible for cache; Edge TTL and Browser TTL "use cache-control header from origin". By default Cloudflare caches `.mid` but not `.mxl`, so the rule is needed for MusicXML.
+2. `http.host eq "app.pagetohand.com" and http.request.uri.path eq "/corpus/catalog.json"`: Bypass cache, so a publish is visible at once. Cloudflare passes `If-None-Match` through and keeps the ETag (weakened when it recompresses), so revalidation still ends in a 304.
 
 Nothing to purge after a publish: piece names change when their content does, and the catalogue is not cached at the edge.
 

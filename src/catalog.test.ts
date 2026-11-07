@@ -109,7 +109,7 @@ describe('the piece loader', () => {
 
   it('takes IndexedDB, then the bundle, then the corpus, keeping only what came from the corpus', async () => {
     const p = { ...base.pieces[0], sha256: await sha256(bytes), file: 'p/abc.mid' }
-    const corpus = new URL('p/abc.mid', 'https://pianoforte.mattkelly.io/corpus/').href
+    const corpus = new URL('p/abc.mid', 'https://app.pagetohand.com/corpus/').href
     let t = io(bytes, {})
     expect(await pieceBytes(p, t.f, 'bundle.mid')).toBe(bytes)
     expect(t.asked).toEqual([])
@@ -130,7 +130,7 @@ describe('the piece loader', () => {
 
   it('rejects a file whose sha256 is wrong, wherever it came from', async () => {
     const p = { ...base.pieces[0], sha256: await sha256(bytes), file: 'p/abc.mid' }
-    const corpus = new URL('p/abc.mid', 'https://pianoforte.mattkelly.io/corpus/').href
+    const corpus = new URL('p/abc.mid', 'https://app.pagetohand.com/corpus/').href
     const t = io(other, { 'bundle.mid': other, [corpus]: bytes })
     expect(await pieceBytes(p, t.f, 'bundle.mid')).toBe(bytes) // stale cache and a bad bundle copy are skipped
     const bad = io(undefined, { [corpus]: other })

@@ -28,7 +28,7 @@ Open, no-account and free in the browser; a one-time paid download in the App St
 - No lit keys, no hardware lighting. "Lighting" means on-screen visual effects only.
 - iPad facts (docs/research/ios-ux.md): the Air is 60 Hz and has no haptics, so neither is designed for; the screen is read from a music stand at 60-90 cm; the app has a dark mode (Nocturne, the default) and a light one (Matinée) since the Urtext direction. The divider between staff and falling notes is the one view control: drag it, tap it to cycle, or use the arrow keys.
 - Audio and display latency are real; a one-time calibration sets a user offset. Screen mirroring to an iPad adds display lag.
-- Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 2,347 pieces (748 from Mutopia, 1,299 OpenScore Lieder, 194 Chopin first editions, 92 from PDMX and 14 from a public-domain LilyPond edition), graded 1 to 5, is served at pianoforte.mattkelly.io/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
+- Content: users import their own MIDI and MusicXML files (they stay in the browser). Eight starter pieces and 38 curated public-domain or openly licensed scores ship in the app; a corpus of 2,347 pieces (748 from Mutopia, 1,299 OpenScore Lieder, 194 Chopin first editions, 92 from PDMX and 14 from a public-domain LilyPond edition), graded 1 to 5, is served at app.pagetohand.com/corpus/ and can be saved for offline. Licences are checked per piece and credited (any free licence with credit is accepted; see docs/library.md). The repo is public, so no copyrighted MIDI is committed.
 
 ## Capabilities and Constraints
 
@@ -45,7 +45,7 @@ Open, no-account and free in the browser; a one-time paid download in the App St
 - Sound: sampled grand piano plus five lazy-loaded instruments; the keyboard's own speakers by default.
 - Local only: progress, settings, practice time, imported songs and the last three runs of each piece in IndexedDB, JSON export and import. No accounts, no cloud.
 - Web MIDI called directly in browsers; the iPad app reaches CoreMIDI through a small plugin that fakes the same API.
-- Deploys to pianoforte.mattkelly.io as a static site on quartz behind the existing Cloudflare tunnel and Caddy until the Page to Hand domain cutover. Public GitHub repo `piano`; the bundle ID and storage keys keep their existing technical names so installed builds retain their data.
+- `pagetohand.com` is the public product, Support and Privacy site; `app.pagetohand.com` is the free browser app and corpus; `pagetohand.app` redirects to the public site. They are static files on quartz behind the existing Cloudflare tunnel and Caddy. Public GitHub repo `piano`; the bundle ID and storage keys keep their existing technical names so installed builds retain their data.
 - Undecided: exact judgement windows (tuned by feel; Easy, Standard and Strict scale them).
 
 ## Brand Commitments

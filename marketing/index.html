@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0e12" />
+    <meta name="description" content="Import a score, play it on your real keyboard, and turn the result into the next useful practice." />
+    <title>Page to Hand — Piano practice that starts with your score</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#proof">Skip to product proof</a>
+    <main>
+    <section class="comp-frame" aria-label="Page to Hand">
+      <a class="r-brand-mark brand-mark" href="./" aria-label="Page to Hand home">
+        <svg viewBox="160 362 704 360" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg>
+      </a>
+      <a class="r-brand-name brand-name" href="./">Page to Hand</a>
+      <nav aria-label="Primary">
+        <a class="r-nav-how nav-link" href="#how">How it works</a>
+        <a class="r-nav-app nav-link" href="#app">The app</a>
+        <a class="r-nav-support nav-link" href="../support/">Support</a>
+      </nav>
+
+      <h1 class="r-headline">The page becomes the next practice.</h1>
+      <p class="r-lede">Import a score, play it, and get clear analysis—timing, note lengths, and touch—then a focused<br />practice plan in Today.</p>
+
+      <a class="r-browser-cta browser-cta" href="https://app.pagetohand.com/">
+        <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2.5 15 9 4 15.5Z" /></svg>
+        <span>Try free in your browser</span>
+      </a>
+      <span class="r-cta-separator separator" aria-hidden="true"></span>
+      <p class="r-ipad-price">iPad · $129.99 once</p>
+      <span class="r-price-separator separator" aria-hidden="true"></span>
+      <p class="r-trust-line">No subscription. No ads. No account.</p>
+
+      <section class="r-analysis-panel panel" id="proof" aria-labelledby="analysis-title"></section>
+      <h2 class="r-analysis-title" id="analysis-title">Analysis — Minuet (excerpt)</h2>
+      <p class="r-import-label">Minuet.musicxml · imported score</p>
+      <figure class="r-score-page plate" data-region="score-page">
+        <img src="../assets/plates/score-page.png" alt="Imported Minuet score with one measure selected for analysis" />
+      </figure>
+      <figure class="r-matched-score plate" data-region="matched-score">
+        <img src="../assets/plates/matched-score.png" alt="Written Minuet notes aligned with the notes played on a MIDI keyboard" />
+      </figure>
+      <div class="r-match-legend match-legend" aria-hidden="true">
+        <span><i class="written"></i>Written</span>
+        <span><i class="played"></i>Played</span>
+      </div>
+      <span class="r-analysis-rule rule" aria-hidden="true"></span>
+
+      <h3 class="r-timing-title">Timing (note onset)</h3>
+      <figure class="r-timing-chart timing-chart" role="img" aria-label="Timing histogram: most notes were played on the beat, with fewer early and late notes">
+        <div class="timing-zones"><b>Early</b><b>On the beat</b><b>Late</b></div>
+        <div class="timing-axis-y"><span>24</span><span>20</span><span>16</span><span>12</span><span>8</span><span>4</span><span>0</span></div>
+        <div class="bars" aria-hidden="true">
+          <i style="--h:2"></i><i style="--h:3"></i><i style="--h:5"></i><i style="--h:7"></i><i style="--h:16"></i><i style="--h:22"></i><i style="--h:15"></i><i style="--h:7"></i><i style="--h:4"></i><i style="--h:3"></i><i style="--h:2"></i>
+        </div>
+        <div class="timing-guides" aria-hidden="true"><i></i><i></i></div>
+        <div class="timing-axis-x"><span>−60</span><span>−40</span><span>−20</span><span>0</span><span>+20</span><span>+40</span><span>+60</span></div>
+        <figcaption>Timing offset (ms)</figcaption>
+        <span class="axis-label">Notes</span>
+      </figure>
+
+      <span class="r-metric-divider rule vertical" aria-hidden="true"></span>
+      <h3 class="r-duration-title">Note length (duration)</h3>
+      <figure class="r-duration-chart duration-chart" role="img" aria-label="Written note length 500 milliseconds; played note length 492 milliseconds">
+        <div class="note-glyph" aria-hidden="true"><i></i></div>
+        <dl>
+          <div><dt>Written</dt><dd>500 ms</dd></div>
+          <div class="played-row"><dt>Played</dt><dd>492 ms</dd></div>
+        </dl>
+      </figure>
+
+      <h3 class="r-touch-title">Touch evenness <span class="info" aria-label="About touch evenness">i</span></h3>
+      <figure class="r-touch-chart touch-chart" role="img" aria-label="82 percent of notes were within plus or minus 8 of the target touch">
+        <strong>82%</strong><span class="within">within ±8</span>
+        <div class="touch-plot" aria-hidden="true">
+          <span class="zero"></span>
+          <div class="touch-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <span class="touch-scale"><b>+8</b><b>0</b><b>−8</b></span>
+          <small>Per-note touch variation (relative)</small>
+        </div>
+      </figure>
+
+      <section class="r-today-panel panel" aria-labelledby="today-title"></section>
+      <h2 class="r-today-title" id="today-title">Today</h2>
+      <div class="r-plan-control plan-control" aria-hidden="true">
+        <span>Plan</span>
+        <div><span class="plan-option">5 min</span><span class="plan-option selected">10 min</span><span class="plan-option">20 min</span></div>
+      </div>
+      <section class="r-practice-list practice-list" aria-labelledby="practice-heading"></section>
+      <h3 class="r-practice-heading" id="practice-heading">Continue here <small>Built from your recent playing.</small></h3>
+      <ol class="practice-rows">
+        <li class="r-practice-row-1 primary-row"><span class="row-number">1</span><b>Minuet: loop bars 5–8<br />at 80%</b><span class="row-action" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M3 2 12 7 3 12Z" /></svg>Start</span></li>
+        <li class="r-practice-row-2"><span class="row-number">2</span><span>Scales: D major, hands together</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+        <li class="r-practice-row-3"><span class="row-number">3</span><span>Technique: broken chords</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+        <li class="r-practice-row-4"><span class="row-number">4</span><span>Sight-read 16 bars</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+        <li class="r-practice-row-5"><span class="row-number">5</span><span>Minuet: release the last beat</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+        <li class="r-practice-row-6"><span class="row-number">6</span><span>Memorise the final phrase</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+        <li class="r-practice-row-7"><span class="row-number">7</span><span>Review in Progress</span><span class="row-action" aria-hidden="true"><i></i>Start</span></li>
+      </ol>
+      <div class="r-week-progress week-progress" aria-label="This week's practice: zero of sixty minutes">
+        <div class="week-days" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><small>Mo&nbsp;&nbsp; Tu&nbsp;&nbsp; We&nbsp;&nbsp; Th&nbsp;&nbsp; Fr&nbsp;&nbsp; Sa&nbsp;&nbsp; Su</small></div>
+        <span class="progress-track"><i></i></span>
+        <span>0 of 60 min</span>
+      </div>
+    </section>
+
+    <section class="story-section mechanism" id="how" aria-labelledby="mechanism-title">
+      <div class="section-heading">
+        <h2 id="mechanism-title">From score to next practice.</h2>
+        <p>Page to Hand follows one useful chain: bring in the music, play it on your keyboard, see what happened, then work on the part that needs you.</p>
+      </div>
+      <ol class="mechanism-steps">
+        <li>
+          <span class="step-number">1</span>
+          <h3>Bring the piece</h3>
+          <p>Import MIDI, MusicXML, or MXL. Your file stays on your device.</p>
+          <div class="file-proof" aria-label="Example imported file"><span class="file-fold" aria-hidden="true"></span><b>Minuet.musicxml</b><small>Imported score</small></div>
+        </li>
+        <li>
+          <span class="step-number">2</span>
+          <h3>Play the keyboard</h3>
+          <p>Use the piano you already own. Page to Hand listens over MIDI.</p>
+          <div class="key-proof" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </li>
+        <li>
+          <span class="step-number">3</span>
+          <h3>Read the evidence</h3>
+          <p>Notes, timing, holds, and touch stay tied to the score and its bars.</p>
+          <div class="measure-proof" aria-hidden="true"><span></span><i></i><i></i><i></i><i></i><i></i></div>
+        </li>
+        <li>
+          <span class="step-number">4</span>
+          <h3>Practise the cause</h3>
+          <p>Loop the weak bars or follow Today into the next useful task.</p>
+          <div class="next-proof"><span>Next</span><b>Loop bars 5–8</b><small>Minuet · 80% tempo</small></div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="story-section evidence" aria-labelledby="evidence-title">
+      <div class="evidence-visual" aria-label="Written Minuet notes aligned with the notes played">
+        <img src="../assets/plates/matched-score.png" alt="" loading="lazy" />
+        <div class="evidence-caption"><span><i class="written"></i>Written</span><span><i class="played"></i>Played</span></div>
+      </div>
+      <div class="evidence-copy">
+        <h2 id="evidence-title">Not a grade. A diagnosis.</h2>
+        <p>Page to Hand compares the run with the score, names the bars that need another pass, and leaves the clean parts alone.</p>
+        <dl class="evidence-ledger">
+          <div><dt>Notes</dt><dd><b>45 of 48</b> right</dd></div>
+          <div><dt>Timing</dt><dd><b>14 ms</b> gap spread</dd></div>
+          <div><dt>Touch</dt><dd><b>82%</b> within ±8</dd></div>
+        </dl>
+        <p class="evidence-note">Example from the Minuet excerpt above. Review the marks on the score, loop the weak bars, or compare with your last run.</p>
+      </div>
+    </section>
+
+    <section class="story-section practice-system" aria-labelledby="practice-title">
+      <div class="practice-copy">
+        <h2 id="practice-title">Practice follows the evidence.</h2>
+        <p>Today brings due reading, scales, technique, theory, repertoire, and the bars that held you up into one plan. Choose 5, 10, 20, 30, or 45 minutes. Nothing is locked.</p>
+      </div>
+      <div class="plan-proof" aria-label="Example ten minute practice plan">
+        <div class="plan-proof-head"><h3>Today</h3><span>10 min</span></div>
+        <ol>
+          <li class="current"><span>1</span><p><b>Minuet: bars 5–8</b><small>Loop at 80% · about 3 min</small></p><i aria-hidden="true"></i></li>
+          <li><span>2</span><p><b>D major, hands together</b><small>Scale review · about 3 min</small></p></li>
+          <li><span>3</span><p><b>Sight-read 16 bars</b><small>Steady beat · about 4 min</small></p></li>
+        </ol>
+        <div class="plan-proof-foot"><span>Built on this device</span><b>0 of 10 min</b></div>
+      </div>
+    </section>
+
+    <section class="story-section ownership" aria-labelledby="ownership-title">
+      <div class="section-heading">
+        <h2 id="ownership-title">Bring your repertoire. Keep your work.</h2>
+        <p>The tool is open where it matters: your files, your progress, and your practice history stay under your control.</p>
+      </div>
+      <div class="ownership-facts">
+        <article><h3>Your files</h3><p>MIDI and MusicXML imports stay on the device. Export or import your data whenever you choose.</p></article>
+        <article><h3>Open library</h3><p>More than 2,300 credited public-domain and openly licensed scores, graded from 1 to 5.</p></article>
+        <article><h3>Your keyboard</h3><p>Play over USB or Bluetooth MIDI. The keyboard’s own speakers can stay your sound.</p></article>
+      </div>
+    </section>
+
+    <section class="story-section offer" id="app" aria-labelledby="offer-title">
+      <div class="offer-heading">
+        <h2 id="offer-title">Free in the browser. One purchase on iPad.</h2>
+        <p>The same practice system, without a subscription, advertising, or an account.</p>
+      </div>
+      <div class="offer-table">
+        <article>
+          <div><h3>Browser</h3><strong>Free</strong></div>
+          <p>Use Page to Hand on a desktop browser with a MIDI keyboard. Your work stays local.</p>
+          <a class="offer-action primary-action" href="https://app.pagetohand.com/"><span class="play-icon" aria-hidden="true"></span>Try free in your browser</a>
+        </article>
+        <article>
+          <div><h3>iPad</h3><strong>$129.99 <small>once</small></strong></div>
+          <p>Own the iPad and Designed-for-iPad Mac app. Everything included in one purchase.</p>
+          <p class="ipad-availability">Coming soon to the App Store</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="story-section close-section" aria-labelledby="close-title">
+      <h2 id="close-title">Put the score on the stand.</h2>
+      <p>Bring one piece. Play one run. Leave with the next thing worth practising.</p>
+      <a class="primary-action close-action" href="https://app.pagetohand.com/"><span class="play-icon" aria-hidden="true"></span>Try Page to Hand free</a>
+    </section>
+    </main>
+    <footer class="site-footer">
+      <a class="footer-brand" href="./" aria-label="Page to Hand home"><svg class="footer-mark" viewBox="160 362 704 360" aria-hidden="true"><path d="M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z"/><circle cx="512" cy="638" r="76"/></svg><b>Page to Hand</b></a>
+      <nav aria-label="Footer"><a href="/support/">Support</a><a href="/privacy/">Privacy</a></nav>
+      <p>© 2026 Page to Hand</p>
+    </footer>
+  </body>
+</html>

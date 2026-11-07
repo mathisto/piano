@@ -2,8 +2,8 @@ import { expect, it, vi } from 'vitest'
 import { offsetOf, packLink, shortcutAction } from './native-app'
 
 it('accepts only Page to Hand pack universal links', () => {
-  expect(packLink('https://pianoforte.mattkelly.io/#pack=eJyrVio')).toBe('#pack=eJyrVio')
-  for (const url of ['https://evil.example/#pack=eJyrVio', 'http://pianoforte.mattkelly.io/#pack=eJyrVio', 'https://pianoforte.mattkelly.io/packs/#pack=eJyrVio', 'https://pianoforte.mattkelly.io/#other=x', 'not a url']) expect(packLink(url)).toBeUndefined()
+  expect(packLink('https://app.pagetohand.com/#pack=eJyrVio')).toBe('#pack=eJyrVio')
+  for (const url of ['https://evil.example/#pack=eJyrVio', 'http://app.pagetohand.com/#pack=eJyrVio', 'https://app.pagetohand.com/packs/#pack=eJyrVio', 'https://app.pagetohand.com/#other=x', 'not a url']) expect(packLink(url)).toBeUndefined()
 })
 
 it('accepts only the two native shortcut actions', () => {

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { cacheFor, route, shellCache, stale } from './sw'
 
-const O = 'https://pianoforte.mattkelly.io'
+const O = 'https://app.pagetohand.com'
 const r = (path: string, nav = false, origin = O) => route(new URL(path, origin), O, nav)
 
 test('what is cached and how', () => {

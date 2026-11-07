@@ -6,7 +6,7 @@ const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.
 
 it('publishes durable support contact and recovery guidance', () => {
   const html = source('support/index.html')
-  expect(SUPPORT_URL).toBe('https://pianoforte.mattkelly.io/support/')
+  expect(SUPPORT_URL).toBe('https://pagetohand.com/support/')
   expect(html).toContain(SUPPORT_EMAIL)
   expect(html).toContain('Backup → Export')
   expect(html).toContain('Page to Hand does not send your practice history or files')
@@ -15,7 +15,7 @@ it('publishes durable support contact and recovery guidance', () => {
 
 it('publishes the real local, sync, network, payment and deletion boundaries', () => {
   const html = source('privacy/index.html')
-  expect(PRIVACY_URL).toBe('https://pianoforte.mattkelly.io/privacy/')
+  expect(PRIVACY_URL).toBe('https://pagetohand.com/privacy/')
   for (const fact of ['MIDI input', 'until you delete them', 'folder you choose', 'Cloudflare', 'at least 31 days', 'seven days', 'until deleted', 'Apple processes App Store purchases', 'Delete all data', SUPPORT_EMAIL]) expect(html).toContain(fact)
   expect(html).toContain('no user account')
   expect(html).toContain('does not sell personal data')

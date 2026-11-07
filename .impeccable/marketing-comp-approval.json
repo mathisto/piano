@@ -1,0 +1,36 @@
+{
+  "title": "Lock the Proof Strip composition",
+  "question": "The mechanism stays fixed. Choose how strongly the real app should dominate the score → analysis → practice sequence.",
+  "options": [
+    {
+      "id": "original-proof-strip",
+      "label": "Original Proof Strip",
+      "thesis": "Four compact states carry equal narrative weight across one continuous reading line.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["contact sheet", "score annotations", "measured timeline"],
+      "viewport": "Score, live match, result, and Today read as a balanced sequence inside the first screen.",
+      "risk": "The actual product may feel smaller than the mechanism explaining it.",
+      "comp": ".impeccable/mocks/decision/proof-strip.webp"
+    },
+    {
+      "id": "analysis-dominant-hybrid",
+      "label": "Analysis-Dominant Hybrid",
+      "thesis": "The imported score and measured feedback own the page; a compact Today panel proves where the result goes next.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["timing histogram", "score evidence", "instrument chrome"],
+      "viewport": "Imported notation, played-note matching, timing, note length, and touch fill three quarters; Today occupies the final quarter.",
+      "risk": "The analytics must stay truthful and legible without turning the landing page into a dashboard.",
+      "comp": ".impeccable/mocks/proof-strip-product-dominant.webp"
+    },
+    {
+      "id": "score-led-hybrid",
+      "label": "Score-Led Hybrid",
+      "thesis": "The music itself becomes the causal line, with played notes and the next target flowing directly into Today.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["live notation", "gold target bracket", "instrument chrome"],
+      "viewport": "A broad annotated score crosses into a large Today interface, with the next section beginning below.",
+      "risk": "The score must stay credible and readable without overwhelming the product action.",
+      "comp": ".impeccable/mocks/proof-strip-score-led.webp"
+    }
+  ]
+}

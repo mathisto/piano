@@ -36,6 +36,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         app: fileURLToPath(new URL('./index.html', import.meta.url)),
+        marketing: fileURLToPath(new URL('./marketing/index.html', import.meta.url)),
         support: fileURLToPath(new URL('./support/index.html', import.meta.url)),
         privacy: fileURLToPath(new URL('./privacy/index.html', import.meta.url)),
       },

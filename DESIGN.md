@@ -103,11 +103,23 @@ typography:
   notation:
     fontFamily: "Bravura"
     fontSize: "40px"
+  marketing-display:
+    fontFamily: "Poltawski Nowy, Newsreader Variable, Georgia, serif"
+    fontSize: "54px"
+    fontWeight: 700
+    lineHeight: 0.98
+    letterSpacing: "-0.025em"
 rounded:
   xs: "6px"
   sm: "10px"
   md: "14px"
   pill: "999px"
+  marketing-proof-xs: "5px"
+  marketing-proof-sm: "8px"
+  marketing-proof: "12px"
+  marketing-panel: "13px"
+  marketing-cta: "15px"
+  marketing-frame: "16px"
 spacing:
   hair: "4px"
   xs: "8px"
@@ -357,6 +369,14 @@ Changed from the brief (urtext.md has the reasons): Good is #67635a (the brief's
 **Notation Font:** Bravura (SMuFL, OFL, self-hosted woff2) for every staff glyph: noteheads, clefs, rests, accidentals, flags, tuplet numerals, time-signature digits, the articulation marks and the dynamic letters (p, m, f, r, s, z, so p to ff, sf and the like).
 
 **Character:** An engraver's title page over a quiet instruction manual.
+
+### Marketing launch surface
+
+`marketing/index.html` is a Persuade surface, not an app screen. It extends the Urtext world without changing the app tokens. Poltawski Nowy (SIL OFL, self-hosted from `marketing/fonts/PoltawskiNowy.ttf`) is the marketing-only display extension for the opening promise and the large section promises; Newsreader remains the wordmark, product-panel and supporting-heading voice, and the system face remains body and interface evidence. The `marketing-display` token records the 54px / 700 opening promise in the approved desktop proof; under 999px that promise scales from 44px to 68px, while subsequent marketing promises use 650 weight and their own responsive 48-76px range.
+
+The near-black ground, warm ink, printed paper, amber action and slate-blue evidence remain recognizably Urtext, but the proof strip has a measured local palette and shape grammar: blue `#8ea7ff`, muted inks `#c6c8ce` / `#d4d6dc`, action variants `#ffca57` / `#ffcd63`, and 5 / 8 / 12 / 13 / 15 / 16px radii. They belong only to this marketing proof and its approved composition; they are not app primitive tokens and must never alter the app's four-radius control system. The amber rule still holds: amber appears only on the browser action and the one next-practice action being demonstrated.
+
+The Pause / Lid uses the canonical identity geometry without reinterpretation: path `M168 612 C240 290 784 290 856 612 C751 480 649 424 512 424 C375 424 273 480 168 612 Z`, with the dot at (512, 638), radius 76. The score, analysis and Today panel are product proof, not interactive controls; their apparent controls are static elements outside the tab order. Every marketing "try" action goes directly to the browser app at `https://app.pagetohand.com/`; the marketing shell, Support and Privacy remain on the public marketing origin. The unreleased iPad offer remains text-only and says Coming soon to the App Store until a real App Store URL exists.
 
 ### Hierarchy
 UI text has three sizes: 13 (label, kbd, fine print, song-row sub-lines), 15 (body, controls, other sub-lines), 18 (row names, ready sentence, result lines). 14 appears in touch-range chips, histogram text and credit blocks (see debt). Newsreader as built uses 19 to 52 plus the stage figures. Full table under Design Grammar.

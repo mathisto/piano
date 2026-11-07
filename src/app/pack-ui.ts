@@ -197,7 +197,7 @@ async function keep(p: Pack, from: Exclude<From, 'app'>) {
   await sheet(p.id)
 }
 
-const packRoot = () => (/^https?:$/.test(location.protocol) ? location.origin : 'https://pianoforte.mattkelly.io') + '/packs/'
+const packRoot = () => (/^https?:$/.test(location.protocol) ? location.origin : 'https://app.pagetohand.com') + '/packs/'
 
 /** The public index is a convenience, never authority: every downloaded file still goes through parsePack. */
 async function listed(): Promise<Listed[]> {
@@ -263,7 +263,7 @@ export async function fromLink(frag = location.hash) {
 async function share(p: Pack, how: 'file' | 'link') {
   const say = (s: string) => ($('#pkSay').textContent = s)
   if (how === 'file') return hooks.shareFile(new File([JSON.stringify(p, null, 1) + '\n'], `${p.id}.pthpack`, { type: 'application/vnd.page-to-hand.pack+json' }))
-  const site = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : 'https://pianoforte.mattkelly.io/' // the iPad app's own address opens nothing elsewhere
+  const site = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : 'https://app.pagetohand.com/' // the iPad app's own address opens nothing elsewhere
   const url = `${site}#${await packFragment(p)}`
   if (navigator.share) {
     try {

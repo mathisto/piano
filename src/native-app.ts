@@ -34,7 +34,7 @@ const n = registerPlugin<Native>('CoreMidi')
 export function packLink(value: string): string | undefined {
   try {
     const u = new URL(value)
-    return u.protocol === 'https:' && u.hostname === 'pianoforte.mattkelly.io' && u.pathname === '/' && /^#pack=[\w-]+$/.test(u.hash) ? u.hash : undefined
+    return u.protocol === 'https:' && u.hostname === 'app.pagetohand.com' && u.pathname === '/' && /^#pack=[\w-]+$/.test(u.hash) ? u.hash : undefined
   } catch {
     return undefined
   }

@@ -17,5 +17,5 @@ rsync -a --exclude /p --exclude /catalog.json "$SRC/" "$HOST:$DEST/" # LICENSES.
 rsync -a "$SRC/catalog.json" "$HOST:/opt/piano/.catalog.json.new"        # outside the served root, same filesystem
 ssh "$HOST" "set -e; chown -R www-data:www-data $DEST /opt/piano/.catalog.json.new; chmod -R u=rwX,go=rX $DEST; chmod 644 /opt/piano/.catalog.json.new; mv -f /opt/piano/.catalog.json.new $DEST/catalog.json"
 
-curl -fsS -o /dev/null -w "catalog %{http_code}\n" https://pianoforte.mattkelly.io/corpus/catalog.json
+curl -fsS -o /dev/null -w "catalog %{http_code}\n" https://app.pagetohand.com/corpus/catalog.json
 echo "published $(ls "$SRC/p" | wc -l | tr -d ' ') pieces"

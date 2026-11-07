@@ -37,8 +37,8 @@ it('Settings and Credits expose public Support and Privacy links', () => {
   drawer(el, [])
   const credits = creditsDialog([], { app: 'https://example.org/app', corpus: 'https://example.org/corpus' })
   for (const html of [el.innerHTML, credits]) {
-    expect(html).toContain('https://pianoforte.mattkelly.io/support/')
-    expect(html).toContain('https://pianoforte.mattkelly.io/privacy/')
+    expect(html).toContain('https://pagetohand.com/support/')
+    expect(html).toContain('https://pagetohand.com/privacy/')
     expect(html).toContain('target="_blank"')
   }
 })

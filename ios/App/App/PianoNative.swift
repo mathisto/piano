@@ -81,7 +81,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
         // A shared pack link: Associated Domains admits only this fragment, and the page validates both the URL and the pack again.
         NotificationCenter.default.addObserver(forName: .capacitorOpenUniversalLink, object: nil, queue: .main) { [weak self] note in
             guard let url = (note.object as? [String: Any])?["url"] as? URL,
-                  url.scheme == "https", url.host == "pianoforte.mattkelly.io", url.path == "/",
+                  url.scheme == "https", url.host == "app.pagetohand.com", url.path == "/",
                   url.fragment?.hasPrefix("pack=") == true else { return }
             self?.notifyListeners("link", data: ["url": url.absoluteString], retainUntilConsumed: true)
         }

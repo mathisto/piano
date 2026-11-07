@@ -1,0 +1,44 @@
+{
+  "title": "Choose the Page to Hand landing-page structure",
+  "question": "Same product, proof, and visual system; three different ways to make the value immediately legible.",
+  "options": [
+    {
+      "id": "practice-folio",
+      "kind": "assigned",
+      "label": "Practice Folio",
+      "kicker": "THE ROLL",
+      "thesis": "A composed two-page spread pairs the promise with one decisive view of the real practice system.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["ink-black field", "warm score paper", "hairline rules"],
+      "viewport": "The left page states the offer and actions; the right page proves it with the app, with the next folio opening visible below.",
+      "risk": "The folio metaphor fails if it becomes decorative instead of making the product easier to understand.",
+      "comp": ".impeccable/mocks/decision/practice-folio.webp"
+    },
+    {
+      "id": "lit-score",
+      "kind": "dealt",
+      "label": "The Lit Score",
+      "thesis": "The actual practice interface is the hero, surrounded by only the offer, price, and next action.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["edge-lit glass", "warm paper", "precise instrument chrome"],
+      "viewport": "A large, angled app proof occupies the opening while terse copy and two actions lock to its edges.",
+      "risk": "It can resemble a conventional software hero unless the app proof truly dominates the composition.",
+      "comp": ".impeccable/mocks/decision/lit-score.webp"
+    },
+    {
+      "id": "proof-strip",
+      "kind": "dealt",
+      "label": "Proof Strip",
+      "thesis": "One continuous reading line shows the full transformation: page, performance, feedback, next practice.",
+      "palette": ["#0b0c10", "#f4f0e8", "#f6c453", "#7186c7"],
+      "materials": ["contact sheet", "score annotations", "measured timeline"],
+      "viewport": "A horizontal proof sequence crosses the first screen, with the promise and actions embedded in the same line.",
+      "risk": "The sequence needs ruthless hierarchy or it will read as a feature diagram instead of a desirable product.",
+      "comp": ".impeccable/mocks/decision/proof-strip.webp"
+    }
+  ],
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  }
+}
