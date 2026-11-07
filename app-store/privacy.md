@@ -1,6 +1,6 @@
 # App privacy answers
 
-Use these answers for the iPad app. They describe build 710 and the current Cloudflare delivery path.
+Use these answers for the iPad app. They describe build 712 and the current Cloudflare delivery path.
 
 ## Policy
 

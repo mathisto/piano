@@ -19,3 +19,7 @@ The outer closure is one-shot work owned by the plugin call, so an explicit `[se
 ## Device boundary
 
 The direct Hackronomicon build could not start because the connected iPad was locked. The signed Release archive covers the shipping compiler and signing path; the existing owner checklist still covers behavior on the physical iPad and FP-10.
+
+## Shipped
+
+Runtime `3e47cd1b` is live and byte-matches local `main`, GitHub and `app.pagetohand.com/version.txt`. App Store Connect accepted TestFlight build 712 and began processing it. The live catalogue at the app's actual `/corpus/catalog.json` endpoint reports build `44a4bc80bf5e2109`, 2,347 pieces and 185 composers.
