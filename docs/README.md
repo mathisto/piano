@@ -43,6 +43,7 @@ One file per feature branch: what it built, how it was checked, what is open. Th
 - `changes/launch-site.md`: the Page to Hand marketing page, canonical domain topology, runtime-origin migration and guarded retirement of the old Piano Forte address.
 - `changes/launch-discovery.md`: canonical and social metadata, reproducible product-proof share card, sitemap/crawler policy and browser-app noindex boundary.
 - `changes/app-store-package.md`: tested App Store copy, privacy/review/rights worksheets and six reproducible 13-inch iPad screenshots.
+- `changes/native-capture-cleanup.md`: explicit CoreMIDI startup lifetime; four Xcode 27.1 strong-capture diagnostics removed without changing callback ownership.
 - `changes/page-to-hand.md`: the cleared Page to Hand rename across web and iPad, with old data, Apple identifiers, pack links and the live origin preserved for compatibility.
 - `changes/page-to-hand-packs.md`: the unreleased pack format renamed outright to `.pthpack`, including its JSON version key, MIME type and Apple document identifier; no Piano Forte compatibility dialect remains.
 - `changes/truth.md`: the truthfulness pass: melody-hand voicing, unchecked fingerings said so, the score multiplier removed, and the Ready rule.

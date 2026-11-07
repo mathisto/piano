@@ -249,7 +249,7 @@ Do each runtime change as its own branch, with its tests, its `docs/changes/` no
 ## 8. Known open items and gotchas
 
 - Boot JS margin is 895 bytes in the shipped Support/Privacy runtime (see section 3); never raise the 223,000-byte budget.
-- Xcode 27.1's unsigned simulator build passes but reports four `ImplicitStrongCapture` warnings in `ios/App/App/PianoNative.swift` lines 251–259: the outer `DispatchQueue.main.async` closure captures `self` implicitly and strongly while its long-lived MIDI, notification and timer callbacks capture it weakly. On the next native-cleanup branch, make the outer one-shot capture explicit (`[self]`) and rerun both simulator and signed-device builds; do not hide the diagnostic.
+- Xcode 27.1's four `ImplicitStrongCapture` warnings are resolved by making the one-shot main-queue capture explicit while keeping the long-lived CoreMIDI, notification and timer callbacks weak (`docs/changes/native-capture-cleanup.md`). Clean simulator and signed Release archive builds report no source warning. A direct Hackronomicon build was blocked only because the connected iPad was locked; physical behavior remains in the owner checklist.
 - The Path level is coarse (section 7, item 3).
 - Results/marks quirks listed in DESIGN.md "Known quirks": wrong keys in the densest bars stay cramped at the fitted size; the disabled Perform | Learn segment reads pale under the card in Matinée; an unlabelled input in the tab order outside the results card; the Holds line shows although holds do not count yet.
 - Dynamic Type at 200%: the Learn start card is cramped in landscape and spills over the on-screen keys in portrait; Theory's level line sits tight.

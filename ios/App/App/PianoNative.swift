@@ -253,7 +253,7 @@ public class CoreMidiPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func start(_ call: CAPPluginCall) {
         // on the main thread: CoreMIDI reports a keyboard turned on or paired later on the thread that made the client, and only
         // if that thread has a run loop, which Capacitor's plugin queue has not (the FP-10 paired while the app ran was never seen)
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [self] in
             if !self.started {
                 self.started = true
                 mach_timebase_info(&self.timebase)
